@@ -1,4 +1,4 @@
-[gd_resource type="TileSet" format=3]
+[gd_resource type="TileSet" format=3 uid="uid://dr0a3ltpg4fe0"]
 
 [sub_resource type="Image" id="Image_3h61x"]
 data = {
@@ -16,10 +16,11 @@ image = SubResource("Image_3h61x")
 texture = SubResource("ImageTexture_kdkst")
 texture_region_size = Vector2i(8, 8)
 0:0/0 = 0
-0:0/0/physics_layer_0/polygon_0/points = PackedVector2Array(0, 0, 8, 0, 8, 8, 0, 8)
+0:0/0/physics_layer_0/polygon_0/points = PackedVector2Array(-4, -4, 4, -4, 4, 4, -4, 4)
 1:0/0 = 0
 2:0/0 = 0
 3:0/0 = 0
+3:0/0/physics_layer_0/polygon_0/points = PackedVector2Array(-4, -4, 4, -4, 4, 4, -4, 4)
 4:0/0 = 0
 5:0/0 = 0
 

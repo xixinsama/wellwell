@@ -1,16 +1,13 @@
 [gd_scene format=4 uid="uid://bb0ckphw013qw"]
 
-[ext_resource type="TileSet" path="res://resources/tilesets/template_platform_tileset.tres" id="1_kvpfn"]
-[ext_resource type="Script" path="res://scripts/world/spawn_point.gd" id="1_vtaks"]
-[ext_resource type="Script" path="res://scripts/world/reset_zone.gd" id="2_kvpfn"]
-[ext_resource type="PackedScene" path="res://scenes/player/player.tscn" id="3_dinhu"]
-[ext_resource type="Script" path="res://scripts/player/player_controller.gd" id="4_kvuet"]
-[ext_resource type="Resource" path="res://resources/player/default_player_tuning.tres" id="5_trtic"]
-[ext_resource type="Script" path="res://scripts/camera/pixel_camera_2d.gd" id="6_ir15t"]
-[ext_resource type="Script" path="res://scripts/world/fog_of_war.gd" id="7_ca42v"]
-[ext_resource type="PackedScene" path="res://scenes/tools/grid_overlay.tscn" id="8_rysoc"]
-[ext_resource type="Script" path="res://scripts/tools/grid_overlay.gd" id="9_ssvqc"]
-[ext_resource type="Script" path="res://scripts/tools/tuning_hotkeys.gd" id="10_264po"]
+[ext_resource type="TileSet" uid="uid://dr0a3ltpg4fe0" path="res://resources/tilesets/template_platform_tileset.tres" id="1_kvpfn"]
+[ext_resource type="Script" uid="uid://bo5asnakkt3ao" path="res://scripts/world/spawn_point.gd" id="1_vtaks"]
+[ext_resource type="Script" uid="uid://502ixw2kyit1" path="res://scripts/world/reset_zone.gd" id="2_kvpfn"]
+[ext_resource type="PackedScene" uid="uid://cejq022r3hjrd" path="res://scenes/player/player.tscn" id="3_dinhu"]
+[ext_resource type="Script" uid="uid://cfv5j6giqea6p" path="res://scripts/camera/pixel_camera_2d.gd" id="6_ir15t"]
+[ext_resource type="Script" uid="uid://jvu53oscg1ib" path="res://scripts/world/fog_of_war.gd" id="7_ca42v"]
+[ext_resource type="PackedScene" uid="uid://dpkyymy3fnwb4" path="res://scenes/tools/grid_overlay.tscn" id="8_rysoc"]
+[ext_resource type="Script" uid="uid://brtjvl38ja2db" path="res://scripts/tools/tuning_hotkeys.gd" id="10_264po"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_5newe"]
 size = Vector2(720, 48)
@@ -55,11 +52,8 @@ spawn_point_path = NodePath("../SpawnPoint")
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Level/ResetZone" unique_id=1810091438]
 shape = SubResource("RectangleShape2D_5newe")
 
-[node name="Player" type="CharacterBody2D" parent="." unique_id=43758805 instance=ExtResource("3_dinhu")]
+[node name="Player" parent="." unique_id=43758805 instance=ExtResource("3_dinhu")]
 position = Vector2(-120, 48)
-collision_layer = 2
-script = ExtResource("4_kvuet")
-tuning = ExtResource("5_trtic")
 spawn_position = Vector2(-120, 48)
 
 [node name="PixelCamera2D" type="Camera2D" parent="." unique_id=744670967]
@@ -79,10 +73,9 @@ script = ExtResource("7_ca42v")
 player_path = NodePath("../Player")
 solid_tiles_path = NodePath("../Level/SolidTiles")
 
-[node name="GridOverlay" type="Node2D" parent="." unique_id=778597302 instance=ExtResource("8_rysoc")]
-z_index = 100
+[node name="GridOverlay" parent="." unique_id=778597302 instance=ExtResource("8_rysoc")]
+visible = false
 position = Vector2(-120, 48)
-script = ExtResource("9_ssvqc")
 
 [node name="TuningHotkeys" type="Node" parent="." unique_id=1460866442]
 script = ExtResource("10_264po")
