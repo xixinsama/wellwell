@@ -2,6 +2,7 @@ extends Node
 
 const TESTS: Array[Script] = [
 	preload("res://tests/save/test_save_codec.gd"),
+	preload("res://tests/save/test_save_storage.gd"),
 ]
 
 

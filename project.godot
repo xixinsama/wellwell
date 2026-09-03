@@ -13,8 +13,14 @@ config_version=5
 config/name="wellwell"
 config/description="A compact pixel-precise 2D platformer template."
 config/version="0.1.0"
+config/tags=PackedStringArray("2d", "multiplayer")
 run/main_scene="res://scenes/main.tscn"
 config/features=PackedStringArray("4.7", "Forward Plus")
+
+[autoload]
+
+SaveManager="*res://scripts/save/save_manager.gd"
+GlobalSettings="*res://scripts/save/global_settings_manager.gd"
 
 [display]
 
