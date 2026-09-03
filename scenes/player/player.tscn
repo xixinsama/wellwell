@@ -1,0 +1,23 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/player/player_controller.gd" id="1_player"]
+[ext_resource type="Resource" path="res://resources/player/default_player_tuning.tres" id="2_tuning"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_player"]
+size = Vector2(8, 8)
+
+[node name="Player" type="CharacterBody2D"]
+collision_layer = 2
+collision_mask = 1
+script = ExtResource("1_player")
+tuning = ExtResource("2_tuning")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+position = Vector2(0, -4)
+shape = SubResource("RectangleShape2D_player")
+
+[node name="SpriteRoot" type="Node2D" parent="."]
+
+[node name="Block" type="Polygon2D" parent="SpriteRoot"]
+color = Color(0.294118, 0.858824, 0.623529, 1)
+polygon = PackedVector2Array(-4, -8, 4, -8, 4, 0, -4, 0)

@@ -1,0 +1,219 @@
+[gd_scene load_steps=18 format=3]
+
+[ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
+[ext_resource type="PackedScene" path="res://scenes/player/player.tscn" id="2_player"]
+[ext_resource type="Script" path="res://scripts/camera/pixel_camera_2d.gd" id="3_camera"]
+[ext_resource type="Script" path="res://scripts/world/spawn_point.gd" id="4_spawn"]
+[ext_resource type="Script" path="res://scripts/world/reset_zone.gd" id="5_reset"]
+[ext_resource type="Script" path="res://scripts/world/one_way_platform.gd" id="6_oneway"]
+[ext_resource type="PackedScene" path="res://scenes/tools/debug_hud.tscn" id="7_debug_hud"]
+[ext_resource type="PackedScene" path="res://scenes/tools/grid_overlay.tscn" id="8_grid"]
+[ext_resource type="Script" path="res://scripts/tools/tuning_hotkeys.gd" id="9_hotkeys"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_ground"]
+size = Vector2(192, 16)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_wall"]
+size = Vector2(16, 96)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_platform_wide"]
+size = Vector2(56, 8)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_platform_mid"]
+size = Vector2(40, 8)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_platform_small"]
+size = Vector2(24, 8)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_platform_tiny"]
+size = Vector2(16, 8)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_oneway"]
+size = Vector2(48, 6)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_reset"]
+size = Vector2(720, 48)
+
+[node name="Main" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("1_main")
+
+[node name="SubViewportContainer" type="SubViewportContainer" parent="."]
+layout_mode = 0
+offset_left = -4.0
+offset_top = -4.0
+offset_right = 1284.0
+offset_bottom = 724.0
+stretch = true
+metadata/_edit_lock_ = true
+
+[node name="SubViewport" type="SubViewport" parent="SubViewportContainer"]
+handle_input_locally = false
+canvas_item_default_texture_filter = 0
+physics_object_picking = true
+size = Vector2i(322, 182)
+render_target_update_mode = 4
+
+[node name="WorldRoot" type="Node2D" parent="SubViewportContainer/SubViewport"]
+
+[node name="Background" type="ColorRect" parent="SubViewportContainer/SubViewport/WorldRoot"]
+offset_left = -2048.0
+offset_top = -2048.0
+offset_right = 2048.0
+offset_bottom = 2048.0
+color = Color(0.047059, 0.054902, 0.070588, 1)
+
+[node name="Level" type="Node2D" parent="SubViewportContainer/SubViewport/WorldRoot"]
+
+[node name="SpawnPoint" type="Marker2D" parent="SubViewportContainer/SubViewport/WorldRoot/Level"]
+position = Vector2(-120, 48)
+script = ExtResource("4_spawn")
+
+[node name="StartFloor" type="StaticBody2D" parent="SubViewportContainer/SubViewport/WorldRoot/Level"]
+position = Vector2(-72, 60)
+collision_layer = 1
+collision_mask = 0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="SubViewportContainer/SubViewport/WorldRoot/Level/StartFloor"]
+shape = SubResource("RectangleShape2D_ground")
+
+[node name="Visual" type="Polygon2D" parent="SubViewportContainer/SubViewport/WorldRoot/Level/StartFloor"]
+color = Color(0.235294, 0.254902, 0.290196, 1)
+polygon = PackedVector2Array(-96, -8, 96, -8, 96, 8, -96, 8)
+
+[node name="LeftWall" type="StaticBody2D" parent="SubViewportContainer/SubViewport/WorldRoot/Level"]
+position = Vector2(-176, 4)
+collision_layer = 1
+collision_mask = 0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="SubViewportContainer/SubViewport/WorldRoot/Level/LeftWall"]
+shape = SubResource("RectangleShape2D_wall")
+
+[node name="Visual" type="Polygon2D" parent="SubViewportContainer/SubViewport/WorldRoot/Level/LeftWall"]
+color = Color(0.188235, 0.207843, 0.239216, 1)
+polygon = PackedVector2Array(-8, -48, 8, -48, 8, 48, -8, 48)
+
+[node name="StepA" type="StaticBody2D" parent="SubViewportContainer/SubViewport/WorldRoot/Level"]
+position = Vector2(64, 36)
+collision_layer = 1
+collision_mask = 0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="SubViewportContainer/SubViewport/WorldRoot/Level/StepA"]
+shape = SubResource("RectangleShape2D_platform_wide")
+
+[node name="Visual" type="Polygon2D" parent="SubViewportContainer/SubViewport/WorldRoot/Level/StepA"]
+color = Color(0.247059, 0.321569, 0.341176, 1)
+polygon = PackedVector2Array(-28, -4, 28, -4, 28, 4, -28, 4)
+
+[node name="StepB" type="StaticBody2D" parent="SubViewportContainer/SubViewport/WorldRoot/Level"]
+position = Vector2(136, 8)
+collision_layer = 1
+collision_mask = 0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="SubViewportContainer/SubViewport/WorldRoot/Level/StepB"]
+shape = SubResource("RectangleShape2D_platform_mid")
+
+[node name="Visual" type="Polygon2D" parent="SubViewportContainer/SubViewport/WorldRoot/Level/StepB"]
+color = Color(0.247059, 0.321569, 0.341176, 1)
+polygon = PackedVector2Array(-20, -4, 20, -4, 20, 4, -20, 4)
+
+[node name="CoyoteLedge" type="StaticBody2D" parent="SubViewportContainer/SubViewport/WorldRoot/Level"]
+position = Vector2(220, 34)
+collision_layer = 1
+collision_mask = 0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="SubViewportContainer/SubViewport/WorldRoot/Level/CoyoteLedge"]
+shape = SubResource("RectangleShape2D_platform_small")
+
+[node name="Visual" type="Polygon2D" parent="SubViewportContainer/SubViewport/WorldRoot/Level/CoyoteLedge"]
+color = Color(0.384314, 0.34902, 0.243137, 1)
+polygon = PackedVector2Array(-12, -4, 12, -4, 12, 4, -12, 4)
+
+[node name="TinyLanding" type="StaticBody2D" parent="SubViewportContainer/SubViewport/WorldRoot/Level"]
+position = Vector2(294, 60)
+collision_layer = 1
+collision_mask = 0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="SubViewportContainer/SubViewport/WorldRoot/Level/TinyLanding"]
+shape = SubResource("RectangleShape2D_platform_tiny")
+
+[node name="Visual" type="Polygon2D" parent="SubViewportContainer/SubViewport/WorldRoot/Level/TinyLanding"]
+color = Color(0.384314, 0.34902, 0.243137, 1)
+polygon = PackedVector2Array(-8, -4, 8, -4, 8, 4, -8, 4)
+
+[node name="BufferPlatform" type="StaticBody2D" parent="SubViewportContainer/SubViewport/WorldRoot/Level"]
+position = Vector2(382, 84)
+collision_layer = 1
+collision_mask = 0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="SubViewportContainer/SubViewport/WorldRoot/Level/BufferPlatform"]
+shape = SubResource("RectangleShape2D_platform_wide")
+
+[node name="Visual" type="Polygon2D" parent="SubViewportContainer/SubViewport/WorldRoot/Level/BufferPlatform"]
+color = Color(0.254902, 0.266667, 0.376471, 1)
+polygon = PackedVector2Array(-28, -4, 28, -4, 28, 4, -28, 4)
+
+[node name="OneWayPlatform" type="StaticBody2D" parent="SubViewportContainer/SubViewport/WorldRoot/Level"]
+position = Vector2(480, 44)
+collision_layer = 1
+collision_mask = 0
+script = ExtResource("6_oneway")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="SubViewportContainer/SubViewport/WorldRoot/Level/OneWayPlatform"]
+shape = SubResource("RectangleShape2D_oneway")
+one_way_collision = true
+one_way_collision_margin = 2.0
+
+[node name="Visual" type="Polygon2D" parent="SubViewportContainer/SubViewport/WorldRoot/Level/OneWayPlatform"]
+color = Color(0.376471, 0.266667, 0.407843, 1)
+polygon = PackedVector2Array(-24, -3, 24, -3, 24, 3, -24, 3)
+
+[node name="EndFloor" type="StaticBody2D" parent="SubViewportContainer/SubViewport/WorldRoot/Level"]
+position = Vector2(600, 76)
+collision_layer = 1
+collision_mask = 0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="SubViewportContainer/SubViewport/WorldRoot/Level/EndFloor"]
+shape = SubResource("RectangleShape2D_ground")
+
+[node name="Visual" type="Polygon2D" parent="SubViewportContainer/SubViewport/WorldRoot/Level/EndFloor"]
+color = Color(0.235294, 0.254902, 0.290196, 1)
+polygon = PackedVector2Array(-96, -8, 96, -8, 96, 8, -96, 8)
+
+[node name="ResetZone" type="Area2D" parent="SubViewportContainer/SubViewport/WorldRoot/Level" node_paths=PackedStringArray("spawn_point_path")]
+position = Vector2(220, 150)
+collision_layer = 4
+collision_mask = 2
+script = ExtResource("5_reset")
+spawn_point_path = NodePath("../SpawnPoint")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="SubViewportContainer/SubViewport/WorldRoot/Level/ResetZone"]
+shape = SubResource("RectangleShape2D_reset")
+
+[node name="Player" parent="SubViewportContainer/SubViewport/WorldRoot" instance=ExtResource("2_player")]
+position = Vector2(-120, 48)
+spawn_position = Vector2(-120, 48)
+
+[node name="PixelCamera2D" type="Camera2D" parent="SubViewportContainer/SubViewport/WorldRoot" node_paths=PackedStringArray("target_path")]
+position = Vector2(-120, 48)
+script = ExtResource("3_camera")
+target_path = NodePath("../Player")
+follow_speed = 18.0
+
+[node name="GridOverlay" parent="SubViewportContainer/SubViewport/WorldRoot" instance=ExtResource("8_grid")]
+position = Vector2(-120, 48)
+
+[node name="TuningHotkeys" type="Node" parent="SubViewportContainer/SubViewport/WorldRoot" node_paths=PackedStringArray("player_path")]
+script = ExtResource("9_hotkeys")
+player_path = NodePath("../Player")
+
+[node name="HUD" type="CanvasLayer" parent="."]
+
+[node name="DebugHud" parent="HUD" node_paths=PackedStringArray("player_path") instance=ExtResource("7_debug_hud")]
+player_path = NodePath("../../SubViewportContainer/SubViewport/WorldRoot/Player")
