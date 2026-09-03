@@ -1,38 +1,13 @@
 [gd_scene format=3 uid="uid://cqnh43jkdibte"]
 
 [ext_resource type="Script" uid="uid://c4885ofxnwufl" path="res://scripts/main.gd" id="1_main"]
-[ext_resource type="PackedScene" uid="uid://cejq022r3hjrd" path="res://scenes/player/player.tscn" id="2_player"]
-[ext_resource type="Script" uid="uid://cfv5j6giqea6p" path="res://scripts/camera/pixel_camera_2d.gd" id="3_camera"]
-[ext_resource type="Script" uid="uid://bo5asnakkt3ao" path="res://scripts/world/spawn_point.gd" id="4_spawn"]
-[ext_resource type="Script" uid="uid://502ixw2kyit1" path="res://scripts/world/reset_zone.gd" id="5_reset"]
-[ext_resource type="Script" uid="uid://dgux320cr52hy" path="res://scripts/world/one_way_platform.gd" id="6_oneway"]
+[ext_resource type="Shader" uid="uid://nq1da1uidaxy" path="res://scripts/shaders/sub_pixel.gdshader" id="2_jyhfs"]
+[ext_resource type="PackedScene" uid="uid://bb0ckphw013qw" path="res://scenes/game.tscn" id="2_sugp2"]
 [ext_resource type="PackedScene" path="res://scenes/tools/debug_hud.tscn" id="7_debug_hud"]
-[ext_resource type="PackedScene" uid="uid://dpkyymy3fnwb4" path="res://scenes/tools/grid_overlay.tscn" id="8_grid"]
-[ext_resource type="Script" uid="uid://brtjvl38ja2db" path="res://scripts/tools/tuning_hotkeys.gd" id="9_hotkeys"]
 
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_ground"]
-size = Vector2(192, 16)
-
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_wall"]
-size = Vector2(16, 96)
-
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_platform_wide"]
-size = Vector2(56, 8)
-
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_platform_mid"]
-size = Vector2(40, 8)
-
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_platform_small"]
-size = Vector2(24, 8)
-
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_platform_tiny"]
-size = Vector2(16, 8)
-
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_oneway"]
-size = Vector2(48, 6)
-
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_reset"]
-size = Vector2(720, 48)
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_sugp2"]
+shader = ExtResource("2_jyhfs")
+shader_parameter/cam_offset = Vector2(0, 0)
 
 [node name="Main" type="Control" unique_id=1356276796]
 layout_mode = 3
@@ -45,6 +20,8 @@ mouse_filter = 2
 script = ExtResource("1_main")
 
 [node name="SubViewportContainer" type="SubViewportContainer" parent="." unique_id=8119685]
+texture_filter = 1
+material = SubResource("ShaderMaterial_sugp2")
 layout_mode = 0
 offset_left = -4.0
 offset_top = -4.0
@@ -57,155 +34,12 @@ metadata/_edit_lock_ = true
 [node name="SubViewport" type="SubViewport" parent="SubViewportContainer" unique_id=1612536549]
 handle_input_locally = false
 canvas_item_default_texture_filter = 0
+audio_listener_enable_2d = true
 physics_object_picking = true
 size = Vector2i(322, 182)
 render_target_update_mode = 4
 
-[node name="WorldRoot" type="Node2D" parent="SubViewportContainer/SubViewport" unique_id=1061720661]
-
-[node name="Background" type="ColorRect" parent="SubViewportContainer/SubViewport/WorldRoot" unique_id=118033551]
-offset_left = -2048.0
-offset_top = -2048.0
-offset_right = 2048.0
-offset_bottom = 2048.0
-color = Color(0.12258532, 0.13611594, 0.16317323, 1)
-
-[node name="Level" type="Node2D" parent="SubViewportContainer/SubViewport/WorldRoot" unique_id=1478576539]
-
-[node name="SpawnPoint" type="Marker2D" parent="SubViewportContainer/SubViewport/WorldRoot/Level" unique_id=1357202313]
-position = Vector2(-120, 48)
-script = ExtResource("4_spawn")
-
-[node name="StartFloor" type="StaticBody2D" parent="SubViewportContainer/SubViewport/WorldRoot/Level" unique_id=1391181526]
-position = Vector2(-72, 60)
-collision_mask = 0
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="SubViewportContainer/SubViewport/WorldRoot/Level/StartFloor" unique_id=371904105]
-shape = SubResource("RectangleShape2D_ground")
-
-[node name="Visual" type="Polygon2D" parent="SubViewportContainer/SubViewport/WorldRoot/Level/StartFloor" unique_id=1657808972]
-color = Color(0.235294, 0.254902, 0.290196, 1)
-polygon = PackedVector2Array(-96, -8, 96, -8, 96, 8, -96, 8)
-
-[node name="LeftWall" type="StaticBody2D" parent="SubViewportContainer/SubViewport/WorldRoot/Level" unique_id=375734322]
-position = Vector2(-176, 4)
-collision_mask = 0
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="SubViewportContainer/SubViewport/WorldRoot/Level/LeftWall" unique_id=1441964961]
-shape = SubResource("RectangleShape2D_wall")
-
-[node name="Visual" type="Polygon2D" parent="SubViewportContainer/SubViewport/WorldRoot/Level/LeftWall" unique_id=376070245]
-color = Color(0.188235, 0.207843, 0.239216, 1)
-polygon = PackedVector2Array(-8, -48, 8, -48, 8, 48, -8, 48)
-
-[node name="StepA" type="StaticBody2D" parent="SubViewportContainer/SubViewport/WorldRoot/Level" unique_id=781092165]
-position = Vector2(64, 36)
-collision_mask = 0
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="SubViewportContainer/SubViewport/WorldRoot/Level/StepA" unique_id=1199536879]
-shape = SubResource("RectangleShape2D_platform_wide")
-
-[node name="Visual" type="Polygon2D" parent="SubViewportContainer/SubViewport/WorldRoot/Level/StepA" unique_id=1035323728]
-color = Color(0.247059, 0.321569, 0.341176, 1)
-polygon = PackedVector2Array(-28, -4, 28, -4, 28, 4, -28, 4)
-
-[node name="StepB" type="StaticBody2D" parent="SubViewportContainer/SubViewport/WorldRoot/Level" unique_id=195924014]
-position = Vector2(136, 8)
-collision_mask = 0
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="SubViewportContainer/SubViewport/WorldRoot/Level/StepB" unique_id=1025319738]
-shape = SubResource("RectangleShape2D_platform_mid")
-
-[node name="Visual" type="Polygon2D" parent="SubViewportContainer/SubViewport/WorldRoot/Level/StepB" unique_id=1339960373]
-color = Color(0.247059, 0.321569, 0.341176, 1)
-polygon = PackedVector2Array(-20, -4, 20, -4, 20, 4, -20, 4)
-
-[node name="CoyoteLedge" type="StaticBody2D" parent="SubViewportContainer/SubViewport/WorldRoot/Level" unique_id=54524014]
-position = Vector2(220, 34)
-collision_mask = 0
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="SubViewportContainer/SubViewport/WorldRoot/Level/CoyoteLedge" unique_id=151073190]
-shape = SubResource("RectangleShape2D_platform_small")
-
-[node name="Visual" type="Polygon2D" parent="SubViewportContainer/SubViewport/WorldRoot/Level/CoyoteLedge" unique_id=1968806335]
-color = Color(0.384314, 0.34902, 0.243137, 1)
-polygon = PackedVector2Array(-12, -4, 12, -4, 12, 4, -12, 4)
-
-[node name="TinyLanding" type="StaticBody2D" parent="SubViewportContainer/SubViewport/WorldRoot/Level" unique_id=710768019]
-position = Vector2(294, 60)
-collision_mask = 0
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="SubViewportContainer/SubViewport/WorldRoot/Level/TinyLanding" unique_id=781459233]
-shape = SubResource("RectangleShape2D_platform_tiny")
-
-[node name="Visual" type="Polygon2D" parent="SubViewportContainer/SubViewport/WorldRoot/Level/TinyLanding" unique_id=1061299284]
-color = Color(0.384314, 0.34902, 0.243137, 1)
-polygon = PackedVector2Array(-8, -4, 8, -4, 8, 4, -8, 4)
-
-[node name="BufferPlatform" type="StaticBody2D" parent="SubViewportContainer/SubViewport/WorldRoot/Level" unique_id=610007424]
-position = Vector2(382, 84)
-collision_mask = 0
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="SubViewportContainer/SubViewport/WorldRoot/Level/BufferPlatform" unique_id=591186582]
-shape = SubResource("RectangleShape2D_platform_wide")
-
-[node name="Visual" type="Polygon2D" parent="SubViewportContainer/SubViewport/WorldRoot/Level/BufferPlatform" unique_id=1358425300]
-color = Color(0.254902, 0.266667, 0.376471, 1)
-polygon = PackedVector2Array(-28, -4, 28, -4, 28, 4, -28, 4)
-
-[node name="OneWayPlatform" type="StaticBody2D" parent="SubViewportContainer/SubViewport/WorldRoot/Level" unique_id=473037824]
-position = Vector2(480, 44)
-collision_mask = 0
-script = ExtResource("6_oneway")
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="SubViewportContainer/SubViewport/WorldRoot/Level/OneWayPlatform" unique_id=2073812327]
-shape = SubResource("RectangleShape2D_oneway")
-one_way_collision = true
-one_way_collision_margin = 2.0
-
-[node name="Visual" type="Polygon2D" parent="SubViewportContainer/SubViewport/WorldRoot/Level/OneWayPlatform" unique_id=611696289]
-color = Color(0.376471, 0.266667, 0.407843, 1)
-polygon = PackedVector2Array(-24, -3, 24, -3, 24, 3, -24, 3)
-
-[node name="EndFloor" type="StaticBody2D" parent="SubViewportContainer/SubViewport/WorldRoot/Level" unique_id=146920712]
-position = Vector2(600, 76)
-collision_mask = 0
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="SubViewportContainer/SubViewport/WorldRoot/Level/EndFloor" unique_id=954318119]
-shape = SubResource("RectangleShape2D_ground")
-
-[node name="Visual" type="Polygon2D" parent="SubViewportContainer/SubViewport/WorldRoot/Level/EndFloor" unique_id=1533480160]
-color = Color(0.235294, 0.254902, 0.290196, 1)
-polygon = PackedVector2Array(-96, -8, 96, -8, 96, 8, -96, 8)
-
-[node name="ResetZone" type="Area2D" parent="SubViewportContainer/SubViewport/WorldRoot/Level" unique_id=429825532]
-position = Vector2(220, 150)
-collision_layer = 4
-collision_mask = 2
-script = ExtResource("5_reset")
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="SubViewportContainer/SubViewport/WorldRoot/Level/ResetZone" unique_id=1539233315]
-shape = SubResource("RectangleShape2D_reset")
-
-[node name="Player" parent="SubViewportContainer/SubViewport/WorldRoot" unique_id=1643958624 instance=ExtResource("2_player")]
-position = Vector2(-120, 48)
-spawn_position = Vector2(-120, 48)
-
-[node name="PixelCamera2D" type="Camera2D" parent="SubViewportContainer/SubViewport/WorldRoot" unique_id=2009394516]
-process_callback = 0
-position_smoothing_enabled = true
-editor_draw_limits = true
-editor_draw_drag_margin = true
-script = ExtResource("3_camera")
-target_path = NodePath("../Player")
-follow_speed = 18.0
-
-[node name="GridOverlay" parent="SubViewportContainer/SubViewport/WorldRoot" unique_id=707896644 instance=ExtResource("8_grid")]
-position = Vector2(-120, 48)
-
-[node name="TuningHotkeys" type="Node" parent="SubViewportContainer/SubViewport/WorldRoot" unique_id=973924063]
-script = ExtResource("9_hotkeys")
-player_path = NodePath("../Player")
+[node name="WorldRoot" parent="SubViewportContainer/SubViewport" unique_id=1552118021 instance=ExtResource("2_sugp2")]
 
 [node name="HUD" type="CanvasLayer" parent="." unique_id=1657073427]
 

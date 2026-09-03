@@ -1,4 +1,4 @@
-[gd_scene format=4]
+[gd_scene format=4 uid="uid://bb0ckphw013qw"]
 
 [ext_resource type="TileSet" path="res://resources/tilesets/template_platform_tileset.tres" id="1_kvpfn"]
 [ext_resource type="Script" path="res://scripts/world/spawn_point.gd" id="1_vtaks"]
