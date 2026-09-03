@@ -1,23 +1,35 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene format=3 uid="uid://cejq022r3hjrd"]
 
-[ext_resource type="Script" path="res://scripts/player/player_controller.gd" id="1_player"]
+[ext_resource type="Script" uid="uid://cbx1gcy30d8d2" path="res://scripts/player/player_controller.gd" id="1_player"]
 [ext_resource type="Resource" path="res://resources/player/default_player_tuning.tres" id="2_tuning"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_player"]
 size = Vector2(8, 8)
 
-[node name="Player" type="CharacterBody2D"]
+[sub_resource type="QuadMesh" id="QuadMesh_mrvaw"]
+
+[sub_resource type="QuadMesh" id="QuadMesh_dovo2"]
+
+[node name="Player" type="CharacterBody2D" unique_id=43758805]
 collision_layer = 2
-collision_mask = 1
 script = ExtResource("1_player")
 tuning = ExtResource("2_tuning")
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=2008286553]
 position = Vector2(0, -4)
 shape = SubResource("RectangleShape2D_player")
 
-[node name="SpriteRoot" type="Node2D" parent="."]
+[node name="SpriteRoot" type="Node2D" parent="." unique_id=1110208382]
 
-[node name="Block" type="Polygon2D" parent="SpriteRoot"]
+[node name="Block" type="Polygon2D" parent="SpriteRoot" unique_id=275840119]
 color = Color(0.294118, 0.858824, 0.623529, 1)
 polygon = PackedVector2Array(-4, -8, 4, -8, 4, 0, -4, 0)
+
+[node name="MeshInstance2D" type="MeshInstance2D" parent="SpriteRoot" unique_id=388390044]
+position = Vector2(2, -6)
+mesh = SubResource("QuadMesh_mrvaw")
+
+[node name="MeshInstance2D2" type="MeshInstance2D" parent="SpriteRoot" unique_id=382323706]
+modulate = Color(0, 0, 0, 1)
+position = Vector2(2, -5)
+mesh = SubResource("QuadMesh_dovo2")
