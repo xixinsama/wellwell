@@ -1,14 +1,16 @@
 class_name RoomRuntime
 extends Node2D
 
+const ROOM_DATA_SCRIPT: Script = preload("res://scripts/world/room_data.gd")
+
 var _room_data: Resource
 var _room_instance: Node
 
 
 func setup_room(room_data: Resource) -> bool:
 	_clear_room_instance()
-	_room_data = room_data
-	if room_data == null or room_data.scene_path.is_empty():
+	_room_data = null
+	if not _is_room_data(room_data) or room_data.scene_path.is_empty():
 		return false
 	if not ResourceLoader.exists(room_data.scene_path, "PackedScene"):
 		return false
@@ -21,6 +23,7 @@ func setup_room(room_data: Resource) -> bool:
 	if _room_instance == null:
 		return false
 
+	_room_data = room_data
 	name = room_data.room_id
 	position = Vector2(room_data.get_pixel_rect().position)
 	add_child(_room_instance)
@@ -61,3 +64,7 @@ func _clear_room_instance() -> void:
 	if _room_instance != null:
 		_room_instance.free()
 	_room_instance = null
+
+
+static func _is_room_data(resource: Resource) -> bool:
+	return resource != null and resource.get_script() == ROOM_DATA_SCRIPT

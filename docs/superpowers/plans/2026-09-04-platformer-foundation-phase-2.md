@@ -49,6 +49,12 @@
 - Produces: `RoomRuntime.get_layer_node(layer_name: String) -> Node`
 - Produces: `RoomRuntime.get_entities_root() -> Node`
 
+**Review Fix Constraints:**
+- `setup_room()` must reject non-`RoomData` resources without property access errors.
+- Failed `setup_room()` calls must leave `_room_data` and `_room_instance` cleared.
+- Missing fixture paths must be removed before missing-scene assertions.
+- Fixture save helpers must return the `ResourceSaver.save()` error code.
+
 - [ ] **Step 1: Write the failing room runtime test**
 
 ```gdscript
@@ -225,10 +231,16 @@ git commit -m "feat: add room runtime wrapper"
 - Consumes: `RoomRuntime.setup_room(room_data: Resource) -> bool`
 - Produces: `WorldRuntime.setup_world(world_data: Resource) -> bool`
 - Produces: `WorldRuntime.set_current_room(room_id: String) -> bool`
-- Produces: `WorldRuntime.refresh_loaded_rooms() -> void`
+- Produces: `WorldRuntime.refresh_loaded_rooms() -> bool`
 - Produces: `WorldRuntime.get_current_room_id() -> String`
 - Produces: `WorldRuntime.get_loaded_room_ids() -> Array[String]`
 - Produces: `WorldRuntime.get_room_runtime(room_id: String) -> Node`
+
+**Review Fix Constraints:**
+- `setup_world()` must reject non-`WorldData` resources without property access errors.
+- `set_current_room()` must not change `_current_room_id` unless the target room runtime loads successfully.
+- `refresh_loaded_rooms()` returns `true` only when the current room has a loaded runtime.
+- Tests must cover unloadable current-room rejection and child count after load/unload.
 
 - [ ] **Step 1: Write the failing world runtime test**
 

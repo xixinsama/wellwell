@@ -6,6 +6,7 @@ signal room_loaded(room_id: String, room_runtime: Node)
 signal room_unloaded(room_id: String)
 
 const ROOM_RUNTIME_SCRIPT: Script = preload("res://scripts/world/room_runtime.gd")
+const WORLD_DATA_SCRIPT: Script = preload("res://scripts/world/world_data.gd")
 
 @export var world_data: Resource
 
@@ -14,31 +15,43 @@ var _loaded_rooms: Dictionary[String, Node] = {}
 
 
 func setup_world(data: Resource) -> bool:
-	world_data = data
 	_current_room_id = ""
 	_unload_all_rooms()
-	if world_data == null or world_data.start_room_id.is_empty():
+	world_data = null
+	if not _is_world_data(data) or data.start_room_id.is_empty():
 		return false
+	world_data = data
 	return set_current_room(world_data.start_room_id)
 
 
 func set_current_room(room_id: String) -> bool:
-	if world_data == null or not world_data.has_room(room_id):
+	if not _is_world_data(world_data) or not world_data.has_room(room_id):
+		return false
+	if not _ensure_room_loaded(room_id):
 		return false
 
 	var changed := _current_room_id != room_id
 	_current_room_id = room_id
-	refresh_loaded_rooms()
+	if not refresh_loaded_rooms():
+		return false
 	if changed:
 		current_room_changed.emit(_current_room_id)
 	return true
 
 
-func refresh_loaded_rooms() -> void:
-	if world_data == null or _current_room_id.is_empty():
-		return
+func refresh_loaded_rooms() -> bool:
+	if not _is_world_data(world_data) or _current_room_id.is_empty():
+		return false
 
 	var target_ids := _get_target_room_ids()
+	if not _ensure_room_loaded(_current_room_id):
+		return false
+
+	for room_id: String in target_ids:
+		if _loaded_rooms.has(room_id):
+			continue
+		_load_room(room_id)
+
 	for room_id: String in _loaded_rooms.keys():
 		if not target_ids.has(room_id):
 			var room_runtime: Node = _loaded_rooms[room_id]
@@ -47,10 +60,7 @@ func refresh_loaded_rooms() -> void:
 				room_runtime.free()
 			room_unloaded.emit(room_id)
 
-	for room_id: String in target_ids:
-		if _loaded_rooms.has(room_id):
-			continue
-		_load_room(room_id)
+	return _loaded_rooms.has(_current_room_id)
 
 
 func get_current_room_id() -> String:
@@ -96,6 +106,12 @@ func _load_room(room_id: String) -> bool:
 	return true
 
 
+func _ensure_room_loaded(room_id: String) -> bool:
+	if _loaded_rooms.has(room_id):
+		return true
+	return _load_room(room_id)
+
+
 func _unload_all_rooms() -> void:
 	for room_id: String in _loaded_rooms.keys():
 		var room_runtime: Node = _loaded_rooms[room_id]
@@ -103,3 +119,7 @@ func _unload_all_rooms() -> void:
 			room_runtime.free()
 		room_unloaded.emit(room_id)
 	_loaded_rooms.clear()
+
+
+static func _is_world_data(resource: Resource) -> bool:
+	return resource != null and resource.get_script() == WORLD_DATA_SCRIPT
