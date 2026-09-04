@@ -1,6 +1,9 @@
 class_name WorldValidation
 extends RefCounted
 
+const ROOM_DATA_SCRIPT: Script = preload("res://scripts/world/room_data.gd")
+const ROOM_CONNECTION_DATA_SCRIPT: Script = preload("res://scripts/world/room_connection_data.gd")
+
 
 static func validate_world(world: Resource) -> Array[String]:
 	var errors: Array[String] = []
@@ -15,6 +18,9 @@ static func validate_world(world: Resource) -> Array[String]:
 	for room: Resource in world.rooms:
 		if room == null:
 			errors.append("world has null room")
+			continue
+		if not _is_room_data(room):
+			errors.append("world has non-RoomData room resource")
 			continue
 		if room.room_id.is_empty():
 			errors.append("room has empty room_id")
@@ -31,7 +37,7 @@ static func validate_world(world: Resource) -> Array[String]:
 		errors.append("start_room_id does not reference a room: %s" % world.start_room_id)
 
 	for room: Resource in world.rooms:
-		if room == null or room.room_id.is_empty():
+		if not _is_room_data(room) or room.room_id.is_empty():
 			continue
 		for adjacent_id: String in room.adjacent_room_ids:
 			if adjacent_id == room.room_id:
@@ -42,6 +48,9 @@ static func validate_world(world: Resource) -> Array[String]:
 	for connection: Resource in world.connections:
 		if connection == null:
 			errors.append("world has null connection")
+			continue
+		if not _is_room_connection_data(connection):
+			errors.append("world has non-RoomConnectionData connection resource")
 			continue
 		var connection_name := "%s->%s" % [connection.from_room_id, connection.to_room_id]
 		if connection.from_room_id.is_empty():
@@ -58,3 +67,11 @@ static func validate_world(world: Resource) -> Array[String]:
 			errors.append("connection %s has empty to_spawn_id" % connection_name)
 
 	return errors
+
+
+static func _is_room_data(resource: Resource) -> bool:
+	return resource != null and resource.get_script() == ROOM_DATA_SCRIPT
+
+
+static func _is_room_connection_data(resource: Resource) -> bool:
+	return resource != null and resource.get_script() == ROOM_CONNECTION_DATA_SCRIPT

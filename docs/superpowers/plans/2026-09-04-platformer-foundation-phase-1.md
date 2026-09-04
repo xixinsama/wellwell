@@ -318,6 +318,9 @@ enum Direction {
 class_name WorldData
 extends Resource
 
+const ROOM_DATA_SCRIPT: Script = preload("res://scripts/world/room_data.gd")
+const ROOM_CONNECTION_DATA_SCRIPT: Script = preload("res://scripts/world/room_connection_data.gd")
+
 @export var world_id := ""
 @export var start_room_id := ""
 @export var start_spawn_id := ""
@@ -328,7 +331,7 @@ extends Resource
 
 func get_room(room_id: String) -> Resource:
 	for room: Resource in rooms:
-		if room != null and room.room_id == room_id:
+		if _is_room_data(room) and room.room_id == room_id:
 			return room
 	return null
 
@@ -340,7 +343,7 @@ func has_room(room_id: String) -> bool:
 func get_room_ids() -> Array[String]:
 	var result: Array[String] = []
 	for room: Resource in rooms:
-		if room != null:
+		if _is_room_data(room):
 			result.append(room.room_id)
 	result.sort()
 	return result
@@ -354,7 +357,7 @@ func get_adjacent_room_ids(room_id: String) -> Array[String]:
 			if not adjacent_id.is_empty() and adjacent_id != room_id:
 				unique[adjacent_id] = true
 	for connection: Resource in connections:
-		if connection == null:
+		if not _is_room_connection_data(connection):
 			continue
 		if connection.from_room_id == room_id and not connection.to_room_id.is_empty():
 			unique[connection.to_room_id] = true
@@ -364,6 +367,14 @@ func get_adjacent_room_ids(room_id: String) -> Array[String]:
 	result.assign(unique.keys())
 	result.sort()
 	return result
+
+
+static func _is_room_data(resource: Resource) -> bool:
+	return resource != null and resource.get_script() == ROOM_DATA_SCRIPT
+
+
+static func _is_room_connection_data(resource: Resource) -> bool:
+	return resource != null and resource.get_script() == ROOM_CONNECTION_DATA_SCRIPT
 ```
 
 - [ ] **Step 4: Run test to verify it passes**
@@ -515,6 +526,9 @@ Expected: FAIL because `scripts/world/world_validation.gd` does not exist.
 class_name WorldValidation
 extends RefCounted
 
+const ROOM_DATA_SCRIPT: Script = preload("res://scripts/world/room_data.gd")
+const ROOM_CONNECTION_DATA_SCRIPT: Script = preload("res://scripts/world/room_connection_data.gd")
+
 
 static func validate_world(world: Resource) -> Array[String]:
 	var errors: Array[String] = []
@@ -529,6 +543,9 @@ static func validate_world(world: Resource) -> Array[String]:
 	for room: Resource in world.rooms:
 		if room == null:
 			errors.append("world has null room")
+			continue
+		if not _is_room_data(room):
+			errors.append("world has non-RoomData room resource")
 			continue
 		if room.room_id.is_empty():
 			errors.append("room has empty room_id")
@@ -545,7 +562,7 @@ static func validate_world(world: Resource) -> Array[String]:
 		errors.append("start_room_id does not reference a room: %s" % world.start_room_id)
 
 	for room: Resource in world.rooms:
-		if room == null or room.room_id.is_empty():
+		if not _is_room_data(room) or room.room_id.is_empty():
 			continue
 		for adjacent_id: String in room.adjacent_room_ids:
 			if adjacent_id == room.room_id:
@@ -556,6 +573,9 @@ static func validate_world(world: Resource) -> Array[String]:
 	for connection: Resource in world.connections:
 		if connection == null:
 			errors.append("world has null connection")
+			continue
+		if not _is_room_connection_data(connection):
+			errors.append("world has non-RoomConnectionData connection resource")
 			continue
 		var connection_name := "%s->%s" % [connection.from_room_id, connection.to_room_id]
 		if connection.from_room_id.is_empty():
@@ -572,6 +592,14 @@ static func validate_world(world: Resource) -> Array[String]:
 			errors.append("connection %s has empty to_spawn_id" % connection_name)
 
 	return errors
+
+
+static func _is_room_data(resource: Resource) -> bool:
+	return resource != null and resource.get_script() == ROOM_DATA_SCRIPT
+
+
+static func _is_room_connection_data(resource: Resource) -> bool:
+	return resource != null and resource.get_script() == ROOM_CONNECTION_DATA_SCRIPT
 ```
 
 - [ ] **Step 4: Run test to verify it passes**

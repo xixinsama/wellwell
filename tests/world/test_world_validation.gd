@@ -11,6 +11,7 @@ func run() -> Array[String]:
 	_assert_valid_world_has_no_errors(failures)
 	_assert_validation_reports_room_authoring_errors(failures)
 	_assert_validation_reports_bad_adjacency_and_connections(failures)
+	_assert_validation_reports_invalid_resource_entries(failures)
 	return failures
 
 
@@ -61,6 +62,21 @@ func _assert_validation_reports_bad_adjacency_and_connections(failures: Array[St
 	_assert_has_error(errors, "room room_a cannot list itself as adjacent", failures)
 	_assert_has_error(errors, "connection room_a->missing_room has empty from_entrance_id", failures)
 	_assert_has_error(errors, "connection room_a->missing_room references unknown to_room_id", failures)
+
+
+func _assert_validation_reports_invalid_resource_entries(failures: Array[String]) -> void:
+	var room_a: Resource = _make_room("room_a")
+	var world: Resource = _make_world([null, Resource.new(), room_a], [null, Resource.new()])
+	world.world_id = ""
+	world.start_room_id = "room_a"
+
+	var errors: Array[String] = WORLD_VALIDATION.validate_world(world)
+
+	_assert_has_error(errors, "world_id is empty", failures)
+	_assert_has_error(errors, "world has null room", failures)
+	_assert_has_error(errors, "world has non-RoomData room resource", failures)
+	_assert_has_error(errors, "world has null connection", failures)
+	_assert_has_error(errors, "world has non-RoomConnectionData connection resource", failures)
 
 
 func _make_world(rooms: Array, connections: Array) -> Resource:

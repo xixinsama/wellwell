@@ -12,6 +12,7 @@ func run() -> Array[String]:
 	_assert_contains_chunk_uses_room_rect(failures)
 	_assert_world_indexes_rooms_by_id(failures)
 	_assert_world_combines_room_and_connection_adjacency(failures)
+	_assert_world_ignores_invalid_resources(failures)
 	return failures
 
 
@@ -97,6 +98,19 @@ func _assert_world_combines_room_and_connection_adjacency(failures: Array[String
 
 	if world.get_adjacent_room_ids("room_a") != ["room_b", "room_c"]:
 		failures.append("world adjacency did not combine room ids and connections")
+
+
+func _assert_world_ignores_invalid_resources(failures: Array[String]) -> void:
+	var room_a: Resource = _make_room("room_a")
+	var wrong_resource := Resource.new()
+	var world: Resource = WORLD_DATA.new()
+	world.rooms.assign([wrong_resource, room_a])
+	world.connections.assign([wrong_resource])
+
+	if world.get_room_ids() != ["room_a"]:
+		failures.append("world did not ignore invalid room resources")
+	if world.get_adjacent_room_ids("room_a") != []:
+		failures.append("world did not ignore invalid connection resources")
 
 
 func _make_room(room_id: String) -> Resource:

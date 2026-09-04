@@ -1,6 +1,9 @@
 class_name WorldData
 extends Resource
 
+const ROOM_DATA_SCRIPT: Script = preload("res://scripts/world/room_data.gd")
+const ROOM_CONNECTION_DATA_SCRIPT: Script = preload("res://scripts/world/room_connection_data.gd")
+
 @export var world_id := ""
 @export var start_room_id := ""
 @export var start_spawn_id := ""
@@ -11,7 +14,7 @@ extends Resource
 
 func get_room(room_id: String) -> Resource:
 	for room: Resource in rooms:
-		if room != null and room.room_id == room_id:
+		if _is_room_data(room) and room.room_id == room_id:
 			return room
 	return null
 
@@ -23,7 +26,7 @@ func has_room(room_id: String) -> bool:
 func get_room_ids() -> Array[String]:
 	var result: Array[String] = []
 	for room: Resource in rooms:
-		if room != null:
+		if _is_room_data(room):
 			result.append(room.room_id)
 	result.sort()
 	return result
@@ -37,7 +40,7 @@ func get_adjacent_room_ids(room_id: String) -> Array[String]:
 			if not adjacent_id.is_empty() and adjacent_id != room_id:
 				unique[adjacent_id] = true
 	for connection: Resource in connections:
-		if connection == null:
+		if not _is_room_connection_data(connection):
 			continue
 		if connection.from_room_id == room_id and not connection.to_room_id.is_empty():
 			unique[connection.to_room_id] = true
@@ -47,3 +50,11 @@ func get_adjacent_room_ids(room_id: String) -> Array[String]:
 	result.assign(unique.keys())
 	result.sort()
 	return result
+
+
+static func _is_room_data(resource: Resource) -> bool:
+	return resource != null and resource.get_script() == ROOM_DATA_SCRIPT
+
+
+static func _is_room_connection_data(resource: Resource) -> bool:
+	return resource != null and resource.get_script() == ROOM_CONNECTION_DATA_SCRIPT
