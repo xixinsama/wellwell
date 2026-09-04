@@ -6,6 +6,7 @@
 [ext_resource type="Script" uid="uid://cfv5j6giqea6p" path="res://scripts/camera/pixel_camera_2d.gd" id="6_ir15t"]
 [ext_resource type="PackedScene" uid="uid://dpkyymy3fnwb4" path="res://scenes/tools/grid_overlay.tscn" id="8_rysoc"]
 [ext_resource type="Script" uid="uid://brtjvl38ja2db" path="res://scripts/tools/tuning_hotkeys.gd" id="10_264po"]
+[ext_resource type="Script" uid="uid://jvu53oscg1ib" path="res://scripts/world/fog_of_war.gd" id="11_gq3dk"]
 
 [node name="WorldRoot" type="Node2D" unique_id=1985860013]
 texture_filter = 1
@@ -50,6 +51,12 @@ script = ExtResource("6_ir15t")
 target_path = NodePath("../Player")
 
 [node name="GridOverlay" parent="." unique_id=778597302 instance=ExtResource("8_rysoc")]
+
+[node name="FogOfWar" type="Node2D" parent="."]
+z_index = 10
+script = ExtResource("11_gq3dk")
+player_path = NodePath("../Player")
+solid_tiles_path = NodePath("../Level/SolidTiles")
 
 [node name="TuningHotkeys" type="Node" parent="." unique_id=1460866442]
 script = ExtResource("10_264po")
