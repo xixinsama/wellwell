@@ -8,6 +8,7 @@ const TESTS: Array[Script] = [
 	preload("res://tests/world/test_world_data.gd"),
 	preload("res://tests/world/test_world_validation.gd"),
 	preload("res://tests/world/test_room_runtime.gd"),
+	preload("res://tests/world/test_world_runtime.gd"),
 ]
 
 
