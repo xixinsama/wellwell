@@ -140,7 +140,7 @@ const DEFAULT_CELL_SIZE := Vector2i(8, 8)
 @export_file("*.tscn") var scene_path := ""
 @export var room_origin_chunk := Vector2i.ZERO
 @export var room_size_chunks := Vector2i.ONE
-@export var adjacent_room_ids: Array[String] = []
+@export var adjacent_room_ids := PackedStringArray()
 @export var map_color := Color.WHITE
 
 
@@ -206,7 +206,7 @@ git commit -m "feat: add room data resource"
 - Consumes: `RoomData.room_id`
 - Produces: `RoomConnectionData.Direction` enum values `NONE`, `UP`, `DOWN`, `LEFT`, `RIGHT`
 - Produces: exported `RoomConnectionData.from_room_id`, `from_entrance_id`, `to_room_id`, `to_spawn_id`, `direction`
-- Produces: `WorldData.get_room(room_id: String) -> RoomData`
+- Produces: `WorldData.get_room(room_id: String) -> Resource`
 - Produces: `WorldData.has_room(room_id: String) -> bool`
 - Produces: `WorldData.get_room_ids() -> Array[String]`
 - Produces: `WorldData.get_adjacent_room_ids(room_id: String) -> Array[String]`
@@ -241,7 +241,7 @@ func _assert_world_indexes_rooms_by_id(failures: Array[String]) -> void:
 	var room_b: Resource = _make_room("room_b")
 	var world: Resource = WORLD_DATA.new()
 	world.world_id = "world_01"
-	world.rooms = [room_b, room_a]
+	world.rooms.assign([room_b, room_a])
 
 	if not world.has_room("room_a"):
 		failures.append("world did not find an existing room")
@@ -255,7 +255,7 @@ func _assert_world_indexes_rooms_by_id(failures: Array[String]) -> void:
 
 func _assert_world_combines_room_and_connection_adjacency(failures: Array[String]) -> void:
 	var room_a: Resource = _make_room("room_a")
-	room_a.adjacent_room_ids = ["room_b"]
+	room_a.adjacent_room_ids = PackedStringArray(["room_b"])
 	var room_b: Resource = _make_room("room_b")
 	var room_c: Resource = _make_room("room_c")
 	var connection: Resource = ROOM_CONNECTION_DATA.new()
@@ -271,8 +271,8 @@ func _assert_world_combines_room_and_connection_adjacency(failures: Array[String
 	reverse_connection.to_spawn_id = "spawn_right"
 	reverse_connection.direction = ROOM_CONNECTION_DATA.Direction.LEFT
 	var world: Resource = WORLD_DATA.new()
-	world.rooms = [room_a, room_b, room_c]
-	world.connections = [connection, reverse_connection]
+	world.rooms.assign([room_a, room_b, room_c])
+	world.connections.assign([connection, reverse_connection])
 
 	if world.get_adjacent_room_ids("room_a") != ["room_b", "room_c"]:
 		failures.append("world adjacency did not combine room ids and connections")
@@ -321,13 +321,13 @@ extends Resource
 @export var world_id := ""
 @export var start_room_id := ""
 @export var start_spawn_id := ""
-@export var rooms: Array[RoomData] = []
-@export var connections: Array[RoomConnectionData] = []
+@export var rooms: Array[Resource] = []
+@export var connections: Array[Resource] = []
 @export var tags: PackedStringArray = []
 
 
-func get_room(room_id: String) -> RoomData:
-	for room: RoomData in rooms:
+func get_room(room_id: String) -> Resource:
+	for room: Resource in rooms:
 		if room != null and room.room_id == room_id:
 			return room
 	return null
@@ -339,7 +339,7 @@ func has_room(room_id: String) -> bool:
 
 func get_room_ids() -> Array[String]:
 	var result: Array[String] = []
-	for room: RoomData in rooms:
+	for room: Resource in rooms:
 		if room != null:
 			result.append(room.room_id)
 	result.sort()
@@ -348,12 +348,12 @@ func get_room_ids() -> Array[String]:
 
 func get_adjacent_room_ids(room_id: String) -> Array[String]:
 	var unique: Dictionary[String, bool] = {}
-	var room := get_room(room_id)
+	var room: Resource = get_room(room_id)
 	if room != null:
 		for adjacent_id: String in room.adjacent_room_ids:
 			if not adjacent_id.is_empty() and adjacent_id != room_id:
 				unique[adjacent_id] = true
-	for connection: RoomConnectionData in connections:
+	for connection: Resource in connections:
 		if connection == null:
 			continue
 		if connection.from_room_id == room_id and not connection.to_room_id.is_empty():
@@ -412,7 +412,7 @@ func run() -> Array[String]:
 
 func _assert_valid_world_has_no_errors(failures: Array[String]) -> void:
 	var room_a: Resource = _make_room("room_a")
-	room_a.adjacent_room_ids = ["room_b"]
+	room_a.adjacent_room_ids = PackedStringArray(["room_b"])
 	var room_b: Resource = _make_room("room_b")
 	var connection: Resource = _make_connection("room_a", "exit_right", "room_b", "spawn_left")
 	var world: Resource = _make_world([room_a, room_b], [connection])
@@ -445,7 +445,7 @@ func _assert_validation_reports_room_authoring_errors(failures: Array[String]) -
 
 func _assert_validation_reports_bad_adjacency_and_connections(failures: Array[String]) -> void:
 	var room_a: Resource = _make_room("room_a")
-	room_a.adjacent_room_ids = ["room_b", "room_a"]
+	room_a.adjacent_room_ids = PackedStringArray(["room_b", "room_a"])
 	var world: Resource = _make_world([room_a], [
 		_make_connection("room_a", "", "missing_room", "spawn_left"),
 	])
@@ -526,7 +526,7 @@ static func validate_world(world: WorldData) -> Array[String]:
 		errors.append("world has no rooms")
 
 	var room_ids: Dictionary[String, bool] = {}
-	for room: RoomData in world.rooms:
+	for room: Resource in world.rooms:
 		if room == null:
 			errors.append("world has null room")
 			continue
@@ -544,7 +544,7 @@ static func validate_world(world: WorldData) -> Array[String]:
 	if not world.start_room_id.is_empty() and not room_ids.has(world.start_room_id):
 		errors.append("start_room_id does not reference a room: %s" % world.start_room_id)
 
-	for room: RoomData in world.rooms:
+	for room: Resource in world.rooms:
 		if room == null or room.room_id.is_empty():
 			continue
 		for adjacent_id: String in room.adjacent_room_ids:
@@ -553,7 +553,7 @@ static func validate_world(world: WorldData) -> Array[String]:
 			elif not room_ids.has(adjacent_id):
 				errors.append("room %s has unknown adjacent_room_id: %s" % [room.room_id, adjacent_id])
 
-	for connection: RoomConnectionData in world.connections:
+	for connection: Resource in world.connections:
 		if connection == null:
 			errors.append("world has null connection")
 			continue

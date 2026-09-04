@@ -9,7 +9,7 @@ const DEFAULT_CELL_SIZE := Vector2i(8, 8)
 @export_file("*.tscn") var scene_path := ""
 @export var room_origin_chunk := Vector2i.ZERO
 @export var room_size_chunks := Vector2i.ONE
-@export var adjacent_room_ids: Array[String] = []
+@export var adjacent_room_ids := PackedStringArray()
 @export var map_color := Color.WHITE
 
 
