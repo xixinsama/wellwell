@@ -388,7 +388,7 @@ git commit -m "feat: add world data resource"
 
 **Interfaces:**
 - Consumes: `WorldData`, `RoomData`, `RoomConnectionData`
-- Produces: `static WorldValidation.validate_world(world: WorldData) -> Array[String]`
+- Produces: `static WorldValidation.validate_world(world: Resource) -> Array[String]`
 
 - [ ] **Step 1: Write the failing validation test**
 
@@ -516,7 +516,7 @@ class_name WorldValidation
 extends RefCounted
 
 
-static func validate_world(world: WorldData) -> Array[String]:
+static func validate_world(world: Resource) -> Array[String]:
 	var errors: Array[String] = []
 	if world == null:
 		return ["world is null"]

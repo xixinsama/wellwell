@@ -6,6 +6,7 @@ const TESTS: Array[Script] = [
 	preload("res://tests/world/test_fog_visibility.gd"),
 	preload("res://tests/world/test_tilemap_scene_contract.gd"),
 	preload("res://tests/world/test_world_data.gd"),
+	preload("res://tests/world/test_world_validation.gd"),
 ]
 
 
