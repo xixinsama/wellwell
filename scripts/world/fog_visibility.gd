@@ -1,60 +1,57 @@
 class_name FogVisibility
 extends RefCounted
 
-
-func get_line_cells(from_cell: Vector2i, to_cell: Vector2i) -> Array[Vector2i]:
-	var cells: Array[Vector2i] = []
-	var x0 := from_cell.x
-	var y0 := from_cell.y
-	var x1 := to_cell.x
-	var y1 := to_cell.y
-	var dx := absi(x1 - x0)
-	var sx := 1 if x0 < x1 else -1
-	var dy := -absi(y1 - y0)
-	var sy := 1 if y0 < y1 else -1
-	var error := dx + dy
-
-	while true:
-		cells.append(Vector2i(x0, y0))
-		if x0 == x1 and y0 == y1:
-			break
-		var twice_error := 2 * error
-		if twice_error >= dy:
-			error += dy
-			x0 += sx
-		if twice_error <= dx:
-			error += dx
-			y0 += sy
-
-	return cells
+const CARDINAL_DIRECTIONS: Array[Vector2i] = [
+	Vector2i.RIGHT,
+	Vector2i.LEFT,
+	Vector2i.DOWN,
+	Vector2i.UP,
+]
 
 
-func has_line_of_sight(
-	from_cell: Vector2i,
-	to_cell: Vector2i,
-	blockers: Dictionary[Vector2i, bool]
-) -> bool:
-	var cells := get_line_cells(from_cell, to_cell)
-	for cell: Vector2i in cells:
-		if cell == from_cell or cell == to_cell:
-			continue
-		if blockers.has(cell):
-			return false
-	return true
-
-
-func compute_visible_cells(
+func compute_room_visible_cells(
 	origin: Vector2i,
-	radius: int,
-	blockers: Dictionary[Vector2i, bool]
+	room_origin_cell: Vector2i,
+	room_size_cells: Vector2i,
+	blockers: Dictionary
 ) -> Dictionary[Vector2i, bool]:
 	var result: Dictionary[Vector2i, bool] = {}
-	var radius_squared := radius * radius
-	for y: int in range(origin.y - radius, origin.y + radius + 1):
-		for x: int in range(origin.x - radius, origin.x + radius + 1):
-			var cell := Vector2i(x, y)
-			if origin.distance_squared_to(cell) > radius_squared:
+	if not _is_inside_room(origin, room_origin_cell, room_size_cells):
+		return result
+
+	var queue: Array[Vector2i] = [origin]
+	result[origin] = true
+	var read_index := 0
+
+	while read_index < queue.size():
+		var current := queue[read_index]
+		read_index += 1
+
+		if blockers.has(current):
+			continue
+
+		for direction: Vector2i in CARDINAL_DIRECTIONS:
+			var next_cell := current + direction
+			if result.has(next_cell):
 				continue
-			if has_line_of_sight(origin, cell, blockers):
-				result[cell] = true
+			if not _is_inside_room(next_cell, room_origin_cell, room_size_cells):
+				continue
+
+			result[next_cell] = true
+			if not blockers.has(next_cell):
+				queue.append(next_cell)
+
 	return result
+
+
+func _is_inside_room(
+	cell: Vector2i,
+	room_origin_cell: Vector2i,
+	room_size_cells: Vector2i
+) -> bool:
+	return (
+		cell.x >= room_origin_cell.x
+		and cell.y >= room_origin_cell.y
+		and cell.x < room_origin_cell.x + room_size_cells.x
+		and cell.y < room_origin_cell.y + room_size_cells.y
+	)

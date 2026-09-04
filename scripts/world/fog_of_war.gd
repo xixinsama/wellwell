@@ -8,17 +8,17 @@ const FOG_VISIBILITY: Script = preload("res://scripts/world/fog_visibility.gd")
 @export var map_origin_cell := Vector2i(-24, -12)
 @export var map_size_cells := Vector2i(80, 32)
 @export var cell_size := Vector2i(8, 8)
-@export var reveal_radius_cells := 12
+@export var chunk_size_pixels := Vector2i(320, 180)
 @export var level_id := "level_01"
 @export var fog_color := Color.BLACK
-@export var update_interval := 0.08
 
 var currently_visible: Dictionary[Vector2i, bool] = {}
 
 var _explored_cells: Dictionary[Vector2i, bool] = {}
+var _mask_image: Image
+var _mask_texture: ImageTexture
 var _player: Node2D
 var _solid_tiles: TileMapLayer
-var _elapsed := 0.0
 var _warned_missing_player := false
 var _warned_missing_solid_tiles := false
 
@@ -30,11 +30,7 @@ func _ready() -> void:
 	reveal_from_player()
 
 
-func _physics_process(delta: float) -> void:
-	_elapsed += delta
-	if _elapsed < update_interval:
-		return
-	_elapsed = 0.0
+func _process(_delta: float) -> void:
 	reveal_from_player()
 
 
@@ -61,6 +57,29 @@ func is_cell_explored(cell: Vector2i) -> bool:
 	return _explored_cells.has(cell)
 
 
+func get_mask_image() -> Image:
+	return _mask_image
+
+
+func get_mask_texture() -> ImageTexture:
+	return _mask_texture
+
+
+func set_room_chunks(room_origin_chunk: Vector2i, room_size_chunks: Vector2i) -> void:
+	var cells_per_chunk := _cells_per_chunk()
+	map_origin_cell = Vector2i(
+		room_origin_chunk.x * cells_per_chunk.x,
+		room_origin_chunk.y * cells_per_chunk.y
+	)
+	map_size_cells = Vector2i(
+		room_size_chunks.x * cells_per_chunk.x,
+		room_size_chunks.y * cells_per_chunk.y
+	)
+	_mask_image = null
+	_mask_texture = null
+	queue_redraw()
+
+
 func reveal_from_player() -> void:
 	if not _is_fog_enabled():
 		visible = false
@@ -75,14 +94,19 @@ func reveal_from_player() -> void:
 		return
 
 	var origin := world_to_cell(_player.global_position)
+	reveal_from_cell(origin, _collect_blockers())
+
+
+func reveal_from_cell(origin: Vector2i, blockers: Dictionary) -> void:
 	var visibility: RefCounted = FOG_VISIBILITY.new()
-	currently_visible = visibility.compute_visible_cells(
+	currently_visible = visibility.compute_room_visible_cells(
 		origin,
-		reveal_radius_cells,
-		_collect_blockers()
+		map_origin_cell,
+		map_size_cells,
+		blockers
 	)
 
-	var save_manager := get_node_or_null("/root/SaveManager")
+	var save_manager := _get_root_node("SaveManager")
 	for cell: Vector2i in currently_visible.keys():
 		if not _is_inside_map(cell):
 			continue
@@ -91,6 +115,7 @@ func reveal_from_player() -> void:
 		if is_new and save_manager != null and save_manager.has_method("mark_cell_explored"):
 			save_manager.call("mark_cell_explored", cell_to_id(cell))
 
+	_update_mask_image()
 	queue_redraw()
 
 
@@ -100,13 +125,13 @@ func _draw() -> void:
 	for y: int in range(map_origin_cell.y, map_origin_cell.y + map_size_cells.y):
 		for x: int in range(map_origin_cell.x, map_origin_cell.x + map_size_cells.x):
 			var cell := Vector2i(x, y)
-			if _explored_cells.has(cell):
+			if currently_visible.has(cell):
 				continue
 			draw_rect(_cell_rect(cell), fog_color, true)
 
 
 func _load_saved_progress() -> void:
-	var save_manager := get_node_or_null("/root/SaveManager")
+	var save_manager := _get_root_node("SaveManager")
 	if save_manager == null or not save_manager.has_method("start_or_continue"):
 		return
 	save_manager.call("start_or_continue", 1)
@@ -147,6 +172,40 @@ func _cell_rect(cell: Vector2i) -> Rect2:
 	)
 
 
+func _update_mask_image() -> void:
+	var mask_size := Vector2i(
+		map_size_cells.x * cell_size.x,
+		map_size_cells.y * cell_size.y
+	)
+	if mask_size.x <= 0 or mask_size.y <= 0:
+		return
+	if _mask_image == null or _mask_image.get_size() != mask_size:
+		_mask_image = Image.create_empty(mask_size.x, mask_size.y, false, Image.FORMAT_RGBA8)
+		_mask_texture = null
+
+	_mask_image.fill(fog_color)
+	for cell: Vector2i in currently_visible.keys():
+		if not _is_inside_map(cell):
+			continue
+		var local_origin := Vector2i(
+			(cell.x - map_origin_cell.x) * cell_size.x,
+			(cell.y - map_origin_cell.y) * cell_size.y
+		)
+		_mask_image.fill_rect(Rect2i(local_origin, cell_size), Color.TRANSPARENT)
+
+	if _mask_texture == null:
+		_mask_texture = ImageTexture.create_from_image(_mask_image)
+	else:
+		_mask_texture.update(_mask_image)
+
+
+func _cells_per_chunk() -> Vector2i:
+	return Vector2i(
+		ceili(float(chunk_size_pixels.x) / float(cell_size.x)),
+		ceili(float(chunk_size_pixels.y) / float(cell_size.y))
+	)
+
+
 func _is_inside_map(cell: Vector2i) -> bool:
 	return (
 		cell.x >= map_origin_cell.x
@@ -157,10 +216,16 @@ func _is_inside_map(cell: Vector2i) -> bool:
 
 
 func _is_fog_enabled() -> bool:
-	var settings := get_node_or_null("/root/GlobalSettings")
+	var settings := _get_root_node("GlobalSettings")
 	if settings == null or not settings.has_method("is_fog_enabled"):
 		return true
 	return bool(settings.call("is_fog_enabled"))
+
+
+func _get_root_node(node_name: String) -> Node:
+	if not is_inside_tree():
+		return null
+	return get_tree().root.get_node_or_null(node_name)
 
 
 func _warn_once_missing_player() -> void:
