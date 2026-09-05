@@ -1,0 +1,42 @@
+keys,en,zh_CN
+MENU_TITLE,WELLWELL,WELLWELL
+MENU_SUBTITLE,Platformer Toolkit,平台跳跃工具集
+MENU_START,Start Game,开始游戏
+MENU_SETTINGS,Settings,设置
+MENU_QUIT,Quit Game,退出游戏
+MENU_VERSION,Version {version},版本 {version}
+SLOTS_TITLE,Select Save Slot,选择存档栏位
+SLOT_NUMBER,Slot {slot},栏位 {slot}
+SLOT_EMPTY,Empty Slot,空栏位
+SLOT_CONTINUE,Continue,继续游戏
+SLOT_NEW_GAME,New Game,新游戏
+SLOT_COPY,Copy,复制
+SLOT_DELETE,Delete,删除
+SLOT_ROOM,Room: {room},房间：{room}
+SLOT_SAVED,Saved: {time},保存于：{time}
+SLOT_COPY_TITLE,Copy Save,复制存档
+SLOT_COPY_MESSAGE,Choose a destination slot. Existing data will be replaced.,请选择目标栏位，已有数据将被覆盖。
+SLOT_COPY_TO,Copy to Slot {slot},复制到栏位 {slot}
+SLOT_DELETE_TITLE,Delete Save,删除存档
+SLOT_DELETE_MESSAGE,Delete Slot {slot}? This cannot be undone.,确定删除栏位 {slot}？此操作无法撤销。
+SLOT_COPY_FAILED,Could not copy this save.,无法复制该存档。
+SLOT_DELETE_FAILED,Could not delete this save.,无法删除该存档。
+SETTINGS_TITLE,Settings,设置
+SETTINGS_LANGUAGE,Language,语言
+SETTINGS_LANGUAGE_ENGLISH,English,English
+SETTINGS_LANGUAGE_CHINESE,Chinese,中文
+SETTINGS_DISPLAY_MODE,Display Mode,显示模式
+SETTINGS_WINDOWED,Windowed,窗口
+SETTINGS_FULLSCREEN,Fullscreen,全屏
+SETTINGS_MASTER_VOLUME,Master Volume,主音量
+SETTINGS_MUSIC_VOLUME,Music Volume,音乐音量
+SETTINGS_SFX_VOLUME,Sound Volume,音效音量
+SETTINGS_FOG,Fog of War,战争迷雾
+SETTINGS_CAMERA_SHAKE,Camera Shake,镜头抖动
+SETTINGS_ONE_WAY_DROP,Drop Through Platforms,下穿单向平台
+SETTINGS_RESET,Restore Defaults,恢复默认
+COMMON_BACK,Back,返回
+COMMON_CONFIRM,Confirm,确认
+COMMON_CANCEL,Cancel,取消
+COMMON_ON,On,开
+COMMON_OFF,Off,关

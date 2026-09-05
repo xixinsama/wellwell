@@ -19,7 +19,6 @@ func _ready() -> void:
 	_commit_timer.one_shot = true
 	_commit_timer.timeout.connect(_on_commit_timer_timeout)
 	add_child(_commit_timer)
-	start_or_continue(1)
 
 
 func setup_storage(storage: RefCounted) -> void:
@@ -65,7 +64,12 @@ func copy_slot(source_slot: int, target_slot: int) -> bool:
 
 
 func delete_slot(slot: int) -> bool:
-	return _storage.delete_slot(slot)
+	var deleted: bool = _storage.delete_slot(slot)
+	if deleted and selected_slot == slot:
+		selected_slot = 0
+		current_snapshot = null
+		last_committed_snapshot = null
+	return deleted
 
 
 func quick_save() -> bool:
@@ -96,8 +100,6 @@ func commit(snapshot: RefCounted = null) -> bool:
 
 func mark_cell_explored(cell_id: String) -> bool:
 	if current_snapshot == null:
-		start_or_continue(1)
-	if current_snapshot == null:
 		return false
 	var changed: bool = current_snapshot.add_explored_cell(cell_id)
 	if changed:
@@ -106,22 +108,16 @@ func mark_cell_explored(cell_id: String) -> bool:
 
 
 func has_explored_cell(cell_id: String) -> bool:
-	if current_snapshot == null:
-		start_or_continue(1)
 	return current_snapshot != null and current_snapshot.has_explored_cell(cell_id)
 
 
 func get_explored_cells() -> Array[String]:
-	if current_snapshot == null:
-		start_or_continue(1)
 	if current_snapshot == null:
 		return []
 	return current_snapshot.get_explored_cells()
 
 
 func mark_chunk_explored(chunk_id: String) -> bool:
-	if current_snapshot == null:
-		start_or_continue(1)
 	if current_snapshot == null:
 		return false
 	var changed: bool = current_snapshot.add_explored_chunk(chunk_id)
@@ -131,14 +127,10 @@ func mark_chunk_explored(chunk_id: String) -> bool:
 
 
 func is_chunk_explored(chunk_id: String) -> bool:
-	if current_snapshot == null:
-		start_or_continue(1)
 	return current_snapshot != null and current_snapshot.has_explored_chunk(chunk_id)
 
 
 func set_entity_state(entity_key: String, state: Dictionary) -> void:
-	if current_snapshot == null:
-		start_or_continue(1)
 	if current_snapshot == null:
 		return
 	current_snapshot.set_entity_state(entity_key, state)
@@ -146,14 +138,10 @@ func set_entity_state(entity_key: String, state: Dictionary) -> void:
 
 
 func get_entity_state(entity_key: String) -> Dictionary:
-	if current_snapshot == null:
-		start_or_continue(1)
 	return {} if current_snapshot == null else current_snapshot.get_entity_state(entity_key)
 
 
 func set_respawn(room_id: String, spawn_id: String, position: Vector2 = Vector2.ZERO) -> void:
-	if current_snapshot == null:
-		start_or_continue(1)
 	if current_snapshot == null:
 		return
 	current_snapshot.respawn_room_id = room_id

@@ -1,8 +1,7 @@
-[gd_scene format=3]
+[gd_scene format=3 uid="uid://cwtcsptre3a05"]
 
-[node name="RoomRoot" type="Node2D"]
+[node name="RoomRoot" type="Node2D" unique_id=1180783762]
 
-[node name="Level" type="Node2D" parent="."]
+[node name="Level" type="Node2D" parent="." unique_id=341826256]
 
-[node name="Entities" type="Node2D" parent="."]
-
+[node name="Entities" type="Node2D" parent="." unique_id=404599001]

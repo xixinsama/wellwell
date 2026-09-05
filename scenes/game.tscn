@@ -33,7 +33,6 @@ tile_set = ExtResource("1_kvpfn")
 tile_set = ExtResource("1_kvpfn")
 collision_enabled = false
 
-
 [node name="SpawnPoint" type="Marker2D" parent="Level" unique_id=1784491336]
 position = Vector2(-96, 40)
 script = ExtResource("1_vtaks")

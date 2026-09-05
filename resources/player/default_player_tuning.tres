@@ -1,19 +1,6 @@
-[gd_resource type="Resource" script_class="PlayerTuning" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="PlayerTuning" format=3 uid="uid://bo4x5hdpx5xu4"]
 
-[ext_resource type="Script" path="res://scripts/player/player_tuning.gd" id="1_tuning"]
+[ext_resource type="Script" uid="uid://d0sa3mttr0h2u" path="res://scripts/player/player_tuning.gd" id="1_tuning"]
 
 [resource]
 script = ExtResource("1_tuning")
-max_speed = 100.0
-ground_accel = 850.0
-ground_decel = 1100.0
-air_accel = 600.0
-air_decel = 500.0
-jump_speed = -220.0
-gravity = 760.0
-fall_gravity_multiplier = 1.15
-jump_cut_gravity_multiplier = 1.75
-fast_fall_multiplier = 1.45
-max_fall_speed = 300.0
-jump_buffer_time = 0.075
-coyote_time = 0.085

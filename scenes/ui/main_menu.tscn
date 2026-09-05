@@ -2,28 +2,74 @@
 
 [ext_resource type="Script" uid="uid://dqmtoic5euy6x" path="res://scripts/ui/main_menu.gd" id="1"]
 [ext_resource type="PackedScene" uid="uid://bjkhq4tv4edmo" path="res://scenes/ui/save_slots.tscn" id="2"]
+[ext_resource type="Theme" uid="uid://dl2h74k2356hx" path="res://resources/ui/menu_theme.tres" id="3"]
 
 [node name="MainMenu" type="Control" unique_id=1507952010]
+process_mode = 3
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-mouse_filter = 1
+theme = ExtResource("3")
 script = ExtResource("1")
 
+[node name="Background" type="ColorRect" parent="." unique_id=659867258]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.025, 0.03, 0.038, 1)
+
+[node name="AccentTop" type="ColorRect" parent="." unique_id=368073302]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 4.0
+grow_horizontal = 2
+mouse_filter = 2
+color = Color(0.35, 0.78, 0.82, 1)
+
+[node name="TitleGroup" type="VBoxContainer" parent="." unique_id=2113697731]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 72.0
+offset_bottom = 144.0
+grow_horizontal = 2
+theme_override_constants/separation = 2
+
+[node name="Title" type="Label" parent="TitleGroup" unique_id=689814702]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.92, 0.98, 0.98, 1)
+theme_override_font_sizes/font_size = 42
+text = "MENU_TITLE"
+horizontal_alignment = 1
+
+[node name="Subtitle" type="Label" parent="TitleGroup" unique_id=228582290]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.42, 0.8, 0.82, 1)
+theme_override_font_sizes/font_size = 16
+text = "MENU_SUBTITLE"
+horizontal_alignment = 1
+
 [node name="Panel" type="PanelContainer" parent="." unique_id=1602440028]
+unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -64.0
-offset_top = -50.5
-offset_right = 64.0
-offset_bottom = 50.5
+offset_left = -114.0
+offset_top = -110.0
+offset_right = 114.0
+offset_bottom = 110.0
 grow_horizontal = 2
 grow_vertical = 2
 
@@ -35,31 +81,36 @@ theme_override_constants/separation = 16
 unique_name_in_owner = true
 custom_minimum_size = Vector2(180, 48)
 layout_mode = 2
-text = "Start Game"
+text = "MENU_START"
 
 [node name="SettingsButton" type="Button" parent="Panel/Buttons" unique_id=1982476973]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(180, 48)
 layout_mode = 2
-text = "Settings"
+text = "MENU_SETTINGS"
 
 [node name="QuitButton" type="Button" parent="Panel/Buttons" unique_id=303931171]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(180, 48)
 layout_mode = 2
-text = "Quit"
+text = "MENU_QUIT"
 
 [node name="SaveSlots" parent="." unique_id=652458922 instance=ExtResource("2")]
 unique_name_in_owner = true
 visible = false
 layout_mode = 1
 
-[node name="Label" type="Label" parent="." unique_id=2113697731]
+[node name="VersionLabel" type="Label" parent="." unique_id=210593307]
+unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 2
 anchor_top = 1.0
 anchor_bottom = 1.0
-offset_top = -23.0
-offset_right = 52.0
+offset_left = 18.0
+offset_top = -38.0
+offset_right = 180.0
+offset_bottom = -14.0
 grow_vertical = 0
-text = "v0.1.0"
+theme_override_colors/font_color = Color(0.46, 0.52, 0.56, 1)
+theme_override_font_sizes/font_size = 14
+text = "MENU_VERSION"

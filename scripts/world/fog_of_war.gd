@@ -141,9 +141,8 @@ func _draw() -> void:
 
 func _load_saved_progress() -> void:
 	var save_manager := _get_root_node("SaveManager")
-	if save_manager == null or not save_manager.has_method("start_or_continue"):
+	if save_manager == null:
 		return
-	save_manager.call("start_or_continue", 1)
 	if save_manager.has_method("get_explored_cells"):
 		var ids: Array[String] = []
 		ids.assign(save_manager.call("get_explored_cells"))

@@ -15,6 +15,7 @@ const TESTS: Array[Script] = [
 	preload("res://tests/world/test_room_transition.gd"),
 	preload("res://tests/tools/test_project_validation.gd"),
 	preload("res://tests/ui/test_menu_contract.gd"),
+	preload("res://tests/ui/test_menu_features.gd"),
 ]
 
 
