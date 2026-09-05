@@ -10,6 +10,9 @@ var room_id := ""
 
 func setup_entity(context: Dictionary) -> void:
 	room_id = String(context.get("room_id", room_id))
+	var world_id := String(context.get("world_id", ""))
+	if not world_id.is_empty():
+		set_meta("world_id", world_id)
 
 func get_save_key() -> String:
 	if room_id.is_empty() or entity_id.is_empty():
@@ -26,4 +29,3 @@ func get_map_marker() -> Dictionary:
 	if not map_visible:
 		return {}
 	return {"entity_id": entity_id, "entity_type": entity_type, "position": global_position}
-

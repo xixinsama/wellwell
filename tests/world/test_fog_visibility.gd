@@ -2,6 +2,38 @@ extends Node
 
 const FOG_VISIBILITY: Script = preload("res://scripts/world/fog_visibility.gd")
 const FOG_OF_WAR: Script = preload("res://scripts/world/fog_of_war.gd")
+const ROOM_AUTHORING_ROOT: Script = preload("res://scripts/authoring/room_authoring_root.gd")
+
+
+class PersistenceSource extends Node:
+	var explored_cells: Array[String] = []
+	var explored_chunks: Array[String] = []
+	var read_count := 0
+
+	func mark_cell_explored(cell_id: String) -> bool:
+		if explored_cells.has(cell_id):
+			return false
+		explored_cells.append(cell_id)
+		return true
+
+	func mark_chunk_explored(chunk_id: String) -> bool:
+		if explored_chunks.has(chunk_id):
+			return false
+		explored_chunks.append(chunk_id)
+		return true
+
+	func get_explored_cells() -> Array[String]:
+		read_count += 1
+		return explored_cells.duplicate()
+
+
+class FogWithFallback extends "res://scripts/world/fog_of_war.gd":
+	var fallback_source: Node
+
+	func _get_root_node(node_name: String) -> Node:
+		if node_name == "SaveManager":
+			return fallback_source
+		return null
 
 
 func run() -> Array[String]:
@@ -12,6 +44,8 @@ func run() -> Array[String]:
 	_assert_room_chunks_configure_cell_bounds(failures)
 	_assert_mask_image_matches_current_visibility(failures)
 	_assert_cell_ids_are_stable(failures)
+	_assert_bound_persistence_source_overrides_fallback(failures)
+	_assert_authoring_ancestor_disables_unbound_fallback_reads(failures)
 	return failures
 
 
@@ -101,3 +135,51 @@ func _assert_cell_ids_are_stable(failures: Array[String]) -> void:
 	if fog.is_cell_explored(Vector2i(1, 1)):
 		failures.append("foreign level cell id was loaded")
 	fog.free()
+
+
+func _assert_bound_persistence_source_overrides_fallback(failures: Array[String]) -> void:
+	var fog := FogWithFallback.new()
+	fog.level_id = "preview"
+	fog.map_origin_cell = Vector2i.ZERO
+	fog.map_size_cells = Vector2i(2, 1)
+	var fallback := PersistenceSource.new()
+	var explicit := PersistenceSource.new()
+	fog.fallback_source = fallback
+	fog.bind_persistence_source(explicit)
+	explicit.explored_cells.append("preview:0,0")
+	fog.call("_load_saved_progress")
+	if explicit.read_count != 1 or fallback.read_count != 0:
+		failures.append("bound fog persistence source did not override fallback reads")
+	fog.reveal_from_cell(Vector2i.ZERO, {})
+	if explicit.explored_cells.is_empty() or not fallback.explored_cells.is_empty():
+		failures.append("bound fog persistence source did not override SaveManager fallback")
+
+	fog.bind_persistence_source(null)
+	fog.reveal_from_cell(Vector2i.ZERO, {})
+	if not fallback.explored_cells.is_empty():
+		failures.append("explicit null fog persistence source did not disable persistence")
+
+	fog.clear_persistence_source()
+	fog.level_id = "runtime"
+	fog.reveal_from_cell(Vector2i.ZERO, {})
+	if fallback.explored_chunks.is_empty():
+		failures.append("clearing fog persistence source did not restore SaveManager fallback")
+	fog.free()
+	explicit.free()
+	fallback.free()
+
+
+func _assert_authoring_ancestor_disables_unbound_fallback_reads(failures: Array[String]) -> void:
+	var root: Node2D = ROOM_AUTHORING_ROOT.new() as Node2D
+	var preview := Node2D.new()
+	preview.name = "PreviewOnly"
+	root.add_child(preview)
+	var fog := FogWithFallback.new()
+	preview.add_child(fog)
+	var fallback := PersistenceSource.new()
+	fog.fallback_source = fallback
+	fog.call("_load_saved_progress")
+	if fallback.read_count != 0:
+		failures.append("authoring preview fog read from the global SaveManager fallback")
+	root.free()
+	fallback.free()

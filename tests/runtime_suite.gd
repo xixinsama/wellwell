@@ -1,6 +1,10 @@
 extends Node
 
 const TESTS: Array[Script] = [
+	preload("res://tests/authoring/test_room_authoring_contract.gd"),
+	preload("res://tests/authoring/test_room_bake_model.gd"),
+	preload("res://tests/authoring/test_room_baker.gd"),
+	preload("res://tests/authoring/test_room_preview_controller.gd"),
 	preload("res://tests/save/test_save_codec.gd"),
 	preload("res://tests/save/test_save_storage.gd"),
 	preload("res://tests/save/test_save_slots.gd"),

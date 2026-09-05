@@ -1,8 +1,9 @@
 class_name RoomEntrance
 extends "res://scripts/world/world_entity.gd"
 
-@export var target_room_id := ""
-@export var target_spawn_id := ""
+# Serialized for one migration phase. WorldData connections are authoritative.
+@export_storage var target_room_id := ""
+@export_storage var target_spawn_id := ""
 
 signal transition_requested(entrance: RoomEntrance)
 

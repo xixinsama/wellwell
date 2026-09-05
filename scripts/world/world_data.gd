@@ -52,6 +52,32 @@ func get_adjacent_room_ids(room_id: String) -> Array[String]:
 	return result
 
 
+func get_chunk_at_world_position(
+	world_position: Vector2,
+	chunk_size_pixels: Vector2i = Vector2i(320, 180)
+) -> Vector2i:
+	return Vector2i(
+		floori(world_position.x / float(chunk_size_pixels.x)),
+		floori(world_position.y / float(chunk_size_pixels.y))
+	)
+
+
+func get_room_id_at_world_position(
+	world_position: Vector2,
+	preferred_room_id: String = "",
+	chunk_size_pixels: Vector2i = Vector2i(320, 180)
+) -> String:
+	var chunk := get_chunk_at_world_position(world_position, chunk_size_pixels)
+	var preferred: Resource = get_room(preferred_room_id)
+	if preferred != null and preferred.contains_chunk(chunk):
+		return preferred_room_id
+	for room_id: String in get_room_ids():
+		var room: Resource = get_room(room_id)
+		if room != null and room.contains_chunk(chunk):
+			return room_id
+	return ""
+
+
 static func _is_room_data(resource: Resource) -> bool:
 	return resource != null and resource.get_script() == ROOM_DATA_SCRIPT
 

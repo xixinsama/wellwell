@@ -23,6 +23,8 @@ var _player: Node2D
 var _solid_tiles: TileMapLayer
 var _vision_block_tiles: TileMapLayer
 var _glass_tiles: TileMapLayer
+var _persistence_source: Object
+var _persistence_source_is_bound := false
 var _warned_missing_player := false
 var _warned_missing_solid_tiles := false
 
@@ -71,6 +73,16 @@ func get_mask_texture() -> ImageTexture:
 	return _mask_texture
 
 
+func bind_persistence_source(source: Object) -> void:
+	_persistence_source = source
+	_persistence_source_is_bound = true
+
+
+func clear_persistence_source() -> void:
+	_persistence_source = null
+	_persistence_source_is_bound = false
+
+
 func set_room_chunks(room_origin_chunk: Vector2i, room_size_chunks: Vector2i) -> void:
 	var cells_per_chunk := _cells_per_chunk()
 	map_origin_cell = Vector2i(
@@ -112,7 +124,7 @@ func reveal_from_cell(origin: Vector2i, blockers: Dictionary) -> void:
 		blockers
 	)
 
-	var save_manager := _get_root_node("SaveManager")
+	var save_manager := _get_persistence_source()
 	if save_manager != null and save_manager.has_method("mark_chunk_explored"):
 		var chunk := Vector2i(floori(float(origin.x) / _cells_per_chunk().x), floori(float(origin.y) / _cells_per_chunk().y))
 		save_manager.call("mark_chunk_explored", "%s:chunk:%d,%d" % [level_id, chunk.x, chunk.y])
@@ -140,7 +152,7 @@ func _draw() -> void:
 
 
 func _load_saved_progress() -> void:
-	var save_manager := _get_root_node("SaveManager")
+	var save_manager := _get_persistence_source()
 	if save_manager == null:
 		return
 	if save_manager.has_method("get_explored_cells"):
@@ -244,6 +256,23 @@ func _get_root_node(node_name: String) -> Node:
 	if not is_inside_tree():
 		return null
 	return get_tree().root.get_node_or_null(node_name)
+
+
+func _get_persistence_source() -> Object:
+	if _persistence_source_is_bound:
+		return _persistence_source
+	if _has_isolated_preview_ancestor():
+		return null
+	return _get_root_node("SaveManager")
+
+
+func _has_isolated_preview_ancestor() -> bool:
+	var ancestor := get_parent()
+	while ancestor != null:
+		if ancestor.has_method("isolates_preview_persistence"):
+			return bool(ancestor.call("isolates_preview_persistence"))
+		ancestor = ancestor.get_parent()
+	return false
 
 
 func _warn_once_missing_player() -> void:
