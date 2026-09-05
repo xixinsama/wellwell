@@ -4,9 +4,11 @@ extends Node2D
 signal current_room_changed(room_id: String)
 signal room_loaded(room_id: String, room_runtime: Node)
 signal room_unloaded(room_id: String)
+signal transition_completed(from_room_id: String, to_room_id: String, spawn_id: String)
 
 const ROOM_RUNTIME_SCRIPT: Script = preload("res://scripts/world/room_runtime.gd")
 const WORLD_DATA_SCRIPT: Script = preload("res://scripts/world/world_data.gd")
+const ROOM_TRANSITION: Script = preload("res://scripts/world/room_transition.gd")
 
 @export var world_data: Resource
 
@@ -76,6 +78,14 @@ func get_loaded_room_ids() -> Array[String]:
 
 func get_room_runtime(room_id: String) -> Node:
 	return _loaded_rooms.get(room_id, null)
+
+
+func request_transition(entrance: Node) -> bool:
+	var transition: Dictionary = ROOM_TRANSITION.resolve(world_data, _current_room_id, entrance)
+	if transition.is_empty() or not set_current_room(transition.to_room_id):
+		return false
+	transition_completed.emit(transition.from_room_id, transition.to_room_id, transition.to_spawn_id)
+	return true
 
 
 func _get_target_room_ids() -> Array[String]:

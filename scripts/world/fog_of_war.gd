@@ -5,6 +5,8 @@ const FOG_VISIBILITY: Script = preload("res://scripts/world/fog_visibility.gd")
 
 @export var player_path: NodePath
 @export var solid_tiles_path: NodePath
+@export var vision_block_tiles_path: NodePath
+@export var glass_tiles_path: NodePath
 @export var map_origin_cell := Vector2i(-24, -12)
 @export var map_size_cells := Vector2i(80, 32)
 @export var cell_size := Vector2i(8, 8)
@@ -19,6 +21,8 @@ var _mask_image: Image
 var _mask_texture: ImageTexture
 var _player: Node2D
 var _solid_tiles: TileMapLayer
+var _vision_block_tiles: TileMapLayer
+var _glass_tiles: TileMapLayer
 var _warned_missing_player := false
 var _warned_missing_solid_tiles := false
 
@@ -26,6 +30,8 @@ var _warned_missing_solid_tiles := false
 func _ready() -> void:
 	_player = get_node_or_null(player_path) as Node2D
 	_solid_tiles = get_node_or_null(solid_tiles_path) as TileMapLayer
+	_vision_block_tiles = get_node_or_null(vision_block_tiles_path) as TileMapLayer
+	_glass_tiles = get_node_or_null(glass_tiles_path) as TileMapLayer
 	_load_saved_progress()
 	reveal_from_player()
 
@@ -107,6 +113,9 @@ func reveal_from_cell(origin: Vector2i, blockers: Dictionary) -> void:
 	)
 
 	var save_manager := _get_root_node("SaveManager")
+	if save_manager != null and save_manager.has_method("mark_chunk_explored"):
+		var chunk := Vector2i(floori(float(origin.x) / _cells_per_chunk().x), floori(float(origin.y) / _cells_per_chunk().y))
+		save_manager.call("mark_chunk_explored", "%s:chunk:%d,%d" % [level_id, chunk.x, chunk.y])
 	for cell: Vector2i in currently_visible.keys():
 		if not _is_inside_map(cell):
 			continue
@@ -143,13 +152,23 @@ func _load_saved_progress() -> void:
 
 func _collect_blockers() -> Dictionary[Vector2i, bool]:
 	var blockers: Dictionary[Vector2i, bool] = {}
+	if _vision_block_tiles == null and vision_block_tiles_path != NodePath():
+		_vision_block_tiles = get_node_or_null(vision_block_tiles_path) as TileMapLayer
+	if _vision_block_tiles != null:
+		for tile_cell: Vector2i in _vision_block_tiles.get_used_cells():
+			blockers[tile_cell] = true
+	# Backward-compatible fallback: solid terrain blocks vision, glass does not.
 	if _solid_tiles == null and solid_tiles_path != NodePath():
 		_solid_tiles = get_node_or_null(solid_tiles_path) as TileMapLayer
-	if _solid_tiles == null:
+	if _solid_tiles == null and blockers.is_empty():
 		_warn_once_missing_solid_tiles()
 		return blockers
-	for tile_cell: Vector2i in _solid_tiles.get_used_cells():
-		blockers[tile_cell] = true
+	if _solid_tiles != null and _vision_block_tiles == null:
+		for tile_cell: Vector2i in _solid_tiles.get_used_cells():
+			blockers[tile_cell] = true
+	if _glass_tiles != null:
+		for tile_cell: Vector2i in _glass_tiles.get_used_cells():
+			blockers.erase(tile_cell)
 	return blockers
 
 

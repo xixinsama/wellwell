@@ -3,12 +3,18 @@ extends Node
 const TESTS: Array[Script] = [
 	preload("res://tests/save/test_save_codec.gd"),
 	preload("res://tests/save/test_save_storage.gd"),
+	preload("res://tests/save/test_save_slots.gd"),
 	preload("res://tests/world/test_fog_visibility.gd"),
 	preload("res://tests/world/test_tilemap_scene_contract.gd"),
 	preload("res://tests/world/test_world_data.gd"),
 	preload("res://tests/world/test_world_validation.gd"),
 	preload("res://tests/world/test_room_runtime.gd"),
 	preload("res://tests/world/test_world_runtime.gd"),
+	preload("res://tests/world/test_world_entity.gd"),
+	preload("res://tests/world/test_map_model.gd"),
+	preload("res://tests/world/test_room_transition.gd"),
+	preload("res://tests/tools/test_project_validation.gd"),
+	preload("res://tests/ui/test_menu_contract.gd"),
 ]
 
 

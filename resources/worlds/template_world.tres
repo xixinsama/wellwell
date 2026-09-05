@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="WorldData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/world/world_data.gd" id="1"]
+[ext_resource type="Resource" path="res://resources/rooms/template_room.tres" id="2"]
+
+[resource]
+script = ExtResource("1")
+world_id = "template_world"
+start_room_id = "template_room"
+start_spawn_id = "start"
+rooms = Array[Resource]([ExtResource("2")])
+

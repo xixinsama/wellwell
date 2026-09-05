@@ -39,6 +39,48 @@ func start_or_continue(slot: int = 1) -> RefCounted:
 	return current_snapshot
 
 
+func get_slot_summary(slot: int) -> Dictionary:
+	var snapshot: RefCounted = _storage.read_slot(slot)
+	if snapshot == null:
+		return {"slot": slot, "occupied": false}
+	return {
+		"slot": slot,
+		"occupied": true,
+		"world_id": snapshot.world_id,
+		"room_id": snapshot.current_room_id,
+		"saved_unix_time": snapshot.saved_unix_time,
+	}
+
+
+func copy_slot(source_slot: int, target_slot: int) -> bool:
+	if source_slot < 1 or source_slot > 3 or target_slot < 1 or target_slot > 3:
+		return false
+	var source: RefCounted = _storage.read_slot(source_slot)
+	if source == null:
+		return false
+	var copied: RefCounted = SAVE_SNAPSHOT.new()
+	copied.load_from_dictionary(source.to_dictionary())
+	copied.slot = target_slot
+	return _storage.write_slot(copied)
+
+
+func delete_slot(slot: int) -> bool:
+	return _storage.delete_slot(slot)
+
+
+func quick_save() -> bool:
+	return commit()
+
+
+func quick_load() -> RefCounted:
+	if selected_slot < 1:
+		return null
+	current_snapshot = _storage.read_slot(selected_slot)
+	if current_snapshot != null:
+		slot_selected.emit(selected_slot, current_snapshot)
+	return current_snapshot
+
+
 func commit(snapshot: RefCounted = null) -> bool:
 	var target: RefCounted = snapshot if snapshot != null else current_snapshot
 	if target == null or target.slot < 1 or target.slot > 3:
@@ -75,6 +117,49 @@ func get_explored_cells() -> Array[String]:
 	if current_snapshot == null:
 		return []
 	return current_snapshot.get_explored_cells()
+
+
+func mark_chunk_explored(chunk_id: String) -> bool:
+	if current_snapshot == null:
+		start_or_continue(1)
+	if current_snapshot == null:
+		return false
+	var changed: bool = current_snapshot.add_explored_chunk(chunk_id)
+	if changed:
+		queue_commit()
+	return changed
+
+
+func is_chunk_explored(chunk_id: String) -> bool:
+	if current_snapshot == null:
+		start_or_continue(1)
+	return current_snapshot != null and current_snapshot.has_explored_chunk(chunk_id)
+
+
+func set_entity_state(entity_key: String, state: Dictionary) -> void:
+	if current_snapshot == null:
+		start_or_continue(1)
+	if current_snapshot == null:
+		return
+	current_snapshot.set_entity_state(entity_key, state)
+	queue_commit()
+
+
+func get_entity_state(entity_key: String) -> Dictionary:
+	if current_snapshot == null:
+		start_or_continue(1)
+	return {} if current_snapshot == null else current_snapshot.get_entity_state(entity_key)
+
+
+func set_respawn(room_id: String, spawn_id: String, position: Vector2 = Vector2.ZERO) -> void:
+	if current_snapshot == null:
+		start_or_continue(1)
+	if current_snapshot == null:
+		return
+	current_snapshot.respawn_room_id = room_id
+	current_snapshot.respawn_spawn_id = spawn_id
+	current_snapshot.respawn_position = position
+	queue_commit()
 
 
 func queue_commit(delay_seconds: float = 0.35) -> void:

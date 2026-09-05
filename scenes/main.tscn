@@ -4,6 +4,8 @@
 [ext_resource type="Shader" uid="uid://nq1da1uidaxy" path="res://scripts/shaders/sub_pixel.gdshader" id="2_jyhfs"]
 [ext_resource type="PackedScene" uid="uid://bb0ckphw013qw" path="res://scenes/game.tscn" id="2_sugp2"]
 [ext_resource type="PackedScene" path="res://scenes/tools/debug_hud.tscn" id="7_debug_hud"]
+[ext_resource type="PackedScene" path="res://scenes/ui/main_menu.tscn" id="8_main_menu"]
+[ext_resource type="PackedScene" path="res://scenes/ui/settings.tscn" id="9_settings"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_sugp2"]
 shader = ExtResource("2_jyhfs")
@@ -46,3 +48,7 @@ render_target_update_mode = 4
 [node name="DebugHud" parent="HUD" unique_id=701379448 instance=ExtResource("7_debug_hud")]
 layout_mode = 3
 player_path = NodePath("../../SubViewportContainer/SubViewport/WorldRoot/Player")
+
+[node name="MainMenu" parent="HUD" instance=ExtResource("8_main_menu")]
+
+[node name="Settings" parent="HUD" instance=ExtResource("9_settings")]
