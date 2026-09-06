@@ -32,6 +32,10 @@ window/stretch/mode="viewport"
 window/stretch/scale_mode="integer"
 window/per_pixel_transparency/allowed=true
 
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/wellwell_world_editor/plugin.cfg")
+
 [input]
 
 move_left={

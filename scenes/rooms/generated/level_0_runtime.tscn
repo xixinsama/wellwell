@@ -1,0 +1,13 @@
+[gd_scene format=3 uid="uid://cb6wefk5lapyh"]
+
+[ext_resource type="Script" uid="uid://bo5asnakkt3ao" path="res://scripts/world/spawn_point.gd" id="1_a5ldv"]
+
+[node name="RoomRuntimeContent" type="Node2D" unique_id=626088862]
+
+[node name="Entities" type="Node2D" parent="." unique_id=1400226429]
+
+[node name="StartSpawn" type="Marker2D" parent="Entities" unique_id=1868388145]
+position = Vector2(32, 160)
+script = ExtResource("1_a5ldv")
+
+[node name="Foreground" type="Node2D" parent="." unique_id=132490277]

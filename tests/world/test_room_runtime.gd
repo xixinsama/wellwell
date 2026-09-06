@@ -7,6 +7,7 @@ const SPAWN_POINT: Script = preload("res://scripts/world/spawn_point.gd")
 const DERIVED_SPAWN_POINT: Script = preload("res://tests/world/derived_spawn_point_fixture.gd")
 
 const FIXTURE_PATH := "user://runtime_room_fixture.tscn"
+const RUNTIME_ONLY_FIXTURE_PATH := "user://runtime_room_only_fixture.tscn"
 const MISSING_FIXTURE_PATH := "user://missing_room_runtime_fixture.tscn"
 
 
@@ -16,10 +17,18 @@ func run() -> Array[String]:
 	if save_error != OK:
 		failures.append("room runtime fixture save failed: %d" % save_error)
 		return failures
+	var runtime_only_save_error := _save_runtime_only_fixture()
+	if runtime_only_save_error != OK:
+		failures.append("runtime-only fixture save failed: %d" % runtime_only_save_error)
+		_remove_user_file(FIXTURE_PATH)
+		return failures
 	_assert_room_runtime_instances_scene_and_applies_position(failures)
 	_assert_room_runtime_exposes_spawns_and_transition_requests(failures)
+	_assert_room_runtime_ignores_missing_terrain_scene(failures)
 	_assert_room_runtime_rejects_missing_scene(failures)
 	_assert_room_runtime_rejects_wrong_resource_type(failures)
+	_remove_user_file(FIXTURE_PATH)
+	_remove_user_file(RUNTIME_ONLY_FIXTURE_PATH)
 	return failures
 
 
@@ -86,6 +95,29 @@ func _assert_room_runtime_exposes_spawns_and_transition_requests(failures: Array
 	runtime.free()
 
 
+func _assert_room_runtime_ignores_missing_terrain_scene(failures: Array[String]) -> void:
+	_remove_user_file(MISSING_FIXTURE_PATH)
+	var data: Resource = ROOM_DATA.new()
+	data.room_id = "runtime_only"
+	data.scene_path = RUNTIME_ONLY_FIXTURE_PATH
+	data.terrain_scene_path = MISSING_FIXTURE_PATH
+	var runtime: Node2D = ROOM_RUNTIME.new() as Node2D
+	if not runtime.setup_room(data):
+		failures.append("room runtime let missing terrain_scene_path affect runtime setup")
+	else:
+		var instance: Node = runtime.get_room_instance()
+		if instance == null:
+			failures.append("room runtime lost its runtime scene while ignoring terrain")
+		else:
+			for terrain_node_name: String in [
+				"Background", "Terrain", "BackTiles", "SolidTiles", "GlassTiles",
+				"VisionBlockTiles", "DetailTiles", "MarkerTiles",
+			]:
+				if instance.get_node_or_null(terrain_node_name) != null:
+					failures.append("room runtime instance unexpectedly contained terrain node: %s" % terrain_node_name)
+	runtime.free()
+
+
 func _assert_room_runtime_rejects_missing_scene(failures: Array[String]) -> void:
 	_remove_user_file(MISSING_FIXTURE_PATH)
 	var data: Resource = ROOM_DATA.new()
@@ -145,6 +177,22 @@ func _save_room_fixture() -> Error:
 	var error := ResourceSaver.save(packed, FIXTURE_PATH)
 	root.free()
 	return error
+
+
+func _save_runtime_only_fixture() -> Error:
+	var root := Node2D.new()
+	root.name = "RuntimeOnlyRoom"
+	for child_name: String in ["Entities", "Foreground"]:
+		var child := Node2D.new()
+		child.name = child_name
+		root.add_child(child)
+		child.owner = root
+	var packed := PackedScene.new()
+	var pack_error := packed.pack(root)
+	root.free()
+	if pack_error != OK:
+		return pack_error
+	return ResourceSaver.save(packed, RUNTIME_ONLY_FIXTURE_PATH)
 
 
 func _remove_user_file(path: String) -> void:

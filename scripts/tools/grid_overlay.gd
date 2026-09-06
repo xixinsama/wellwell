@@ -2,7 +2,7 @@ extends Node2D
 class_name GridOverlay
 
 @export var safe_size: Vector2i = Vector2i(320, 180)
-@export var safe_origin: Vector2 = Vector2(-160.0, -90.0)
+@export var safe_origin: Vector2 = Vector2(0.0, 0.0)
 @export var color_8px: Color = Color(1.0, 1.0, 1.0, 0.12)
 @export var color_16px: Color = Color(0.4, 0.9, 1.0, 0.18)
 

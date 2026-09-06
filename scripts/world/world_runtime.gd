@@ -20,6 +20,9 @@ var _snapshot: RefCounted
 var _player: Node2D
 var _save_manager: Node
 var _persistence_suspended := false
+var _last_player_chunk := Vector2i.ZERO
+var _has_last_player_chunk := false
+var _last_safe_player_position := Vector2.ZERO
 
 
 func _physics_process(_delta: float) -> void:
@@ -32,12 +35,15 @@ func _physics_process(_delta: float) -> void:
 func setup_world(data: Resource) -> bool:
 	if not _is_world_data(data) or data.start_room_id.is_empty() or not data.has_room(data.start_room_id):
 		return false
-	var staged_value: Variant = _stage_world(data, data.start_room_id, _get_save_manager())
+	var start_chunk := _get_room_origin_chunk(data, data.start_room_id)
+	if is_instance_valid(_player):
+		start_chunk = data.get_chunk_at_world_position(to_local(_player.global_position))
+	var staged_value: Variant = _stage_world(data, data.start_room_id, start_chunk, _get_save_manager())
 	if staged_value == null:
 		return false
 	_snapshot = null
-	_player = null
 	_commit_world(data, data.start_room_id, staged_value as Dictionary)
+	_record_player_tracking()
 	return true
 
 
@@ -54,14 +60,19 @@ func setup_session(data: Resource, snapshot: RefCounted, player: Node2D = null) 
 		elif data.has_room(snapshot.current_room_id):
 			initial_room_id = snapshot.current_room_id
 
-	var staged_value: Variant = _stage_world(data, initial_room_id, snapshot)
+	var staged_value: Variant = _stage_world(data, initial_room_id, _get_room_origin_chunk(data, initial_room_id), snapshot)
 	if staged_value == null:
 		return false
 	var staged_rooms := staged_value as Dictionary
 	var spawn := _get_spawn_point_from_rooms(staged_rooms, initial_room_id, initial_spawn_id)
 	if not initial_spawn_id.is_empty() and spawn == null:
 		_free_staged_rooms(staged_rooms)
-		staged_value = _stage_world(data, data.start_room_id, snapshot)
+		staged_value = _stage_world(
+			data,
+			data.start_room_id,
+			_get_room_origin_chunk(data, data.start_room_id),
+			snapshot
+		)
 		if staged_value == null:
 			return false
 		staged_rooms = staged_value as Dictionary
@@ -72,6 +83,15 @@ func setup_session(data: Resource, snapshot: RefCounted, player: Node2D = null) 
 			_free_staged_rooms(staged_rooms)
 			return false
 		reset_respawn = true
+	if spawn != null and not _align_staged_world_to_spawn(
+		data,
+		initial_room_id,
+		spawn,
+		snapshot,
+		staged_rooms
+	):
+		_free_staged_rooms(staged_rooms)
+		return false
 
 	_snapshot = snapshot
 	_player = player
@@ -81,12 +101,17 @@ func setup_session(data: Resource, snapshot: RefCounted, player: Node2D = null) 
 		_respawn_player(spawn.global_position)
 	_initialize_snapshot(initial_room_id, initial_spawn_id, spawn, reset_respawn)
 	_persistence_suspended = false
+	_record_player_tracking()
 	_queue_snapshot_commit()
 	return true
 
 
 func bind_player(player: Node2D) -> void:
 	_player = player
+
+
+func synchronize_player_tracking() -> void:
+	_record_player_tracking()
 
 
 func bind_save_manager(save_manager: Node) -> void:
@@ -100,22 +125,38 @@ func update_player_room() -> bool:
 	if not _is_world_data(world_data):
 		return false
 	var local_position := to_local(_player.global_position)
+	var player_chunk: Vector2i = world_data.get_chunk_at_world_position(local_position)
+	if _has_last_player_chunk and player_chunk == _last_player_chunk:
+		_last_safe_player_position = _player.global_position
+		return true
 	var room_id: String = world_data.get_room_id_at_world_position(local_position, _current_room_id)
 	if room_id.is_empty():
+		_restore_last_safe_player_position()
 		return false
-	if room_id == _current_room_id:
-		return true
-	return set_current_room(room_id)
+	var target_ids: Array[String] = world_data.get_resident_room_ids(player_chunk, room_id)
+	var staged_value: Variant = _stage_missing_rooms(world_data, target_ids, _get_entity_state_source())
+	if staged_value == null:
+		_restore_last_safe_player_position()
+		return false
+	_commit_room_change(room_id, target_ids, staged_value as Dictionary)
+	_last_player_chunk = player_chunk
+	_has_last_player_chunk = true
+	_last_safe_player_position = _player.global_position
+	return true
 
 
 func set_current_room(room_id: String) -> bool:
 	if not _is_world_data(world_data) or not world_data.has_room(room_id):
 		return false
-	var target_ids := _get_target_room_ids_for(world_data, room_id)
+	var player_chunk := _get_room_origin_chunk(world_data, room_id)
+	if is_instance_valid(_player):
+		player_chunk = world_data.get_chunk_at_world_position(to_local(_player.global_position))
+	var target_ids := _get_target_room_ids_for(world_data, room_id, player_chunk)
 	var staged_value: Variant = _stage_missing_rooms(world_data, target_ids, _get_entity_state_source())
 	if staged_value == null:
 		return false
 	_commit_room_change(room_id, target_ids, staged_value as Dictionary)
+	_record_player_tracking()
 	return true
 
 
@@ -123,7 +164,7 @@ func refresh_loaded_rooms() -> bool:
 	if not _is_world_data(world_data) or _current_room_id.is_empty():
 		return false
 
-	var target_ids := _get_target_room_ids_for(world_data, _current_room_id)
+	var target_ids := _get_target_room_ids_for(world_data, _current_room_id, _get_tracking_chunk())
 	var staged_value: Variant = _stage_missing_rooms(world_data, target_ids, _get_entity_state_source())
 	if staged_value == null:
 		return false
@@ -147,6 +188,16 @@ func get_room_runtime(room_id: String) -> Node:
 	return _loaded_rooms.get(room_id, null)
 
 
+func clear_world() -> void:
+	_unload_all_rooms()
+	world_data = null
+	_current_room_id = ""
+	_snapshot = null
+	_player = null
+	_persistence_suspended = false
+	_reset_player_tracking()
+
+
 func request_transition(entrance: Node) -> bool:
 	var source_room: Node = get_room_runtime(_current_room_id)
 	if entrance == null or source_room == null or not source_room.is_ancestor_of(entrance):
@@ -156,7 +207,11 @@ func request_transition(entrance: Node) -> bool:
 		return false
 	var target_room_id := String(transition.to_room_id)
 	var target_spawn_id := String(transition.to_spawn_id)
-	var target_ids := _get_target_room_ids_for(world_data, target_room_id)
+	var target_ids := _get_target_room_ids_for(
+		world_data,
+		target_room_id,
+		_get_room_origin_chunk(world_data, target_room_id)
+	)
 	var staged_value: Variant = _stage_missing_rooms(world_data, target_ids, _get_entity_state_source())
 	if staged_value == null:
 		return false
@@ -168,27 +223,41 @@ func request_transition(entrance: Node) -> bool:
 	if spawn == null:
 		_free_staged_rooms(staged_rooms)
 		return false
+	var spawn_chunk: Vector2i = world_data.get_chunk_at_world_position(to_local(spawn.global_position))
+	target_ids = _get_target_room_ids_for(world_data, target_room_id, spawn_chunk)
+	var additional_value: Variant = _stage_missing_rooms(
+		world_data,
+		target_ids,
+		_get_entity_state_source(),
+		staged_rooms
+	)
+	if additional_value == null:
+		_free_staged_rooms(staged_rooms)
+		return false
+	var additional_rooms := additional_value as Dictionary
+	for room_id: String in additional_rooms:
+		staged_rooms[room_id] = additional_rooms[room_id]
+	additional_rooms.clear()
+	_trim_staged_rooms(staged_rooms, target_ids)
 	_commit_room_change(target_room_id, target_ids, staged_rooms)
 	_respawn_player(spawn.global_position)
+	_record_player_tracking()
 	transition_completed.emit(transition.from_room_id, transition.to_room_id, transition.to_spawn_id)
 	return true
 
 
-func _get_target_room_ids_for(data: Resource, room_id: String) -> Array[String]:
-	var unique: Dictionary[String, bool] = {room_id: true}
-	for adjacent_id: String in data.get_adjacent_room_ids(room_id):
-		if data.has_room(adjacent_id):
-			unique[adjacent_id] = true
-
-	var result: Array[String] = []
-	result.assign(unique.keys())
-	result.sort()
-	return result
+func _get_target_room_ids_for(data: Resource, room_id: String, player_chunk: Vector2i) -> Array[String]:
+	return data.get_resident_room_ids(player_chunk, room_id)
 
 
-func _stage_world(data: Resource, room_id: String, state_source: Object) -> Variant:
+func _stage_world(
+	data: Resource,
+	room_id: String,
+	player_chunk: Vector2i,
+	state_source: Object
+) -> Variant:
 	var staged: Dictionary[String, Node] = {}
-	for target_id: String in _get_target_room_ids_for(data, room_id):
+	for target_id: String in _get_target_room_ids_for(data, room_id, player_chunk):
 		var room_runtime := _create_room_runtime(data, target_id, state_source)
 		if room_runtime == null:
 			_free_staged_rooms(staged)
@@ -197,10 +266,15 @@ func _stage_world(data: Resource, room_id: String, state_source: Object) -> Vari
 	return staged
 
 
-func _stage_missing_rooms(data: Resource, target_ids: Array[String], state_source: Object) -> Variant:
+func _stage_missing_rooms(
+	data: Resource,
+	target_ids: Array[String],
+	state_source: Object,
+	already_staged: Dictionary = {}
+) -> Variant:
 	var staged: Dictionary[String, Node] = {}
 	for room_id: String in target_ids:
-		if _loaded_rooms.has(room_id):
+		if _loaded_rooms.has(room_id) or already_staged.has(room_id):
 			continue
 		var room_runtime := _create_room_runtime(data, room_id, state_source)
 		if room_runtime == null:
@@ -208,6 +282,36 @@ func _stage_missing_rooms(data: Resource, target_ids: Array[String], state_sourc
 			return null
 		staged[room_id] = room_runtime
 	return staged
+
+
+func _align_staged_world_to_spawn(
+	data: Resource,
+	room_id: String,
+	spawn: Node2D,
+	state_source: Object,
+	staged: Dictionary
+) -> bool:
+	var spawn_chunk: Vector2i = data.get_chunk_at_world_position(to_local(spawn.global_position))
+	var target_ids: Array[String] = data.get_resident_room_ids(spawn_chunk, room_id)
+	for target_id: String in target_ids:
+		if staged.has(target_id):
+			continue
+		var room_runtime := _create_room_runtime(data, target_id, state_source)
+		if room_runtime == null:
+			return false
+		staged[target_id] = room_runtime
+	_trim_staged_rooms(staged, target_ids)
+	return true
+
+
+func _trim_staged_rooms(staged: Dictionary, target_ids: Array[String]) -> void:
+	for room_id: String in staged.keys():
+		if target_ids.has(room_id):
+			continue
+		var room_runtime: Node = staged[room_id]
+		staged.erase(room_id)
+		if is_instance_valid(room_runtime):
+			room_runtime.free()
 
 
 func _create_room_runtime(data: Resource, room_id: String, state_source: Object) -> Node2D:
@@ -306,6 +410,37 @@ func _respawn_player(position: Vector2) -> void:
 		_player.call("respawn_at", position)
 	else:
 		_player.global_position = position
+
+
+func _get_room_origin_chunk(data: Resource, room_id: String) -> Vector2i:
+	var room: Resource = data.get_room(room_id)
+	return Vector2i.ZERO if room == null else room.room_origin_chunk
+
+
+func _get_tracking_chunk() -> Vector2i:
+	if _has_last_player_chunk:
+		return _last_player_chunk
+	return _get_room_origin_chunk(world_data, _current_room_id)
+
+
+func _record_player_tracking() -> void:
+	if not is_instance_valid(_player) or not _is_world_data(world_data):
+		_reset_player_tracking()
+		return
+	_last_safe_player_position = _player.global_position
+	_last_player_chunk = world_data.get_chunk_at_world_position(to_local(_player.global_position))
+	_has_last_player_chunk = true
+
+
+func _reset_player_tracking() -> void:
+	_has_last_player_chunk = false
+	_last_player_chunk = Vector2i.ZERO
+	_last_safe_player_position = Vector2.ZERO
+
+
+func _restore_last_safe_player_position() -> void:
+	if _has_last_player_chunk and is_instance_valid(_player):
+		_player.global_position = _last_safe_player_position
 
 
 func _initialize_snapshot(

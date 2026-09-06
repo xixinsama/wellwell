@@ -12,6 +12,8 @@ func run() -> Array[String]:
 	_assert_validation_reports_room_authoring_errors(failures)
 	_assert_validation_reports_bad_adjacency_and_connections(failures)
 	_assert_validation_reports_invalid_resource_entries(failures)
+	_assert_validation_rejects_wrong_world_resource(failures)
+	_assert_validation_report_contract(failures)
 	return failures
 
 
@@ -79,6 +81,50 @@ func _assert_validation_reports_invalid_resource_entries(failures: Array[String]
 	_assert_has_error(errors, "world has non-RoomConnectionData connection resource", failures)
 
 
+func _assert_validation_rejects_wrong_world_resource(failures: Array[String]) -> void:
+	var errors: Array[String] = WORLD_VALIDATION.validate_world(Resource.new())
+	_assert_has_error(errors, "world is not WorldData", failures)
+
+
+func _assert_validation_report_contract(failures: Array[String]) -> void:
+	if not WORLD_VALIDATION.has_method("validate_world_report"):
+		failures.append("missing production API: WorldValidation.validate_world_report")
+		return
+	var room_a: Resource = _make_room("room_a")
+	var room_b: Resource = _make_room("room_b")
+	room_b.room_origin_chunk = Vector2i.ZERO
+	var world: Resource = _make_world([room_a, room_b], [])
+	world.start_room_id = "room_a"
+	world.start_spawn_id = "spawn_main"
+	var report: Dictionary = WORLD_VALIDATION.call("validate_world_report", world)
+
+	if not report.has_all(["ok", "errors", "warnings"]):
+		failures.append("world validation report must expose ok, errors, and warnings keys: %s" % str(report))
+		return
+	if report.get("ok", false) != true:
+		failures.append("overlapping rooms should keep report ok=true: %s" % str(report))
+	var report_errors: Array = report.get("errors", [])
+	var report_warnings: Array = report.get("warnings", [])
+	_assert_has_error(report_warnings, "overlapping rooms: room_a, room_b", failures)
+	var invalid_world: Resource = _make_world([
+		_make_room("duplicate"),
+		_make_room("duplicate"),
+		_make_room("duplicate"),
+	], [])
+	var invalid_report: Dictionary = WORLD_VALIDATION.call("validate_world_report", invalid_world)
+	var invalid_errors: Array = invalid_report.get("errors", [])
+	if invalid_errors.count("duplicate room_id: duplicate") != 1:
+		failures.append("world validation report errors must not contain duplicates: %s" % str(invalid_errors))
+	var sorted_errors: Array = invalid_errors.duplicate()
+	sorted_errors.sort()
+	if invalid_errors != sorted_errors:
+		failures.append("world validation report errors must be sorted: %s" % str(invalid_errors))
+	var sorted_warnings: Array = report_warnings.duplicate()
+	sorted_warnings.sort()
+	if report_warnings != sorted_warnings:
+		failures.append("world validation report warnings must be sorted: %s" % str(report_warnings))
+
+
 func _make_world(rooms: Array, connections: Array) -> Resource:
 	var world: Resource = WORLD_DATA.new()
 	world.world_id = "world_01"
@@ -91,6 +137,11 @@ func _make_room(room_id: String) -> Resource:
 	var room: Resource = ROOM_DATA.new()
 	room.room_id = room_id
 	room.scene_path = "res://scenes/rooms/%s.tscn" % room_id
+	room.source_scene_path = "res://scenes/levels/%s.tscn" % room_id
+	room.terrain_scene_path = "res://scenes/generated/%s_terrain.tscn" % room_id
+	room.entrance_ids = PackedStringArray(["exit_right"])
+	room.spawn_ids = PackedStringArray(["spawn_main", "spawn_left"])
+	room.entity_ids = PackedStringArray(["entity_main"])
 	room.room_size_chunks = Vector2i.ONE
 	return room
 
@@ -104,6 +155,7 @@ func _make_connection(from_room_id: String, from_entrance_id: String, to_room_id
 	return connection
 
 
-func _assert_has_error(errors: Array[String], expected: String, failures: Array[String]) -> void:
+func _assert_has_error(errors: Array, expected: String, failures: Array[String], required: bool = true) -> void:
 	if not errors.has(expected):
-		failures.append("missing validation error: %s in %s" % [expected, str(errors)])
+		if required:
+			failures.append("missing validation error: %s in %s" % [expected, str(errors)])

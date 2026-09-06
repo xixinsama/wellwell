@@ -1,0 +1,8 @@
+[gd_resource type="Resource" script_class="WorldData" format=3 uid="uid://b8obgch3ri6hf"]
+
+[ext_resource type="Script" uid="uid://dkcwb87qn5n2c" path="res://scripts/world/world_data.gd" id="2_if3gs"]
+
+[resource]
+script = ExtResource("2_if3gs")
+world_id = "level_0_world"
+tags = PackedStringArray()

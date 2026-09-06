@@ -4,17 +4,23 @@ class_name DebugHud
 @export var player_path: NodePath
 
 var player: Node
+var _player_is_explicitly_bound := false
 
 @onready var label: Label = $Label
 
 
 func _ready() -> void:
-	if player_path != NodePath():
+	if not _player_is_explicitly_bound and player_path != NodePath():
 		player = get_node_or_null(player_path)
 
 
+func bind_player(new_player: Node) -> void:
+	_player_is_explicitly_bound = true
+	player = new_player
+
+
 func _process(_delta: float) -> void:
-	if player == null and player_path != NodePath():
+	if not _player_is_explicitly_bound and player == null and player_path != NodePath():
 		player = get_node_or_null(player_path)
 	if player == null or not player.has_method("get_debug_state"):
 		label.text = "No player"

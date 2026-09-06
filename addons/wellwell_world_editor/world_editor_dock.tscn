@@ -1,0 +1,74 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://addons/wellwell_world_editor/world_editor_dock.gd" id="1"]
+[ext_resource type="Script" path="res://addons/wellwell_world_editor/world_layout_canvas.gd" id="2"]
+
+[node name="WorldEditorDock" type="VBoxContainer"]
+custom_minimum_size = Vector2(360, 420)
+script = ExtResource("1")
+
+[node name="Toolbar" type="HFlowContainer" parent="."]
+layout_mode = 2
+
+[node name="NewRoom" type="Button" parent="Toolbar"]
+unique_name_in_owner = true
+text = "New Room"
+[node name="AddExisting" type="Button" parent="Toolbar"]
+unique_name_in_owner = true
+text = "Add Existing"
+[node name="RemoveReference" type="Button" parent="Toolbar"]
+unique_name_in_owner = true
+text = "Remove Reference"
+[node name="OpenSource" type="Button" parent="Toolbar"]
+unique_name_in_owner = true
+text = "Open Source"
+[node name="ValidateRoom" type="Button" parent="Toolbar"]
+unique_name_in_owner = true
+text = "Validate Room"
+[node name="BakeRoom" type="Button" parent="Toolbar"]
+unique_name_in_owner = true
+text = "Bake Room"
+[node name="ValidateWorld" type="Button" parent="Toolbar"]
+unique_name_in_owner = true
+text = "Validate World"
+[node name="BakeWorld" type="Button" parent="Toolbar"]
+unique_name_in_owner = true
+text = "Bake World"
+
+[node name="ConnectionBar" type="HFlowContainer" parent="."]
+layout_mode = 2
+
+[node name="SourceEntrance" type="OptionButton" parent="ConnectionBar"]
+unique_name_in_owner = true
+tooltip_text = "Source entrance"
+[node name="TargetRoom" type="OptionButton" parent="ConnectionBar"]
+unique_name_in_owner = true
+tooltip_text = "Target room"
+[node name="TargetSpawn" type="OptionButton" parent="ConnectionBar"]
+unique_name_in_owner = true
+tooltip_text = "Target spawn"
+[node name="Connect" type="Button" parent="ConnectionBar"]
+unique_name_in_owner = true
+text = "Connect"
+[node name="Disconnect" type="Button" parent="ConnectionBar"]
+unique_name_in_owner = true
+text = "Disconnect"
+
+[node name="LayoutCanvas" type="Control" parent="."]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(350, 330)
+mouse_filter = 0
+layout_mode = 2
+script = ExtResource("2")
+
+[node name="Status" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+text = "No world selected"
+
+[node name="AddExistingDialog" type="FileDialog" parent="."]
+unique_name_in_owner = true
+title = "Add Existing Room"
+file_mode = 0
+access = 0
+filters = PackedStringArray("*.tscn ; Godot Scene")

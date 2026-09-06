@@ -9,10 +9,11 @@ var actual_cam_pos: Vector2 = Vector2.ZERO
 var shake_frames_remaining: int = 0
 var shake_amplitude: float = 0.0
 var shake_sign: int = 1
+var _target_is_explicitly_bound := false
 
 
 func _ready() -> void:
-    if target_path != NodePath():
+    if not _target_is_explicitly_bound and target_path != NodePath():
         target = get_node_or_null(target_path) as Node2D
     if target:
         smoothed_position = target.global_position
@@ -20,8 +21,17 @@ func _ready() -> void:
     make_current()
 
 
+func bind_target(new_target: Node2D) -> void:
+    _target_is_explicitly_bound = true
+    target = new_target
+    if target == null:
+        return
+    smoothed_position = target.global_position
+    global_position = smoothed_position.round()
+
+
 func _physics_process(delta: float) -> void:
-    if target == null and target_path != NodePath():
+    if not _target_is_explicitly_bound and target == null and target_path != NodePath():
         target = get_node_or_null(target_path) as Node2D
     if target == null:
         return

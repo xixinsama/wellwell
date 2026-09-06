@@ -40,6 +40,10 @@ func show_slots() -> void:
     if first_button != null:
         first_button.grab_focus.call_deferred()
 
+func show_start_error(details: String = "") -> void:
+    show()
+    status_label.text = tr("SLOT_START_FAILED") if details.is_empty() else "%s %s" % [tr("SLOT_START_FAILED"), details]
+
 func _refresh() -> void:
     status_label.text = ""
     for child: Node in list.get_children():

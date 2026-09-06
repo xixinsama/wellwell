@@ -19,6 +19,7 @@ class EmptyStorage extends RefCounted:
 func run() -> Array[String]:
 	var failures: Array[String] = []
 	_assert_manager_does_not_create_slot_on_ready(failures)
+	_assert_prepare_slot_does_not_persist_or_select(failures)
 	var source: RefCounted = SAVE_SNAPSHOT.new()
 	source.slot = 1
 	source.world_id = "world_01"
@@ -36,6 +37,26 @@ func run() -> Array[String]:
 	if not bool(restored.get_entity_state("world_01:room_a:switch").get("activated", false)):
 		failures.append("entity state did not round trip")
 	return failures
+
+
+func _assert_prepare_slot_does_not_persist_or_select(failures: Array[String]) -> void:
+	var storage := EmptyStorage.new()
+	var manager: Node = SAVE_MANAGER.new()
+	manager.setup_storage(storage)
+	if not manager.has_method("prepare_slot") or not manager.has_method("activate_snapshot"):
+		failures.append("save manager is missing transactional slot startup APIs")
+		manager.free()
+		return
+	var snapshot: RefCounted = manager.call("prepare_slot", 2)
+	if snapshot == null or snapshot.slot != 2:
+		failures.append("prepare_slot did not create an in-memory snapshot")
+	if storage.write_count != 0 or manager.selected_slot != 0 or manager.current_snapshot != null:
+		failures.append("prepare_slot persisted or selected a slot before world readiness")
+	if not manager.call("activate_snapshot", snapshot):
+		failures.append("activate_snapshot rejected the prepared snapshot")
+	if storage.write_count != 1 or manager.selected_slot != 2 or manager.current_snapshot != snapshot:
+		failures.append("activate_snapshot did not persist and select the ready slot")
+	manager.free()
 
 func _assert_manager_does_not_create_slot_on_ready(failures: Array[String]) -> void:
 	var storage := EmptyStorage.new()

@@ -40,3 +40,4 @@ COMMON_CONFIRM,Confirm,确认
 COMMON_CANCEL,Cancel,取消
 COMMON_ON,On,开
 COMMON_OFF,Off,关
+SLOT_START_FAILED,Could not start this save.,无法启动此存档。

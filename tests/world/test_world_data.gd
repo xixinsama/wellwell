@@ -10,6 +10,9 @@ func run() -> Array[String]:
 	_assert_room_bounds_convert_between_chunks_pixels_and_cells(failures)
 	_assert_room_chunk_ids_are_stable_and_sorted(failures)
 	_assert_contains_chunk_uses_room_rect(failures)
+	_assert_world_indexes_room_ids_by_chunk_rect(failures)
+	_assert_world_returns_spatial_and_connected_residency(failures)
+	_assert_world_returns_unique_connection_by_source_endpoint(failures)
 	_assert_world_indexes_rooms_by_id(failures)
 	_assert_world_combines_room_and_connection_adjacency(failures)
 	_assert_world_resolves_positions_to_chunks_and_rooms(failures)
@@ -58,6 +61,99 @@ func _assert_contains_chunk_uses_room_rect(failures: Array[String]) -> void:
 		failures.append("room did not contain its last chunk")
 	if room.contains_chunk(Vector2i(1, 3)):
 		failures.append("room contained a chunk outside its width")
+
+
+func _assert_world_indexes_room_ids_by_chunk_rect(failures: Array[String]) -> void:
+	var world: Resource = WORLD_DATA.new()
+	var room_b: Resource = _make_room("room_b")
+	room_b.room_origin_chunk = Vector2i(0, 0)
+	room_b.room_size_chunks = Vector2i(2, 2)
+	var room_a: Resource = _make_room("room_a")
+	room_a.room_origin_chunk = Vector2i(1, 1)
+	var room_c: Resource = _make_room("room_c")
+	room_c.room_origin_chunk = Vector2i(3, 3)
+	world.rooms.assign([room_c, room_b, room_a, room_b])
+
+	if not world.has_method("get_room_ids_at_chunk"):
+		failures.append("world data did not expose get_room_ids_at_chunk")
+		return
+	var overlapping_ids: Array[String] = world.get_room_ids_at_chunk(Vector2i(1, 1))
+	if overlapping_ids != ["room_a", "room_b"]:
+		failures.append("room ids at an overlapping chunk were not unique and sorted: %s" % str(overlapping_ids))
+	var empty_ids: Array[String] = world.get_room_ids_at_chunk(Vector2i(2, 2))
+	if empty_ids != []:
+		failures.append("room ids outside all chunk rects were not empty: %s" % str(empty_ids))
+
+
+func _assert_world_returns_spatial_and_connected_residency(failures: Array[String]) -> void:
+	var world: Resource = WORLD_DATA.new()
+	var nearby_ids := ["center", "right", "left", "up", "down", "diagonal"]
+	var origins := {
+		"center": Vector2i(0, 0),
+		"right": Vector2i(1, 0),
+		"left": Vector2i(-1, 0),
+		"up": Vector2i(0, -1),
+		"down": Vector2i(0, 1),
+		"diagonal": Vector2i(1, 1),
+	}
+	var rooms: Array[Resource] = []
+	for room_id: String in nearby_ids:
+		var room: Resource = _make_room(room_id)
+		room.room_origin_chunk = origins[room_id]
+		rooms.append(room)
+	var current_room: Resource = _make_room("current_room")
+	current_room.room_origin_chunk = Vector2i(20, 20)
+	var remote_room: Resource = _make_room("remote_room")
+	remote_room.room_origin_chunk = Vector2i(30, 30)
+	var incoming_room: Resource = _make_room("incoming_room")
+	incoming_room.room_origin_chunk = Vector2i(40, 40)
+	rooms.append(current_room)
+	rooms.append(remote_room)
+	rooms.append(incoming_room)
+	world.rooms.assign(rooms)
+	var connection: Resource = ROOM_CONNECTION_DATA.new()
+	connection.from_room_id = "current_room"
+	connection.from_entrance_id = "exit_remote"
+	connection.to_room_id = "remote_room"
+	connection.to_spawn_id = "spawn_main"
+	var incoming_connection: Resource = ROOM_CONNECTION_DATA.new()
+	incoming_connection.from_room_id = "incoming_room"
+	incoming_connection.from_entrance_id = "exit_current"
+	incoming_connection.to_room_id = "current_room"
+	incoming_connection.to_spawn_id = "spawn_main"
+	world.connections.assign([connection, incoming_connection])
+
+	if not world.has_method("get_resident_room_ids"):
+		failures.append("world data did not expose get_resident_room_ids")
+		return
+	var resident_ids: Array[String] = world.get_resident_room_ids(Vector2i.ZERO, "current_room")
+	var expected := ["center", "current_room", "down", "incoming_room", "left", "remote_room", "right", "up"]
+	if resident_ids != expected:
+		failures.append("resident room ids did not include current, cardinal chunks, and direct connections: %s" % str(resident_ids))
+	if resident_ids.has("diagonal"):
+		failures.append("diagonal chunk room was incorrectly included in residency")
+
+
+func _assert_world_returns_unique_connection_by_source_endpoint(failures: Array[String]) -> void:
+	var world: Resource = WORLD_DATA.new()
+	var connection: Resource = ROOM_CONNECTION_DATA.new()
+	connection.from_room_id = "room_a"
+	connection.from_entrance_id = "exit_right"
+	connection.to_room_id = "room_b"
+	connection.to_spawn_id = "spawn_left"
+	world.connections.assign([connection])
+
+	if not world.has_method("get_connection"):
+		failures.append("world data did not expose get_connection")
+		return
+	if world.get_connection("room_a", "exit_right") != connection:
+		failures.append("world data did not return the matching unique connection")
+	if world.get_connection("room_a", "missing") != null:
+		failures.append("world data returned a connection for a missing source endpoint")
+	var duplicate: Resource = connection.duplicate()
+	world.connections.append(duplicate)
+	if world.get_connection("room_a", "exit_right") != null:
+		failures.append("world data returned an ambiguous duplicate source endpoint")
 
 
 func _assert_world_indexes_rooms_by_id(failures: Array[String]) -> void:

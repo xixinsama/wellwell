@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://cejq022r3hjrd"]
 
 [ext_resource type="Script" uid="uid://cbx1gcy30d8d2" path="res://scripts/player/player_controller.gd" id="1_player"]
-[ext_resource type="Resource" path="res://resources/player/default_player_tuning.tres" id="2_tuning"]
+[ext_resource type="Resource" uid="uid://bo4x5hdpx5xu4" path="res://resources/player/default_player_tuning.tres" id="2_tuning"]
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_dovo2"]
 radius = 3.0

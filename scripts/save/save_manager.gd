@@ -26,16 +26,27 @@ func setup_storage(storage: RefCounted) -> void:
 
 
 func start_or_continue(slot: int = 1) -> RefCounted:
+	var snapshot := prepare_slot(slot)
+	if snapshot == null or not activate_snapshot(snapshot):
+		return null
+	return snapshot
+
+
+func prepare_slot(slot: int) -> RefCounted:
 	if slot < 1 or slot > 3:
 		return null
-	selected_slot = slot
-	current_snapshot = _storage.read_slot(slot)
-	if current_snapshot == null:
-		current_snapshot = SAVE_SNAPSHOT.new()
-		current_snapshot.slot = slot
-		commit(current_snapshot)
-	slot_selected.emit(slot, current_snapshot)
-	return current_snapshot
+	var snapshot: RefCounted = _storage.read_slot(slot)
+	if snapshot == null:
+		snapshot = SAVE_SNAPSHOT.new()
+		snapshot.slot = slot
+	return snapshot
+
+
+func activate_snapshot(snapshot: RefCounted) -> bool:
+	if snapshot == null or not commit(snapshot):
+		return false
+	slot_selected.emit(snapshot.slot, snapshot)
+	return true
 
 
 func get_slot_summary(slot: int) -> Dictionary:
