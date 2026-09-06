@@ -468,7 +468,11 @@ func _move_file(from_path: String, to_path: String) -> Error:
 
 
 func _promote_staged_file(staged_path: String, final_path: String) -> Error:
-	return _move_file(staged_path, final_path)
+	var uid := ResourceLoader.get_resource_uid(staged_path)
+	var move_error := _move_file(staged_path, final_path)
+	if move_error == OK and uid != ResourceUID.INVALID_ID and ResourceUID.has_id(uid):
+		ResourceUID.set_id(uid, final_path)
+	return move_error
 
 
 func _remove_paths(paths: Variant, errors: Array[String], label: String) -> bool:
@@ -487,9 +491,26 @@ func _remove_paths(paths: Variant, errors: Array[String], label: String) -> bool
 
 
 func _remove_file(path: String) -> Error:
+	var uid := _registered_uid_for_path(path)
 	if not FileAccess.file_exists(path):
+		_forget_uid_path(uid, path)
 		return OK
-	return DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
+	var remove_error := DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
+	if remove_error == OK:
+		_forget_uid_path(uid, path)
+	return remove_error
+
+
+func _forget_uid_path(uid: int, path: String) -> void:
+	if uid != ResourceUID.INVALID_ID and ResourceUID.has_id(uid) and ResourceUID.get_id_path(uid) == path:
+		ResourceUID.remove_id(uid)
+
+
+func _registered_uid_for_path(path: String) -> int:
+	var uid_text := ResourceUID.path_to_uid(path)
+	if not uid_text.begins_with("uid://"):
+		return ResourceUID.INVALID_ID
+	return ResourceUID.text_to_id(uid_text)
 
 
 func _output_paths(manifest: Dictionary) -> Dictionary:

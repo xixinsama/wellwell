@@ -246,6 +246,10 @@ func clear_room() -> void:
 
 ### Task 11: Minimal EditorPlugin Core
 
+> **Superseded UI task:** The dock-specific steps below are historical. Use
+> `docs/superpowers/specs/2026-09-06-world-editor-main-screen-redesign.md` and
+> `docs/superpowers/plans/2026-09-06-world-editor-main-screen-redesign.md` for the active main-screen implementation.
+
 **Files:**
 - Create: `addons/wellwell_world_editor/plugin.cfg`
 - Create: `addons/wellwell_world_editor/world_editor_plugin.gd`

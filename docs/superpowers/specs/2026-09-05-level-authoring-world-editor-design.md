@@ -74,6 +74,10 @@ Generated paths are deterministic. Baking stages all outputs first, validates th
 
 ## Minimal World Editor
 
+> **Superseded UI:** This side-dock design is retained as historical context. The active
+> center-workspace design is `docs/superpowers/specs/2026-09-06-world-editor-main-screen-redesign.md`,
+> implemented by `docs/superpowers/plans/2026-09-06-world-editor-main-screen-redesign.md`.
+
 The plugin lives under `addons/wellwell_world_editor/` and provides a dock with one layout canvas and a compact toolbar:
 
 - Create a room scene inherited from the template.

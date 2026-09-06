@@ -3,6 +3,7 @@ extends Node
 const ROOM_DATA: Script = preload("res://scripts/world/room_data.gd")
 const WORLD_DATA: Script = preload("res://scripts/world/world_data.gd")
 const ROOM_CONNECTION_DATA: Script = preload("res://scripts/world/room_connection_data.gd")
+const PLACEMENT_SCRIPT_PATH := "res://scripts/world/world_room_placement_data.gd"
 
 
 func run() -> Array[String]:
@@ -18,6 +19,10 @@ func run() -> Array[String]:
 	_assert_world_resolves_positions_to_chunks_and_rooms(failures)
 	_assert_world_ignores_invalid_resources(failures)
 	_assert_room_data_keeps_legacy_and_world_owned_fields(failures)
+	_assert_world_placement_overrides_legacy_origin(failures)
+	_assert_world_normalizes_missing_placements(failures)
+	_assert_world_rejects_invalid_placements_without_deleting_them(failures)
+	_assert_shared_room_can_have_independent_world_placements(failures)
 	return failures
 
 
@@ -255,6 +260,119 @@ func _assert_room_data_keeps_legacy_and_world_owned_fields(failures: Array[Strin
 		failures.append("room origin chunk was not retained")
 	if room.adjacent_room_ids != PackedStringArray(["room_b"]):
 		failures.append("adjacent room ids were not retained")
+
+
+func _assert_world_placement_overrides_legacy_origin(failures: Array[String]) -> void:
+	var world: Resource = WORLD_DATA.new()
+	var room: Resource = _make_room("room_a")
+	room.room_origin_chunk = Vector2i(7, 3)
+	world.rooms.assign([room])
+	if not _has_placement_api(world, failures):
+		return
+	var placement: Resource = _make_placement("room_a", Vector2i(-2, 4), failures)
+	if placement == null:
+		return
+	var placement_resources: Array[Resource] = [placement]
+	world.set("placements", placement_resources)
+	if world.call("get_room_origin_chunk", "room_a") != Vector2i(-2, 4):
+		failures.append("world placement did not override the legacy room origin")
+	if world.call("get_room_chunk_rect", "room_a") != Rect2i(-2, 4, 1, 1):
+		failures.append("world chunk rect did not use the authoritative placement")
+
+
+func _assert_world_normalizes_missing_placements(failures: Array[String]) -> void:
+	var world: Resource = WORLD_DATA.new()
+	var room_a: Resource = _make_room("room_a")
+	room_a.room_origin_chunk = Vector2i(3, 5)
+	var room_b: Resource = _make_room("room_b")
+	room_b.room_origin_chunk = Vector2i(-1, 2)
+	world.rooms.assign([room_b, room_a])
+	if not _has_placement_api(world, failures):
+		return
+	var result: Dictionary = world.call("normalize_room_placements")
+	if not result.get("ok", false):
+		failures.append("valid legacy rooms could not be normalized: %s" % str(result))
+		return
+	if result.get("created_count", 0) != 2:
+		failures.append("normalization did not create one placement per missing room")
+	if world.call("get_room_origin_chunk", "room_a") != Vector2i(3, 5):
+		failures.append("normalization did not migrate room_a's legacy origin")
+	if world.call("get_room_origin_chunk", "room_b") != Vector2i(-1, 2):
+		failures.append("normalization did not migrate room_b's legacy origin")
+	var placements: Array = world.get("placements")
+	if placements.size() != 2 or placements[0].room_id != "room_a" or placements[1].room_id != "room_b":
+		failures.append("normalized placements were not complete and sorted")
+
+
+func _assert_world_rejects_invalid_placements_without_deleting_them(failures: Array[String]) -> void:
+	var world: Resource = WORLD_DATA.new()
+	world.rooms.assign([_make_room("room_a")])
+	if not _has_placement_api(world, failures):
+		return
+	var first: Resource = _make_placement("room_a", Vector2i.ZERO, failures)
+	var duplicate: Resource = _make_placement("room_a", Vector2i.ONE, failures)
+	var unknown: Resource = _make_placement("missing", Vector2i(2, 2), failures)
+	var empty: Resource = _make_placement("", Vector2i(3, 3), failures)
+	if first == null or duplicate == null or unknown == null or empty == null:
+		return
+	var placement_resources: Array[Resource] = [first, duplicate, unknown, empty]
+	world.set("placements", placement_resources)
+	var result: Dictionary = world.call("normalize_room_placements")
+	if result.get("ok", true):
+		failures.append("normalization accepted duplicate, unknown, or empty placement ids")
+	if (world.get("placements") as Array).size() != 4:
+		failures.append("normalization silently deleted invalid placement resources")
+
+
+func _assert_shared_room_can_have_independent_world_placements(failures: Array[String]) -> void:
+	var shared_room: Resource = _make_room("shared")
+	shared_room.room_origin_chunk = Vector2i(7, 3)
+	var world_a: Resource = WORLD_DATA.new()
+	var world_b: Resource = WORLD_DATA.new()
+	world_a.rooms.assign([shared_room])
+	world_b.rooms.assign([shared_room])
+	if not _has_placement_api(world_a, failures) or not _has_placement_api(world_b, failures):
+		return
+	world_a.call("normalize_room_placements")
+	world_b.call("normalize_room_placements")
+	world_a.call("set_room_origin_chunk", "shared", Vector2i(-1, -1))
+	world_b.call("set_room_origin_chunk", "shared", Vector2i(4, 2))
+	if world_a.call("get_room_origin_chunk", "shared") != Vector2i(-1, -1):
+		failures.append("world A placement was not authoritative")
+	if world_b.call("get_room_origin_chunk", "shared") != Vector2i(4, 2):
+		failures.append("world B placement was not independent")
+	if shared_room.room_origin_chunk != Vector2i(7, 3):
+		failures.append("setting a world placement mutated shared RoomData")
+
+
+func _has_placement_api(world: Resource, failures: Array[String]) -> bool:
+	for method_name: String in [
+		"get_room_origin_chunk",
+		"set_room_origin_chunk",
+		"get_room_chunk_rect",
+		"normalize_room_placements",
+	]:
+		if not world.has_method(method_name):
+			failures.append("world data did not expose %s" % method_name)
+			return false
+	if not "placements" in world:
+		failures.append("world data did not expose embedded placements")
+		return false
+	return true
+
+
+func _make_placement(room_id: String, origin: Vector2i, failures: Array[String]) -> Resource:
+	if not ResourceLoader.exists(PLACEMENT_SCRIPT_PATH):
+		failures.append("world room placement resource script did not exist")
+		return null
+	var script := load(PLACEMENT_SCRIPT_PATH) as Script
+	if script == null or not script.can_instantiate():
+		failures.append("world room placement resource script could not be instantiated")
+		return null
+	var placement := script.new() as Resource
+	placement.set("room_id", room_id)
+	placement.set("origin_chunk", origin)
+	return placement
 
 
 func _make_room(room_id: String) -> Resource:

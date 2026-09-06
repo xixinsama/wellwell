@@ -253,6 +253,11 @@ func _save_source_fixture() -> Error:
 		layer.name = layer_name
 		terrain.add_child(layer)
 		layer.owner = root
+	var preview_spawn := SpawnPoint.new()
+	preview_spawn.name = "DefaultSpawn"
+	preview_spawn.spawn_id = "default"
+	content.get_node("Entities").add_child(preview_spawn)
+	preview_spawn.owner = root
 	var preview := Node2D.new()
 	preview.name = "PreviewOnly"
 	root.add_child(preview)

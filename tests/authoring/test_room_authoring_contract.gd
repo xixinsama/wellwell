@@ -41,6 +41,7 @@ func run() -> Array[String]:
 	var spawn_b: Node = DerivedSpawnPointScript.new()
 	spawn_b.spawn_id = "spawn_b"
 	entities.add_child(spawn_b)
+	valid_root.preview_spawn_id = "spawn_b"
 	var preview_spawn: Node = SpawnPointScript.new()
 	preview_spawn.spawn_id = "preview_spawn"
 	valid_root.get_node("PreviewOnly").add_child(preview_spawn)
@@ -67,6 +68,16 @@ func run() -> Array[String]:
 	if manifest.get("persistent_entity_ids") != ["switch_a"]:
 		failures.append("manifest persistent entity IDs mismatch")
 	valid_root.free()
+
+	var mismatched_preview = _make_root()
+	mismatched_preview.preview_spawn_id = "preview_a"
+	var only_spawn: Node = SpawnPointScript.new()
+	only_spawn.spawn_id = "start"
+	mismatched_preview.get_node("RoomContent/Entities").add_child(only_spawn)
+	var mismatched_preview_result: Dictionary = RoomAuthoringContractScript.validate(mismatched_preview)
+	if not _contains_error(mismatched_preview_result, "preview_spawn_id does not reference a SpawnPoint: preview_a"):
+		failures.append("unknown preview_spawn_id was not rejected")
+	mismatched_preview.free()
 
 	var missing_root_children = _make_root()
 	missing_root_children.get_node("PreviewOnly").name = "RenamedPreview"
@@ -173,7 +184,7 @@ func _make_root():
 	root.room_id = "room_a"
 	root.display_name = "Room A"
 	root.room_size_chunks = Vector2i(2, 1)
-	root.preview_spawn_id = "default"
+	root.preview_spawn_id = ""
 	root.tags = PackedStringArray(["intro", "test"])
 	var room_content := Node2D.new()
 	room_content.name = "RoomContent"

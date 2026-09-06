@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="WorldData" format=3 uid="uid://822qt6r1pfgg"]
+
+[ext_resource type="Resource" uid="uid://3qjt6epjwt3y" path="res://resources/rooms/generated/level_0_room.tres" id="1_11ecp"]
+[ext_resource type="Resource" uid="uid://b25ghq7n4qvoo" path="res://resources/rooms/generated/level_1_room.tres" id="2_sdsvb"]
+[ext_resource type="Script" uid="uid://dkcwb87qn5n2c" path="res://scripts/world/world_data.gd" id="3_1gko7"]
+[ext_resource type="Resource" uid="uid://cf3qwqdsb67oe" path="res://resources/rooms/generated/level_2_room.tres" id="3_sdsvb"]
+
+[resource]
+script = ExtResource("3_1gko7")
+world_id = "world_test"
+start_room_id = "level_0"
+start_spawn_id = "测试用l0"
+rooms = Array[Resource]([ExtResource("1_11ecp"), ExtResource("2_sdsvb"), ExtResource("3_sdsvb")])
+tags = PackedStringArray()

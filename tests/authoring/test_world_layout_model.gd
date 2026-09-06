@@ -16,6 +16,7 @@ func run() -> Array[String]:
 	_assert_remove_room_clears_referencing_connections_without_files(failures)
 	_assert_overlap_is_warning_only(failures)
 	_assert_start_room_and_spawn_are_required(failures)
+	_assert_no_connections_skip_reachability_warnings(failures)
 	_assert_directed_unreachable_rooms_are_warnings(failures)
 	_assert_connection_endpoints_and_unconnected_entrances_are_validated(failures)
 	_assert_room_paths_and_manifest_ids_are_validated(failures)
@@ -49,11 +50,15 @@ func _assert_restore_and_replace_support_editor_history(failures: Array[String])
 	var replacement := _make_room("room_a")
 	replacement.display_name = "Rebaked"
 	replacement.spawn_ids = PackedStringArray(["new_spawn"])
-	room_a.room_origin_chunk = Vector2i(3, 4)
+	_assert_ok(model.call("move_room", world, "room_a", Vector2i(3, 4)), "move room before replace", failures)
+	var state_before_move: Dictionary = model.call("capture_world_state", world)
+	_assert_ok(model.call("move_room", world, "room_a", Vector2i(9, 9)), "move room after snapshot", failures)
+	_assert_ok(model.call("restore_world_state", world, state_before_move), "restore placement snapshot", failures)
 	_assert_ok(model.call("replace_room", world, "room_a", replacement), "replace rebaked room metadata", failures)
 	var replaced: Resource = world.get_room("room_a")
 	_assert_equal(replaced.display_name, "Rebaked", "replace uses rebaked metadata", failures)
-	_assert_equal(replaced.room_origin_chunk, Vector2i(3, 4), "replace preserves world placement", failures)
+	_assert_equal(world.call("get_room_origin_chunk", "room_a"), Vector2i(3, 4), "replace preserves world placement", failures)
+	_assert_equal(replaced.room_origin_chunk, Vector2i.ZERO, "replace does not write world placement into RoomData", failures)
 	_assert_true(replaced.adjacent_room_ids.has("room_b"), "replace preserves world adjacency", failures)
 
 
@@ -69,9 +74,11 @@ func _assert_add_remove_move_and_deterministic_arrays(failures: Array[String]) -
 	_assert_ok(model.call("add_room", world, room_b), "add room_b", failures)
 	_assert_ok(model.call("add_room", world, room_a), "add room_a", failures)
 	_assert_equal(_room_ids(world), ["room_a", "room_b"], "rooms are sorted after add", failures)
+	_assert_equal(world.call("get_room_origin_chunk", "room_b"), Vector2i.ZERO, "add creates a world-owned placement", failures)
 
 	_assert_ok(model.call("move_room", world, "room_b", Vector2i(-2, 3)), "move room_b", failures)
-	_assert_equal(room_b.room_origin_chunk, Vector2i(-2, 3), "move uses exact integer chunk origin", failures)
+	_assert_equal(world.call("get_room_origin_chunk", "room_b"), Vector2i(-2, 3), "move uses exact integer chunk origin", failures)
+	_assert_equal(room_b.room_origin_chunk, Vector2i(4, 2), "move does not mutate RoomData legacy origin", failures)
 
 	var connection_ba: Resource = _make_connection("room_b", "exit", "room_a", "spawn_main")
 	var connection_ab: Resource = _make_connection("room_a", "exit", "room_b", "spawn_main")
@@ -137,6 +144,7 @@ func _assert_remove_room_clears_referencing_connections_without_files(failures: 
 	var remove_result: Dictionary = model.call("remove_room", world, "room_b")
 	_assert_ok(remove_result, "remove room_b", failures)
 	_assert_equal(_room_ids(world), ["room_a"], "removed room is absent", failures)
+	_assert_equal(world.call("get_room_placement", "room_b"), null, "removed room placement is absent", failures)
 	_assert_equal(world.connections.size(), 0, "removing a room clears all referencing connections", failures)
 	_assert_true(FileAccess.file_exists(room_b.source_scene_path), "removing a room does not delete its source file", failures)
 
@@ -191,6 +199,21 @@ func _assert_directed_unreachable_rooms_are_warnings(failures: Array[String]) ->
 	_assert_contains(report.get("warnings", []), "room room_c is unreachable from start room", "unreachable room warning", failures)
 
 
+func _assert_no_connections_skip_reachability_warnings(failures: Array[String]) -> void:
+	var model = _new_model(failures)
+	if model == null:
+		return
+	var world: Resource = _make_world()
+	for room_id: String in ["room_a", "room_b", "room_c"]:
+		_assert_ok(model.call("add_room", world, _make_room(room_id)), "add %s without connections" % room_id, failures)
+	world.start_room_id = "room_a"
+	world.start_spawn_id = "spawn_main"
+	var report: Dictionary = model.call("validate_world", world)
+	for warning: String in report.get("warnings", []):
+		if warning.contains("is unreachable from start room"):
+			failures.append("world without valid connections produced a reachability warning: %s" % warning)
+
+
 func _assert_connection_endpoints_and_unconnected_entrances_are_validated(failures: Array[String]) -> void:
 	var model = _new_model(failures)
 	if model == null:
@@ -211,7 +234,9 @@ func _assert_connection_endpoints_and_unconnected_entrances_are_validated(failur
 	_assert_contains(report.get("errors", []), "connection room_a->room_b references unknown source entrance: missing_exit", "unknown source entrance error", failures)
 	_assert_contains(report.get("errors", []), "connection room_a->room_b references unknown target spawn: missing_spawn", "unknown target spawn error", failures)
 	_assert_contains(report.get("warnings", []), "room room_a has unconnected entrance: exit_left", "unconnected entrance warning", failures)
-	_assert_contains(report.get("warnings", []), "room room_b is unreachable from start room", "invalid connection does not make room reachable", failures)
+	for warning: String in report.get("warnings", []):
+		if warning.contains("is unreachable from start room"):
+			failures.append("invalid-only connections enabled reachability warnings: %s" % warning)
 
 
 func _assert_room_paths_and_manifest_ids_are_validated(failures: Array[String]) -> void:

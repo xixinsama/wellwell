@@ -3,6 +3,7 @@ extends Node
 const ROOM_DATA: Script = preload("res://scripts/world/room_data.gd")
 const WORLD_DATA: Script = preload("res://scripts/world/world_data.gd")
 const ROOM_CONNECTION_DATA: Script = preload("res://scripts/world/room_connection_data.gd")
+const ROOM_PLACEMENT_DATA: Script = preload("res://scripts/world/world_room_placement_data.gd")
 const WORLD_VALIDATION: Script = preload("res://scripts/world/world_validation.gd")
 
 
@@ -14,6 +15,8 @@ func run() -> Array[String]:
 	_assert_validation_reports_invalid_resource_entries(failures)
 	_assert_validation_rejects_wrong_world_resource(failures)
 	_assert_validation_report_contract(failures)
+	_assert_world_without_connections_skips_reachability(failures)
+	_assert_validation_reports_invalid_placement_membership(failures)
 	return failures
 
 
@@ -125,11 +128,43 @@ func _assert_validation_report_contract(failures: Array[String]) -> void:
 		failures.append("world validation report warnings must be sorted: %s" % str(report_warnings))
 
 
+func _assert_world_without_connections_skips_reachability(failures: Array[String]) -> void:
+	var world: Resource = _make_world([_make_room("room_a"), _make_room("room_b")], [])
+	world.start_room_id = "room_a"
+	world.start_spawn_id = "spawn_main"
+	var report: Dictionary = WORLD_VALIDATION.call("validate_world_report", world)
+	for warning: String in report.get("warnings", []):
+		if warning.contains("is unreachable from start room"):
+			failures.append("connection-free world produced a reachability warning: %s" % warning)
+
+
+func _assert_validation_reports_invalid_placement_membership(failures: Array[String]) -> void:
+	var world: Resource = WORLD_DATA.new()
+	world.world_id = "world_01"
+	world.rooms.assign([_make_room("room_a")])
+	world.start_room_id = "room_a"
+	world.start_spawn_id = "spawn_main"
+	var missing_report: Dictionary = WORLD_VALIDATION.call("validate_world_report", world)
+	_assert_has_error(missing_report.get("errors", []), "world has no placement for room: room_a", failures)
+
+	var first: Resource = ROOM_PLACEMENT_DATA.new()
+	first.room_id = "room_a"
+	var duplicate: Resource = ROOM_PLACEMENT_DATA.new()
+	duplicate.room_id = "room_a"
+	var unknown: Resource = ROOM_PLACEMENT_DATA.new()
+	unknown.room_id = "missing"
+	world.placements.assign([first, duplicate, unknown])
+	var invalid_report: Dictionary = WORLD_VALIDATION.call("validate_world_report", world)
+	_assert_has_error(invalid_report.get("errors", []), "world contains duplicate placement for room room_a", failures)
+	_assert_has_error(invalid_report.get("errors", []), "world placement references unknown room missing", failures)
+
+
 func _make_world(rooms: Array, connections: Array) -> Resource:
 	var world: Resource = WORLD_DATA.new()
 	world.world_id = "world_01"
 	world.rooms.assign(rooms)
 	world.connections.assign(connections)
+	world.normalize_room_placements()
 	return world
 
 

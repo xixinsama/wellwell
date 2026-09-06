@@ -1,11 +1,39 @@
 [gd_scene load_steps=3 format=3]
 
-[ext_resource type="Script" path="res://addons/wellwell_world_editor/world_editor_dock.gd" id="1"]
+[ext_resource type="Script" path="res://addons/wellwell_world_editor/world_editor_main.gd" id="1"]
 [ext_resource type="Script" path="res://addons/wellwell_world_editor/world_layout_canvas.gd" id="2"]
 
-[node name="WorldEditorDock" type="VBoxContainer"]
-custom_minimum_size = Vector2(360, 420)
+[node name="WorldEditorMain" type="VBoxContainer"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
 script = ExtResource("1")
+
+[node name="WorldToolbar" type="HBoxContainer" parent="."]
+layout_mode = 2
+
+[node name="WorldPicker" type="EditorResourcePicker" parent="WorldToolbar"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(280, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+base_type = "WorldData"
+
+[node name="NewWorld" type="Button" parent="WorldToolbar"]
+unique_name_in_owner = true
+layout_mode = 2
+tooltip_text = "Create a WorldData resource"
+text = "New World"
+
+[node name="SaveWorld" type="Button" parent="WorldToolbar"]
+unique_name_in_owner = true
+layout_mode = 2
+tooltip_text = "Save the selected WorldData resource"
+text = "Save World"
 
 [node name="Toolbar" type="HFlowContainer" parent="."]
 layout_mode = 2
@@ -15,6 +43,8 @@ unique_name_in_owner = true
 text = "New Room"
 [node name="AddExisting" type="Button" parent="Toolbar"]
 unique_name_in_owner = true
+disabled = true
+tooltip_text = "Select or create a WorldData resource first"
 text = "Add Existing"
 [node name="RemoveReference" type="Button" parent="Toolbar"]
 unique_name_in_owner = true
@@ -54,11 +84,33 @@ text = "Connect"
 unique_name_in_owner = true
 text = "Disconnect"
 
+[node name="ViewToolbar" type="HBoxContainer" parent="."]
+layout_mode = 2
+
+[node name="FocusAll" type="Button" parent="ViewToolbar"]
+unique_name_in_owner = true
+layout_mode = 2
+tooltip_text = "Fit all rooms in the canvas"
+text = "Focus All"
+
+[node name="ResetView" type="Button" parent="ViewToolbar"]
+unique_name_in_owner = true
+layout_mode = 2
+tooltip_text = "Reset canvas pan and zoom"
+text = "Reset View"
+
+[node name="ZoomLabel" type="Label" parent="ViewToolbar"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "100%"
+
 [node name="LayoutCanvas" type="Control" parent="."]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(350, 330)
 mouse_filter = 0
+focus_mode = 2
 layout_mode = 2
+size_flags_vertical = 3
 script = ExtResource("2")
 
 [node name="Status" type="Label" parent="."]
@@ -72,3 +124,12 @@ title = "Add Existing Room"
 file_mode = 0
 access = 0
 filters = PackedStringArray("*.tscn ; Godot Scene")
+
+[node name="NewWorldDialog" type="FileDialog" parent="."]
+unique_name_in_owner = true
+title = "Create World"
+file_mode = 4
+access = 0
+filters = PackedStringArray("*.tres ; WorldData Resource")
+current_dir = "res://resources/worlds"
+root_subfolder = "res://resources/worlds"

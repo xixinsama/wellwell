@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="RoomData" format=3 uid="uid://c3vhklx4ftt5q"]
+[gd_resource type="Resource" script_class="RoomData" format=3 uid="uid://3qjt6epjwt3y"]
 
 [ext_resource type="Script" uid="uid://iffewvgc6ofw" path="res://scripts/world/room_data.gd" id="1_84yhv"]
 
@@ -10,7 +10,7 @@ scene_path = "res://scenes/rooms/generated/level_0_runtime.tscn"
 source_scene_path = "res://scenes/levels/level_0.tscn"
 terrain_scene_path = "res://scenes/rooms/generated/level_0_terrain.tscn"
 entrance_ids = PackedStringArray()
-spawn_ids = PackedStringArray("start")
+spawn_ids = PackedStringArray("测试用l0")
 entity_ids = PackedStringArray()
 tags = PackedStringArray()
 adjacent_room_ids = PackedStringArray()

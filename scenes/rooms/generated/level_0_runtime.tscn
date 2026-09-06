@@ -1,13 +1,14 @@
-[gd_scene format=3 uid="uid://cb6wefk5lapyh"]
+[gd_scene format=3 uid="uid://b22ebnlt25jor"]
 
 [ext_resource type="Script" uid="uid://bo5asnakkt3ao" path="res://scripts/world/spawn_point.gd" id="1_a5ldv"]
 
-[node name="RoomRuntimeContent" type="Node2D" unique_id=626088862]
+[node name="RoomRuntimeContent" type="Node2D" unique_id=1635264252]
 
-[node name="Entities" type="Node2D" parent="." unique_id=1400226429]
+[node name="Entities" type="Node2D" parent="." unique_id=1122258738]
 
-[node name="StartSpawn" type="Marker2D" parent="Entities" unique_id=1868388145]
+[node name="StartSpawn" type="Marker2D" parent="Entities" unique_id=589196301]
 position = Vector2(32, 160)
 script = ExtResource("1_a5ldv")
+spawn_id = "测试用l0"
 
-[node name="Foreground" type="Node2D" parent="." unique_id=132490277]
+[node name="Foreground" type="Node2D" parent="." unique_id=1194645547]

@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="RoomData" format=3 uid="uid://b5ujfgl5bsc8t"]
+
+[ext_resource type="Script" uid="uid://iffewvgc6ofw" path="res://scripts/world/room_data.gd" id="1_874ow"]
+
+[resource]
+script = ExtResource("1_874ow")
+room_id = "level_1"
+display_name = "level 1"
+scene_path = "res://scenes/rooms/generated/level_1_runtime.tscn"
+source_scene_path = "res://scenes/levels/level_1.tscn"
+terrain_scene_path = "res://scenes/rooms/generated/level_1_terrain.tscn"
+entrance_ids = PackedStringArray()
+spawn_ids = PackedStringArray("测试用l1")
+entity_ids = PackedStringArray()
+tags = PackedStringArray()
+adjacent_room_ids = PackedStringArray()

@@ -14,6 +14,7 @@ const DEFAULT_CELL_SIZE := Vector2i(8, 8)
 @export var spawn_ids := PackedStringArray()
 @export var entity_ids := PackedStringArray()
 @export var tags := PackedStringArray()
+# Legacy fallback for worlds created before WorldData embedded room placements.
 @export var room_origin_chunk := Vector2i.ZERO
 @export var room_size_chunks := Vector2i.ONE
 @export var adjacent_room_ids := PackedStringArray()

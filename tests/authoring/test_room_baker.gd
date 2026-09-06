@@ -86,6 +86,21 @@ class CanonicalizationInspectingRoomBaker extends "res://scripts/authoring/room_
 		return _canonicalize_value(value)
 
 
+class UIDRegisteringRoomBaker extends "res://scripts/authoring/room_baker.gd":
+	var registered_ids: Array[int] = []
+	var final_paths_by_uid: Dictionary = {}
+
+	func _after_staged_resources_saved(staged_paths: Dictionary, _staged: Dictionary) -> Dictionary:
+		for staged_path: String in staged_paths.values():
+			var uid := ResourceUID.create_id()
+			if ResourceSaver.set_uid(staged_path, uid) != OK:
+				return {"ok": false, "errors": ["could not assign staged test UID"], "warnings": []}
+			ResourceUID.add_id(uid, staged_path)
+			registered_ids.append(uid)
+			final_paths_by_uid[uid] = staged_path.replace(".stage.", ".")
+		return {"ok": true, "errors": [], "warnings": []}
+
+
 const ROOM_BAKER: Script = preload("res://scripts/authoring/room_baker.gd")
 const ROOM_BAKE_PATHS: Script = preload("res://scripts/authoring/room_bake_paths.gd")
 const ROOM_DATA: Script = preload("res://scripts/world/room_data.gd")
@@ -128,6 +143,7 @@ func run() -> Array[String]:
 	var first_contract := _load_contract(paths, failures)
 	_assert_split_contract(first_contract, paths, failures)
 	_assert_room_metadata(first_contract, paths, failures)
+	_assert_promoted_resource_uids_resolve_to_final_paths(source, paths, failures)
 	_assert_no_temporary_outputs(paths, failures)
 	_assert_malformed_staged_barriers(baker, source, paths, failures)
 	_assert_signature_property_barriers(baker, source, paths, failures)
@@ -243,6 +259,30 @@ func _assert_textual_variant_key_identity(failures: Array[String]) -> void:
 		failures.append("canonicalization did not retain StringName dictionary key identity")
 	if canonical_keys.get({"variant_type": "NodePath", "value": "shared"}) != "NodePath":
 		failures.append("canonicalization did not retain String/StringName/NodePath dictionary key identity")
+
+
+func _assert_promoted_resource_uids_resolve_to_final_paths(source: Node, paths: Dictionary, failures: Array[String]) -> void:
+	var stale_stage_path := _marked_path(paths["room_resource_path"], ".stage")
+	var stale_uid := ResourceUID.create_id()
+	ResourceUID.add_id(stale_uid, stale_stage_path)
+	var uid_baker := UIDRegisteringRoomBaker.new()
+	var result: Dictionary = uid_baker.bake(source, SOURCE_PATH)
+	if not result.get("ok", false):
+		failures.append("could not bake UID promotion fixture: %s" % result.get("errors", []))
+	if ResourceUID.has_id(stale_uid):
+		failures.append("stale staged resource UID was retained after a new bake")
+	for uid: int in uid_baker.registered_ids:
+		var final_path := String(uid_baker.final_paths_by_uid[uid])
+		if ResourceUID.get_id_path(uid) != final_path:
+			failures.append(
+				"promoted resource UID resolves to %s instead of %s"
+				% [ResourceUID.get_id_path(uid), final_path]
+			)
+	for uid: int in uid_baker.registered_ids:
+		if ResourceUID.has_id(uid):
+			ResourceUID.remove_id(uid)
+	if ResourceUID.has_id(stale_uid):
+		ResourceUID.remove_id(stale_uid)
 
 
 func _stage_with_changed_embedded_resource_property(baker: RefCounted, source: Node) -> Dictionary:

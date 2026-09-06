@@ -30,7 +30,10 @@ static func validate(root: Node) -> Dictionary:
 	if room_size_chunks.x <= 0 or room_size_chunks.y <= 0:
 		errors.append("room_size_chunks must be positive on both axes")
 	if room_content != null:
-		_validate_unique_ids(room_content, errors)
+		var ids := _validate_unique_ids(room_content, errors)
+		var preview_spawn_id := String(root.get("preview_spawn_id"))
+		if not preview_spawn_id.is_empty() and not (ids.get("spawns", {}) as Dictionary).has(preview_spawn_id):
+			errors.append("preview_spawn_id does not reference a SpawnPoint: %s" % preview_spawn_id)
 	return {"errors": errors, "warnings": warnings}
 
 
@@ -50,11 +53,16 @@ static func _validate_content(room_content: Node, errors: Array[String]) -> void
 			errors.append("Terrain layer must be TileMapLayer: %s" % layer_name)
 
 
-static func _validate_unique_ids(root: Node, errors: Array[String]) -> void:
+static func _validate_unique_ids(root: Node, errors: Array[String]) -> Dictionary:
 	var entrance_ids: Dictionary = {}
 	var spawn_ids: Dictionary = {}
 	var persistent_entity_ids: Dictionary = {}
 	_validate_ids_recursive(root, entrance_ids, spawn_ids, persistent_entity_ids, errors)
+	return {
+		"entrances": entrance_ids,
+		"spawns": spawn_ids,
+		"persistent_entities": persistent_entity_ids,
+	}
 
 
 static func _is_room_authoring_root(root: Node) -> bool:
