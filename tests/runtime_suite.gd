@@ -1,6 +1,8 @@
 extends Node
 
 const TESTS: Array[Script] = [
+	preload("res://tests/authoring/room/test_room_bake_paths.gd"),
+	preload("res://tests/authoring/room/test_source_fingerprint.gd"),
 	preload("res://tests/authoring/test_room_authoring_contract.gd"),
 	preload("res://tests/authoring/test_room_bake_model.gd"),
 	preload("res://tests/authoring/test_room_baker.gd"),
@@ -18,6 +20,8 @@ const TESTS: Array[Script] = [
 	preload("res://tests/save/test_save_storage.gd"),
 	preload("res://tests/save/test_save_slots.gd"),
 	preload("res://tests/world/test_fog_visibility.gd"),
+	preload("res://tests/world/data/test_room_grid.gd"),
+	preload("res://tests/world/test_pixel_camera.gd"),
 	preload("res://tests/world/test_runtime_bindings.gd"),
 	preload("res://tests/world/test_tilemap_scene_contract.gd"),
 	preload("res://tests/world/test_world_data.gd"),

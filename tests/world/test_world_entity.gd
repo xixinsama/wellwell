@@ -1,9 +1,16 @@
 extends Node
 
-const WORLD_ENTITY := preload("res://scripts/world/world_entity.gd")
-const SWITCH_ENTITY := preload("res://scripts/world/switch_entity.gd")
-const PICKUP_ENTITY := preload("res://scripts/world/pickup_entity.gd")
-const ROOM_ENTRANCE := preload("res://scripts/world/room_entrance.gd")
+const WORLD_ENTITY := preload("res://scripts/world/entities/world_entity.gd")
+const SWITCH_ENTITY := preload("res://scripts/world/entities/switch_entity.gd")
+const PICKUP_ENTITY := preload("res://scripts/world/entities/pickup_entity.gd")
+const ROOM_ENTRANCE := preload("res://scripts/world/entities/room_entrance.gd")
+
+
+class StateSink extends RefCounted:
+	var states: Dictionary = {}
+
+	func set_entity_state(key: String, state: Dictionary) -> void:
+		states[key] = state.duplicate(true)
 
 func run() -> Array[String]:
 	var failures: Array[String] = []
@@ -32,17 +39,32 @@ func run() -> Array[String]:
 		failures.append("pickup state did not round trip")
 	pickup.free()
 
+	_assert_entity_mutations_commit_to_the_state_sink(failures)
+
 	var entrance: Node = ROOM_ENTRANCE.new()
-	entrance.target_room_id = "legacy_room"
-	entrance.target_spawn_id = "legacy_spawn"
-	if entrance.target_room_id != "legacy_room" or entrance.target_spawn_id != "legacy_spawn":
-		failures.append("legacy room entrance destination fields were not readable")
 	for property_info: Dictionary in entrance.get_property_list():
 		var property_name := String(property_info.get("name", ""))
-		if property_name != "target_room_id" and property_name != "target_spawn_id":
-			continue
-		var usage := int(property_info.get("usage", 0))
-		if not usage & PROPERTY_USAGE_STORAGE or usage & PROPERTY_USAGE_EDITOR:
-			failures.append("legacy room entrance destination remained editable instead of storage-only")
+		if property_name in ["target_room_id", "target_spawn_id"]:
+			failures.append("room entrance still serializes a transition target")
 	entrance.free()
 	return failures
+
+
+func _assert_entity_mutations_commit_to_the_state_sink(failures: Array[String]) -> void:
+	var pickup: Node = PICKUP_ENTITY.new()
+	var sink := StateSink.new()
+	pickup.entity_id = "pickup_01"
+	pickup.persistent = true
+	pickup.setup_entity({
+		"world_id": "world_01",
+		"room_id": "room_a",
+		"entity_state_sink": sink,
+	})
+	if not pickup.has_method("commit_save_state"):
+		failures.append("persistent entities must expose commit_save_state")
+	else:
+		pickup.collect()
+		var state: Dictionary = sink.states.get("world_01:room_a:pickup_01", {})
+		if not bool(state.get("collected", false)):
+			failures.append("collecting a pickup must immediately write its state")
+	pickup.free()

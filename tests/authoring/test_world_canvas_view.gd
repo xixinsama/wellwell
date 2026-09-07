@@ -1,9 +1,9 @@
 extends Node
 
-const VIEW_PATH := "res://scripts/authoring/world_canvas_view.gd"
+const VIEW_PATH := "res://scripts/authoring/world/world_canvas_view.gd"
 const CANVAS_PATH := "res://addons/wellwell_world_editor/world_layout_canvas.gd"
-const WORLD_DATA := preload("res://scripts/world/world_data.gd")
-const ROOM_DATA := preload("res://scripts/world/room_data.gd")
+const WORLD_DATA := preload("res://scripts/world/data/world_data.gd")
+const ROOM_DATA := preload("res://scripts/world/data/room_data.gd")
 
 
 class FakeMain extends Control:
@@ -18,10 +18,7 @@ class FakeMain extends Control:
 	func move_room(room_id: String, chunk: Vector2i) -> bool:
 		moved_room_id = room_id
 		moved_chunk = chunk
-		var room: Resource = world_data.get_room(room_id)
-		if room != null:
-			room.room_origin_chunk = chunk
-		return room != null
+		return world_data.set_room_origin_chunk(room_id, chunk)
 
 
 func run() -> Array[String]:
@@ -135,6 +132,7 @@ func _assert_canvas_navigation(failures: Array[String]) -> void:
 		&"focus_all", &"focus_room", &"reset_view", &"begin_room_drag", &"update_room_drag",
 		&"update_cursor", &"get_cursor_world_pixels", &"get_cursor_chunk", &"get_visible_grid_lines",
 		&"get_drag_preview_chunk",
+		&"get_hovered_room_id", &"cancel_room_drag",
 	]
 	for method: StringName in required_methods:
 		if not canvas.has_method(method):
@@ -150,6 +148,8 @@ func _assert_canvas_navigation(failures: Array[String]) -> void:
 	var room_a := _make_room("room_a", Vector2i.ZERO, Vector2i.ONE)
 	var room_b := _make_room("room_b", Vector2i(2, 1), Vector2i(2, 1))
 	main.world_data.rooms.assign([room_a, room_b])
+	main.world_data.set_room_origin_chunk("room_a", Vector2i.ZERO)
+	main.world_data.set_room_origin_chunk("room_b", Vector2i(2, 1))
 	canvas.call("set_main_screen", main)
 	add_child(canvas)
 
@@ -175,12 +175,18 @@ func _assert_canvas_navigation(failures: Array[String]) -> void:
 		failures.append("low-zoom grid thinning removed the zero axis")
 
 	canvas.call("reset_view")
+	canvas.call("update_cursor", Vector2(500, 350))
+	if canvas.call("get_hovered_room_id") != "room_a":
+		failures.append("room hover state did not identify the room under the cursor")
 	if not canvas.call("begin_room_drag", "room_a", Vector2(500, 350)):
 		failures.append("room drag could not begin for an existing room")
 	else:
 		canvas.call("update_room_drag", Vector2(500 + 320, 350 + 180))
 		if canvas.call("get_drag_preview_chunk") != Vector2i(1, 1):
 			failures.append("room drag did not snap by one complete 320x180 chunk")
+		canvas.call("cancel_room_drag")
+		if canvas.call("get_drag_preview_chunk") != Vector2i.ZERO:
+			failures.append("cancelled room drag retained its preview coordinate")
 
 	canvas.call("reset_view")
 	var wheel_up := InputEventMouseButton.new()
@@ -250,6 +256,6 @@ func _assert_canvas_navigation(failures: Array[String]) -> void:
 func _make_room(room_id: String, origin: Vector2i, room_size: Vector2i) -> Resource:
 	var room := ROOM_DATA.new() as Resource
 	room.room_id = room_id
-	room.room_origin_chunk = origin
+	room.set_meta("test_origin", origin)
 	room.room_size_chunks = room_size
 	return room

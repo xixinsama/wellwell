@@ -1,8 +1,8 @@
 extends Node
 
-const ROOM_DATA: Script = preload("res://scripts/world/room_data.gd")
-const WORLD_DATA: Script = preload("res://scripts/world/world_data.gd")
-const TERRAIN_RUNTIME_PATH := "res://scripts/world/world_terrain_runtime.gd"
+const ROOM_DATA: Script = preload("res://scripts/world/data/room_data.gd")
+const WORLD_DATA: Script = preload("res://scripts/world/data/world_data.gd")
+const TERRAIN_RUNTIME_PATH := "res://scripts/world/runtime/world_terrain_runtime.gd"
 const TERRAIN_A_PATH := "user://task7_terrain_a.tscn"
 const TERRAIN_B_PATH := "user://task7_terrain_b.tscn"
 const BROKEN_TERRAIN_PATH := "user://task7_broken_terrain.tscn"
@@ -142,16 +142,15 @@ func _make_world(rooms: Array) -> Resource:
 	var world: Resource = WORLD_DATA.new()
 	world.world_id = "task7_world"
 	world.rooms.assign(rooms)
-	world.normalize_room_placements()
 	for room: Resource in rooms:
-		world.set_room_origin_chunk(room.room_id, room.room_origin_chunk)
+		world.set_room_origin_chunk(room.room_id, room.get_meta("test_origin", Vector2i.ZERO))
 	return world
 
 
 func _make_room(room_id: String, origin: Vector2i, terrain_path: String) -> Resource:
 	var room: Resource = ROOM_DATA.new()
 	room.room_id = room_id
-	room.room_origin_chunk = origin
+	room.set_meta("test_origin", origin)
 	room.room_size_chunks = Vector2i.ONE
 	room.terrain_scene_path = terrain_path
 	return room

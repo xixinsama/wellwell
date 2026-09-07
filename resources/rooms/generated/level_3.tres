@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="RoomData" format=3]
+
+[ext_resource type="Script" path="res://scripts/world/data/room_data.gd" id="1_81l5m"]
+
+[resource]
+script = ExtResource("1_81l5m")
+room_id = "level_3"
+display_name = "level 3"
+scene_path = "res://scenes/rooms/generated/level_3/runtime.tscn"
+source_scene_path = "res://scenes/rooms/source/level_3.tscn"
+source_fingerprint = "de9a7fa0039cda91deac82dae68667c1f48af5cb423d93f61c90633921a6f955"
+terrain_scene_path = "res://scenes/rooms/generated/level_3/terrain.tscn"
+entrance_ids = PackedStringArray()
+spawn_ids = PackedStringArray("测试用l3")
+entity_ids = PackedStringArray()
+tags = PackedStringArray()
+room_size_chunks = Vector2i(2, 1)

@@ -1,11 +1,11 @@
 extends Node
 
-const IMPORTER_PATH := "res://scripts/authoring/world_room_importer.gd"
-const WORLD_SERVICE := preload("res://scripts/authoring/world_resource_service.gd")
-const WORLD_DATA := preload("res://scripts/world/world_data.gd")
-const ROOM_DATA := preload("res://scripts/world/room_data.gd")
+const IMPORTER_PATH := "res://scripts/authoring/world/world_room_importer.gd"
+const WORLD_SERVICE := preload("res://scripts/authoring/world/world_resource_service.gd")
+const WORLD_DATA := preload("res://scripts/world/data/world_data.gd")
+const ROOM_DATA := preload("res://scripts/world/data/room_data.gd")
 const WORLD_PATH := "res://resources/worlds/test_import_world.tres"
-const SOURCE_PATH := "res://scenes/levels/test_import_source.tscn"
+const SOURCE_PATH := "res://scenes/rooms/source/test_import_source.tscn"
 const ROOM_ID := "test_import_room"
 const OUTPUTS := {
 	"room_resource_path": "res://resources/rooms/generated/test_import_room_room.tres",

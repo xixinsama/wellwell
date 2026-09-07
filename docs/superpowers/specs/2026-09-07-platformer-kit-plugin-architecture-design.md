@@ -1,0 +1,128 @@
+# Platformer Kit Plugin Architecture
+
+## Status
+
+Approved direction for the next planning cycle. This document defines the
+target architecture; it does not authorize implementation of every module at
+once.
+
+## Goal
+
+Turn `wellwell` from a game template into a reusable 2D platformer framework
+SDK. A future game should fork or consume the framework, place its content in
+`game/`, and avoid rewriting character movement, camera, rooms, persistence,
+damage, respawn, or optional Metroidvania infrastructure.
+
+The dependency direction is always:
+
+```text
+Game Content -> Optional Modules -> Platformer Kit -> Godot
+```
+
+The framework must never reference concrete game content.
+
+## Repository Boundaries
+
+```text
+res://
+├── addons/
+│   ├── platformer_kit/       # reusable runtime framework and contracts
+│   ├── world_editor/         # optional Godot editor plugin
+│   ├── platformer_debug/     # optional development diagnostics
+│   ├── platformer_abilities/ # optional ability runtime
+│   ├── platformer_combat/    # optional damage and health runtime
+│   └── metroidvania_kit/     # optional progression and exploration layer
+├── game/                     # concrete game content and composition
+├── examples/                 # framework verification scenes and demos
+├── tests/                    # framework and integration tests
+└── assets/                   # project-owned art and audio
+```
+
+`platformer_kit` is internally divided into `core`, `character`, `camera`,
+`platforms`, `interaction`, `world`, `save`, `contracts`, `resources`, and
+`debug`-independent runtime code. These directories are modules, not separate
+Godot plugins unless they later need an independent editor lifecycle.
+
+`world_editor` consumes framework world contracts and never becomes a runtime
+dependency. The existing world editor is frozen during the first migration
+stages and can be renamed and moved after its contracts stabilize.
+
+## Module Responsibilities
+
+### Platformer Kit
+
+Owns framework-neutral services and data: state machines, events, tags,
+`CharacterIntent`, `CharacterEnvironmentSnapshot`, `CharacterMotor2D`,
+movement profiles, sensors, pixel camera behavior, platform motion, rooms,
+spawns, checkpoints, stable persistent IDs, save interfaces, and world
+runtime contracts.
+
+The motor does not read `Input`, inspect animation state, know about HP, or
+look up autoloads. Runtime services are passed through explicit references or
+small interfaces rather than hard-coded node paths.
+
+### Optional Modules
+
+`platformer_abilities` owns ability definitions, runtime instances, cooldowns,
+and ability context. `platformer_combat` owns hitboxes, hurtboxes, health,
+damage events, invulnerability, teams, and knockback. Neither module may
+contain concrete player, enemy, weapon, or boss content.
+
+`metroidvania_kit` depends on the world, save, and ability contracts. It owns
+progression context, ability/item/flag conditions, gates, room discovery,
+world state, maps, and fast travel. A basic platformer must be able to omit it.
+
+`platformer_debug` owns optional runtime overlays and visualizers for velocity,
+state, sensors, collision, hitboxes, room IDs, persistent IDs, and ability
+tags. It must be removable without changing gameplay behavior.
+
+## Composition Rules
+
+Concrete scenes, enemies, bosses, items, maps, menus, and story data belong in
+`game/`. Framework resources provide defaults and schemas; game resources
+provide values and concrete behavior. Gameplay state controls animation;
+animation completion must not be the source of gameplay state transitions.
+
+The framework must not depend on `main_world.tres`, concrete level scenes,
+game-specific autoload names, fixed player paths, or editor-only classes.
+Editor tools may depend on framework data contracts, but runtime code must
+remain loadable with editor plugins disabled.
+
+## Migration Strategy
+
+Migration uses a strangler approach so current gameplay remains runnable:
+
+1. Freeze new World Editor features and establish a passing baseline.
+2. Create framework contracts and the `platformer_kit` package boundary.
+3. Migrate input intent, character motor, sensors, and movement profiles.
+4. Add a `movement_lab` example and migrate camera/platform behavior.
+5. Migrate interaction, combat, and health into optional modules.
+6. Migrate abilities and condition-based gates.
+7. Move room streaming, fog, and stable-ID persistence behind framework APIs.
+8. Reconnect the existing World Editor to those APIs.
+9. Add debug labs, versioning, migration notes, and package checks.
+10. Consider extracting the framework into a separate repository only after a
+    stable `1.0.0` API exists.
+
+Existing `level_0` through `level_3` content remains available as a reference
+game during migration. It is moved to `examples/metroidvania_demo/` only after
+replacement framework contracts have tests and the current runtime still
+launches successfully.
+
+## Verification Requirements
+
+Each module must have focused runtime tests and at least one integration test
+through its public contract. Static checks must reject framework-to-game
+references. `movement_lab`, `combat_lab`, `ability_lab`, and
+`metroidvania_demo` must launch independently. Framework tests must not require
+the current project's main scene or concrete world resource.
+
+The project uses semantic versioning for the framework. Public resource fields,
+script classes, signals, and method signatures are API surface. Breaking
+changes require `CHANGELOG.md`, `MIGRATION.md`, and an explicit version bump.
+
+## Non-Goals
+
+This phase does not redesign the World Editor, add new tile authoring tools,
+create a specific game, or immediately split the repository into Git
+submodules. Those activities follow API stabilization.

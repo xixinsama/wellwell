@@ -89,6 +89,10 @@ func get_preview_room_ids() -> Array[String]:
     return result
 
 
+func get_preview_errors() -> Dictionary:
+    return preview_errors.duplicate()
+
+
 func _refresh_room_internal(room_id: String) -> void:
     if _world == null or not _world.has_room(room_id):
         return

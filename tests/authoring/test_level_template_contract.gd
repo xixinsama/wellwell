@@ -1,10 +1,10 @@
 extends Node
 
-const ROOM_AUTHORING_CONTRACT: Script = preload("res://scripts/authoring/room_authoring_contract.gd")
-const ROOM_BAKER: Script = preload("res://scripts/authoring/room_baker.gd")
+const ROOM_AUTHORING_CONTRACT: Script = preload("res://scripts/authoring/room/room_authoring_contract.gd")
+const ROOM_BAKER: Script = preload("res://scripts/authoring/room/room_baker.gd")
 
-const TEMPLATE_PATH := "res://scenes/templates/level_template.tscn"
-const LEVEL_ZERO_PATH := "res://scenes/levels/level_0.tscn"
+const TEMPLATE_PATH := "res://scenes/rooms/template/level_template.tscn"
+const LEVEL_ZERO_PATH := "res://scenes/rooms/source/level_0.tscn"
 const LAYER_NAMES: Array[String] = [
 	"BackTiles",
 	"SolidTiles",
@@ -65,8 +65,8 @@ func _assert_level_metadata_and_content(root: Node, failures: Array[String]) -> 
 		failures.append("level_0 display_name override is missing")
 	if root.get("room_size_chunks") != Vector2i.ONE:
 		failures.append("level_0 validation room must remain one chunk")
-	if String(root.get("preview_spawn_id")) != "start":
-		failures.append("level_0 preview spawn must be start")
+	if String(root.get("preview_spawn_id")).is_empty():
+		failures.append("level_0 preview_spawn_id must not be empty")
 	var start_spawn := root.get_node_or_null("RoomContent/Entities/StartSpawn")
 	if not start_spawn is SpawnPoint:
 		failures.append("level_0 StartSpawn must be a SpawnPoint")

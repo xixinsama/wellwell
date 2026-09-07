@@ -1,10 +1,10 @@
 extends Node
 
-const ROOM_AUTHORING_ROOT: Script = preload("res://scripts/authoring/room_authoring_root.gd")
-const ROOM_PREVIEW_CONTROLLER: Script = preload("res://scripts/authoring/room_preview_controller.gd")
-const ROOM_ENTRANCE: Script = preload("res://scripts/world/room_entrance.gd")
-const SPAWN_POINT: Script = preload("res://scripts/world/spawn_point.gd")
-const FOG_OF_WAR: Script = preload("res://scripts/world/fog_of_war.gd")
+const ROOM_AUTHORING_ROOT: Script = preload("res://scripts/authoring/room/room_authoring_root.gd")
+const ROOM_PREVIEW_CONTROLLER: Script = preload("res://scripts/authoring/room/room_preview_controller.gd")
+const ROOM_ENTRANCE: Script = preload("res://scripts/world/entities/room_entrance.gd")
+const SPAWN_POINT: Script = preload("res://scripts/world/entities/spawn_point.gd")
+const FOG_OF_WAR: Script = preload("res://scripts/world/fog/fog_of_war.gd")
 
 
 class PreviewCamera extends Node:
@@ -119,8 +119,6 @@ func _assert_entrances_only_emit_preview_blocking_signal(failures: Array[String]
 	_add_spawn(root, "start", Vector2.ZERO)
 	var entrance: RoomEntrance = ROOM_ENTRANCE.new() as RoomEntrance
 	entrance.entity_id = "exit_a"
-	entrance.target_room_id = "legacy_room"
-	entrance.target_spawn_id = "legacy_spawn"
 	root.get_node("RoomContent/Entities").add_child(entrance)
 	var controller := _add_controller(root)
 	var blocked: Array[RoomEntrance] = []
@@ -130,8 +128,6 @@ func _assert_entrances_only_emit_preview_blocking_signal(failures: Array[String]
 	entrance.request_transition()
 	if blocked != [entrance]:
 		failures.append("preview entrance did not emit exactly one transition_blocked signal")
-	if entrance.target_room_id != "legacy_room" or entrance.target_spawn_id != "legacy_spawn":
-		failures.append("legacy entrance destinations were not retained as readable migration storage")
 	root.free()
 
 

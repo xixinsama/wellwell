@@ -1,7 +1,7 @@
 extends Node
 
 
-class FailingRoomBaker extends "res://scripts/authoring/room_baker.gd":
+class FailingRoomBaker extends "res://scripts/authoring/room/room_baker.gd":
 	var promote_attempts := 0
 
 	func _promote_staged_file(staged_path: String, final_path: String) -> Error:
@@ -11,12 +11,12 @@ class FailingRoomBaker extends "res://scripts/authoring/room_baker.gd":
 		return super._promote_staged_file(staged_path, final_path)
 
 
-class WarningRoomBaker extends "res://scripts/authoring/room_baker.gd":
+class WarningRoomBaker extends "res://scripts/authoring/room/room_baker.gd":
 	func validate(_source_root: Node) -> Dictionary:
 		return {"ok": true, "errors": [], "warnings": ["test authoring warning"]}
 
 
-class RemovalFailingRoomBaker extends "res://scripts/authoring/room_baker.gd":
+class RemovalFailingRoomBaker extends "res://scripts/authoring/room/room_baker.gd":
 	var promote_attempts := 0
 	var fail_removal_path := ""
 
@@ -32,7 +32,7 @@ class RemovalFailingRoomBaker extends "res://scripts/authoring/room_baker.gd":
 		return super._remove_file(path)
 
 
-class PostSaveMutationBaker extends "res://scripts/authoring/room_baker.gd":
+class PostSaveMutationBaker extends "res://scripts/authoring/room/room_baker.gd":
 	var mutation := ""
 
 	func _after_staged_resources_saved(staged_paths: Dictionary, _staged: Dictionary) -> Dictionary:
@@ -72,7 +72,7 @@ class PostSaveMutationBaker extends "res://scripts/authoring/room_baker.gd":
 			_assign_owner_recursive(child, root)
 
 
-class BackupCleanupFailingRoomBaker extends "res://scripts/authoring/room_baker.gd":
+class BackupCleanupFailingRoomBaker extends "res://scripts/authoring/room/room_baker.gd":
 	var failing_backup_path := ""
 
 	func _remove_file(path: String) -> Error:
@@ -81,12 +81,12 @@ class BackupCleanupFailingRoomBaker extends "res://scripts/authoring/room_baker.
 		return super._remove_file(path)
 
 
-class CanonicalizationInspectingRoomBaker extends "res://scripts/authoring/room_baker.gd":
+class CanonicalizationInspectingRoomBaker extends "res://scripts/authoring/room/room_baker.gd":
 	func canonicalize(value: Variant) -> Variant:
 		return _canonicalize_value(value)
 
 
-class UIDRegisteringRoomBaker extends "res://scripts/authoring/room_baker.gd":
+class UIDRegisteringRoomBaker extends "res://scripts/authoring/room/room_baker.gd":
 	var registered_ids: Array[int] = []
 	var final_paths_by_uid: Dictionary = {}
 
@@ -101,13 +101,13 @@ class UIDRegisteringRoomBaker extends "res://scripts/authoring/room_baker.gd":
 		return {"ok": true, "errors": [], "warnings": []}
 
 
-const ROOM_BAKER: Script = preload("res://scripts/authoring/room_baker.gd")
-const ROOM_BAKE_PATHS: Script = preload("res://scripts/authoring/room_bake_paths.gd")
-const ROOM_DATA: Script = preload("res://scripts/world/room_data.gd")
-const ROOM_AUTHORING_ROOT: Script = preload("res://scripts/authoring/room_authoring_root.gd")
-const ROOM_ENTRANCE: Script = preload("res://scripts/world/room_entrance.gd")
-const SPAWN_POINT: Script = preload("res://scripts/world/spawn_point.gd")
-const WORLD_ENTITY: Script = preload("res://scripts/world/world_entity.gd")
+const ROOM_BAKER: Script = preload("res://scripts/authoring/room/room_baker.gd")
+const ROOM_BAKE_PATHS: Script = preload("res://scripts/authoring/room/room_bake_paths.gd")
+const ROOM_DATA: Script = preload("res://scripts/world/data/room_data.gd")
+const ROOM_AUTHORING_ROOT: Script = preload("res://scripts/authoring/room/room_authoring_root.gd")
+const ROOM_ENTRANCE: Script = preload("res://scripts/world/entities/room_entrance.gd")
+const SPAWN_POINT: Script = preload("res://scripts/world/entities/spawn_point.gd")
+const WORLD_ENTITY: Script = preload("res://scripts/world/entities/world_entity.gd")
 const EMBEDDED_SIGNATURE_RESOURCE: Script = preload("res://tests/authoring/embedded_signature_resource_fixture.gd")
 const SIGNATURE_FIXTURE_NODE: Script = preload("res://tests/authoring/signature_fixture_node.gd")
 
@@ -737,8 +737,6 @@ func _load_contract(paths: Dictionary, failures: Array[String]) -> Dictionary:
 		"spawn_ids": Array(room_data.spawn_ids),
 		"entity_ids": Array(room_data.entity_ids),
 		"tags": Array(room_data.tags),
-		"room_origin_chunk": room_data.room_origin_chunk,
-		"adjacent_room_ids": Array(room_data.adjacent_room_ids),
 	}
 	runtime_root.free()
 	terrain_root.free()
@@ -789,8 +787,6 @@ func _assert_room_metadata(contract: Dictionary, paths: Dictionary, failures: Ar
 		"spawn_ids": ["spawn_a"],
 		"entity_ids": ["switch_a"],
 		"tags": ["authoring", "test"],
-		"room_origin_chunk": Vector2i.ZERO,
-		"adjacent_room_ids": [],
 	}
 	for key: String in expected:
 		if contract.get(key) != expected[key]:

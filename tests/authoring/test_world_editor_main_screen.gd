@@ -27,7 +27,17 @@ func run() -> Array[String]:
 			failures.append("World Editor main-screen scene root is not Control")
 		elif (int(_scene_node_property(state, 0, &"size_flags_vertical", 0)) & Control.SIZE_EXPAND) == 0:
 			failures.append("World Editor main screen does not expand vertically")
+		var layout_canvas_index := _scene_node_index(state, "LayoutCanvas")
+		if layout_canvas_index < 0 or not bool(_scene_node_property(state, layout_canvas_index, &"clip_contents", false)):
+			failures.append("World Editor canvas does not clip enlarged room previews to its bounds")
 	return failures
+
+
+func _scene_node_index(state: SceneState, path: String) -> int:
+	for index: int in state.get_node_count():
+		if String(state.get_node_path(index)).trim_prefix("./") == path:
+			return index
+	return -1
 
 
 func _scene_node_property(state: SceneState, node_index: int, property: StringName, default: Variant) -> Variant:

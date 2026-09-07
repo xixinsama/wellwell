@@ -87,52 +87,50 @@ static func from_dictionary(data: Dictionary) -> RefCounted:
 func load_from_dictionary(data: Dictionary) -> RefCounted:
 	if int(data.get("format_version", -1)) != FORMAT_VERSION:
 		return null
-
 	var parsed_slot := int(data.get("slot", 0))
 	if parsed_slot < 1 or parsed_slot > 3:
 		return null
-
 	var position_data: Variant = data.get("respawn_position", null)
 	if not position_data is Dictionary:
 		return null
 	if not position_data.has("x") or not position_data.has("y"):
 		return null
-
+	var parsed_cells: Dictionary[String, bool] = {}
 	var explored_data: Variant = data.get("explored_cells", [])
 	if not explored_data is Array:
 		return null
-
-	slot = parsed_slot
-	world_id = String(data.get("world_id", ""))
-	current_room_id = String(data.get("current_room_id", ""))
-	respawn_room_id = String(data.get("respawn_room_id", ""))
-	respawn_spawn_id = String(data.get("respawn_spawn_id", ""))
-	respawn_position = Vector2(
-		float(position_data["x"]),
-		float(position_data["y"])
-	)
-	saved_unix_time = int(data.get("saved_unix_time", 0))
-	_explored_cells.clear()
-
 	for value: Variant in explored_data:
 		if not value is String:
 			return null
-		add_explored_cell(value)
-
+		if not String(value).is_empty():
+			parsed_cells[String(value)] = true
+	var parsed_chunks: Dictionary[String, bool] = {}
 	var explored_chunks: Variant = data.get("explored_chunks", [])
 	if not explored_chunks is Array:
 		return null
 	for value: Variant in explored_chunks:
 		if not value is String:
 			return null
-		add_explored_chunk(value)
-
+		if not String(value).is_empty():
+			parsed_chunks[String(value)] = true
+	var parsed_entity_states: Dictionary[String, Dictionary] = {}
 	var entity_states: Variant = data.get("entity_states", {})
 	if not entity_states is Dictionary:
 		return null
 	for key: Variant in entity_states.keys():
 		if not key is String or not entity_states[key] is Dictionary:
 			return null
-		set_entity_state(key, entity_states[key])
+		if not String(key).is_empty():
+			parsed_entity_states[String(key)] = (entity_states[key] as Dictionary).duplicate(true)
 
+	slot = parsed_slot
+	world_id = String(data.get("world_id", ""))
+	current_room_id = String(data.get("current_room_id", ""))
+	respawn_room_id = String(data.get("respawn_room_id", ""))
+	respawn_spawn_id = String(data.get("respawn_spawn_id", ""))
+	respawn_position = Vector2(float(position_data["x"]), float(position_data["y"]))
+	saved_unix_time = int(data.get("saved_unix_time", 0))
+	_explored_cells = parsed_cells
+	_explored_chunks = parsed_chunks
+	_entity_states = parsed_entity_states
 	return self

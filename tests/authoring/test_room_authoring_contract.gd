@@ -13,7 +13,7 @@ class MethodCompatibleRoot extends Node2D:
 	func get_manifest() -> Dictionary:
 		return {}
 
-class OverridingAuthoringRoot extends "res://scripts/authoring/room_authoring_root.gd":
+class OverridingAuthoringRoot extends "res://scripts/authoring/room/room_authoring_root.gd":
 	var external_room_content: Node
 	var external_preview_root: Node
 
@@ -23,12 +23,12 @@ class OverridingAuthoringRoot extends "res://scripts/authoring/room_authoring_ro
 	func get_preview_root() -> Node:
 		return external_preview_root
 
-const RoomAuthoringRootScript: Script = preload("res://scripts/authoring/room_authoring_root.gd")
-const RoomAuthoringContractScript: Script = preload("res://scripts/authoring/room_authoring_contract.gd")
-const SpawnPointScript: Script = preload("res://scripts/world/spawn_point.gd")
+const RoomAuthoringRootScript: Script = preload("res://scripts/authoring/room/room_authoring_root.gd")
+const RoomAuthoringContractScript: Script = preload("res://scripts/authoring/room/room_authoring_contract.gd")
+const SpawnPointScript: Script = preload("res://scripts/world/entities/spawn_point.gd")
 const DerivedSpawnPointScript: Script = preload("res://tests/world/derived_spawn_point_fixture.gd")
-const RoomEntranceScript: Script = preload("res://scripts/world/room_entrance.gd")
-const WorldEntityScript: Script = preload("res://scripts/world/world_entity.gd")
+const RoomEntranceScript: Script = preload("res://scripts/world/entities/room_entrance.gd")
+const WorldEntityScript: Script = preload("res://scripts/world/entities/world_entity.gd")
 
 
 func run() -> Array[String]:

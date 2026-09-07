@@ -1,9 +1,9 @@
 extends Node
 
-const ROOM_DATA: Script = preload("res://scripts/world/room_data.gd")
-const WORLD_DATA: Script = preload("res://scripts/world/world_data.gd")
-const ROOM_CONNECTION_DATA: Script = preload("res://scripts/world/room_connection_data.gd")
-const MODEL_PATH := "res://scripts/authoring/world_layout_model.gd"
+const ROOM_DATA: Script = preload("res://scripts/world/data/room_data.gd")
+const WORLD_DATA: Script = preload("res://scripts/world/data/world_data.gd")
+const ROOM_CONNECTION_DATA: Script = preload("res://scripts/world/data/room_connection_data.gd")
+const MODEL_PATH := "res://scripts/authoring/world/world_layout_model.gd"
 
 var _missing_model_reported := false
 
@@ -35,8 +35,9 @@ func _assert_restore_and_replace_support_editor_history(failures: Array[String])
 	var world: Resource = _make_world()
 	var room_a := _make_room("room_a")
 	var room_b := _make_room("room_b")
-	room_a.adjacent_room_ids = PackedStringArray(["room_b"])
 	world.rooms.assign([room_a, room_b])
+	world.set_room_origin_chunk("room_a", Vector2i.ZERO)
+	world.set_room_origin_chunk("room_b", Vector2i.ONE)
 	world.connections.assign([_make_connection("room_a", "exit", "room_b", "spawn_main")])
 	world.start_room_id = "room_b"
 	world.start_spawn_id = "spawn_main"
@@ -45,7 +46,6 @@ func _assert_restore_and_replace_support_editor_history(failures: Array[String])
 	_assert_ok(model.call("restore_world_state", world, state), "restore complete model state", failures)
 	_assert_equal(world.connections.size(), 1, "model restore returns connections", failures)
 	_assert_equal(world.start_room_id, "room_b", "model restore returns start room", failures)
-	_assert_true(room_a.adjacent_room_ids.has("room_b"), "model restore returns adjacency", failures)
 
 	var replacement := _make_room("room_a")
 	replacement.display_name = "Rebaked"
@@ -58,8 +58,7 @@ func _assert_restore_and_replace_support_editor_history(failures: Array[String])
 	var replaced: Resource = world.get_room("room_a")
 	_assert_equal(replaced.display_name, "Rebaked", "replace uses rebaked metadata", failures)
 	_assert_equal(world.call("get_room_origin_chunk", "room_a"), Vector2i(3, 4), "replace preserves world placement", failures)
-	_assert_equal(replaced.room_origin_chunk, Vector2i.ZERO, "replace does not write world placement into RoomData", failures)
-	_assert_true(replaced.adjacent_room_ids.has("room_b"), "replace preserves world adjacency", failures)
+	_assert_equal(world.get_adjacent_room_ids("room_a"), ["room_b"], "replace preserves world connections", failures)
 
 
 func _assert_add_remove_move_and_deterministic_arrays(failures: Array[String]) -> void:
@@ -68,7 +67,6 @@ func _assert_add_remove_move_and_deterministic_arrays(failures: Array[String]) -
 		return
 	var world: Resource = _make_world()
 	var room_b: Resource = _make_room("room_b")
-	room_b.room_origin_chunk = Vector2i(4, 2)
 	var room_a: Resource = _make_room("room_a")
 
 	_assert_ok(model.call("add_room", world, room_b), "add room_b", failures)
@@ -78,7 +76,6 @@ func _assert_add_remove_move_and_deterministic_arrays(failures: Array[String]) -
 
 	_assert_ok(model.call("move_room", world, "room_b", Vector2i(-2, 3)), "move room_b", failures)
 	_assert_equal(world.call("get_room_origin_chunk", "room_b"), Vector2i(-2, 3), "move uses exact integer chunk origin", failures)
-	_assert_equal(room_b.room_origin_chunk, Vector2i(4, 2), "move does not mutate RoomData legacy origin", failures)
 
 	var connection_ba: Resource = _make_connection("room_b", "exit", "room_a", "spawn_main")
 	var connection_ab: Resource = _make_connection("room_a", "exit", "room_b", "spawn_main")
@@ -136,7 +133,7 @@ func _assert_remove_room_clears_referencing_connections_without_files(failures: 
 	var world: Resource = _make_world()
 	_assert_ok(model.call("add_room", world, _make_room("room_a")), "add room_a for removal", failures)
 	var room_b: Resource = _make_room("room_b")
-	room_b.source_scene_path = "res://scenes/game.tscn"
+	room_b.source_scene_path = "res://scenes/rooms/source/level_0.tscn"
 	_assert_ok(model.call("add_room", world, room_b), "add room_b for removal", failures)
 	_assert_ok(model.call("connect_rooms", world, _make_connection("room_a", "exit", "room_b", "spawn_main")), "add outgoing connection", failures)
 	_assert_ok(model.call("connect_rooms", world, _make_connection("room_b", "exit", "room_a", "spawn_main")), "add incoming connection", failures)
@@ -156,9 +153,9 @@ func _assert_overlap_is_warning_only(failures: Array[String]) -> void:
 	var world: Resource = _make_world()
 	var room_a: Resource = _make_room("room_a")
 	var room_b: Resource = _make_room("room_b")
-	room_b.room_origin_chunk = Vector2i.ZERO
 	_assert_ok(model.call("add_room", world, room_a), "add overlap room_a", failures)
 	_assert_ok(model.call("add_room", world, room_b), "add overlap room_b", failures)
+	_assert_ok(model.call("move_room", world, "room_b", Vector2i.ZERO), "place overlap room_b", failures)
 	world.start_room_id = "room_a"
 	world.start_spawn_id = "spawn_main"
 
@@ -289,7 +286,7 @@ func _make_room(room_id: String) -> Resource:
 	var room: Resource = ROOM_DATA.new()
 	room.room_id = room_id
 	room.scene_path = "res://scenes/rooms/%s.tscn" % room_id
-	room.source_scene_path = "res://scenes/levels/%s.tscn" % room_id
+	room.source_scene_path = "res://scenes/rooms/source/%s.tscn" % room_id
 	room.terrain_scene_path = "res://scenes/generated/%s_terrain.tscn" % room_id
 	room.entrance_ids = PackedStringArray(["exit"])
 	room.spawn_ids = PackedStringArray(["spawn_main"])

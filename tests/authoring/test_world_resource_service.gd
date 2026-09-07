@@ -1,13 +1,13 @@
 extends Node
 
-const SERVICE_PATH := "res://scripts/authoring/world_resource_service.gd"
-const WORLD_DATA := preload("res://scripts/world/world_data.gd")
-const ROOM_DATA := preload("res://scripts/world/room_data.gd")
+const SERVICE_PATH := "res://scripts/authoring/world/world_resource_service.gd"
+const WORLD_DATA := preload("res://scripts/world/data/world_data.gd")
+const ROOM_DATA := preload("res://scripts/world/data/room_data.gd")
 const WORLD_PATH := "res://resources/worlds/test_main_world.tres"
 const WRONG_TYPE_PATH := "res://resources/worlds/test_wrong_world_resource.tres"
 
 
-class FailingWorldResourceService extends "res://scripts/authoring/world_resource_service.gd":
+class FailingWorldResourceService extends "res://scripts/authoring/world/world_resource_service.gd":
 	func _save_resource(_resource: Resource, _path: String) -> Error:
 		return ERR_CANT_CREATE
 
@@ -114,9 +114,7 @@ func _assert_moved_world_placement_survives_reload(service: Object, failures: Ar
 	world.world_id = "placement_persistence_world"
 	var room: Resource = ROOM_DATA.new()
 	room.room_id = "room_a"
-	room.room_origin_chunk = Vector2i(8, 8)
 	world.rooms.assign([room])
-	world.normalize_room_placements()
 	world.set_room_origin_chunk("room_a", Vector2i(-1, -1))
 	var result: Dictionary = service.call("save_candidate", world, WORLD_PATH)
 	if not result.get("ok", false):
@@ -140,7 +138,7 @@ func _assert_signature_reports_placement_difference(service: Object, failures: A
 	var room_a: Resource = ROOM_DATA.new()
 	room_a.room_id = "room_a"
 	world_a.rooms.assign([room_a])
-	world_a.normalize_room_placements()
+	world_a.set_room_origin_chunk("room_a", Vector2i.ZERO)
 	var world_b := world_a.duplicate(true) as Resource
 	world_b.set_room_origin_chunk("room_a", Vector2i(4, 2))
 	var difference := String(service.call(

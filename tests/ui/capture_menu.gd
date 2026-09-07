@@ -8,7 +8,7 @@ func _init() -> void:
 func _capture_screens() -> void:
 	var original_locale := TranslationServer.get_locale()
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(OUTPUT_DIR))
-	change_scene_to_file("res://scenes/main.tscn")
+	change_scene_to_file("res://scenes/app/main.tscn")
 	await process_frame
 	await process_frame
 	await process_frame

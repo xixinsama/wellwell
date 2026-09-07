@@ -1,8 +1,8 @@
 # wellwell
 
-`wellwell` is a compact Godot 4.6 template for pixel-precise 2D platformer experiments.
+`wellwell` is a Godot 4 pixel-platformer foundation with room authoring, a world layout editor, streamed room runtime, persistent entities, and room-scoped fog of war.
 
-Open `project.godot` in Godot and run `res://scenes/main.tscn`.
+Open `project.godot` in Godot and run `res://scenes/app/main.tscn`.
 
 ## What Is Included
 
@@ -14,11 +14,19 @@ Open `project.godot` in Godot and run `res://scenes/main.tscn`.
 - Jump buffer, coyote time, variable jump height, air control, and fast fall.
 - Pixel-quantized camera.
 - Debug HUD and grid overlay.
-- Graybox movement test scene.
+- Source rooms under `scenes/rooms/source/`, baked runtime/terrain outputs, and `WorldData` placement resources.
+- A main-screen World Editor plugin for room placement, connection authoring, terrain previews, grid snapping, zoom, and focus.
+- Per-room flood-fill fog visibility and a post-process-ready mask texture.
 
 ## What Is Not Included
 
-This template intentionally excludes combat, saving, dialogue, room streaming, rope physics, metroidvania progression, and Dash2Home-specific spatial traction systems.
+This template intentionally excludes combat, dialogue, progression, and Dash2Home-specific mechanics. It includes a focused save system and foundational room streaming, but not a full game-specific content framework.
+
+## Room Workflow
+
+Create or edit a room in `scenes/rooms/source/` from `scenes/rooms/template/level_template.tscn`. Bake the room from the World Editor to generate `scenes/rooms/generated/<room_id>/` and `resources/rooms/generated/<room_id>.tres`. Add the generated room resource to a world such as `resources/worlds/main_world.tres`; world placement belongs to that world, not to `RoomData`.
+
+See [project structure](docs/project-structure.md) for ownership boundaries and verification commands.
 
 ## Controls
 

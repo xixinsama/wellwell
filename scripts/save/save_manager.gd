@@ -3,6 +3,7 @@ extends Node
 
 signal slot_committed(slot: int)
 signal slot_selected(slot: int, snapshot: RefCounted)
+signal snapshot_committing(snapshot: RefCounted)
 
 const SAVE_SNAPSHOT: Script = preload("res://scripts/save/save_snapshot.gd")
 const SAVE_STORAGE: Script = preload("res://scripts/save/save_storage.gd")
@@ -100,6 +101,7 @@ func commit(snapshot: RefCounted = null) -> bool:
 	var target: RefCounted = snapshot if snapshot != null else current_snapshot
 	if target == null or target.slot < 1 or target.slot > 3:
 		return false
+	snapshot_committing.emit(target)
 	if not _storage.write_slot(target):
 		return false
 	selected_slot = target.slot

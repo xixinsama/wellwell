@@ -1,8 +1,8 @@
 extends Node
 
-const SESSION_PATH := "res://scripts/world/world_session.gd"
-const WORLD_DATA := preload("res://scripts/world/world_data.gd")
-const ROOM_DATA := preload("res://scripts/world/room_data.gd")
+const SESSION_PATH := "res://scripts/world/runtime/world_session.gd"
+const WORLD_DATA := preload("res://scripts/world/data/world_data.gd")
+const ROOM_DATA := preload("res://scripts/world/data/room_data.gd")
 const SAVE_SNAPSHOT := preload("res://scripts/save/save_snapshot.gd")
 
 
@@ -44,6 +44,8 @@ class FakeBinding extends Node:
 	var room_succeeds := true
 	var clear_count := 0
 	var fail_next_room_bind := false
+	var room_bounds := Rect2()
+	var camera_cleared := false
 	func bind_target(value: Node2D) -> void: bound = value
 	func bind_player(value: Node) -> void: bound = value
 	func bind_persistence_source(value: Object) -> void: persistence_source = value
@@ -54,6 +56,8 @@ class FakeBinding extends Node:
 			return false
 		return room_succeeds
 	func clear_room() -> void: clear_count += 1
+	func set_room_bounds(value: Rect2) -> void: room_bounds = value
+	func clear_room_bounds() -> void: camera_cleared = true
 
 
 func run() -> Array[String]:
@@ -72,7 +76,7 @@ func run() -> Array[String]:
 
 
 func _assert_default_world_root_is_startable(failures: Array[String]) -> void:
-	var packed := load("res://scenes/worlds/world_root.tscn") as PackedScene
+	var packed := load("res://scenes/runtime/world_root.tscn") as PackedScene
 	var root := packed.instantiate()
 	var world: Resource = root.get("world_data")
 	if world == null:
@@ -120,6 +124,12 @@ func _assert_success_emits_ready_after_bindings(script: Script, failures: Array[
 		failures.append("WorldSession did not bind fog persistence to the pending snapshot adapter")
 	elif not session.call("get_explored_cells").has("room_a:7,4"):
 		failures.append("WorldSession fog persistence adapter did not expose selected snapshot exploration")
+	var camera := session.get_node("Camera") as FakeBinding
+	if camera.room_bounds.size != Vector2(320, 180):
+		failures.append("WorldSession did not configure camera bounds for the active room")
+	session.call("stop")
+	if not camera.camera_cleared:
+		failures.append("WorldSession did not clear camera bounds on stop")
 	session.free()
 
 
@@ -232,13 +242,14 @@ func _make_session(script: Script) -> Node:
 func _make_world(world_id: String = "world_a") -> Resource:
 	var room: Resource = ROOM_DATA.new()
 	room.room_id = "room_a"
-	room.scene_path = "res://scenes/templates/level_template.tscn"
-	room.source_scene_path = "res://scenes/templates/level_template.tscn"
-	room.terrain_scene_path = "res://scenes/templates/level_template.tscn"
+	room.scene_path = "res://scenes/rooms/template/level_template.tscn"
+	room.source_scene_path = "res://scenes/rooms/template/level_template.tscn"
+	room.terrain_scene_path = "res://scenes/rooms/template/level_template.tscn"
 	room.spawn_ids = PackedStringArray(["start"])
 	var world: Resource = WORLD_DATA.new()
 	world.world_id = world_id
 	world.start_room_id = "room_a"
 	world.start_spawn_id = "start"
 	world.rooms.assign([room])
+	world.set_room_origin_chunk("room_a", Vector2i.ZERO)
 	return world

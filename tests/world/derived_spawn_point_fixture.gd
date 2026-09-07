@@ -1,1 +1,1 @@
-extends "res://scripts/world/spawn_point.gd"
+extends "res://scripts/world/entities/spawn_point.gd"

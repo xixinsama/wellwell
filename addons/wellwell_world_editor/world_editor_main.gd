@@ -2,13 +2,13 @@
 class_name WorldEditorMain
 extends VBoxContainer
 
-const WORLD_LAYOUT_MODEL := preload("res://scripts/authoring/world_layout_model.gd")
-const WORLD_BAKER := preload("res://scripts/authoring/world_baker.gd")
-const ROOM_BAKER := preload("res://scripts/authoring/room_baker.gd")
-const WORLD_RESOURCE_SERVICE := preload("res://scripts/authoring/world_resource_service.gd")
-const WORLD_ROOM_IMPORTER := preload("res://scripts/authoring/world_room_importer.gd")
-const CONNECTION_DATA := preload("res://scripts/world/room_connection_data.gd")
-const TEMPLATE_SCENE_PATH := "res://scenes/templates/level_template.tscn"
+const WORLD_LAYOUT_MODEL := preload("res://scripts/authoring/world/world_layout_model.gd")
+const WORLD_BAKER := preload("res://scripts/authoring/world/world_baker.gd")
+const ROOM_BAKER := preload("res://scripts/authoring/room/room_baker.gd")
+const WORLD_RESOURCE_SERVICE := preload("res://scripts/authoring/world/world_resource_service.gd")
+const WORLD_ROOM_IMPORTER := preload("res://scripts/authoring/world/world_room_importer.gd")
+const CONNECTION_DATA := preload("res://scripts/world/data/room_connection_data.gd")
+const TEMPLATE_SCENE_PATH := "res://scenes/rooms/template/level_template.tscn"
 
 var world_data: WorldData
 var selected_room_id := ""
@@ -337,7 +337,15 @@ func _refresh() -> void:
 	if is_instance_valid(source_entrance):
 		_refresh_connection_options()
 	if is_instance_valid(status_label):
-		status_label.text = "No world selected" if world_data == null else "%d rooms" % world_data.rooms.size()
+		var preview_errors: Dictionary = {}
+		if is_instance_valid(canvas):
+			var preview_layer := canvas.get_node_or_null("TerrainPreviewLayer")
+			if preview_layer != null and preview_layer.has_method("get_preview_errors"):
+				preview_errors = preview_layer.call("get_preview_errors")
+		if not preview_errors.is_empty():
+			status_label.text = String(preview_errors.values()[0])
+		else:
+			status_label.text = "No world selected" if world_data == null else "%d rooms" % world_data.rooms.size()
 	_refresh_command_state()
 
 

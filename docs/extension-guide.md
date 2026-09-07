@@ -5,7 +5,8 @@
 ## Recommended Boundaries
 
 - Keep player movement in `scripts/player/player_controller.gd`.
-- Put world triggers in `scripts/world/`.
+- Keep world data in `scripts/world/data/`, runtime streaming in `scripts/world/runtime/`, entities in `scripts/world/entities/`, and fog in `scripts/world/fog/`.
+- Put authoring code in `scripts/authoring/room/` or `scripts/authoring/world/`.
 - Put debug-only tools in `scripts/tools/`.
 - Use Resource files for tuning values.
 - Keep visual feedback free to scale, flash, or animate, but do not move `SpriteRoot.position` away from `Vector2.ZERO`.
@@ -34,4 +35,6 @@ Good first extensions:
 - Room transition tests.
 - Dash as a separate component.
 
-Avoid adding save systems, combat frameworks, or metroidvania progression until the base movement and camera feel are stable.
+For rooms, edit source scenes only. Generated runtime scenes, terrain scenes, and `RoomData` resources are bake outputs. `RoomData` is reusable local content; `WorldData.placements` owns each room's chunk origin and `WorldData.connections` owns transitions.
+
+Avoid combat frameworks or progression systems until the base movement, room flow, and camera behavior are stable.

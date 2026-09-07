@@ -2,8 +2,8 @@ extends Node
 
 const PREVIEW_PATH := "res://addons/wellwell_world_editor/world_terrain_preview_layer.gd"
 const TERRAIN_PATH := "user://terrain_preview_fixture.tscn"
-const WORLD_DATA := preload("res://scripts/world/world_data.gd")
-const ROOM_DATA := preload("res://scripts/world/room_data.gd")
+const WORLD_DATA := preload("res://scripts/world/data/world_data.gd")
+const ROOM_DATA := preload("res://scripts/world/data/room_data.gd")
 const LAYER_NAMES: Array[String] = ["BackTiles", "SolidTiles", "GlassTiles", "VisionBlockTiles", "DetailTiles", "MarkerTiles"]
 
 
@@ -22,7 +22,6 @@ func run() -> Array[String]:
 	room.terrain_scene_path = TERRAIN_PATH
 	room.room_size_chunks = Vector2i(2, 1)
 	world.rooms.assign([room])
-	world.normalize_room_placements()
 	world.set_room_origin_chunk("room_a", Vector2i(-1, 2))
 	var preview: Control = script.new() as Control
 	preview.call("set_view_transform", Vector2.ZERO, 1.0, Vector2(640, 360))

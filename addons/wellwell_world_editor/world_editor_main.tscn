@@ -141,6 +141,7 @@ text = "100%"
 [node name="LayoutCanvas" type="Control" parent="." unique_id=1956539192]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(350, 330)
+clip_contents = true
 layout_mode = 2
 size_flags_vertical = 3
 focus_mode = 2

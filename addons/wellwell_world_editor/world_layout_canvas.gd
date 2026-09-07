@@ -2,7 +2,7 @@
 extends Control
 
 const CHUNK_PIXELS := Vector2(320, 180)
-const WORLD_CANVAS_VIEW := preload("res://scripts/authoring/world_canvas_view.gd")
+const WORLD_CANVAS_VIEW := preload("res://scripts/authoring/world/world_canvas_view.gd")
 const ROOM_FILL := Color(0.18, 0.55, 0.72, 0.32)
 const OVERLAP_FILL := Color(0.85, 0.2, 0.18, 0.28)
 const GRID_COLOR := Color(0.42, 0.46, 0.52, 0.28)
@@ -19,6 +19,7 @@ var _drag_start_chunk := Vector2i.ZERO
 var _drag_preview_chunk := Vector2i.ZERO
 var _pan_button := MOUSE_BUTTON_NONE
 var _space_pressed := false
+var _hovered_room_id := ""
 
 
 func set_main_screen(value: Control) -> void:
@@ -87,6 +88,24 @@ func reset_view() -> void:
 	_notify_view_changed()
 
 
+func get_hovered_room_id() -> String:
+	return _hovered_room_id
+
+
+func get_selected_room_id() -> String:
+	return "" if _main == null else String(_main.get("selected_room_id"))
+
+
+func cancel_room_drag() -> void:
+	if _drag_room_id.is_empty():
+		return
+	if _preview != null and is_instance_valid(_preview):
+		_preview.call("set_drag_origin", _drag_room_id, null)
+	_drag_room_id = ""
+	_drag_preview_chunk = Vector2i.ZERO
+	queue_redraw()
+
+
 func begin_room_drag(room_id: String, screen_position: Vector2) -> bool:
 	var world := _get_world()
 	var room: RoomData = null if world == null else world.get_room(room_id)
@@ -116,6 +135,7 @@ func update_room_drag(screen_position: Vector2) -> void:
 
 func update_cursor(screen_position: Vector2) -> void:
 	_cursor_screen = screen_position
+	_set_hovered_room(_room_at_screen_position(screen_position))
 	queue_redraw()
 
 
@@ -173,8 +193,10 @@ func _draw() -> void:
 			var origin := _drag_preview_chunk if room_id == _drag_room_id else world.get_room_origin_chunk(room_id)
 			var rect := _room_rect(origin, room.room_size_chunks)
 			var selected := room_id == String(_main.get("selected_room_id"))
+			var hovered := room_id == _hovered_room_id
 			draw_rect(rect, OVERLAP_FILL if overlapping.has(room_id) else ROOM_FILL, true)
-			draw_rect(rect, Color.WHITE if selected else room.map_color, false, 2.0)
+			var outline := Color(0.98, 0.86, 0.34) if hovered else (Color.WHITE if selected else room.map_color)
+			draw_rect(rect, outline, false, 3.0 if hovered or selected else 2.0)
 			var label := room_id if room.display_name.is_empty() else "%s [%s]" % [room.display_name, room_id]
 			draw_string(ThemeDB.fallback_font, rect.position + Vector2(5, 16), label, HORIZONTAL_ALIGNMENT_LEFT, rect.size.x - 10.0, 12)
 			if room_id == world.start_room_id:
@@ -183,6 +205,10 @@ func _draw() -> void:
 
 
 func _gui_input(event: InputEvent) -> void:
+	if event is InputEventKey and event.keycode == KEY_ESCAPE and event.pressed:
+		cancel_room_drag()
+		accept_event()
+		return
 	if event is InputEventKey and event.keycode == KEY_SPACE:
 		_space_pressed = event.pressed and not event.echo
 		if not event.pressed and _pan_button == MOUSE_BUTTON_LEFT:
@@ -219,6 +245,7 @@ func _gui_input(event: InputEvent) -> void:
 			accept_event()
 	elif event is InputEventMouseMotion:
 		update_cursor(event.position)
+		_set_hovered_room(_room_at_screen_position(event.position))
 		if _pan_button != MOUSE_BUTTON_NONE and _drag_room_id.is_empty():
 			_view.call("pan_screen_delta", event.relative)
 			_notify_view_changed()
@@ -230,13 +257,30 @@ func _gui_input(event: InputEvent) -> void:
 
 func _begin_drag_at(mouse_position: Vector2) -> bool:
 	var world := _get_world()
+	if world == null:
+		return false
+	var room_id := _room_at_screen_position(mouse_position)
+	return begin_room_drag(room_id, mouse_position) if not room_id.is_empty() else false
+
+
+func _room_at_screen_position(mouse_position: Vector2) -> String:
+	var world := _get_world()
+	if world == null:
+		return ""
 	var room_ids := world.get_room_ids()
 	room_ids.reverse()
 	for room_id: String in room_ids:
 		var room: RoomData = world.get_room(room_id)
-		if _room_rect(world.get_room_origin_chunk(room_id), room.room_size_chunks).has_point(mouse_position):
-			return begin_room_drag(room_id, mouse_position)
-	return false
+		if room != null and _room_rect(world.get_room_origin_chunk(room_id), room.room_size_chunks).has_point(mouse_position):
+			return room_id
+	return ""
+
+
+func _set_hovered_room(room_id: String) -> void:
+	if _hovered_room_id == room_id:
+		return
+	_hovered_room_id = room_id
+	queue_redraw()
 
 
 func _commit_drag(mouse_position: Vector2) -> void:

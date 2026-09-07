@@ -1,9 +1,9 @@
 extends Node
 
-const ROOM_DATA: Script = preload("res://scripts/world/room_data.gd")
-const ROOM_RUNTIME: Script = preload("res://scripts/world/room_runtime.gd")
-const ROOM_ENTRANCE: Script = preload("res://scripts/world/room_entrance.gd")
-const SPAWN_POINT: Script = preload("res://scripts/world/spawn_point.gd")
+const ROOM_DATA: Script = preload("res://scripts/world/data/room_data.gd")
+const ROOM_RUNTIME: Script = preload("res://scripts/world/runtime/room_runtime.gd")
+const ROOM_ENTRANCE: Script = preload("res://scripts/world/entities/room_entrance.gd")
+const SPAWN_POINT: Script = preload("res://scripts/world/entities/spawn_point.gd")
 const DERIVED_SPAWN_POINT: Script = preload("res://tests/world/derived_spawn_point_fixture.gd")
 
 const FIXTURE_PATH := "user://runtime_room_fixture.tscn"
@@ -23,7 +23,7 @@ func run() -> Array[String]:
 		_remove_user_file(FIXTURE_PATH)
 		return failures
 	_assert_room_runtime_instances_scene_and_applies_position(failures)
-	_assert_explicit_world_placement_overrides_legacy_origin(failures)
+	_assert_room_runtime_requires_explicit_world_placement(failures)
 	_assert_room_runtime_exposes_spawns_and_transition_requests(failures)
 	_assert_room_runtime_ignores_missing_terrain_scene(failures)
 	_assert_room_runtime_rejects_missing_scene(failures)
@@ -37,11 +37,10 @@ func _assert_room_runtime_instances_scene_and_applies_position(failures: Array[S
 	var data: Resource = ROOM_DATA.new()
 	data.room_id = "room_a"
 	data.scene_path = FIXTURE_PATH
-	data.room_origin_chunk = Vector2i(2, 1)
 	data.room_size_chunks = Vector2i(3, 2)
 	var runtime: Node2D = ROOM_RUNTIME.new() as Node2D
 
-	if not runtime.setup_room(data):
+	if not runtime.setup_room(data, "world_a", null, Vector2i(2, 1)):
 		failures.append("room runtime did not load a valid room")
 	if runtime.get_room_id() != "room_a":
 		failures.append("room runtime returned the wrong room id")
@@ -55,23 +54,24 @@ func _assert_room_runtime_instances_scene_and_applies_position(failures: Array[S
 		failures.append("room runtime did not expose Entities")
 	if runtime.get_room_chunk_rect() != Rect2i(2, 1, 3, 2):
 		failures.append("room runtime returned the wrong chunk rect")
-	if runtime.get_room_cell_rect() != Rect2i(80, 23, 120, 46):
+	if runtime.get_room_cell_rect() != Rect2i(80, 23, 120, 45):
 		failures.append("room runtime returned the wrong cell rect")
 	runtime.free()
 
 
-func _assert_explicit_world_placement_overrides_legacy_origin(failures: Array[String]) -> void:
+func _assert_room_runtime_requires_explicit_world_placement(failures: Array[String]) -> void:
 	var data: Resource = ROOM_DATA.new()
 	data.room_id = "room_a"
 	data.scene_path = FIXTURE_PATH
-	data.room_origin_chunk = Vector2i(8, 8)
 	data.room_size_chunks = Vector2i(2, 1)
 	var runtime: Node2D = ROOM_RUNTIME.new() as Node2D
+	if runtime.setup_room(data):
+		failures.append("room runtime accepted an implicit room placement")
 	if not runtime.call("setup_room", data, "world_a", null, Vector2i(-1, 2)):
 		failures.append("room runtime rejected an explicit world placement")
 	else:
 		if runtime.position != Vector2(-320, 360):
-			failures.append("room runtime used legacy origin instead of explicit world placement")
+			failures.append("room runtime did not use explicit world placement")
 		if runtime.call("get_room_chunk_rect") != Rect2i(-1, 2, 2, 1):
 			failures.append("room runtime chunk rect ignored explicit world placement")
 	runtime.free()
@@ -81,9 +81,8 @@ func _assert_room_runtime_exposes_spawns_and_transition_requests(failures: Array
 	var data: Resource = ROOM_DATA.new()
 	data.room_id = "room_a"
 	data.scene_path = FIXTURE_PATH
-	data.room_origin_chunk = Vector2i(2, 1)
 	var runtime: Node2D = ROOM_RUNTIME.new() as Node2D
-	if not runtime.setup_room(data):
+	if not runtime.setup_room(data, "world_a", null, Vector2i(2, 1)):
 		failures.append("room runtime could not load spawn fixture")
 		runtime.free()
 		return
@@ -120,7 +119,7 @@ func _assert_room_runtime_ignores_missing_terrain_scene(failures: Array[String])
 	data.scene_path = RUNTIME_ONLY_FIXTURE_PATH
 	data.terrain_scene_path = MISSING_FIXTURE_PATH
 	var runtime: Node2D = ROOM_RUNTIME.new() as Node2D
-	if not runtime.setup_room(data):
+	if not runtime.setup_room(data, "world_a", null, Vector2i.ZERO):
 		failures.append("room runtime let missing terrain_scene_path affect runtime setup")
 	else:
 		var instance: Node = runtime.get_room_instance()
@@ -186,8 +185,6 @@ func _save_room_fixture() -> Error:
 	var entrance: Node = ROOM_ENTRANCE.new()
 	entrance.name = "ExitRight"
 	entrance.set("entity_id", "exit_right")
-	entrance.set("target_room_id", "room_b")
-	entrance.set("target_spawn_id", "entry")
 	entities.add_child(entrance)
 	entrance.owner = root
 	var packed := PackedScene.new()

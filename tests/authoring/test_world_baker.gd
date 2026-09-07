@@ -1,10 +1,11 @@
 extends Node
 
-const ROOM_DATA: Script = preload("res://scripts/world/room_data.gd")
-const WORLD_DATA: Script = preload("res://scripts/world/world_data.gd")
-const ROOM_AUTHORING_ROOT: Script = preload("res://scripts/authoring/room_authoring_root.gd")
-const WORLD_BAKER_PATH := "res://scripts/authoring/world_baker.gd"
-const WORLD_SERVICE_PATH := "res://scripts/authoring/world_resource_service.gd"
+const ROOM_DATA: Script = preload("res://scripts/world/data/room_data.gd")
+const WORLD_DATA: Script = preload("res://scripts/world/data/world_data.gd")
+const ROOM_PLACEMENT_DATA: Script = preload("res://scripts/world/data/world_room_placement_data.gd")
+const ROOM_AUTHORING_ROOT: Script = preload("res://scripts/authoring/room/room_authoring_root.gd")
+const WORLD_BAKER_PATH := "res://scripts/authoring/world/world_baker.gd"
+const WORLD_SERVICE_PATH := "res://scripts/authoring/world/world_resource_service.gd"
 const WORLD_PATH := "user://task7_world_baker_world.tres"
 const SOURCE_SCENE_PATH := "user://task7_world_baker_source.tscn"
 const RUNTIME_SCENE_PATH := "user://task7_world_baker_runtime.tscn"
@@ -20,7 +21,7 @@ const TERRAIN_LAYER_NAMES: Array[String] = [
 ]
 
 
-class FailingPromoteService extends "res://scripts/authoring/world_resource_service.gd":
+class FailingPromoteService extends "res://scripts/authoring/world/world_resource_service.gd":
 	func _promote_staged_file(_staged_path: String, _final_path: String) -> Error:
 		return ERR_CANT_CREATE
 
@@ -45,6 +46,7 @@ func run() -> Array[String]:
 		return failures
 	_assert_resource_path_is_required(baker, failures)
 	_assert_bake_saves_valid_world(baker, failures)
+	_assert_stale_room_output_is_rejected(baker, failures)
 	_assert_wrong_resource_types_are_rejected(baker, failures)
 	_assert_preview_runtime_is_rejected(baker, failures)
 	_assert_runtime_terrain_is_rejected(baker, failures)
@@ -93,6 +95,24 @@ func _assert_resource_path_is_required(baker: Object, failures: Array[String]) -
 	_assert_result_envelope(result, "empty resource_path", failures)
 	if bool(result.get("ok", false)):
 		failures.append("WorldBaker accepted a world with empty resource_path")
+
+
+func _assert_stale_room_output_is_rejected(baker: Object, failures: Array[String]) -> void:
+	var old_world: Resource = _make_world("stale_world", TERRAIN_SCENE_PATH, RUNTIME_SCENE_PATH)
+	if ResourceSaver.save(old_world, WORLD_PATH) != OK:
+		failures.append("could not save stale world fixture")
+		return
+	var candidate: Resource = _load_world()
+	var room: Resource = candidate.rooms[0]
+	room.source_fingerprint = "outdated"
+	var result: Dictionary = baker.call("bake", candidate)
+	if bool(result.get("ok", false)):
+		failures.append("Bake World accepted a stale generated room")
+		return
+	var errors: Array[String] = []
+	errors.assign(result.get("errors", []))
+	if not errors.any(func(value: String) -> bool: return value.contains("generated output is stale")):
+		failures.append("Bake World did not report the stale generated room")
 
 
 func _assert_wrong_resource_types_are_rejected(baker: Object, failures: Array[String]) -> void:
@@ -194,6 +214,7 @@ func _make_world(world_id: String, terrain_path: String, runtime_path: String) -
 	room.room_id = "room_a"
 	room.display_name = "Room A"
 	room.source_scene_path = SOURCE_SCENE_PATH
+	room.source_fingerprint = FileAccess.get_sha256(SOURCE_SCENE_PATH)
 	room.scene_path = runtime_path
 	room.terrain_scene_path = terrain_path
 	room.spawn_ids = PackedStringArray(["spawn_main"])
@@ -203,6 +224,9 @@ func _make_world(world_id: String, terrain_path: String, runtime_path: String) -
 	world.start_room_id = "room_a"
 	world.start_spawn_id = "spawn_main"
 	world.rooms.assign([room])
+	var placement: Resource = ROOM_PLACEMENT_DATA.new()
+	placement.room_id = room.room_id
+	world.placements.assign([placement])
 	return world
 
 

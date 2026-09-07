@@ -2,27 +2,27 @@ extends Node
 
 const DOCK_PATH := "res://addons/wellwell_world_editor/world_editor_main.gd"
 const DOCK_SCENE_PATH := "res://addons/wellwell_world_editor/world_editor_main.tscn"
-const WORLD_DATA := preload("res://scripts/world/world_data.gd")
-const ROOM_DATA := preload("res://scripts/world/room_data.gd")
-const CONNECTION_DATA := preload("res://scripts/world/room_connection_data.gd")
+const WORLD_DATA := preload("res://scripts/world/data/world_data.gd")
+const ROOM_DATA := preload("res://scripts/world/data/room_data.gd")
+const CONNECTION_DATA := preload("res://scripts/world/data/room_connection_data.gd")
 const CANVAS_PATH := "res://addons/wellwell_world_editor/world_layout_canvas.gd"
-const WORLD_RESOURCE_SERVICE := preload("res://scripts/authoring/world_resource_service.gd")
-const WORLD_LAYOUT_MODEL := preload("res://scripts/authoring/world_layout_model.gd")
+const WORLD_RESOURCE_SERVICE := preload("res://scripts/authoring/world/world_resource_service.gd")
+const WORLD_LAYOUT_MODEL := preload("res://scripts/authoring/world/world_layout_model.gd")
 const CONTROLLER_WORLD_PATH := "res://resources/worlds/test_editor_controller_world.tres"
 const CONTROLLER_OTHER_WORLD_PATH := "res://resources/worlds/test_editor_controller_other_world.tres"
 const CONTROLLER_SOURCE_PATH := "res://tests/authoring/test_editor_controller_source.tscn"
 const EDITOR_DEPENDENCY_PATHS: Array[String] = [
-	"res://scripts/world/world_data.gd",
-	"res://scripts/world/room_data.gd",
-	"res://scripts/world/room_connection_data.gd",
-	"res://scripts/world/room_entrance.gd",
-	"res://scripts/world/spawn_point.gd",
-	"res://scripts/world/world_entity.gd",
-	"res://scripts/world/world_validation.gd",
-	"res://scripts/authoring/world_layout_model.gd",
-	"res://scripts/authoring/room_authoring_contract.gd",
-	"res://scripts/authoring/room_bake_manifest.gd",
-	"res://scripts/authoring/room_bake_paths.gd",
+	"res://scripts/world/data/world_data.gd",
+	"res://scripts/world/data/room_data.gd",
+	"res://scripts/world/data/room_connection_data.gd",
+	"res://scripts/world/entities/room_entrance.gd",
+	"res://scripts/world/entities/spawn_point.gd",
+	"res://scripts/world/entities/world_entity.gd",
+	"res://scripts/world/data/world_validation.gd",
+	"res://scripts/authoring/world/world_layout_model.gd",
+	"res://scripts/authoring/room/room_authoring_contract.gd",
+	"res://scripts/authoring/room/room_bake_manifest.gd",
+	"res://scripts/authoring/room/room_bake_paths.gd",
 ]
 
 
@@ -333,7 +333,7 @@ func _assert_command_states_and_import_history(failures: Array[String]) -> void:
 	var editor := FakeEditorInterface.new()
 	main.call("set_editor_interface", editor)
 	main.call("new_room")
-	if editor.opened_path != "res://scenes/templates/level_template.tscn" or not editor.inherited:
+	if editor.opened_path != "res://scenes/rooms/template/level_template.tscn" or not editor.inherited:
 		failures.append("New Room no longer opens an inherited level template")
 	main.call("set_world_data", imported_world)
 	main.call("select_room", "imported_room")
@@ -350,6 +350,7 @@ func _assert_move_command(failures: Array[String]) -> void:
 	var world: Resource = WORLD_DATA.new()
 	var room: Resource = _make_room("room_a", ["exit"], ["start"])
 	world.rooms.assign([room])
+	world.set_room_origin_chunk("room_a", Vector2i.ZERO)
 	var undo := FakeUndo.new()
 	var changed_count := [0]
 	world.changed.connect(func() -> void: changed_count[0] += 1)
@@ -396,7 +397,6 @@ func _assert_add_remove_commands(failures: Array[String]) -> void:
 	world.connections.assign([connection])
 	world.start_room_id = "room_b"
 	world.start_spawn_id = "entry"
-	room_a.adjacent_room_ids = PackedStringArray(["room_b"])
 	undo = FakeUndo.new()
 	dock.call("set_undo_redo_adapter", undo)
 	if not dock.call("remove_room", "room_b") or world.has_room("room_b"):
@@ -409,8 +409,6 @@ func _assert_add_remove_commands(failures: Array[String]) -> void:
 			failures.append("world editor remove undo did not restore removed connections")
 		if world.start_room_id != "room_b" or world.start_spawn_id != "entry":
 			failures.append("world editor remove undo did not restore the start endpoint")
-		if not room_a.adjacent_room_ids.has("room_b"):
-			failures.append("world editor remove undo did not restore adjacency metadata")
 		undo.do_call.call()
 		if world.has_room("room_b") or not world.connections.is_empty():
 			failures.append("world editor remove redo did not remove the restored room state")
@@ -450,9 +448,8 @@ func _assert_connection_commands(failures: Array[String]) -> void:
 func _assert_rebake_sync_and_overlap_connection_geometry(failures: Array[String]) -> void:
 	var world: Resource = WORLD_DATA.new()
 	var old_room: Resource = _make_room("room_a", ["exit"], ["start"])
-	old_room.room_origin_chunk = Vector2i(5, -1)
-	old_room.adjacent_room_ids = PackedStringArray(["room_b"])
 	world.rooms.assign([old_room])
+	world.set_room_origin_chunk("room_a", Vector2i(5, -1))
 	var dock: Control = (load(DOCK_PATH) as Script).new() as Control
 	dock.call("set_world_data", world)
 	if not dock.has_method("sync_room_resource"):
@@ -466,7 +463,7 @@ func _assert_rebake_sync_and_overlap_connection_geometry(failures: Array[String]
 			var current: Resource = world.get_room("room_a")
 			if current.display_name != "Rebaked Room" or not current.spawn_ids.has("new_spawn"):
 				failures.append("world editor did not synchronize rebaked RoomData metadata")
-			if world.call("get_room_origin_chunk", "room_a") != Vector2i(5, -1) or not current.adjacent_room_ids.has("room_b"):
+			if world.call("get_room_origin_chunk", "room_a") != Vector2i(5, -1):
 				failures.append("world editor rebake synchronization lost world layout metadata")
 	dock.free()
 
@@ -493,7 +490,7 @@ func _assert_duplicate_existing_room_does_not_write_outputs(failures: Array[Stri
 	dock.call("set_world_data", world)
 	dock.call("set_undo_redo_adapter", FakeUndo.new())
 	dock.call("set_room_baker_adapter", baker)
-	dock.call("_add_existing_source", "res://scenes/levels/level_0.tscn")
+	dock.call("_add_existing_source", "res://scenes/rooms/source/level_0.tscn")
 	if baker.save_count != 0:
 		failures.append("Add Existing wrote generated outputs before rejecting duplicate room_id")
 	dock.free()

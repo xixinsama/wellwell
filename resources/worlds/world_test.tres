@@ -1,30 +1,30 @@
-[gd_resource type="Resource" script_class="WorldData" format=3 uid="uid://jpp3xq2p7cyj"]
+[gd_resource type="Resource" script_class="WorldData" format=3 uid="uid://dttwk2dcopku5"]
 
-[ext_resource type="Script" uid="uid://b1ws1oeewd0ks" path="res://scripts/world/world_room_placement_data.gd" id="1_wv3xp"]
-[ext_resource type="Resource" uid="uid://bo3oqdxjb4jlm" path="res://resources/rooms/generated/level_0_room.tres" id="2_gcob0"]
-[ext_resource type="Resource" uid="uid://bmxbvw8pxveab" path="res://resources/rooms/generated/level_1_room.tres" id="3_ptsen"]
-[ext_resource type="Resource" uid="uid://cf3qwqdsb67oe" path="res://resources/rooms/generated/level_2_room.tres" id="4_3wm3l"]
-[ext_resource type="Resource" uid="uid://b7vqdkwf6ppvp" path="res://resources/rooms/generated/level_3_room.tres" id="5_fg65f"]
-[ext_resource type="Script" uid="uid://dkcwb87qn5n2c" path="res://scripts/world/world_data.gd" id="6_q8nmp"]
+[ext_resource type="Script" uid="uid://b1ws1oeewd0ks" path="res://scripts/world/data/world_room_placement_data.gd" id="1_wv3xp"]
+[ext_resource type="Resource" path="res://resources/rooms/generated/level_0.tres" id="2_gcob0"]
+[ext_resource type="Resource" path="res://resources/rooms/generated/level_1.tres" id="3_ptsen"]
+[ext_resource type="Resource" path="res://resources/rooms/generated/level_2.tres" id="4_3wm3l"]
+[ext_resource type="Resource" path="res://resources/rooms/generated/level_3.tres" id="5_fg65f"]
+[ext_resource type="Script" uid="uid://dkcwb87qn5n2c" path="res://scripts/world/data/world_data.gd" id="6_q8nmp"]
 
-[sub_resource type="Resource" id="Resource_wv3xp"]
+[sub_resource type="Resource" id="Resource_cbkb1"]
 script = ExtResource("1_wv3xp")
 room_id = "level_0"
-origin_chunk = Vector2i(0, 1)
 
-[sub_resource type="Resource" id="Resource_gcob0"]
+[sub_resource type="Resource" id="Resource_iior5"]
 script = ExtResource("1_wv3xp")
 room_id = "level_1"
-origin_chunk = Vector2i(1, 1)
+origin_chunk = Vector2i(1, 0)
 
-[sub_resource type="Resource" id="Resource_ptsen"]
+[sub_resource type="Resource" id="Resource_geien"]
 script = ExtResource("1_wv3xp")
 room_id = "level_2"
 origin_chunk = Vector2i(2, 0)
 
-[sub_resource type="Resource" id="Resource_3wm3l"]
+[sub_resource type="Resource" id="Resource_j2h6i"]
 script = ExtResource("1_wv3xp")
 room_id = "level_3"
+origin_chunk = Vector2i(0, 1)
 
 [resource]
 script = ExtResource("6_q8nmp")
@@ -32,5 +32,5 @@ world_id = "world_test"
 start_room_id = "level_0"
 start_spawn_id = "测试用l0"
 rooms = Array[Resource]([ExtResource("2_gcob0"), ExtResource("3_ptsen"), ExtResource("4_3wm3l"), ExtResource("5_fg65f")])
-placements = Array[Resource]([SubResource("Resource_wv3xp"), SubResource("Resource_gcob0"), SubResource("Resource_ptsen"), SubResource("Resource_3wm3l")])
+placements = Array[Resource]([SubResource("Resource_cbkb1"), SubResource("Resource_iior5"), SubResource("Resource_geien"), SubResource("Resource_j2h6i")])
 tags = PackedStringArray()
