@@ -10,6 +10,7 @@ const AXIS_COLOR := Color(0.78, 0.55, 0.24, 0.72)
 const GUIDE_COLOR := Color(0.3, 0.78, 0.62, 0.8)
 
 var _main: Control
+var _preview: Control
 var _view: RefCounted = WORLD_CANVAS_VIEW.new()
 var _cursor_screen := Vector2.ZERO
 var _drag_room_id := ""
@@ -22,7 +23,33 @@ var _space_pressed := false
 
 func set_main_screen(value: Control) -> void:
 	_main = value
+	_preview = get_node_or_null("TerrainPreviewLayer") as Control
+	_sync_preview()
 	queue_redraw()
+
+
+func sync_preview() -> void:
+	_sync_preview()
+
+
+func update_preview_transforms() -> void:
+	if _preview != null and is_instance_valid(_preview):
+		_preview.call("set_view_transform", _view.get("view_center_world_pixels"), get_zoom(), size)
+
+
+func refresh_preview_room(room_id: String) -> void:
+	if _preview != null and is_instance_valid(_preview):
+		_preview.call("refresh_room", _get_world(), room_id)
+
+
+func _ready() -> void:
+	_preview = get_node_or_null("TerrainPreviewLayer") as Control
+	_sync_preview()
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_RESIZED:
+		_notify_view_changed()
 
 
 func focus_all() -> bool:
@@ -34,8 +61,7 @@ func focus_all() -> bool:
 	var bounds := Rect2()
 	var has_bounds := false
 	for room_id: String in world.get_room_ids():
-		var room: RoomData = world.get_room(room_id)
-		var pixel_rect := Rect2(room.get_pixel_rect())
+		var pixel_rect := Rect2(world.get_room_pixel_rect(room_id))
 		bounds = pixel_rect if not has_bounds else bounds.merge(pixel_rect)
 		has_bounds = true
 	_view.call("fit_world_rect", bounds, size)
@@ -48,7 +74,7 @@ func focus_room(room_id: String) -> bool:
 	var room: RoomData = null if world == null else world.get_room(room_id)
 	if room == null:
 		return false
-	_view.call("fit_world_rect", Rect2(room.get_pixel_rect()), size)
+	_view.call("fit_world_rect", Rect2(world.get_room_pixel_rect(room_id)), size)
 	_notify_view_changed()
 	return true
 
@@ -68,8 +94,10 @@ func begin_room_drag(room_id: String, screen_position: Vector2) -> bool:
 		return false
 	_drag_room_id = room_id
 	_drag_start_mouse = screen_position
-	_drag_start_chunk = room.room_origin_chunk
-	_drag_preview_chunk = room.room_origin_chunk
+	_drag_start_chunk = world.get_room_origin_chunk(room_id)
+	_drag_preview_chunk = _drag_start_chunk
+	if _preview != null and is_instance_valid(_preview):
+		_preview.call("set_drag_origin", room_id, _drag_preview_chunk)
 	_pan_button = MOUSE_BUTTON_NONE
 	if _main.has_method("select_room"):
 		_main.call("select_room", room_id)
@@ -81,6 +109,8 @@ func update_room_drag(screen_position: Vector2) -> void:
 	if _drag_room_id.is_empty():
 		return
 	_drag_preview_chunk = _dragged_chunk(screen_position)
+	if _preview != null and is_instance_valid(_preview):
+		_preview.call("set_drag_origin", _drag_room_id, _drag_preview_chunk)
 	queue_redraw()
 
 
@@ -140,7 +170,7 @@ func _draw() -> void:
 		_draw_connections(world)
 		for room_id: String in world.get_room_ids():
 			var room: RoomData = world.get_room(room_id)
-			var origin := _drag_preview_chunk if room_id == _drag_room_id else room.room_origin_chunk
+			var origin := _drag_preview_chunk if room_id == _drag_room_id else world.get_room_origin_chunk(room_id)
 			var rect := _room_rect(origin, room.room_size_chunks)
 			var selected := room_id == String(_main.get("selected_room_id"))
 			draw_rect(rect, OVERLAP_FILL if overlapping.has(room_id) else ROOM_FILL, true)
@@ -204,7 +234,7 @@ func _begin_drag_at(mouse_position: Vector2) -> bool:
 	room_ids.reverse()
 	for room_id: String in room_ids:
 		var room: RoomData = world.get_room(room_id)
-		if _room_rect(room.room_origin_chunk, room.room_size_chunks).has_point(mouse_position):
+		if _room_rect(world.get_room_origin_chunk(room_id), room.room_size_chunks).has_point(mouse_position):
 			return begin_room_drag(room_id, mouse_position)
 	return false
 
@@ -213,6 +243,8 @@ func _commit_drag(mouse_position: Vector2) -> void:
 	update_room_drag(mouse_position)
 	if _main.has_method("move_room"):
 		_main.call("move_room", _drag_room_id, _drag_preview_chunk)
+	if _preview != null and is_instance_valid(_preview):
+		_preview.call("set_drag_origin", _drag_room_id, null)
 	_drag_room_id = ""
 	queue_redraw()
 
@@ -258,10 +290,11 @@ func _draw_overlays(world: WorldData) -> void:
 	if world != null and _main != null:
 		var selected: RoomData = world.get_room(String(_main.get("selected_room_id")))
 		if selected != null:
+			var selected_origin := world.get_room_origin_chunk(selected.room_id)
 			var selected_text := "%s  origin (%d, %d)  size %dx%d" % [
 				selected.room_id,
-				selected.room_origin_chunk.x,
-				selected.room_origin_chunk.y,
+				selected_origin.x,
+				selected_origin.y,
 				selected.room_size_chunks.x,
 				selected.room_size_chunks.y,
 			]
@@ -283,8 +316,8 @@ func _draw_connections(world: WorldData) -> void:
 		var to_room: RoomData = world.get_room(connection.to_room_id)
 		if from_room == null or to_room == null:
 			continue
-		var start := _room_rect(from_room.room_origin_chunk, from_room.room_size_chunks).get_center()
-		var finish := _room_rect(to_room.room_origin_chunk, to_room.room_size_chunks).get_center()
+		var start := _room_rect(world.get_room_origin_chunk(from_room.room_id), from_room.room_size_chunks).get_center()
+		var finish := _room_rect(world.get_room_origin_chunk(to_room.room_id), to_room.room_size_chunks).get_center()
 		var geometry := get_connection_geometry(start, finish)
 		draw_polyline(geometry, Color(0.75, 0.82, 0.9), 2.0)
 		var direction := geometry[-2].direction_to(geometry[-1])
@@ -311,7 +344,7 @@ func _overlapping_room_ids(world: WorldData) -> Dictionary:
 		var left: RoomData = world.get_room(room_ids[left_index])
 		for right_index: int in range(left_index + 1, room_ids.size()):
 			var right: RoomData = world.get_room(room_ids[right_index])
-			if left.get_chunk_rect().intersects(right.get_chunk_rect()):
+			if world.get_room_chunk_rect(left.room_id).intersects(world.get_room_chunk_rect(right.room_id)):
 				result[left.room_id] = true
 				result[right.room_id] = true
 	return result
@@ -325,5 +358,14 @@ func _get_world() -> WorldData:
 
 func _notify_view_changed() -> void:
 	queue_redraw()
+	if _preview != null and is_instance_valid(_preview):
+		_preview.call("set_view_transform", _view.get("view_center_world_pixels"), get_zoom(), size)
 	if _main != null and _main.has_method("update_zoom_label"):
 		_main.call("update_zoom_label", get_zoom())
+
+
+func _sync_preview() -> void:
+	if _preview == null or not is_instance_valid(_preview):
+		return
+	_preview.call("set_view_transform", _view.get("view_center_world_pixels"), get_zoom(), size)
+	_preview.call("sync_world", _get_world())

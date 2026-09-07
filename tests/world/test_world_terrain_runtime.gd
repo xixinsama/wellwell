@@ -142,6 +142,9 @@ func _make_world(rooms: Array) -> Resource:
 	var world: Resource = WORLD_DATA.new()
 	world.world_id = "task7_world"
 	world.rooms.assign(rooms)
+	world.normalize_room_placements()
+	for room: Resource in rooms:
+		world.set_room_origin_chunk(room.room_id, room.room_origin_chunk)
 	return world
 
 

@@ -4,6 +4,7 @@ const ROOM_DATA: Script = preload("res://scripts/world/room_data.gd")
 const WORLD_DATA: Script = preload("res://scripts/world/world_data.gd")
 const ROOM_AUTHORING_ROOT: Script = preload("res://scripts/authoring/room_authoring_root.gd")
 const WORLD_BAKER_PATH := "res://scripts/authoring/world_baker.gd"
+const WORLD_SERVICE_PATH := "res://scripts/authoring/world_resource_service.gd"
 const WORLD_PATH := "user://task7_world_baker_world.tres"
 const SOURCE_SCENE_PATH := "user://task7_world_baker_source.tscn"
 const RUNTIME_SCENE_PATH := "user://task7_world_baker_runtime.tscn"
@@ -19,7 +20,7 @@ const TERRAIN_LAYER_NAMES: Array[String] = [
 ]
 
 
-class FailingPromoteBaker extends "res://scripts/authoring/world_baker.gd":
+class FailingPromoteService extends "res://scripts/authoring/world_resource_service.gd":
 	func _promote_staged_file(_staged_path: String, _final_path: String) -> Error:
 		return ERR_CANT_CREATE
 
@@ -48,7 +49,7 @@ func run() -> Array[String]:
 	_assert_preview_runtime_is_rejected(baker, failures)
 	_assert_runtime_terrain_is_rejected(baker, failures)
 	_assert_invalid_terrain_does_not_replace_old_world(baker, failures)
-	_assert_failed_world_promotion_restores_old_file(failures)
+	_assert_failed_world_promotion_restores_old_file(baker, failures)
 	_remove_user_files()
 	return failures
 
@@ -162,7 +163,7 @@ func _assert_invalid_terrain_does_not_replace_old_world(baker: Object, failures:
 			failures.append("invalid terrain changed the saved world: %s" % invalid_terrain_path)
 
 
-func _assert_failed_world_promotion_restores_old_file(failures: Array[String]) -> void:
+func _assert_failed_world_promotion_restores_old_file(baker: Object, failures: Array[String]) -> void:
 	var old_world: Resource = _make_world("transaction_old_world", TERRAIN_SCENE_PATH, RUNTIME_SCENE_PATH)
 	old_world.tags = PackedStringArray(["keep-me"])
 	if ResourceSaver.save(old_world, WORLD_PATH) != OK:
@@ -171,7 +172,8 @@ func _assert_failed_world_promotion_restores_old_file(failures: Array[String]) -
 	var candidate := _load_world()
 	candidate.world_id = "transaction_new_world"
 	candidate.tags = PackedStringArray(["replace-me"])
-	var result: Dictionary = FailingPromoteBaker.new().bake(candidate)
+	baker.call("set_world_resources_adapter", FailingPromoteService.new())
+	var result: Dictionary = baker.call("bake", candidate)
 	if bool(result.get("ok", false)):
 		failures.append("WorldBaker accepted a failed staged-world promotion")
 	var reloaded := _load_world()

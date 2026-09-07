@@ -12,6 +12,7 @@ const TESTS: Array[Script] = [
 	preload("res://tests/authoring/test_world_room_importer.gd"),
 	preload("res://tests/authoring/test_world_canvas_view.gd"),
 	preload("res://tests/authoring/test_world_editor_main_screen.gd"),
+	preload("res://tests/authoring/test_world_terrain_preview_layer.gd"),
 	preload("res://tests/authoring/test_world_editor_commands.gd"),
 	preload("res://tests/save/test_save_codec.gd"),
 	preload("res://tests/save/test_save_storage.gd"),

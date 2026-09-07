@@ -99,7 +99,7 @@ func bind_player(player: Node2D) -> void:
 	_warned_missing_player = false
 
 
-func bind_room(room_data: RoomData, terrain_root: Node) -> bool:
+func bind_room(room_data: RoomData, terrain_root: Node, origin_chunk: Variant = null) -> bool:
 	if not _is_room_data(room_data) or terrain_root == null:
 		return false
 	if terrain_root.get_node_or_null("Background") == null:
@@ -121,10 +121,15 @@ func bind_room(room_data: RoomData, terrain_root: Node) -> bool:
 	_solid_tiles = layers["SolidTiles"]
 	_vision_block_tiles = layers["VisionBlockTiles"]
 	_glass_tiles = layers["GlassTiles"]
-	set_room_chunks(room_data.room_origin_chunk, room_data.room_size_chunks)
+	var effective_origin := room_data.room_origin_chunk if origin_chunk == null else Vector2i(origin_chunk)
+	set_room_chunks(effective_origin, room_data.room_size_chunks)
 	_load_saved_progress()
 	_warned_missing_solid_tiles = false
 	return true
+
+
+func bind_room_with_origin(room_data: RoomData, terrain_root: Node, origin_chunk: Vector2i) -> bool:
+	return bind_room(room_data, terrain_root, origin_chunk)
 
 
 func clear_room() -> void:

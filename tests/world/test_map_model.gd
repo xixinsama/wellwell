@@ -14,6 +14,7 @@ func run() -> Array[String]:
 	var world: Resource = WORLD_DATA.new()
 	world.world_id = "world_01"
 	world.rooms.assign([room])
+	world.normalize_room_placements()
 	var model: Dictionary = MAP_MODEL.build(world, ["world_01:chunk:2,1"], "room_a")
 	if model.rooms.size() != 1:
 		failures.append("map model did not include room")

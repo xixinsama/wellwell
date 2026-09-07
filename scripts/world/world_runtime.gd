@@ -320,7 +320,7 @@ func _create_room_runtime(data: Resource, room_id: String, state_source: Object)
 		return null
 	var room_runtime: Node2D = ROOM_RUNTIME_SCRIPT.new() as Node2D
 	add_child(room_runtime)
-	if not room_runtime.setup_room(room_data, data.world_id, state_source):
+	if not room_runtime.setup_room(room_data, data.world_id, state_source, data.get_room_origin_chunk(room_id)):
 		room_runtime.free()
 		return null
 	return room_runtime
@@ -413,8 +413,7 @@ func _respawn_player(position: Vector2) -> void:
 
 
 func _get_room_origin_chunk(data: Resource, room_id: String) -> Vector2i:
-	var room: Resource = data.get_room(room_id)
-	return Vector2i.ZERO if room == null else room.room_origin_chunk
+	return data.get_room_origin_chunk(room_id) if data != null and data.has_method("get_room_origin_chunk") else Vector2i.ZERO
 
 
 func _get_tracking_chunk() -> Vector2i:

@@ -65,6 +65,7 @@ script = ExtResource("4_wyn2e")
 [node name="PixelCamera2D" type="Camera2D" parent="PreviewOnly" unique_id=420423]
 zoom = Vector2(4, 4)
 process_callback = 0
+position_smoothing_enabled = true
 script = ExtResource("4_q26ly")
 target_path = NodePath("../Player")
 metadata/_custom_type_script = "uid://cfv5j6giqea6p"

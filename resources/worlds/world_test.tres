@@ -1,14 +1,36 @@
-[gd_resource type="Resource" script_class="WorldData" format=3 uid="uid://822qt6r1pfgg"]
+[gd_resource type="Resource" script_class="WorldData" format=3 uid="uid://jpp3xq2p7cyj"]
 
-[ext_resource type="Resource" uid="uid://3qjt6epjwt3y" path="res://resources/rooms/generated/level_0_room.tres" id="1_11ecp"]
-[ext_resource type="Resource" uid="uid://b25ghq7n4qvoo" path="res://resources/rooms/generated/level_1_room.tres" id="2_sdsvb"]
-[ext_resource type="Script" uid="uid://dkcwb87qn5n2c" path="res://scripts/world/world_data.gd" id="3_1gko7"]
-[ext_resource type="Resource" uid="uid://cf3qwqdsb67oe" path="res://resources/rooms/generated/level_2_room.tres" id="3_sdsvb"]
+[ext_resource type="Script" uid="uid://b1ws1oeewd0ks" path="res://scripts/world/world_room_placement_data.gd" id="1_wv3xp"]
+[ext_resource type="Resource" uid="uid://bo3oqdxjb4jlm" path="res://resources/rooms/generated/level_0_room.tres" id="2_gcob0"]
+[ext_resource type="Resource" uid="uid://bmxbvw8pxveab" path="res://resources/rooms/generated/level_1_room.tres" id="3_ptsen"]
+[ext_resource type="Resource" uid="uid://cf3qwqdsb67oe" path="res://resources/rooms/generated/level_2_room.tres" id="4_3wm3l"]
+[ext_resource type="Resource" uid="uid://b7vqdkwf6ppvp" path="res://resources/rooms/generated/level_3_room.tres" id="5_fg65f"]
+[ext_resource type="Script" uid="uid://dkcwb87qn5n2c" path="res://scripts/world/world_data.gd" id="6_q8nmp"]
+
+[sub_resource type="Resource" id="Resource_wv3xp"]
+script = ExtResource("1_wv3xp")
+room_id = "level_0"
+origin_chunk = Vector2i(0, 1)
+
+[sub_resource type="Resource" id="Resource_gcob0"]
+script = ExtResource("1_wv3xp")
+room_id = "level_1"
+origin_chunk = Vector2i(1, 1)
+
+[sub_resource type="Resource" id="Resource_ptsen"]
+script = ExtResource("1_wv3xp")
+room_id = "level_2"
+origin_chunk = Vector2i(2, 0)
+
+[sub_resource type="Resource" id="Resource_3wm3l"]
+script = ExtResource("1_wv3xp")
+room_id = "level_3"
 
 [resource]
-script = ExtResource("3_1gko7")
+script = ExtResource("6_q8nmp")
 world_id = "world_test"
 start_room_id = "level_0"
 start_spawn_id = "测试用l0"
-rooms = Array[Resource]([ExtResource("1_11ecp"), ExtResource("2_sdsvb"), ExtResource("3_sdsvb")])
+rooms = Array[Resource]([ExtResource("2_gcob0"), ExtResource("3_ptsen"), ExtResource("4_3wm3l"), ExtResource("5_fg65f")])
+placements = Array[Resource]([SubResource("Resource_wv3xp"), SubResource("Resource_gcob0"), SubResource("Resource_ptsen"), SubResource("Resource_3wm3l")])
 tags = PackedStringArray()

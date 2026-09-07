@@ -140,10 +140,16 @@ func _on_current_room_changed(room_id: String, terrain_runtime: Node, fog: Node)
 func _bind_fog_room(world: WorldData, room_id: String, terrain_runtime: Node, fog: Node) -> bool:
 	var room: Resource = world.get_room(room_id)
 	var terrain: Node = terrain_runtime.call("get_room_terrain", room_id)
-	return room != null and terrain != null and bool(fog.call("bind_room", room, terrain))
+	if room == null or terrain == null:
+		return false
+	if fog.has_method("bind_room_with_origin"):
+		return bool(fog.call("bind_room_with_origin", room, terrain, world.get_room_origin_chunk(room_id)))
+	return bool(fog.call("bind_room", room, terrain))
 
 
 func _preflight_world(world: WorldData) -> Array[String]:
+	if world != null and world.has_method("normalize_room_placements"):
+		world.call("normalize_room_placements")
 	var report: Dictionary = WORLD_VALIDATION.validate_world_report(world)
 	var errors: Array[String] = []
 	errors.assign(report.get("errors", []))

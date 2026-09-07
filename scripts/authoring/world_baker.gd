@@ -5,10 +5,24 @@ extends RefCounted
 const WORLD_DATA_SCRIPT: Script = preload("res://scripts/world/world_data.gd")
 const ROOM_DATA_SCRIPT: Script = preload("res://scripts/world/room_data.gd")
 const WORLD_VALIDATION: Script = preload("res://scripts/world/world_validation.gd")
+const WORLD_RESOURCE_SERVICE: Script = preload("res://scripts/authoring/world_resource_service.gd")
 const ROOM_AUTHORING_CONTRACT: Script = preload("res://scripts/authoring/room_authoring_contract.gd")
 const TERRAIN_LAYER_NAMES: Array[String] = [
 	"BackTiles", "SolidTiles", "GlassTiles", "VisionBlockTiles", "DetailTiles", "MarkerTiles"
 ]
+
+var _world_resources: Object = WORLD_RESOURCE_SERVICE.new()
+
+
+func _init() -> void:
+	if _world_resources.has_method("set_allow_user_paths"):
+		_world_resources.call("set_allow_user_paths", true)
+
+
+func set_world_resources_adapter(value: Object) -> void:
+	_world_resources = value
+	if _world_resources != null and _world_resources.has_method("set_allow_user_paths"):
+		_world_resources.call("set_allow_user_paths", true)
 
 
 func bake(world: WorldData) -> Dictionary:
@@ -16,9 +30,13 @@ func bake(world: WorldData) -> Dictionary:
 		return _failure("world is not WorldData")
 	if world.resource_path.is_empty():
 		return _failure("world resource_path is empty")
+	var normalization: Dictionary = world.normalize_room_placements()
 	var report: Dictionary = WORLD_VALIDATION.validate_world_report(world)
 	var errors := _copy_strings(report.get("errors", []))
 	var warnings := _copy_strings(report.get("warnings", []))
+	warnings.append_array(_copy_strings(normalization.get("warnings", [])))
+	if not bool(normalization.get("ok", false)):
+		errors.append_array(_copy_strings(normalization.get("errors", [])))
 	if not errors.is_empty():
 		return _result(false, errors, warnings)
 	for room_id: String in world.get_room_ids():
@@ -26,132 +44,11 @@ func bake(world: WorldData) -> Dictionary:
 	if not errors.is_empty():
 		return _result(false, errors, warnings)
 	world.sort_for_serialization()
-	return _save_transactionally(world, warnings)
-
-
-func _save_transactionally(world: WorldData, warnings: Array[String]) -> Dictionary:
-	var final_path := world.resource_path
-	var staged_path := _marked_path(final_path, ".stage")
-	var backup_path := _marked_path(final_path, ".backup")
-	var errors: Array[String] = []
-	if FileAccess.file_exists(backup_path):
-		return _result(false, ["refusing to replace world while backup exists: %s" % backup_path], warnings)
-	if _remove_file(staged_path) != OK:
-		return _result(false, ["could not remove stale staged world: %s" % staged_path], warnings)
-	var expected_signature := _world_signature(world)
-	var save_error := ResourceSaver.save(world, staged_path)
-	if save_error != OK:
-		_remove_file(staged_path)
-		return _result(false, ["could not save staged world: %s" % staged_path], warnings)
-	var hook_result := _after_staged_world_saved(staged_path, world)
-	if not bool(hook_result.get("ok", false)):
-		_remove_file(staged_path)
-		return _result(false, _copy_strings(hook_result.get("errors", [])), warnings)
-	if not _validate_saved_world(staged_path, expected_signature, errors):
-		_remove_file(staged_path)
-		return _result(false, errors, warnings)
-
-	var had_previous := FileAccess.file_exists(final_path)
-	if had_previous and _move_file(final_path, backup_path) != OK:
-		_remove_file(staged_path)
-		return _result(false, ["could not back up world resource: %s" % final_path], warnings)
-	if _promote_staged_file(staged_path, final_path) != OK:
-		errors.append("could not install staged world: %s" % final_path)
-		_restore_world_backup(final_path, backup_path, staged_path, had_previous, errors)
-		return _result(false, errors, warnings)
-	if not _validate_saved_world(final_path, expected_signature, errors):
-		_restore_world_backup(final_path, backup_path, staged_path, had_previous, errors)
-		return _result(false, errors, warnings)
-	if had_previous and _remove_file(backup_path) != OK:
-		warnings.append("retained world backup after committed transaction: %s" % backup_path)
-	return _result(true, [], warnings)
-
-
-func _validate_saved_world(path: String, expected_signature: Dictionary, errors: Array[String]) -> bool:
-	var saved := ResourceLoader.load(path, "WorldData", ResourceLoader.CACHE_MODE_IGNORE) as WorldData
-	if saved == null:
-		errors.append("could not reload staged world: %s" % path)
-		return false
-	var report: Dictionary = WORLD_VALIDATION.validate_world_report(saved)
-	for error: String in report.get("errors", []):
-		errors.append("reloaded world: %s" % error)
-	for room_id: String in saved.get_room_ids():
-		_validate_room_artifacts(saved.get_room(room_id), errors)
-	if _world_signature(saved) != expected_signature:
-		errors.append("reloaded world differs from staged WorldData")
-	return errors.is_empty()
-
-
-func _restore_world_backup(final_path: String, backup_path: String, staged_path: String, had_previous: bool, errors: Array[String]) -> void:
-	if FileAccess.file_exists(final_path) and _remove_file(final_path) != OK:
-		errors.append("could not remove failed world output: %s" % final_path)
-	if had_previous:
-		if not FileAccess.file_exists(backup_path):
-			errors.append("world backup is missing: %s" % backup_path)
-		elif FileAccess.file_exists(final_path) or _move_file(backup_path, final_path) != OK:
-			errors.append("could not restore world backup: %s" % final_path)
-	if FileAccess.file_exists(staged_path) and _remove_file(staged_path) != OK:
-		errors.append("could not remove staged world after rollback: %s" % staged_path)
-
-
-func _world_signature(world: WorldData) -> Dictionary:
-	var rooms: Array[Dictionary] = []
-	for room: Resource in world.rooms:
-		rooms.append({
-			"room_id": room.room_id,
-			"display_name": room.display_name,
-			"scene_path": room.scene_path,
-			"source_scene_path": room.source_scene_path,
-			"terrain_scene_path": room.terrain_scene_path,
-			"entrance_ids": Array(room.entrance_ids),
-			"spawn_ids": Array(room.spawn_ids),
-			"entity_ids": Array(room.entity_ids),
-			"tags": Array(room.tags),
-			"room_origin_chunk": room.room_origin_chunk,
-			"room_size_chunks": room.room_size_chunks,
-			"adjacent_room_ids": Array(room.adjacent_room_ids),
-			"map_color": room.map_color,
-		})
-	var connections: Array[Dictionary] = []
-	for connection: Resource in world.connections:
-		connections.append({
-			"from_room_id": connection.from_room_id,
-			"from_entrance_id": connection.from_entrance_id,
-			"to_room_id": connection.to_room_id,
-			"to_spawn_id": connection.to_spawn_id,
-			"direction": connection.direction,
-		})
-	return {
-		"world_id": world.world_id,
-		"start_room_id": world.start_room_id,
-		"start_spawn_id": world.start_spawn_id,
-		"tags": Array(world.tags),
-		"rooms": rooms,
-		"connections": connections,
-	}
-
-
-func _marked_path(path: String, marker: String) -> String:
-	var extension_start := path.rfind(".")
-	return "%s%s%s" % [path.left(extension_start), marker, path.substr(extension_start)]
-
-
-func _move_file(from_path: String, to_path: String) -> Error:
-	return DirAccess.rename_absolute(ProjectSettings.globalize_path(from_path), ProjectSettings.globalize_path(to_path))
-
-
-func _promote_staged_file(staged_path: String, final_path: String) -> Error:
-	return _move_file(staged_path, final_path)
-
-
-func _remove_file(path: String) -> Error:
-	if not FileAccess.file_exists(path):
-		return OK
-	return DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
-
-
-func _after_staged_world_saved(_staged_path: String, _world: WorldData) -> Dictionary:
-	return _result(true, [], [])
+	var result: Dictionary = _world_resources.call("save_candidate", world, world.resource_path)
+	var service_warnings := _copy_strings(result.get("warnings", []))
+	warnings.append_array(service_warnings)
+	result["warnings"] = _copy_strings(warnings)
+	return result
 
 
 func _validate_room_artifacts(room: Resource, errors: Array[String]) -> void:

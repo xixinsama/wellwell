@@ -2,6 +2,7 @@ extends Node
 
 const SERVICE_PATH := "res://scripts/authoring/world_resource_service.gd"
 const WORLD_DATA := preload("res://scripts/world/world_data.gd")
+const ROOM_DATA := preload("res://scripts/world/room_data.gd")
 const WORLD_PATH := "res://resources/worlds/test_main_world.tres"
 const WRONG_TYPE_PATH := "res://resources/worlds/test_wrong_world_resource.tres"
 
@@ -24,6 +25,8 @@ func run() -> Array[String]:
 	_assert_create_and_save(service, failures)
 	_assert_load_errors(service, failures)
 	_assert_failed_save_preserves_existing_world(failures)
+	_assert_moved_world_placement_survives_reload(service, failures)
+	_assert_signature_reports_placement_difference(service, failures)
 	_cleanup()
 	return failures
 
@@ -104,6 +107,49 @@ func _assert_failed_save_preserves_existing_world(failures: Array[String]) -> vo
 	]:
 		if FileAccess.file_exists(temporary_path):
 			failures.append("forced staged save failure retained temporary file: %s" % temporary_path)
+
+
+func _assert_moved_world_placement_survives_reload(service: Object, failures: Array[String]) -> void:
+	var world: Resource = WORLD_DATA.new()
+	world.world_id = "placement_persistence_world"
+	var room: Resource = ROOM_DATA.new()
+	room.room_id = "room_a"
+	room.room_origin_chunk = Vector2i(8, 8)
+	world.rooms.assign([room])
+	world.normalize_room_placements()
+	world.set_room_origin_chunk("room_a", Vector2i(-1, -1))
+	var result: Dictionary = service.call("save_candidate", world, WORLD_PATH)
+	if not result.get("ok", false):
+		failures.append("moved placement could not be saved: %s" % result.get("errors", []))
+		return
+	var reloaded := ResourceLoader.load(WORLD_PATH, "WorldData", ResourceLoader.CACHE_MODE_IGNORE) as Resource
+	if reloaded == null or reloaded.call("get_room_origin_chunk", "room_a") != Vector2i(-1, -1):
+		failures.append("moved WorldData placement did not survive save/reload")
+	var signature: Dictionary = service.call("_world_signature", world)
+	var reloaded_signature: Dictionary = service.call("_world_signature", reloaded)
+	if signature != reloaded_signature:
+		failures.append("world signature changed after reloading embedded placement")
+
+
+func _assert_signature_reports_placement_difference(service: Object, failures: Array[String]) -> void:
+	if not service.has_method("describe_first_difference"):
+		failures.append("world resource service is missing first-difference diagnostics")
+		return
+	var world_a: Resource = WORLD_DATA.new()
+	world_a.world_id = "diagnostic_world"
+	var room_a: Resource = ROOM_DATA.new()
+	room_a.room_id = "room_a"
+	world_a.rooms.assign([room_a])
+	world_a.normalize_room_placements()
+	var world_b := world_a.duplicate(true) as Resource
+	world_b.set_room_origin_chunk("room_a", Vector2i(4, 2))
+	var difference := String(service.call(
+		"describe_first_difference",
+		service.call("_world_signature", world_a),
+		service.call("_world_signature", world_b)
+	))
+	if not difference.contains("placements.room_a.origin_chunk"):
+		failures.append("placement signature diagnostic omitted the first differing field: %s" % difference)
 
 
 func _assert_envelope(result: Dictionary, label: String, failures: Array[String]) -> void:

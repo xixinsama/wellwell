@@ -10,9 +10,15 @@ var _room_data: Resource
 var _room_instance: Node
 var _world_id := ""
 var _entity_state_source: Object
+var _origin_chunk := Vector2i.ZERO
 
 
-func setup_room(room_data: Resource, world_id: String = "", entity_state_source: Object = null) -> bool:
+func setup_room(
+	room_data: Resource,
+	world_id: String = "",
+	entity_state_source: Object = null,
+	origin_chunk: Variant = null
+) -> bool:
 	_clear_room_instance()
 	_room_data = null
 	_world_id = ""
@@ -32,8 +38,9 @@ func setup_room(room_data: Resource, world_id: String = "", entity_state_source:
 
 	_room_data = room_data
 	_world_id = world_id
+	_origin_chunk = room_data.room_origin_chunk if origin_chunk == null else Vector2i(origin_chunk)
 	name = room_data.room_id
-	position = Vector2(room_data.get_pixel_rect().position)
+	position = Vector2(_origin_chunk * RoomData.DEFAULT_CHUNK_SIZE_PIXELS)
 	add_child(_room_instance)
 	_setup_entities()
 	return true
@@ -52,11 +59,14 @@ func get_room_instance() -> Node:
 
 
 func get_room_chunk_rect() -> Rect2i:
-	return Rect2i() if _room_data == null else _room_data.get_chunk_rect()
+	return Rect2i() if _room_data == null else Rect2i(_origin_chunk, _room_data.room_size_chunks)
 
 
 func get_room_cell_rect() -> Rect2i:
-	return Rect2i() if _room_data == null else _room_data.get_cell_rect()
+	if _room_data == null:
+		return Rect2i()
+	var chunk_size_cells := RoomData.get_chunk_size_cells()
+	return Rect2i(_origin_chunk * chunk_size_cells, _room_data.room_size_chunks * chunk_size_cells)
 
 
 func get_layer_node(layer_name: String) -> Node:

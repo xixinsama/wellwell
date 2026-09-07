@@ -93,11 +93,12 @@ func move_room(room_id: String, origin_chunk: Vector2i) -> bool:
 	if world_data == null or _undo_redo == null:
 		return false
 	var room: Resource = world_data.get_room(room_id)
-	if room == null or room.room_origin_chunk == origin_chunk:
+	var current_origin := Vector2i.ZERO if room == null else world_data.get_room_origin_chunk(room_id)
+	if room == null or current_origin == origin_chunk:
 		return room != null
 	_undo_redo.create_action("Move Room")
 	_undo_redo.add_do_method(self, "_apply_move", room_id, origin_chunk)
-	_undo_redo.add_undo_method(self, "_apply_move", room_id, room.room_origin_chunk)
+	_undo_redo.add_undo_method(self, "_apply_move", room_id, current_origin)
 	_undo_redo.commit_action()
 	return true
 
@@ -274,6 +275,8 @@ func sync_room_resource(room_id: String, baked_room: RoomData) -> bool:
 		return false
 	var result: Dictionary = _model.replace_room(world_data, room_id, baked_room)
 	_mark_changed(result)
+	if bool(result.get("ok", false)) and is_instance_valid(canvas):
+		canvas.call("refresh_preview_room", room_id)
 	_refresh()
 	return bool(result.get("ok", false))
 
@@ -328,6 +331,8 @@ func _mark_changed(result: Dictionary) -> void:
 
 func _refresh() -> void:
 	if is_instance_valid(canvas):
+		if canvas.has_method("sync_preview"):
+			canvas.call("sync_preview")
 		canvas.queue_redraw()
 	if is_instance_valid(source_entrance):
 		_refresh_connection_options()

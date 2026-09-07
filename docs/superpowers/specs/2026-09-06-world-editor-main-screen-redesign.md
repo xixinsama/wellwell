@@ -1,5 +1,9 @@
 # World Editor Main Screen Redesign
 
+> **Implementation update:** The placement, generated terrain preview, and unified
+> persistence details in this document are superseded by
+> `docs/superpowers/specs/2026-09-06-world-terrain-preview-layout-ownership-design.md`.
+
 ## Context
 
 The current `wellwell_world_editor` registers `world_editor_dock.tscn` with `add_control_to_dock()`. This constrains the layout canvas to a narrow side panel and hides a second requirement: commands such as **Add Existing** only work after a `WorldData` resource has been selected elsewhere in the editor. The button currently does nothing when no world is active, and successful in-memory mutations are not reliably persisted.

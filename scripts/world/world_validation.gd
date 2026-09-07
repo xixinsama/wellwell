@@ -4,6 +4,7 @@ extends RefCounted
 
 const ROOM_DATA_SCRIPT: Script = preload("res://scripts/world/room_data.gd")
 const ROOM_CONNECTION_DATA_SCRIPT: Script = preload("res://scripts/world/room_connection_data.gd")
+const ROOM_PLACEMENT_DATA_SCRIPT: Script = preload("res://scripts/world/world_room_placement_data.gd")
 const WORLD_DATA_SCRIPT: Script = preload("res://scripts/world/world_data.gd")
 
 
@@ -30,6 +31,7 @@ static func validate_world_report(world: Resource) -> Dictionary:
 	var valid_rooms: Array[Resource] = []
 	for room: Resource in world.rooms:
 		_validate_room(room, room_by_id, valid_rooms, errors)
+	_validate_placements(world, room_by_id, errors)
 
 	_validate_start(world, room_by_id, errors)
 	_validate_adjacency(valid_rooms, room_by_id, errors)
@@ -42,9 +44,10 @@ static func validate_world_report(world: Resource) -> Dictionary:
 		valid_connection_targets,
 		errors
 	)
-	_validate_overlaps(valid_rooms, warnings)
+	_validate_overlaps(world, valid_rooms, warnings)
 	_validate_unconnected_entrances(valid_rooms, connected_entrances, warnings)
-	_validate_reachability(world, room_by_id, valid_connection_targets, warnings)
+	if not valid_connection_targets.is_empty():
+		_validate_reachability(world, room_by_id, valid_connection_targets, warnings)
 
 	errors = _sorted_unique(errors)
 	warnings = _sorted_unique(warnings)
@@ -98,6 +101,31 @@ static func _validate_manifest_ids(
 			errors.append("room %s has duplicate %s_id: %s" % [room_id, id_kind, value])
 		else:
 			seen[value] = true
+
+
+static func _validate_placements(
+	world: Resource,
+	room_by_id: Dictionary,
+	errors: Array[String]
+) -> void:
+	var seen: Dictionary = {}
+	for placement: Resource in world.placements:
+		if not _is_room_placement_data(placement):
+			errors.append("world has non-WorldRoomPlacementData placement resource")
+			continue
+		if placement.room_id.is_empty():
+			errors.append("world placement has empty room_id")
+			continue
+		if not room_by_id.has(placement.room_id):
+			errors.append("world placement references unknown room %s" % placement.room_id)
+			continue
+		if seen.has(placement.room_id):
+			errors.append("world contains duplicate placement for room %s" % placement.room_id)
+			continue
+		seen[placement.room_id] = true
+	for room_id: String in room_by_id:
+		if not seen.has(room_id):
+			errors.append("world has no placement for room: %s" % room_id)
 
 
 static func _validate_start(world: Resource, room_by_id: Dictionary, errors: Array[String]) -> void:
@@ -200,14 +228,14 @@ static func _validate_connections(
 			valid_connection_targets[connection.from_room_id] = targets
 
 
-static func _validate_overlaps(rooms: Array[Resource], warnings: Array[String]) -> void:
+static func _validate_overlaps(world: Resource, rooms: Array[Resource], warnings: Array[String]) -> void:
 	var sorted_rooms := rooms.duplicate()
 	sorted_rooms.sort_custom(func(left: Resource, right: Resource) -> bool: return left.room_id < right.room_id)
 	for left_index: int in range(sorted_rooms.size()):
 		var left: Resource = sorted_rooms[left_index]
 		for right_index: int in range(left_index + 1, sorted_rooms.size()):
 			var right: Resource = sorted_rooms[right_index]
-			if left.get_chunk_rect().intersects(right.get_chunk_rect()):
+			if world.get_room_chunk_rect(left.room_id).intersects(world.get_room_chunk_rect(right.room_id)):
 				warnings.append("overlapping rooms: %s, %s" % [left.room_id, right.room_id])
 
 
@@ -263,3 +291,7 @@ static func _is_room_data(resource: Resource) -> bool:
 
 static func _is_room_connection_data(resource: Resource) -> bool:
 	return resource != null and resource.get_script() == ROOM_CONNECTION_DATA_SCRIPT
+
+
+static func _is_room_placement_data(resource: Resource) -> bool:
+	return resource != null and resource.get_script() == ROOM_PLACEMENT_DATA_SCRIPT

@@ -54,7 +54,8 @@ func import_room(world: WorldData, source_root: Node, source_path: String) -> Di
 
 	var before_state: Dictionary = _layout_model.call("capture_world_state", world)
 	var candidate := world.duplicate(true) as WorldData
-	var add_result: Dictionary = _layout_model.call("add_room", candidate, staged_room)
+	var import_origin := Vector2i.ZERO if world.rooms.is_empty() else Vector2i(-1, -1)
+	var add_result: Dictionary = _layout_model.call("add_room", candidate, staged_room, import_origin)
 	if not bool(add_result.get("ok", false)):
 		return _from_dependency_failure(add_result, world.resource_path)
 	var start_error := _prepare_start_endpoint(world, candidate, staged_room, manifest)

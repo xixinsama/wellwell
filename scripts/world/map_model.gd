@@ -12,12 +12,15 @@ static func build(world: Resource, explored_chunks: Array[String], current_room_
 		if room == null or room.room_id.is_empty():
 			continue
 		var chunks: Array[Dictionary] = []
-		for chunk_id: String in room.get_chunk_ids(world.world_id):
-			chunks.append({"id": chunk_id, "explored": explored.has(chunk_id)})
+		var room_rect: Rect2i = world.get_room_chunk_rect(room.room_id)
+		for y: int in range(room_rect.position.y, room_rect.end.y):
+			for x: int in range(room_rect.position.x, room_rect.end.x):
+				var chunk_id := "%s:chunk:%d,%d" % [world.world_id, x, y]
+				chunks.append({"id": chunk_id, "explored": explored.has(chunk_id)})
 		rooms.append({
 			"room_id": room.room_id,
 			"display_name": room.display_name,
-			"rect": room.get_chunk_rect(),
+			"rect": room_rect,
 			"chunks": chunks,
 			"current": room.room_id == current_room_id,
 			"color": room.map_color,
@@ -32,4 +35,3 @@ static func build(world: Resource, explored_chunks: Array[String], current_room_
 			"direction": connection.direction,
 		})
 	return {"rooms": rooms, "connections": connections, "current_room_id": current_room_id}
-

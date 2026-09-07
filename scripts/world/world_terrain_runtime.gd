@@ -24,7 +24,7 @@ func setup_world(world: WorldData) -> bool:
 	var staged: Dictionary[String, Node2D] = {}
 	for room_id: String in world.get_room_ids():
 		var room: Resource = world.get_room(room_id)
-		var terrain := _instantiate_terrain(room)
+		var terrain := _instantiate_terrain(room, world.get_room_origin_chunk(room_id))
 		if terrain == null:
 			_free_staged(staged)
 			return false
@@ -54,7 +54,7 @@ func clear_world() -> void:
 	_world_signature = ""
 
 
-func _instantiate_terrain(room: Resource) -> Node2D:
+func _instantiate_terrain(room: Resource, origin_chunk: Vector2i = Vector2i.ZERO) -> Node2D:
 	if not _is_room_data(room) or room.terrain_scene_path.is_empty():
 		return null
 	if not ResourceLoader.exists(room.terrain_scene_path, "PackedScene"):
@@ -73,7 +73,7 @@ func _instantiate_terrain(room: Resource) -> Node2D:
 		instance.free()
 		return null
 	instance.name = room.room_id
-	instance.position = Vector2(room.room_origin_chunk * RoomData.DEFAULT_CHUNK_SIZE_PIXELS)
+	instance.position = Vector2(origin_chunk * RoomData.DEFAULT_CHUNK_SIZE_PIXELS)
 	return instance
 
 
@@ -96,11 +96,12 @@ func _get_world_signature(world: Resource) -> String:
 		if not _is_room_data(room) or room.room_id.is_empty() or seen.has(room.room_id):
 			return ""
 		seen[room.room_id] = true
+		var origin: Vector2i = world.get_room_origin_chunk(room.room_id)
 		parts.append("%s|%s|%d,%d" % [
 			room.room_id,
 			room.terrain_scene_path,
-			room.room_origin_chunk.x,
-			room.room_origin_chunk.y,
+			origin.x,
+			origin.y,
 		])
 	parts.sort()
 	return "\n".join(parts)

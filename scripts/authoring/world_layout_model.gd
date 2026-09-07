@@ -4,10 +4,11 @@ extends RefCounted
 
 const ROOM_DATA_SCRIPT: Script = preload("res://scripts/world/room_data.gd")
 const ROOM_CONNECTION_DATA_SCRIPT: Script = preload("res://scripts/world/room_connection_data.gd")
+const ROOM_PLACEMENT_DATA_SCRIPT: Script = preload("res://scripts/world/world_room_placement_data.gd")
 const WORLD_VALIDATION: Script = preload("res://scripts/world/world_validation.gd")
 
 
-func add_room(world: WorldData, room: RoomData) -> Dictionary:
+func add_room(world: WorldData, room: RoomData, origin_chunk: Vector2i = Vector2i.ZERO) -> Dictionary:
 	if world == null:
 		return _error("world is null")
 	if room == null:
@@ -16,7 +17,13 @@ func add_room(world: WorldData, room: RoomData) -> Dictionary:
 		return _error("room has empty room_id")
 	if world.has_room(room.room_id):
 		return _error("duplicate room_id: %s" % room.room_id)
+	var normalization: Dictionary = world.normalize_room_placements()
+	if not bool(normalization.get("ok", false)):
+		return _from_world_result(normalization)
 	world.rooms.append(room)
+	if not world.set_room_origin_chunk(room.room_id, origin_chunk):
+		world.rooms.erase(room)
+		return _error("could not create placement for room: %s" % room.room_id)
 	world.sort_for_serialization()
 	return _success()
 
@@ -30,6 +37,10 @@ func remove_room(world: WorldData, room_id: String) -> Dictionary:
 		var room: Resource = world.rooms[index]
 		if _is_room_data(room) and room.room_id == room_id:
 			world.rooms.remove_at(index)
+	for index: int in range(world.placements.size() - 1, -1, -1):
+		var placement: Resource = world.placements[index]
+		if _is_room_placement_data(placement) and placement.room_id == room_id:
+			world.placements.remove_at(index)
 	for index: int in range(world.connections.size() - 1, -1, -1):
 		var connection: Resource = world.connections[index]
 		if not _is_room_connection_data(connection):
@@ -57,8 +68,12 @@ func move_room(world: WorldData, room_id: String, origin_chunk: Vector2i) -> Dic
 	var room: Resource = world.get_room(room_id)
 	if room == null:
 		return _error("room_id does not reference a room: %s" % room_id)
-	room.room_origin_chunk = origin_chunk
-	return _success()
+	var normalization: Dictionary = world.normalize_room_placements()
+	if not bool(normalization.get("ok", false)):
+		return _from_world_result(normalization)
+	if not world.set_room_origin_chunk(room_id, origin_chunk):
+		return _error("could not update placement for room: %s" % room_id)
+	return _success_with_warnings(normalization.get("warnings", []))
 
 
 func connect_rooms(world: WorldData, connection: RoomConnectionData) -> Dictionary:
@@ -117,6 +132,7 @@ func capture_world_state(world: WorldData) -> Dictionary:
 			adjacency[room.room_id] = room.adjacent_room_ids.duplicate()
 	return {
 		"rooms": world.rooms.duplicate(),
+		"placements": _duplicate_resources(world.placements),
 		"connections": world.connections.duplicate(),
 		"start_room_id": world.start_room_id,
 		"start_spawn_id": world.start_spawn_id,
@@ -130,6 +146,7 @@ func restore_world_state(world: WorldData, state: Dictionary) -> Dictionary:
 	if not state.has("rooms") or not state.has("connections") or not state.has("adjacency"):
 		return _error("world state is incomplete")
 	world.rooms.assign(state["rooms"])
+	world.placements.assign(_duplicate_resources(state.get("placements", [])))
 	world.connections.assign(state["connections"])
 	world.start_room_id = String(state.get("start_room_id", ""))
 	world.start_spawn_id = String(state.get("start_spawn_id", ""))
@@ -149,7 +166,9 @@ func replace_room(world: WorldData, room_id: String, replacement: RoomData) -> D
 		return _error("room_id does not reference a room: %s" % room_id)
 	if replacement == null or replacement.room_id != room_id:
 		return _error("replacement room_id does not match: %s" % room_id)
-	replacement.room_origin_chunk = current.room_origin_chunk
+	var normalization: Dictionary = world.normalize_room_placements()
+	if not bool(normalization.get("ok", false)):
+		return _from_world_result(normalization)
 	replacement.adjacent_room_ids = current.adjacent_room_ids.duplicate()
 	for index: int in range(world.rooms.size()):
 		if world.rooms[index] == current:
@@ -163,8 +182,31 @@ func _success() -> Dictionary:
 	return {"ok": true, "errors": [], "warnings": []}
 
 
+func _success_with_warnings(values: Variant) -> Dictionary:
+	var warnings: Array[String] = []
+	for value: Variant in values:
+		warnings.append(String(value))
+	return {"ok": true, "errors": [], "warnings": warnings}
+
+
 func _error(message: String) -> Dictionary:
 	return {"ok": false, "errors": [message], "warnings": []}
+
+
+func _from_world_result(result: Dictionary) -> Dictionary:
+	return {
+		"ok": false,
+		"errors": result.get("errors", []),
+		"warnings": result.get("warnings", []),
+	}
+
+
+func _duplicate_resources(values: Variant) -> Array[Resource]:
+	var result: Array[Resource] = []
+	for value: Variant in values:
+		if value is Resource:
+			result.append((value as Resource).duplicate(true))
+	return result
 
 
 static func _is_room_data(resource: Resource) -> bool:
@@ -173,3 +215,7 @@ static func _is_room_data(resource: Resource) -> bool:
 
 static func _is_room_connection_data(resource: Resource) -> bool:
 	return resource != null and resource.get_script() == ROOM_CONNECTION_DATA_SCRIPT
+
+
+static func _is_room_placement_data(resource: Resource) -> bool:
+	return resource != null and resource.get_script() == ROOM_PLACEMENT_DATA_SCRIPT

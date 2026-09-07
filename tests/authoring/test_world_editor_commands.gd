@@ -357,16 +357,16 @@ func _assert_move_command(failures: Array[String]) -> void:
 	dock.call("set_undo_redo_adapter", undo)
 	if not dock.call("move_room", "room_a", Vector2i(3, -2)):
 		failures.append("world editor move command was rejected")
-	if room.room_origin_chunk != Vector2i(3, -2):
+	if world.call("get_room_origin_chunk", "room_a") != Vector2i(3, -2):
 		failures.append("world editor move command did not apply integer chunks")
 	if undo.action_name.is_empty() or not undo.undo_call.is_valid():
 		failures.append("world editor move command did not register undo/redo")
 	else:
 		undo.undo_call.call()
-		if room.room_origin_chunk != Vector2i.ZERO:
+		if world.call("get_room_origin_chunk", "room_a") != Vector2i.ZERO:
 			failures.append("world editor move undo did not restore the origin")
 		undo.do_call.call()
-		if room.room_origin_chunk != Vector2i(3, -2):
+		if world.call("get_room_origin_chunk", "room_a") != Vector2i(3, -2):
 			failures.append("world editor move redo did not restore the moved origin")
 	if changed_count[0] < 2:
 		failures.append("world editor move and undo did not mark WorldData changed")
@@ -466,7 +466,7 @@ func _assert_rebake_sync_and_overlap_connection_geometry(failures: Array[String]
 			var current: Resource = world.get_room("room_a")
 			if current.display_name != "Rebaked Room" or not current.spawn_ids.has("new_spawn"):
 				failures.append("world editor did not synchronize rebaked RoomData metadata")
-			if current.room_origin_chunk != Vector2i(5, -1) or not current.adjacent_room_ids.has("room_b"):
+			if world.call("get_room_origin_chunk", "room_a") != Vector2i(5, -1) or not current.adjacent_room_ids.has("room_b"):
 				failures.append("world editor rebake synchronization lost world layout metadata")
 	dock.free()
 
