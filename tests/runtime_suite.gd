@@ -1,6 +1,17 @@
 extends Node
 
 const TESTS: Array[Script] = [
+	preload("res://tests/platformer_kit/test_platformer_kit_contract.gd"),
+	preload("res://tests/platformer_kit/test_core_primitives.gd"),
+	preload("res://tests/platformer_kit/character/test_character_intent.gd"),
+	preload("res://tests/platformer_kit/character/test_input_source.gd"),
+	preload("res://tests/platformer_kit/character/test_movement_profile.gd"),
+	preload("res://tests/platformer_kit/character/test_character_motor_2d.gd"),
+	preload("res://tests/platformer_kit/character/test_character_motor_integration.gd"),
+	preload("res://tests/platformer_kit/character/test_character_sensors.gd"),
+	preload("res://tests/platformer_kit/platforms/test_platform_motion.gd"),
+	preload("res://tests/platformer_kit/interaction/test_interaction.gd"),
+	preload("res://tests/examples/test_movement_lab.gd"),
 	preload("res://tests/authoring/room/test_room_bake_paths.gd"),
 	preload("res://tests/authoring/room/test_source_fingerprint.gd"),
 	preload("res://tests/authoring/test_room_authoring_contract.gd"),
@@ -34,6 +45,7 @@ const TESTS: Array[Script] = [
 	preload("res://tests/world/test_map_model.gd"),
 	preload("res://tests/world/test_room_transition.gd"),
 	preload("res://tests/tools/test_project_validation.gd"),
+	preload("res://tests/tools/test_framework_boundaries.gd"),
 	preload("res://tests/ui/test_menu_contract.gd"),
 	preload("res://tests/ui/test_menu_features.gd"),
 ]

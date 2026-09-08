@@ -4,7 +4,7 @@
 [ext_resource type="Script" uid="uid://clswk5xafmopi" path="res://scripts/authoring/room/room_preview_controller.gd" id="2_8kft7"]
 [ext_resource type="PackedScene" uid="uid://cejq022r3hjrd" path="res://scenes/player/player.tscn" id="3_mfms0"]
 [ext_resource type="TileSet" uid="uid://dopy3rhny136q" path="res://resources/tilesets/tileset8_8.tres" id="3_q26ly"]
-[ext_resource type="Script" uid="uid://cfv5j6giqea6p" path="res://scripts/camera/pixel_camera_2d.gd" id="4_q26ly"]
+[ext_resource type="Script" path="res://addons/platformer_kit/camera/pixel_camera_2d.gd" id="4_q26ly"]
 [ext_resource type="Script" uid="uid://bo5asnakkt3ao" path="res://scripts/world/entities/spawn_point.gd" id="4_wyn2e"]
 [ext_resource type="PackedScene" uid="uid://dpkyymy3fnwb4" path="res://scenes/tools/grid_overlay.tscn" id="5_wyn2e"]
 [ext_resource type="PackedScene" uid="uid://xdpcjsmnvhkj" path="res://scenes/tools/debug_hud.tscn" id="6_qmbol"]

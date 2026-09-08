@@ -1,0 +1,156 @@
+[gd_scene load_steps=10 format=3]
+
+[ext_resource type="Script" path="res://examples/movement_lab/movement_lab.gd" id="1_lab"]
+[ext_resource type="PackedScene" path="res://scenes/player/player.tscn" id="2_player"]
+[ext_resource type="Script" path="res://addons/platformer_kit/camera/pixel_camera_2d.gd" id="3_camera"]
+[ext_resource type="Script" path="res://addons/platformer_kit/platforms/one_way_platform.gd" id="4_one_way"]
+[ext_resource type="Script" path="res://addons/platformer_kit/platforms/moving_platform.gd" id="5_moving"]
+[ext_resource type="Script" path="res://addons/platformer_kit/platforms/falling_platform.gd" id="6_falling"]
+[ext_resource type="Script" path="res://addons/platformer_kit/platforms/conveyor_platform.gd" id="7_conveyor"]
+
+[sub_resource type="RectangleShape2D" id="Rectangle_ground"]
+size = Vector2(960, 32)
+
+[sub_resource type="RectangleShape2D" id="Rectangle_platform"]
+size = Vector2(80, 8)
+
+[sub_resource type="RectangleShape2D" id="Rectangle_wall"]
+size = Vector2(16, 96)
+
+[sub_resource type="RectangleShape2D" id="Rectangle_ceiling"]
+size = Vector2(112, 12)
+
+[sub_resource type="ConvexPolygonShape2D" id="Convex_slope"]
+points = PackedVector2Array(-56, 24, 56, -24, 56, 24)
+
+[node name="MovementLab" type="Node2D"]
+script = ExtResource("1_lab")
+
+[node name="Backdrop" type="Polygon2D" parent="."]
+z_index = -10
+color = Color(0.047, 0.063, 0.078, 1)
+polygon = PackedVector2Array(-320, -180, 1280, -180, 1280, 540, -320, 540)
+
+[node name="Player" parent="." instance=ExtResource("2_player")]
+position = Vector2(40, 288)
+
+[node name="PixelCamera2D" type="Camera2D" parent="."]
+position_smoothing_enabled = true
+position_smoothing_speed = 8.0
+script = ExtResource("3_camera")
+camera_mode = 1
+
+[node name="Fixtures" type="Node2D" parent="."]
+
+[node name="Ground" type="StaticBody2D" parent="Fixtures"]
+position = Vector2(480, 344)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Fixtures/Ground"]
+shape = SubResource("Rectangle_ground")
+
+[node name="Visual" type="Polygon2D" parent="Fixtures/Ground"]
+color = Color(0.165, 0.2, 0.224, 1)
+polygon = PackedVector2Array(-480, -16, 480, -16, 480, 16, -480, 16)
+
+[node name="Slope" type="StaticBody2D" parent="Fixtures"]
+position = Vector2(152, 304)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Fixtures/Slope"]
+shape = SubResource("Convex_slope")
+
+[node name="Visual" type="Polygon2D" parent="Fixtures/Slope"]
+color = Color(0.243, 0.58, 0.455, 1)
+polygon = PackedVector2Array(-56, 24, 56, -24, 56, 24)
+
+[node name="OneWayPlatform" type="StaticBody2D" parent="Fixtures"]
+position = Vector2(280, 264)
+script = ExtResource("4_one_way")
+platform_id = &"lab:one_way"
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Fixtures/OneWayPlatform"]
+shape = SubResource("Rectangle_platform")
+
+[node name="Visual" type="Polygon2D" parent="Fixtures/OneWayPlatform"]
+color = Color(0.333, 0.686, 0.91, 1)
+polygon = PackedVector2Array(-40, -4, 40, -4, 40, 4, -40, 4)
+
+[node name="MovingPlatform" type="AnimatableBody2D" parent="Fixtures"]
+position = Vector2(392, 280)
+script = ExtResource("5_moving")
+platform_id = &"lab:moving"
+travel_offset = Vector2(96, -48)
+cycle_duration = 3.0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Fixtures/MovingPlatform"]
+shape = SubResource("Rectangle_platform")
+
+[node name="Visual" type="Polygon2D" parent="Fixtures/MovingPlatform"]
+color = Color(0.949, 0.702, 0.239, 1)
+polygon = PackedVector2Array(-40, -4, 40, -4, 40, 4, -40, 4)
+
+[node name="LowCeiling" type="StaticBody2D" parent="Fixtures"]
+position = Vector2(520, 282)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Fixtures/LowCeiling"]
+shape = SubResource("Rectangle_ceiling")
+
+[node name="Visual" type="Polygon2D" parent="Fixtures/LowCeiling"]
+color = Color(0.71, 0.396, 0.396, 1)
+polygon = PackedVector2Array(-56, -6, 56, -6, 56, 6, -56, 6)
+
+[node name="Wall" type="StaticBody2D" parent="Fixtures"]
+position = Vector2(608, 280)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Fixtures/Wall"]
+shape = SubResource("Rectangle_wall")
+
+[node name="Visual" type="Polygon2D" parent="Fixtures/Wall"]
+color = Color(0.671, 0.427, 0.718, 1)
+polygon = PackedVector2Array(-8, -48, 8, -48, 8, 48, -8, 48)
+
+[node name="NarrowGap" type="Node2D" parent="Fixtures"]
+
+[node name="Left" type="StaticBody2D" parent="Fixtures/NarrowGap"]
+position = Vector2(648, 280)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Fixtures/NarrowGap/Left"]
+shape = SubResource("Rectangle_wall")
+
+[node name="Visual" type="Polygon2D" parent="Fixtures/NarrowGap/Left"]
+color = Color(0.671, 0.427, 0.718, 1)
+polygon = PackedVector2Array(-8, -48, 8, -48, 8, 48, -8, 48)
+
+[node name="Right" type="StaticBody2D" parent="Fixtures/NarrowGap"]
+position = Vector2(672, 280)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Fixtures/NarrowGap/Right"]
+shape = SubResource("Rectangle_wall")
+
+[node name="Visual" type="Polygon2D" parent="Fixtures/NarrowGap/Right"]
+color = Color(0.671, 0.427, 0.718, 1)
+polygon = PackedVector2Array(-8, -48, 8, -48, 8, 48, -8, 48)
+
+[node name="FallingPlatform" type="AnimatableBody2D" parent="Fixtures"]
+position = Vector2(704, 264)
+script = ExtResource("6_falling")
+platform_id = &"lab:falling"
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Fixtures/FallingPlatform"]
+shape = SubResource("Rectangle_platform")
+
+[node name="Visual" type="Polygon2D" parent="Fixtures/FallingPlatform"]
+color = Color(0.906, 0.337, 0.337, 1)
+polygon = PackedVector2Array(-40, -4, 40, -4, 40, 4, -40, 4)
+
+[node name="ConveyorPlatform" type="StaticBody2D" parent="Fixtures"]
+position = Vector2(824, 296)
+script = ExtResource("7_conveyor")
+platform_id = &"lab:conveyor"
+conveyor_velocity = Vector2(56, 0)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Fixtures/ConveyorPlatform"]
+shape = SubResource("Rectangle_platform")
+
+[node name="Visual" type="Polygon2D" parent="Fixtures/ConveyorPlatform"]
+color = Color(0.298, 0.784, 0.82, 1)
+polygon = PackedVector2Array(-40, -4, 40, -4, 40, 4, -40, 4)

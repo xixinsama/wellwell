@@ -4,6 +4,12 @@
 
 Open `project.godot` in Godot and run `res://scenes/app/main.tscn`.
 
+Run the reusable movement fixtures directly with:
+
+```powershell
+godot --path . res://examples/movement_lab/movement_lab.tscn
+```
+
 ## What Is Included
 
 - 1280x720 outer window.

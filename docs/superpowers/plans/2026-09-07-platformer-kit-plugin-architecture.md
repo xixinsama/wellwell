@@ -80,12 +80,12 @@ removed only after the full suite and headless editor load pass.
 - Produces a boundary validator that accepts only framework-to-framework and game-to-framework references.
 - Produces a clean baseline where resource dialogs use `FileDialog.ACCESS_RESOURCES`, `FILE_MODE_OPEN_FILE` for Add Existing, and `FILE_MODE_SAVE_FILE` with `res://resources/worlds` for New World.
 
-- [ ] Write a failing boundary test with one allowed framework reference, one allowed game-to-framework reference, and one forbidden framework-to-game reference.
-- [ ] Run `godot --headless --path . -s res://tests/run_test_script.gd -- res://tests/tools/test_framework_boundaries.gd` and verify it fails on the forbidden reference rule.
-- [ ] Implement the validator using `DirAccess` and `FileAccess`, scanning only `.gd`, `.tscn`, and `.tres` files under `addons/platformer_kit/`.
-- [ ] Fix the existing World Editor dialog contract in the scene without changing its editor behavior beyond the resource restriction.
-- [ ] Register the test in `tests/runtime_suite.gd`.
-- [ ] Run the focused boundary test, the World Editor command test, and `tools/validate_project.gd`.
+- [x] Write a failing boundary test with one allowed framework reference, one allowed game-to-framework reference, and one forbidden framework-to-game reference.
+- [x] Run `godot --headless --path . -s res://tests/run_test_script.gd -- res://tests/tools/test_framework_boundaries.gd` and verify it fails on the forbidden reference rule.
+- [x] Implement the validator using `DirAccess` and `FileAccess`, scanning only `.gd`, `.tscn`, and `.tres` files under `addons/platformer_kit/`.
+- [x] Fix the existing World Editor dialog contract in the scene without changing its editor behavior beyond the resource restriction.
+- [x] Register the test in `tests/runtime_suite.gd`.
+- [x] Run the focused boundary test, the World Editor command test, and `tools/validate_project.gd`.
 
 ### Task 2: Create the `platformer_kit` package shell
 
@@ -107,13 +107,13 @@ removed only after the full suite and headless editor load pass.
 - The plugin performs no autoload registration and does not make runtime behavior depend on editor startup.
 - `StateMachine`, `GameEvent`, `ScopedEventBus`, and `TagContainer` are explicit objects; no global singleton is required by the framework.
 
-- [ ] Write a failing contract test requiring the addon manifest, version field, and runtime/editor separation.
-- [ ] Run the focused test and confirm the package is missing.
-- [ ] Add the minimal manifest and `EditorPlugin`; keep `_enter_tree()` side-effect free except for editor registrations owned by the framework.
-- [ ] Add the initial package contract test to the runtime suite.
-- [ ] Add core primitive tests for state transitions, scoped event delivery, and tag add/remove/containment behavior.
-- [ ] Implement the core primitives with typed inputs and deterministic update order.
-- [ ] Run the contract test and headless editor initialization.
+- [x] Write a failing contract test requiring the addon manifest, version field, and runtime/editor separation.
+- [x] Run the focused test and confirm the package is missing.
+- [x] Add the minimal manifest and `EditorPlugin`; keep `_enter_tree()` side-effect free except for editor registrations owned by the framework.
+- [x] Add the initial package contract test to the runtime suite.
+- [x] Add core primitive tests for state transitions, scoped event delivery, and tag add/remove/containment behavior.
+- [x] Implement the core primitives with typed inputs and deterministic update order.
+- [x] Run the contract test and headless editor initialization.
 
 ### Task 3: Introduce input intent and movement profiles
 
@@ -127,15 +127,15 @@ removed only after the full suite and headless editor load pass.
 - Create: `tests/platformer_kit/character/test_input_source.gd`
 
 **Interfaces:**
-- `CharacterIntent` exposes `move_axis: float`, `jump_pressed: bool`, `jump_released: bool`, and `fast_fall: bool`, plus `clear_transient() -> void`.
+- `CharacterIntent` exposes `move_axis: float`, `jump_pressed: bool`, `jump_released: bool`, `jump_held: bool`, and `fast_fall: bool`, plus `clear_transient() -> void`.
 - `InputSource` exposes `get_intent() -> CharacterIntent`.
 - `MovementProfile` stores max speed, acceleration, deceleration, gravity, jump speed, fall speed, coyote time, jump buffer time, and variable jump parameters.
 
-- [ ] Write tests proving intent contains no `Input` dependency and transient fields clear without changing `move_axis`.
-- [ ] Run the focused tests and verify the new classes are absent.
-- [ ] Implement the data classes and a player input adapter that reads project actions only at the adapter boundary.
-- [ ] Migrate the current tuning resource values into `default_movement_profile.tres` without changing gameplay values.
-- [ ] Run focused tests and compare the reference game launch behavior.
+- [x] Write tests proving intent contains no `Input` dependency and transient fields clear without changing `move_axis`.
+- [x] Run the focused tests and verify the new classes are absent.
+- [x] Implement the data classes and a player input adapter that reads project actions only at the adapter boundary.
+- [x] Migrate the current tuning resource values into `default_movement_profile.tres` without changing gameplay values.
+- [x] Run focused tests and compare the reference game launch behavior.
 
 ### Task 4: Build `CharacterEnvironmentSnapshot` and `CharacterMotor2D`
 
@@ -153,11 +153,11 @@ removed only after the full suite and headless editor load pass.
 - `CharacterMotor2D` consumes `CharacterIntent`, `MovementProfile`, and the environment snapshot; it does not read input, animation, HP, save state, or game nodes.
 - The temporary `PlayerController` compatibility wrapper composes the motor and preserves the current scene contract until `game/player/` is introduced.
 
-- [ ] Write tests for acceleration, deceleration, gravity, jump buffering, coyote time, variable jump release, and terminal velocity.
-- [ ] Run them before implementation and verify each failure is caused by missing motor behavior.
-- [ ] Implement the smallest motor API needed by the tests; keep all constants in `MovementProfile`.
-- [ ] Adapt the current player scene through the wrapper without changing collision layers or authored visuals.
-- [ ] Run character tests, the existing player/runtime tests, and a headless launch.
+- [x] Write tests for acceleration, deceleration, gravity, jump buffering, coyote time, variable jump release, and terminal velocity.
+- [x] Run them before implementation and verify each failure is caused by missing motor behavior.
+- [x] Implement the smallest motor API needed by the tests; keep all constants in `MovementProfile`.
+- [x] Adapt the current player scene through the wrapper without changing collision layers or authored visuals.
+- [x] Run character tests, the existing player/runtime tests, and a headless launch.
 
 ### Task 5: Add sensors, camera, and platform motion as framework modules
 
@@ -182,12 +182,12 @@ removed only after the full suite and headless editor load pass.
 - `PixelCamera2D` consumes room bounds and camera mode through explicit methods, preserving the existing free and room-locked modes.
 - `Interactable` exposes an interaction contract and `InteractionDetector` reports nearby candidates without knowing concrete game content.
 
-- [ ] Write tests for wall/ceiling detection, floor normal capture, platform velocity inheritance, one-chunk camera locking, and multi-chunk camera movement.
-- [ ] Run focused tests before implementation.
-- [ ] Implement sensors and platform motion without putting platform-specific logic in the motor.
-- [ ] Implement the interaction contract and detector as a framework-neutral base facility.
-- [ ] Migrate the existing camera tests and scene references.
-- [ ] Run the camera, sensor, platform, and full runtime tests.
+- [x] Write tests for wall/ceiling detection, floor normal capture, platform velocity inheritance, one-chunk camera locking, and multi-chunk camera movement.
+- [x] Run focused tests before implementation.
+- [x] Implement sensors and platform motion without putting platform-specific logic in the motor.
+- [x] Implement the interaction contract and detector as a framework-neutral base facility.
+- [x] Migrate the existing camera tests and scene references.
+- [x] Run the camera, sensor, platform, and full runtime tests.
 
 ### Task 6: Create the `movement_lab` reference example
 
@@ -201,10 +201,10 @@ removed only after the full suite and headless editor load pass.
 - The lab uses only `platformer_kit` runtime APIs and test fixtures; it contains no game-specific production logic.
 - The lab demonstrates slopes, one-way platforms, moving platforms, a low ceiling, a wall, a narrow gap, a falling platform, and a conveyor.
 
-- [ ] Add a scene contract test requiring the named lab fixtures and framework player composition.
-- [ ] Run it before the scene exists and confirm the expected failure.
-- [ ] Create the smallest playable lab scene.
-- [ ] Run the lab headless with `--quit-after 2` and the focused contract test.
+- [x] Add a scene contract test requiring the named lab fixtures and framework player composition.
+- [x] Run it before the scene exists and confirm the expected failure.
+- [x] Create the smallest playable lab scene.
+- [x] Run the lab headless with `--quit-after 2` and the focused contract test.
 
 ### Task 7: Migrate world, room, and persistence contracts
 

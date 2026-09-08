@@ -1,6 +1,6 @@
 extends Node
 
-const CAMERA_PATH := "res://scripts/camera/pixel_camera_2d.gd"
+const CAMERA_PATH := "res://addons/platformer_kit/camera/pixel_camera_2d.gd"
 
 
 func run() -> Array[String]:
@@ -28,6 +28,11 @@ func run() -> Array[String]:
 			failures.append("one-chunk room was not marked fixed")
 		if camera.global_position != Vector2(160, 90) or camera.get("smoothed_position") != Vector2(160, 90):
 			failures.append("room change did not immediately clamp old camera state")
+		camera.call("set_room_bounds", Rect2(Vector2.ZERO, Vector2(640, 180)))
+		var left_target: Vector2 = camera.call("get_room_camera_target", Vector2.ZERO, Vector2(320, 180))
+		var right_target: Vector2 = camera.call("get_room_camera_target", Vector2(640, 90), Vector2(320, 180))
+		if left_target != Vector2(160, 90) or right_target != Vector2(480, 90):
+			failures.append("multi-chunk room camera did not move within room bounds")
 		camera.call("clear_room_bounds")
 		if camera.get("camera_mode") != 1:
 			failures.append("clear_room_bounds changed the authored camera mode")

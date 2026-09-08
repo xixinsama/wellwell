@@ -166,11 +166,15 @@ text = "No world selected"
 [node name="AddExistingDialog" type="FileDialog" parent="." unique_id=736134005]
 unique_name_in_owner = true
 title = "Open a File"
+access = 0
 file_mode = 0
 filters = PackedStringArray("*.tscn ; Godot Scene")
 
 [node name="NewWorldDialog" type="FileDialog" parent="." unique_id=1183153561]
 unique_name_in_owner = true
 title = "Create World"
+access = 0
+file_mode = 4
+current_dir = "res://resources/worlds"
 root_subfolder = "res://resources/worlds"
 filters = PackedStringArray("*.tres ; WorldData Resource")
