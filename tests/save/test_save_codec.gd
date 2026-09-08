@@ -1,8 +1,8 @@
 extends Node
 
-const SAVE_SNAPSHOT: Script = preload("res://scripts/save/save_snapshot.gd")
-const SAVE_CODEC: Script = preload("res://scripts/save/save_codec.gd")
-const SAVE_MANAGER: Script = preload("res://scripts/save/save_manager.gd")
+const SAVE_SNAPSHOT: Script = preload("res://addons/platformer_kit/save/save_snapshot.gd")
+const SAVE_CODEC: Script = preload("res://addons/platformer_kit/save/save_codec.gd")
+const SAVE_MANAGER: Script = preload("res://addons/platformer_kit/save/save_manager.gd")
 
 
 class RecordingStorage extends RefCounted:

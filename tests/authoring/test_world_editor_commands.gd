@@ -2,9 +2,9 @@ extends Node
 
 const DOCK_PATH := "res://addons/wellwell_world_editor/world_editor_main.gd"
 const DOCK_SCENE_PATH := "res://addons/wellwell_world_editor/world_editor_main.tscn"
-const WORLD_DATA := preload("res://scripts/world/data/world_data.gd")
-const ROOM_DATA := preload("res://scripts/world/data/room_data.gd")
-const CONNECTION_DATA := preload("res://scripts/world/data/room_connection_data.gd")
+const WORLD_DATA := preload("res://addons/platformer_kit/world/data/world_data.gd")
+const ROOM_DATA := preload("res://addons/platformer_kit/world/data/room_data.gd")
+const CONNECTION_DATA := preload("res://addons/platformer_kit/world/data/room_connection_data.gd")
 const CANVAS_PATH := "res://addons/wellwell_world_editor/world_layout_canvas.gd"
 const WORLD_RESOURCE_SERVICE := preload("res://scripts/authoring/world/world_resource_service.gd")
 const WORLD_LAYOUT_MODEL := preload("res://scripts/authoring/world/world_layout_model.gd")
@@ -12,13 +12,13 @@ const CONTROLLER_WORLD_PATH := "res://resources/worlds/test_editor_controller_wo
 const CONTROLLER_OTHER_WORLD_PATH := "res://resources/worlds/test_editor_controller_other_world.tres"
 const CONTROLLER_SOURCE_PATH := "res://tests/authoring/test_editor_controller_source.tscn"
 const EDITOR_DEPENDENCY_PATHS: Array[String] = [
-	"res://scripts/world/data/world_data.gd",
-	"res://scripts/world/data/room_data.gd",
-	"res://scripts/world/data/room_connection_data.gd",
-	"res://scripts/world/entities/room_entrance.gd",
-	"res://scripts/world/entities/spawn_point.gd",
-	"res://scripts/world/entities/world_entity.gd",
-	"res://scripts/world/data/world_validation.gd",
+	"res://addons/platformer_kit/world/data/world_data.gd",
+	"res://addons/platformer_kit/world/data/room_data.gd",
+	"res://addons/platformer_kit/world/data/room_connection_data.gd",
+	"res://addons/platformer_kit/world/entities/room_entrance.gd",
+	"res://addons/platformer_kit/world/entities/spawn_point.gd",
+	"res://addons/platformer_kit/world/entities/world_entity.gd",
+	"res://addons/platformer_kit/world/data/world_validation.gd",
 	"res://scripts/authoring/world/world_layout_model.gd",
 	"res://scripts/authoring/room/room_authoring_contract.gd",
 	"res://scripts/authoring/room/room_bake_manifest.gd",

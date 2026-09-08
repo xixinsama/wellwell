@@ -2,8 +2,8 @@ extends Node
 
 const PREVIEW_PATH := "res://addons/wellwell_world_editor/world_terrain_preview_layer.gd"
 const TERRAIN_PATH := "user://terrain_preview_fixture.tscn"
-const WORLD_DATA := preload("res://scripts/world/data/world_data.gd")
-const ROOM_DATA := preload("res://scripts/world/data/room_data.gd")
+const WORLD_DATA := preload("res://addons/platformer_kit/world/data/world_data.gd")
+const ROOM_DATA := preload("res://addons/platformer_kit/world/data/room_data.gd")
 const LAYER_NAMES: Array[String] = ["BackTiles", "SolidTiles", "GlassTiles", "VisionBlockTiles", "DetailTiles", "MarkerTiles"]
 
 

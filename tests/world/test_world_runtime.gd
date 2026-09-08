@@ -1,13 +1,13 @@
 extends Node
 
-const ROOM_DATA: Script = preload("res://scripts/world/data/room_data.gd")
-const ROOM_CONNECTION_DATA: Script = preload("res://scripts/world/data/room_connection_data.gd")
-const WORLD_DATA: Script = preload("res://scripts/world/data/world_data.gd")
-const WORLD_RUNTIME: Script = preload("res://scripts/world/runtime/world_runtime.gd")
-const SAVE_SNAPSHOT: Script = preload("res://scripts/save/save_snapshot.gd")
-const SPAWN_POINT: Script = preload("res://scripts/world/entities/spawn_point.gd")
-const PICKUP_ENTITY: Script = preload("res://scripts/world/entities/pickup_entity.gd")
-const ROOM_ENTRANCE: Script = preload("res://scripts/world/entities/room_entrance.gd")
+const ROOM_DATA: Script = preload("res://addons/platformer_kit/world/data/room_data.gd")
+const ROOM_CONNECTION_DATA: Script = preload("res://addons/platformer_kit/world/data/room_connection_data.gd")
+const WORLD_DATA: Script = preload("res://addons/platformer_kit/world/data/world_data.gd")
+const WORLD_RUNTIME: Script = preload("res://addons/platformer_kit/world/runtime/world_runtime.gd")
+const SAVE_SNAPSHOT: Script = preload("res://addons/platformer_kit/save/save_snapshot.gd")
+const SPAWN_POINT: Script = preload("res://addons/platformer_kit/world/entities/spawn_point.gd")
+const PICKUP_ENTITY: Script = preload("res://addons/platformer_kit/world/entities/pickup_entity.gd")
+const ROOM_ENTRANCE: Script = preload("res://addons/platformer_kit/world/entities/room_entrance.gd")
 
 const FIXTURE_PATH := "user://world_runtime_room_fixture.tscn"
 const MISSING_PATH := "user://missing_world_runtime_room_fixture.tscn"

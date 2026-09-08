@@ -1,8 +1,8 @@
 extends Node
 
-const ROOM_DATA: Script = preload("res://scripts/world/data/room_data.gd")
-const WORLD_DATA: Script = preload("res://scripts/world/data/world_data.gd")
-const ROOM_CONNECTION_DATA: Script = preload("res://scripts/world/data/room_connection_data.gd")
+const ROOM_DATA: Script = preload("res://addons/platformer_kit/world/data/room_data.gd")
+const WORLD_DATA: Script = preload("res://addons/platformer_kit/world/data/world_data.gd")
+const ROOM_CONNECTION_DATA: Script = preload("res://addons/platformer_kit/world/data/room_connection_data.gd")
 
 
 func run() -> Array[String]:

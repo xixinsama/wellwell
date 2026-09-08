@@ -3,7 +3,7 @@
 [ext_resource type="Script" uid="uid://c4885ofxnwufl" path="res://scripts/app/main.gd" id="1_main"]
 [ext_resource type="Shader" uid="uid://nq1da1uidaxy" path="res://scripts/shaders/sub_pixel.gdshader" id="2_jyhfs"]
 [ext_resource type="PackedScene" path="res://scenes/runtime/world_root.tscn" id="2_sugp2"]
-[ext_resource type="PackedScene" path="res://scenes/tools/debug_hud.tscn" id="7_debug_hud"]
+[ext_resource type="PackedScene" path="res://addons/platformer_debug/runtime/debug_hud.tscn" id="7_debug_hud"]
 [ext_resource type="PackedScene" uid="uid://drj26wtbpstxe" path="res://scenes/ui/main_menu.tscn" id="8_main_menu"]
 [ext_resource type="PackedScene" path="res://scenes/ui/settings.tscn" id="9_settings"]
 

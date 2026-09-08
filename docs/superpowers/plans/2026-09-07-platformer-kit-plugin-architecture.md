@@ -212,23 +212,27 @@ removed only after the full suite and headless editor load pass.
 - Move/adapt: `scripts/world/data/` to `addons/platformer_kit/world/data/`
 - Move/adapt: `scripts/world/runtime/` to `addons/platformer_kit/world/runtime/`
 - Move/adapt: `scripts/world/entities/` to `addons/platformer_kit/world/entities/`
-- Move/adapt: `scripts/save/` to `addons/platformer_kit/save/`
+- Move/adapt generic save snapshots, codecs, storage, and manager services from `scripts/save/` to `addons/platformer_kit/save/`
+- Keep application display/audio/localization settings outside the framework save module
+- Keep `map_model.gd` and fog/discovery behavior outside the base world module until Task 10
 - Create: `addons/platformer_kit/save/saveable.gd`
 - Create: `addons/platformer_kit/save/persistent_id.gd`
+- Create/adapt: `addons/platformer_kit/world/region/`, `world/graph/`, and `world/transition/` contracts
 - Create: `tests/platformer_kit/world/`
 - Create: `tests/platformer_kit/save/`
 - Update all internal `.tscn`, `.tres`, `.gd`, and test references atomically
 
 **Interfaces:**
-- `WorldData`, `RoomData`, room placement, room connection, `WorldRuntime`, `RoomRuntime`, fog bindings, and save snapshots become framework contracts.
+- `WorldData`, `RoomData`, region/graph topology, room placement, room connection, `WorldRuntime`, `RoomRuntime`, and save snapshots become framework contracts.
 - Persistent entities expose stable IDs and save/restore methods through `Saveable`; no `NodePath` or instance ID is persisted.
-- World/session startup receives its world, player, camera, terrain, fog, and save adapters explicitly instead of resolving concrete global names.
+- World/session startup receives its world, player, camera, terrain, and save adapters explicitly instead of resolving concrete global names.
+- Generic world contracts contain no discovery state, map UI coordinates, fog renderer, or map marker policy.
 
-- [ ] Add tests proving framework world and save classes load without `main_world.tres` or `/root/SaveManager`.
-- [ ] Run the tests against the current paths and record the expected import failures for the new paths.
-- [ ] Move scripts and update resource references, preserving all room metadata and authored tile placement.
-- [ ] Remove fixed game-specific fallbacks from framework runtime code.
-- [ ] Run room, world, fog, save, transition, and reference-game startup tests.
+- [x] Add tests proving framework world and save classes load without `main_world.tres` or `/root/SaveManager`.
+- [x] Run the tests against the current paths and record the expected import failures for the new paths.
+- [x] Move scripts and update resource references, preserving all room metadata and authored tile placement.
+- [x] Remove fixed game-specific fallbacks from framework runtime code.
+- [x] Run room, world, save, transition, legacy-fog compatibility, and reference-game startup tests.
 
 ### Task 8: Add optional `platformer_debug` and diagnostics
 
@@ -243,10 +247,10 @@ removed only after the full suite and headless editor load pass.
 - Debug tools subscribe to public framework state and never alter gameplay state.
 - Debug display is optional and removable from a scene without breaking runtime startup.
 
-- [ ] Write tests for optional loading and read-only display bindings.
-- [ ] Run focused tests before implementation.
-- [ ] Move the tools behind the addon boundary and add toggles for collision, sensors, motor state, and IDs.
-- [ ] Run the movement lab with the debug addon enabled and disabled.
+- [x] Write tests for optional loading and read-only display bindings.
+- [x] Run focused tests before implementation.
+- [x] Move the tools behind the addon boundary and add toggles for collision, sensors, motor state, and IDs.
+- [x] Run the movement lab with the debug addon enabled and disabled.
 
 ### Task 9: Implement optional abilities and combat modules
 
@@ -273,9 +277,12 @@ removed only after the full suite and headless editor load pass.
 - Create: `addons/metroidvania_kit/plugin.cfg`
 - Create: `addons/metroidvania_kit/progression/`
 - Create: `addons/metroidvania_kit/gates/`
-- Create: `addons/metroidvania_kit/discovery/`
 - Create: `addons/metroidvania_kit/world_state/`
-- Create: `addons/metroidvania_kit/map/`
+- Create: `addons/metroidvania_kit/map/data/`
+- Create: `addons/metroidvania_kit/map/discovery/`
+- Create: `addons/metroidvania_kit/map/markers/`
+- Create: `addons/metroidvania_kit/map/runtime/`
+- Create: `addons/metroidvania_kit/map/ui/`
 - Create: `addons/metroidvania_kit/fast_travel/`
 - Create: `tests/metroidvania_kit/`
 - Create: `examples/metroidvania_demo/`
@@ -283,9 +290,15 @@ removed only after the full suite and headless editor load pass.
 **Interfaces:**
 - Conditions include `HasAbilityCondition`, `HasItemCondition`, `FlagCondition`, and `CompositeCondition`.
 - Gates consume a progression context and do not inspect concrete player fields.
+- Map data projects `platformer_kit/world` topology into independent authored map coordinates; it never derives layout directly from scene positions.
+- `MapDiscovery` owns `HIDDEN`, `DISCOVERED`, `VISITED`, and `CLEARED` room state, while fog is a replaceable reveal/presentation policy.
+- `RevealRule` supports current-room, adjacent-room, region, radius, reveal-all, and game-provided policies without changing map runtime code.
+- Marker discovery and lifecycle state are independent from room discovery.
+- `MapRuntime` and `MapTracker` contain no `Control`, `CanvasItem`, or concrete UI dependencies; map UI reads their public state.
+- Save data contains stable room/marker discovery state, never map controls, zoom, renderer nodes, or TileMap state.
 - Discovery and fast travel consume stable room IDs and save state.
 
-- [ ] Write tests for condition evaluation, gate denial/approval, room discovery persistence, and fast-travel eligibility.
+- [ ] Write tests for condition evaluation, gate denial/approval, independent map coordinates, discovery transitions, marker state, reveal rules, persistence, and fast-travel eligibility.
 - [ ] Run them before implementation.
 - [ ] Implement the optional module and its demo using only public framework APIs.
 - [ ] Run the demo with the module enabled and verify the base movement lab still works without it.

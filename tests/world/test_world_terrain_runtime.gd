@@ -1,8 +1,8 @@
 extends Node
 
-const ROOM_DATA: Script = preload("res://scripts/world/data/room_data.gd")
-const WORLD_DATA: Script = preload("res://scripts/world/data/world_data.gd")
-const TERRAIN_RUNTIME_PATH := "res://scripts/world/runtime/world_terrain_runtime.gd"
+const ROOM_DATA: Script = preload("res://addons/platformer_kit/world/data/room_data.gd")
+const WORLD_DATA: Script = preload("res://addons/platformer_kit/world/data/world_data.gd")
+const TERRAIN_RUNTIME_PATH := "res://addons/platformer_kit/world/runtime/world_terrain_runtime.gd"
 const TERRAIN_A_PATH := "user://task7_terrain_a.tscn"
 const TERRAIN_B_PATH := "user://task7_terrain_b.tscn"
 const BROKEN_TERRAIN_PATH := "user://task7_broken_terrain.tscn"

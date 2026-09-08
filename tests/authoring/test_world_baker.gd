@@ -1,8 +1,8 @@
 extends Node
 
-const ROOM_DATA: Script = preload("res://scripts/world/data/room_data.gd")
-const WORLD_DATA: Script = preload("res://scripts/world/data/world_data.gd")
-const ROOM_PLACEMENT_DATA: Script = preload("res://scripts/world/data/world_room_placement_data.gd")
+const ROOM_DATA: Script = preload("res://addons/platformer_kit/world/data/room_data.gd")
+const WORLD_DATA: Script = preload("res://addons/platformer_kit/world/data/world_data.gd")
+const ROOM_PLACEMENT_DATA: Script = preload("res://addons/platformer_kit/world/data/world_room_placement_data.gd")
 const ROOM_AUTHORING_ROOT: Script = preload("res://scripts/authoring/room/room_authoring_root.gd")
 const WORLD_BAKER_PATH := "res://scripts/authoring/world/world_baker.gd"
 const WORLD_SERVICE_PATH := "res://scripts/authoring/world/world_resource_service.gd"

@@ -5,7 +5,7 @@ extends RefCounted
 const ROOM_AUTHORING_CONTRACT: Script = preload("res://scripts/authoring/room/room_authoring_contract.gd")
 const ROOM_BAKE_MANIFEST: Script = preload("res://scripts/authoring/room/room_bake_manifest.gd")
 const ROOM_BAKE_PATHS: Script = preload("res://scripts/authoring/room/room_bake_paths.gd")
-const ROOM_DATA: Script = preload("res://scripts/world/data/room_data.gd")
+const ROOM_DATA: Script = preload("res://addons/platformer_kit/world/data/room_data.gd")
 
 const DUPLICATE_FLAGS := Node.DUPLICATE_SIGNALS | Node.DUPLICATE_GROUPS | Node.DUPLICATE_SCRIPTS | Node.DUPLICATE_USE_INSTANTIATION
 const TERRAIN_CHILD_NAMES: Array[String] = ["Background", "Terrain"]

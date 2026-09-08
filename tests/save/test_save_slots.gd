@@ -1,7 +1,7 @@
 extends Node
 
-const SAVE_SNAPSHOT := preload("res://scripts/save/save_snapshot.gd")
-const SAVE_MANAGER := preload("res://scripts/save/save_manager.gd")
+const SAVE_SNAPSHOT := preload("res://addons/platformer_kit/save/save_snapshot.gd")
+const SAVE_MANAGER := preload("res://addons/platformer_kit/save/save_manager.gd")
 
 class EmptyStorage extends RefCounted:
 	var write_count := 0

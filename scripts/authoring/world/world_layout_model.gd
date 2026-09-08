@@ -2,10 +2,10 @@
 class_name WorldLayoutModel
 extends RefCounted
 
-const ROOM_DATA_SCRIPT: Script = preload("res://scripts/world/data/room_data.gd")
-const ROOM_CONNECTION_DATA_SCRIPT: Script = preload("res://scripts/world/data/room_connection_data.gd")
-const ROOM_PLACEMENT_DATA_SCRIPT: Script = preload("res://scripts/world/data/world_room_placement_data.gd")
-const WORLD_VALIDATION: Script = preload("res://scripts/world/data/world_validation.gd")
+const ROOM_DATA_SCRIPT: Script = preload("res://addons/platformer_kit/world/data/room_data.gd")
+const ROOM_CONNECTION_DATA_SCRIPT: Script = preload("res://addons/platformer_kit/world/data/room_connection_data.gd")
+const ROOM_PLACEMENT_DATA_SCRIPT: Script = preload("res://addons/platformer_kit/world/data/world_room_placement_data.gd")
+const WORLD_VALIDATION: Script = preload("res://addons/platformer_kit/world/data/world_validation.gd")
 
 
 func add_room(world: WorldData, room: RoomData, origin_chunk: Vector2i = Vector2i.ZERO) -> Dictionary:

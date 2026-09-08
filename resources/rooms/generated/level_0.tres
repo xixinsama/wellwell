@@ -1,6 +1,6 @@
 [gd_resource type="Resource" script_class="RoomData" format=3]
 
-[ext_resource type="Script" path="res://scripts/world/data/room_data.gd" id="1_ej2xm"]
+[ext_resource type="Script" path="res://addons/platformer_kit/world/data/room_data.gd" id="1_ej2xm"]
 
 [resource]
 script = ExtResource("1_ej2xm")

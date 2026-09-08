@@ -1,9 +1,9 @@
 extends Node
 
-const WORLD_ENTITY := preload("res://scripts/world/entities/world_entity.gd")
-const SWITCH_ENTITY := preload("res://scripts/world/entities/switch_entity.gd")
-const PICKUP_ENTITY := preload("res://scripts/world/entities/pickup_entity.gd")
-const ROOM_ENTRANCE := preload("res://scripts/world/entities/room_entrance.gd")
+const WORLD_ENTITY := preload("res://addons/platformer_kit/world/entities/world_entity.gd")
+const SWITCH_ENTITY := preload("res://addons/platformer_kit/world/entities/switch_entity.gd")
+const PICKUP_ENTITY := preload("res://addons/platformer_kit/world/entities/pickup_entity.gd")
+const ROOM_ENTRANCE := preload("res://addons/platformer_kit/world/entities/room_entrance.gd")
 
 
 class StateSink extends RefCounted:
@@ -19,6 +19,11 @@ func run() -> Array[String]:
 	entity.setup_entity({"world_id": "world_01", "room_id": "room_a"})
 	if entity.get_save_key() != "world_01:room_a:switch_01":
 		failures.append("world entity did not build a stable save key from setup context")
+	entity.persistent_id = &"switch:forest:001"
+	if entity.get_save_key() != "switch:forest:001":
+		failures.append("world entity did not prefer its explicit persistent_id")
+	if entity.get_persistent_id() != &"switch:forest:001":
+		failures.append("world entity did not expose the Saveable persistent ID contract")
 	entity.free()
 
 	var switch_entity: Node = SWITCH_ENTITY.new()

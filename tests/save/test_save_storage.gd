@@ -1,7 +1,7 @@
 extends Node
 
-const SAVE_SNAPSHOT: Script = preload("res://scripts/save/save_snapshot.gd")
-const SAVE_STORAGE: Script = preload("res://scripts/save/save_storage.gd")
+const SAVE_SNAPSHOT: Script = preload("res://addons/platformer_kit/save/save_snapshot.gd")
+const SAVE_STORAGE: Script = preload("res://addons/platformer_kit/save/save_storage.gd")
 
 const TEST_ROOT := "user://wellwell_storage_test"
 

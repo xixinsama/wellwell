@@ -2,10 +2,10 @@
 class_name WorldResourceService
 extends RefCounted
 
-const WORLD_DATA_SCRIPT: Script = preload("res://scripts/world/data/world_data.gd")
-const ROOM_DATA_SCRIPT: Script = preload("res://scripts/world/data/room_data.gd")
-const CONNECTION_DATA_SCRIPT: Script = preload("res://scripts/world/data/room_connection_data.gd")
-const ROOM_PLACEMENT_DATA_SCRIPT: Script = preload("res://scripts/world/data/world_room_placement_data.gd")
+const WORLD_DATA_SCRIPT: Script = preload("res://addons/platformer_kit/world/data/world_data.gd")
+const ROOM_DATA_SCRIPT: Script = preload("res://addons/platformer_kit/world/data/room_data.gd")
+const CONNECTION_DATA_SCRIPT: Script = preload("res://addons/platformer_kit/world/data/room_connection_data.gd")
+const ROOM_PLACEMENT_DATA_SCRIPT: Script = preload("res://addons/platformer_kit/world/data/world_room_placement_data.gd")
 const WORLD_DIRECTORY := "res://resources/worlds/"
 
 var allow_user_paths := false

@@ -2,8 +2,8 @@ extends Node
 
 const ROOM_AUTHORING_ROOT: Script = preload("res://scripts/authoring/room/room_authoring_root.gd")
 const ROOM_PREVIEW_CONTROLLER: Script = preload("res://scripts/authoring/room/room_preview_controller.gd")
-const ROOM_ENTRANCE: Script = preload("res://scripts/world/entities/room_entrance.gd")
-const SPAWN_POINT: Script = preload("res://scripts/world/entities/spawn_point.gd")
+const ROOM_ENTRANCE: Script = preload("res://addons/platformer_kit/world/entities/room_entrance.gd")
+const SPAWN_POINT: Script = preload("res://addons/platformer_kit/world/entities/spawn_point.gd")
 const FOG_OF_WAR: Script = preload("res://scripts/world/fog/fog_of_war.gd")
 
 

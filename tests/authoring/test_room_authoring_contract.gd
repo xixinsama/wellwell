@@ -25,10 +25,10 @@ class OverridingAuthoringRoot extends "res://scripts/authoring/room/room_authori
 
 const RoomAuthoringRootScript: Script = preload("res://scripts/authoring/room/room_authoring_root.gd")
 const RoomAuthoringContractScript: Script = preload("res://scripts/authoring/room/room_authoring_contract.gd")
-const SpawnPointScript: Script = preload("res://scripts/world/entities/spawn_point.gd")
+const SpawnPointScript: Script = preload("res://addons/platformer_kit/world/entities/spawn_point.gd")
 const DerivedSpawnPointScript: Script = preload("res://tests/world/derived_spawn_point_fixture.gd")
-const RoomEntranceScript: Script = preload("res://scripts/world/entities/room_entrance.gd")
-const WorldEntityScript: Script = preload("res://scripts/world/entities/world_entity.gd")
+const RoomEntranceScript: Script = preload("res://addons/platformer_kit/world/entities/room_entrance.gd")
+const WorldEntityScript: Script = preload("res://addons/platformer_kit/world/entities/world_entity.gd")
 
 
 func run() -> Array[String]:

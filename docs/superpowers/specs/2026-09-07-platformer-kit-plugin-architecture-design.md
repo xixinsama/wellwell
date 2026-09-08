@@ -72,15 +72,61 @@ contain concrete player, enemy, weapon, or boss content.
 progression context, ability/item/flag conditions, gates, room discovery,
 world state, maps, and fast travel. A basic platformer must be able to omit it.
 
+### World And Map Separation
+
+`platformer_kit/world` describes the playable world only: rooms, regions,
+transitions, spawn points, and a `WorldGraph` of stable node and edge IDs. Graph
+edges may carry direction, one-way, transition, door, or requirement metadata,
+but the base world module does not track whether the player has seen or visited
+anything. This keeps linear platformers independent from Metroidvania systems.
+
+`metroidvania_kit/map` is a projection of those world contracts. Its authored
+map coordinates are independent from scene/global coordinates so designers can
+compress large rooms, offset floors, hide secret rooms, and draw intentionally
+non-literal connections. Game content supplies `MapDefinition` resources; the
+optional module supplies their schemas and runtime behavior.
+
+The map module is split by responsibility:
+
+```text
+addons/metroidvania_kit/map/
+├── data/       # MapDefinition, MapRegion, MapRoom, MapConnection
+├── discovery/  # DiscoveryState, MapDiscovery, RevealRule, visibility policy
+├── markers/    # MapMarker, MarkerDefinition, MarkerRegistry
+├── runtime/    # MapRuntime and MapTracker, with no Control dependencies
+└── ui/         # MapView, minimap, rendering, pan and zoom
+```
+
+The physical sibling addon preserves the optional dependency boundary even
+though this is conceptually the framework's `metroidvania` tier.
+
+### Discovery And Fog
+
+Map discovery is state, not UI. The baseline states are `HIDDEN`,
+`DISCOVERED`, `VISITED`, and `CLEARED`; projects may map those states to any
+visual treatment. World events update `MapDiscovery`, and map views only read
+the resulting state. A fog renderer is a replaceable visibility presentation
+or reveal strategy under `map/discovery`, never a world-level manager.
+
+Reveal behavior is data driven through `RevealRule` implementations such as
+current room, adjacent rooms, region, radius, and reveal all. Marker discovery
+is separate from room discovery: a room may be visited while its boss, shop,
+checkpoint, treasure, or custom marker remains hidden, active, or completed.
+
+Persistence stores stable room discovery and marker states only. Runtime/UI
+details such as `Control.position`, zoom, TileMap nodes, and renderer state are
+not save data unless a concrete game deliberately treats them as user
+preferences.
+
 `platformer_debug` owns optional runtime overlays and visualizers for velocity,
 state, sensors, collision, hitboxes, room IDs, persistent IDs, and ability
 tags. It must be removable without changing gameplay behavior.
 
 ## Composition Rules
 
-Concrete scenes, enemies, bosses, items, maps, menus, and story data belong in
-`game/`. Framework resources provide defaults and schemas; game resources
-provide values and concrete behavior. Gameplay state controls animation;
+Concrete scenes, enemies, bosses, items, authored map definitions, menus, and
+story data belong in `game/`. Framework and optional-module resources provide
+schemas; game resources provide values and concrete behavior. Gameplay state controls animation;
 animation completion must not be the source of gameplay state transitions.
 
 The framework must not depend on `main_world.tres`, concrete level scenes,
@@ -98,10 +144,13 @@ Migration uses a strangler approach so current gameplay remains runnable:
 4. Add a `movement_lab` example and migrate camera/platform behavior.
 5. Migrate interaction, combat, and health into optional modules.
 6. Migrate abilities and condition-based gates.
-7. Move room streaming, fog, and stable-ID persistence behind framework APIs.
-8. Reconnect the existing World Editor to those APIs.
-9. Add debug labs, versioning, migration notes, and package checks.
-10. Consider extracting the framework into a separate repository only after a
+7. Move generic room/region/graph streaming and stable-ID persistence behind
+   framework APIs; keep map discovery out of the base world module.
+8. Build Metroidvania map data, discovery, marker, runtime, and UI boundaries;
+   migrate the existing fog behavior as one discovery presentation strategy.
+9. Reconnect the existing World Editor to generic world contracts only.
+10. Add debug labs, versioning, migration notes, and package checks.
+11. Consider extracting the framework into a separate repository only after a
     stable `1.0.0` API exists.
 
 Existing `level_0` through `level_3` content remains available as a reference

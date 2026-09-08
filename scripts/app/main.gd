@@ -14,6 +14,12 @@ func _ready() -> void:
     setup_viewport_scale()
 
     Globals.SVC = viewport_container
+    var world_root := sub_viewport.get_node_or_null("WorldRoot")
+    if world_root != null:
+        if world_root.has_method("bind_persistence_source"):
+            world_root.call("bind_persistence_source", SaveManager)
+        if world_root.has_method("bind_settings_source"):
+            world_root.call("bind_settings_source", GlobalSettings)
 
 
 func setup_viewport_scale() -> void:

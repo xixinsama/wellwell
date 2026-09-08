@@ -5,7 +5,7 @@ signal preview_ready()
 signal transition_blocked(entrance: RoomEntrance)
 
 const ROOM_AUTHORING_CONTRACT: Script = preload("res://scripts/authoring/room/room_authoring_contract.gd")
-const SAVE_SNAPSHOT: Script = preload("res://scripts/save/save_snapshot.gd")
+const SAVE_SNAPSHOT: Script = preload("res://addons/platformer_kit/save/save_snapshot.gd")
 
 @export var authoring_root_path := NodePath("..")
 @export var player_path := NodePath("../PreviewOnly/Player")

@@ -5,9 +5,9 @@
 [ext_resource type="PackedScene" uid="uid://cejq022r3hjrd" path="res://scenes/player/player.tscn" id="3_mfms0"]
 [ext_resource type="TileSet" uid="uid://dopy3rhny136q" path="res://resources/tilesets/tileset8_8.tres" id="3_q26ly"]
 [ext_resource type="Script" path="res://addons/platformer_kit/camera/pixel_camera_2d.gd" id="4_q26ly"]
-[ext_resource type="Script" uid="uid://bo5asnakkt3ao" path="res://scripts/world/entities/spawn_point.gd" id="4_wyn2e"]
-[ext_resource type="PackedScene" uid="uid://dpkyymy3fnwb4" path="res://scenes/tools/grid_overlay.tscn" id="5_wyn2e"]
-[ext_resource type="PackedScene" uid="uid://xdpcjsmnvhkj" path="res://scenes/tools/debug_hud.tscn" id="6_qmbol"]
+[ext_resource type="Script" uid="uid://bo5asnakkt3ao" path="res://addons/platformer_kit/world/entities/spawn_point.gd" id="4_wyn2e"]
+[ext_resource type="PackedScene" uid="uid://dpkyymy3fnwb4" path="res://addons/platformer_debug/runtime/grid_overlay.tscn" id="5_wyn2e"]
+[ext_resource type="PackedScene" uid="uid://xdpcjsmnvhkj" path="res://addons/platformer_debug/runtime/debug_hud.tscn" id="6_qmbol"]
 [ext_resource type="Script" uid="uid://jvu53oscg1ib" path="res://scripts/world/fog/fog_of_war.gd" id="7_qmbol"]
 
 [node name="RoomAuthoringRoot" type="Node2D" unique_id=1018949667]

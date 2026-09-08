@@ -1,6 +1,6 @@
 extends Node
 
-const TILE_CONTRACT := preload("res://scripts/world/data/tile_layer_contract.gd")
+const TILE_CONTRACT := preload("res://addons/platformer_kit/world/data/tile_layer_contract.gd")
 const MAIN_WORLD: Resource = preload("res://resources/worlds/main_world.tres")
 
 func run() -> Array[String]:

@@ -2,11 +2,11 @@ extends Node
 
 const ROOM_BAKE_PATHS: Script = preload("res://scripts/authoring/room/room_bake_paths.gd")
 const ROOM_BAKE_MANIFEST: Script = preload("res://scripts/authoring/room/room_bake_manifest.gd")
-const ROOM_DATA: Script = preload("res://scripts/world/data/room_data.gd")
+const ROOM_DATA: Script = preload("res://addons/platformer_kit/world/data/room_data.gd")
 const ROOM_AUTHORING_ROOT: Script = preload("res://scripts/authoring/room/room_authoring_root.gd")
-const ROOM_ENTRANCE: Script = preload("res://scripts/world/entities/room_entrance.gd")
-const SPAWN_POINT: Script = preload("res://scripts/world/entities/spawn_point.gd")
-const WORLD_ENTITY: Script = preload("res://scripts/world/entities/world_entity.gd")
+const ROOM_ENTRANCE: Script = preload("res://addons/platformer_kit/world/entities/room_entrance.gd")
+const SPAWN_POINT: Script = preload("res://addons/platformer_kit/world/entities/spawn_point.gd")
+const WORLD_ENTITY: Script = preload("res://addons/platformer_kit/world/entities/world_entity.gd")
 
 
 func run() -> Array[String]:

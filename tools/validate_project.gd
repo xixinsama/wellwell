@@ -1,7 +1,7 @@
 extends SceneTree
 
-const WORLD_VALIDATION := preload("res://scripts/world/data/world_validation.gd")
-const TILE_CONTRACT := preload("res://scripts/world/data/tile_layer_contract.gd")
+const WORLD_VALIDATION := preload("res://addons/platformer_kit/world/data/world_validation.gd")
+const TILE_CONTRACT := preload("res://addons/platformer_kit/world/data/tile_layer_contract.gd")
 const MAIN_WORLD: Resource = preload("res://resources/worlds/main_world.tres")
 
 func _init() -> void:

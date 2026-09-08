@@ -7,7 +7,7 @@ const WORLD_BAKER := preload("res://scripts/authoring/world/world_baker.gd")
 const ROOM_BAKER := preload("res://scripts/authoring/room/room_baker.gd")
 const WORLD_RESOURCE_SERVICE := preload("res://scripts/authoring/world/world_resource_service.gd")
 const WORLD_ROOM_IMPORTER := preload("res://scripts/authoring/world/world_room_importer.gd")
-const CONNECTION_DATA := preload("res://scripts/world/data/room_connection_data.gd")
+const CONNECTION_DATA := preload("res://addons/platformer_kit/world/data/room_connection_data.gd")
 const TEMPLATE_SCENE_PATH := "res://scenes/rooms/template/level_template.tscn"
 
 var world_data: WorldData

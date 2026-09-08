@@ -55,6 +55,9 @@ class FakeStartManager extends Node:
 class FakeGameRoot extends Node:
 	var succeeds := false
 	var start_count := 0
+	var persistence_source: Node
+	func bind_persistence_source(value: Node) -> void:
+		persistence_source = value
 	func start_selected_snapshot(_snapshot: RefCounted) -> bool:
 		start_count += 1
 		return succeeds
@@ -132,6 +135,8 @@ func _assert_transactional_start_flow(failures: Array[String]) -> void:
 	menu.call("_start_game", 2)
 	if menu.visible or manager.selected_slot != 2 or manager.activate_count != 1:
 		failures.append("successful world startup did not activate the slot and hide the menu")
+	if game_root.persistence_source != manager:
+		failures.append("main menu did not inject persistence into the world session")
 	menu.free()
 
 func _assert_scene_nodes(path: String, names: Array[String], failures: Array[String]) -> void:

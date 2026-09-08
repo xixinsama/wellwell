@@ -88,6 +88,11 @@ func get_debug_state() -> Dictionary:
         "jump_buffer_remaining": _movement_context.jump_buffer_remaining,
         "coyote_remaining": _movement_context.coyote_remaining,
         "facing": facing,
+        "ceiling": _environment.ceiling,
+        "wall_left": _environment.wall_left,
+        "wall_right": _environment.wall_right,
+        "floor_normal": _environment.floor_normal,
+        "platform_velocity": _environment.floor_velocity,
     }
 
 

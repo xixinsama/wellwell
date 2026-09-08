@@ -1,8 +1,8 @@
 extends Node
 
-const ROOM_GRID_PATH := "res://scripts/world/data/room_grid.gd"
-const ROOM_DATA_PATH := "res://scripts/world/data/room_data.gd"
-const WORLD_DATA_PATH := "res://scripts/world/data/world_data.gd"
+const ROOM_GRID_PATH := "res://addons/platformer_kit/world/data/room_grid.gd"
+const ROOM_DATA_PATH := "res://addons/platformer_kit/world/data/room_data.gd"
+const WORLD_DATA_PATH := "res://addons/platformer_kit/world/data/world_data.gd"
 
 
 func run() -> Array[String]:

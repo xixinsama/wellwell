@@ -1,9 +1,9 @@
 extends Node
 
-const SESSION_PATH := "res://scripts/world/runtime/world_session.gd"
-const WORLD_DATA := preload("res://scripts/world/data/world_data.gd")
-const ROOM_DATA := preload("res://scripts/world/data/room_data.gd")
-const SAVE_SNAPSHOT := preload("res://scripts/save/save_snapshot.gd")
+const SESSION_PATH := "res://addons/platformer_kit/world/runtime/world_session.gd"
+const WORLD_DATA := preload("res://addons/platformer_kit/world/data/world_data.gd")
+const ROOM_DATA := preload("res://addons/platformer_kit/world/data/room_data.gd")
+const SAVE_SNAPSHOT := preload("res://addons/platformer_kit/save/save_snapshot.gd")
 
 
 class FakeTerrain extends Node2D:
@@ -71,6 +71,7 @@ func run() -> Array[String]:
 	_assert_failed_restart_rolls_back(session_script, failures)
 	_assert_first_start_failure_clears_components(session_script, failures)
 	_assert_fog_failure_rolls_back(session_script, failures)
+	_assert_start_without_optional_fog(session_script, failures)
 	_assert_default_world_root_is_startable(failures)
 	return failures
 
@@ -219,6 +220,17 @@ func _assert_fog_failure_rolls_back(script: Script, failures: Array[String]) -> 
 		failures.append("WorldSession replaced active world after fog binding failure")
 	if (session.get_node("Runtime") as FakeRuntime).setup_world_ids != ["world_a", "world_b", "world_a"]:
 		failures.append("WorldSession did not restore runtime after fog binding failure")
+	session.free()
+
+
+func _assert_start_without_optional_fog(script: Script, failures: Array[String]) -> void:
+	var session: Node = _make_session(script)
+	var fog := session.get_node("Fog")
+	session.remove_child(fog)
+	fog.free()
+	session.set("fog_path", NodePath())
+	if not session.call("start", _make_world(), SAVE_SNAPSHOT.new()):
+		failures.append("WorldSession requires the optional map/fog adapter")
 	session.free()
 
 

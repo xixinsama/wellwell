@@ -1,11 +1,11 @@
 [gd_resource type="Resource" script_class="WorldData" format=3]
 
-[ext_resource type="Script" path="res://scripts/world/data/world_room_placement_data.gd" id="1_nk3cd"]
+[ext_resource type="Script" path="res://addons/platformer_kit/world/data/world_room_placement_data.gd" id="1_nk3cd"]
 [ext_resource type="Resource" path="res://resources/rooms/generated/level_0.tres" id="2_y276t"]
 [ext_resource type="Resource" path="res://resources/rooms/generated/level_1.tres" id="3_h5y4y"]
 [ext_resource type="Resource" path="res://resources/rooms/generated/level_2.tres" id="4_lqeyd"]
 [ext_resource type="Resource" path="res://resources/rooms/generated/level_3.tres" id="5_3771n"]
-[ext_resource type="Script" path="res://scripts/world/data/world_data.gd" id="6_vjehg"]
+[ext_resource type="Script" path="res://addons/platformer_kit/world/data/world_data.gd" id="6_vjehg"]
 
 [sub_resource type="Resource" id="Resource_wv3xp"]
 script = ExtResource("1_nk3cd")

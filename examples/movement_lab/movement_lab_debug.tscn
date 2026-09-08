@@ -1,0 +1,11 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="PackedScene" path="res://examples/movement_lab/movement_lab.tscn" id="1_lab"]
+[ext_resource type="PackedScene" path="res://examples/movement_lab/debug_overlay.tscn" id="2_debug"]
+
+[node name="MovementLabDebug" type="Node2D"]
+
+[node name="Lab" parent="." instance=ExtResource("1_lab")]
+
+[node name="DebugOverlay" parent="." instance=ExtResource("2_debug")]
+subject_path = NodePath("../Lab/Player")

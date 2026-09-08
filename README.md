@@ -10,6 +10,12 @@ Run the reusable movement fixtures directly with:
 godot --path . res://examples/movement_lab/movement_lab.tscn
 ```
 
+Use the optional diagnostics variant with:
+
+```powershell
+godot --path . res://examples/movement_lab/movement_lab_debug.tscn
+```
+
 ## What Is Included
 
 - 1280x720 outer window.

@@ -1,9 +1,9 @@
 extends Node
 
-const ROOM_DATA: Script = preload("res://scripts/world/data/room_data.gd")
-const ROOM_RUNTIME: Script = preload("res://scripts/world/runtime/room_runtime.gd")
-const ROOM_ENTRANCE: Script = preload("res://scripts/world/entities/room_entrance.gd")
-const SPAWN_POINT: Script = preload("res://scripts/world/entities/spawn_point.gd")
+const ROOM_DATA: Script = preload("res://addons/platformer_kit/world/data/room_data.gd")
+const ROOM_RUNTIME: Script = preload("res://addons/platformer_kit/world/runtime/room_runtime.gd")
+const ROOM_ENTRANCE: Script = preload("res://addons/platformer_kit/world/entities/room_entrance.gd")
+const SPAWN_POINT: Script = preload("res://addons/platformer_kit/world/entities/spawn_point.gd")
 const DERIVED_SPAWN_POINT: Script = preload("res://tests/world/derived_spawn_point_fixture.gd")
 
 const FIXTURE_PATH := "user://runtime_room_fixture.tscn"

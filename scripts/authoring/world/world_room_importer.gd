@@ -2,8 +2,8 @@
 class_name WorldRoomImporter
 extends RefCounted
 
-const WORLD_DATA_SCRIPT := preload("res://scripts/world/data/world_data.gd")
-const ROOM_DATA_SCRIPT := preload("res://scripts/world/data/room_data.gd")
+const WORLD_DATA_SCRIPT := preload("res://addons/platformer_kit/world/data/world_data.gd")
+const ROOM_DATA_SCRIPT := preload("res://addons/platformer_kit/world/data/room_data.gd")
 const ROOM_BAKER := preload("res://scripts/authoring/room/room_baker.gd")
 const WORLD_RESOURCE_SERVICE := preload("res://scripts/authoring/world/world_resource_service.gd")
 const WORLD_LAYOUT_MODEL := preload("res://scripts/authoring/world/world_layout_model.gd")

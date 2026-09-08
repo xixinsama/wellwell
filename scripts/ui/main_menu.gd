@@ -68,6 +68,8 @@ func _start_game(slot: int) -> void:
     if manager == null or game_root == null or not game_root.has_method("start_selected_snapshot"):
         return
     var snapshot: RefCounted = manager.prepare_slot(slot) if manager.has_method("prepare_slot") else null
+    if game_root.has_method("bind_persistence_source"):
+        game_root.call("bind_persistence_source", manager)
     if snapshot == null or not bool(game_root.call("start_selected_snapshot", snapshot)):
         var errors: Array[String] = game_root.call("get_last_start_errors") if game_root.has_method("get_last_start_errors") else []
         save_slots.call("show_start_error", "" if errors.is_empty() else errors[0])

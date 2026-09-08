@@ -2,7 +2,7 @@ class_name FogOfWar
 extends Node2D
 
 const FOG_VISIBILITY: Script = preload("res://scripts/world/fog/fog_visibility.gd")
-const ROOM_DATA_SCRIPT: Script = preload("res://scripts/world/data/room_data.gd")
+const ROOM_DATA_SCRIPT: Script = preload("res://addons/platformer_kit/world/data/room_data.gd")
 const TERRAIN_LAYER_NAMES: Array[String] = [
 	"BackTiles", "SolidTiles", "GlassTiles", "VisionBlockTiles", "DetailTiles", "MarkerTiles"
 ]
@@ -25,6 +25,7 @@ var _player: Node2D
 var _vision_block_tiles: TileMapLayer
 var _persistence_source: Object
 var _persistence_source_is_bound := false
+var _settings_source: Object
 var _warned_missing_player := false
 var _player_is_explicitly_bound := false
 var _room_binding_is_explicit := false
@@ -154,7 +155,11 @@ func bind_persistence_source(source: Object) -> void:
 
 func clear_persistence_source() -> void:
 	_persistence_source = null
-	_persistence_source_is_bound = false
+	_persistence_source_is_bound = true
+
+
+func bind_settings_source(source: Object) -> void:
+	_settings_source = source
 
 
 func set_room_chunks(room_origin_chunk: Vector2i, room_size_chunks: Vector2i) -> void:
@@ -327,24 +332,16 @@ func _is_inside_map(cell: Vector2i) -> bool:
 
 
 func _is_fog_enabled() -> bool:
-	var settings := _get_root_node("GlobalSettings")
+	var settings := _settings_source
 	if settings == null or not settings.has_method("is_fog_enabled"):
 		return true
 	return bool(settings.call("is_fog_enabled"))
 
 
-func _get_root_node(node_name: String) -> Node:
-	if not is_inside_tree():
-		return null
-	return get_tree().root.get_node_or_null(node_name)
-
-
 func _get_persistence_source() -> Object:
 	if _persistence_source_is_bound:
 		return _persistence_source
-	if _has_isolated_preview_ancestor():
-		return null
-	return _get_root_node("SaveManager")
+	return null
 
 
 func _has_isolated_preview_ancestor() -> bool:

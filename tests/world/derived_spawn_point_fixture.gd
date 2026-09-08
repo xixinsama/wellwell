@@ -1,1 +1,1 @@
-extends "res://scripts/world/entities/spawn_point.gd"
+extends "res://addons/platformer_kit/world/entities/spawn_point.gd"

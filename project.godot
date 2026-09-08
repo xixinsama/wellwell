@@ -19,7 +19,7 @@ config/features=PackedStringArray("4.7", "Forward Plus")
 
 [autoload]
 
-SaveManager="*res://scripts/save/save_manager.gd"
+SaveManager="*res://addons/platformer_kit/save/save_manager.gd"
 MenuLocalization="*res://scripts/ui/menu_localization.gd"
 GlobalSettings="*res://scripts/save/global_settings_manager.gd"
 

@@ -1,9 +1,9 @@
 extends Node
 
 const PIXEL_CAMERA: Script = preload("res://addons/platformer_kit/camera/pixel_camera_2d.gd")
-const DEBUG_HUD: Script = preload("res://scripts/tools/debug_hud.gd")
+const DEBUG_HUD: Script = preload("res://addons/platformer_debug/runtime/debug_hud.gd")
 const FOG_OF_WAR: Script = preload("res://scripts/world/fog/fog_of_war.gd")
-const ROOM_DATA: Script = preload("res://scripts/world/data/room_data.gd")
+const ROOM_DATA: Script = preload("res://addons/platformer_kit/world/data/room_data.gd")
 
 
 class DebugPlayer extends Node:

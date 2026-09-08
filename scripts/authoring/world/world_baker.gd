@@ -2,9 +2,9 @@
 class_name WorldBaker
 extends RefCounted
 
-const WORLD_DATA_SCRIPT: Script = preload("res://scripts/world/data/world_data.gd")
-const ROOM_DATA_SCRIPT: Script = preload("res://scripts/world/data/room_data.gd")
-const WORLD_VALIDATION: Script = preload("res://scripts/world/data/world_validation.gd")
+const WORLD_DATA_SCRIPT: Script = preload("res://addons/platformer_kit/world/data/world_data.gd")
+const ROOM_DATA_SCRIPT: Script = preload("res://addons/platformer_kit/world/data/room_data.gd")
+const WORLD_VALIDATION: Script = preload("res://addons/platformer_kit/world/data/world_validation.gd")
 const WORLD_RESOURCE_SERVICE: Script = preload("res://scripts/authoring/world/world_resource_service.gd")
 const ROOM_AUTHORING_CONTRACT: Script = preload("res://scripts/authoring/room/room_authoring_contract.gd")
 const TERRAIN_LAYER_NAMES: Array[String] = [
