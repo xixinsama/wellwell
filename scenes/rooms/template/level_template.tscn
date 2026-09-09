@@ -3,8 +3,8 @@
 [ext_resource type="Script" uid="uid://chnjcov24wxi" path="res://addons/world_editor/authoring/room/room_authoring_root.gd" id="1_f53rw"]
 [ext_resource type="Script" uid="uid://clswk5xafmopi" path="res://addons/world_editor/authoring/room/room_preview_controller.gd" id="2_8kft7"]
 [ext_resource type="PackedScene" uid="uid://cejq022r3hjrd" path="res://scenes/player/player.tscn" id="3_mfms0"]
-[ext_resource type="TileSet" uid="uid://dopy3rhny136q" path="res://resources/tilesets/tileset8_8.tres" id="3_q26ly"]
-[ext_resource type="Script" path="res://addons/platformer_kit/camera/pixel_camera_2d.gd" id="4_q26ly"]
+[ext_resource type="TileSet" uid="uid://ct7c6ejoixgkq" path="res://resources/tilesets/primordial_tileset.tres" id="3_t1ns4"]
+[ext_resource type="Script" uid="uid://mx2n1010061e" path="res://addons/platformer_kit/camera/pixel_camera_2d.gd" id="4_q26ly"]
 [ext_resource type="Script" uid="uid://bo5asnakkt3ao" path="res://addons/platformer_kit/world/entities/spawn_point.gd" id="4_wyn2e"]
 [ext_resource type="PackedScene" uid="uid://dpkyymy3fnwb4" path="res://addons/platformer_debug/runtime/grid_overlay.tscn" id="5_wyn2e"]
 [ext_resource type="PackedScene" uid="uid://xdpcjsmnvhkj" path="res://addons/platformer_debug/runtime/debug_hud.tscn" id="6_qmbol"]
@@ -30,25 +30,25 @@ metadata/_custom_type_script = "uid://clswk5xafmopi"
 [node name="Terrain" type="Node2D" parent="RoomContent" unique_id=708873726]
 
 [node name="BackTiles" type="TileMapLayer" parent="RoomContent/Terrain" unique_id=1219311249]
-tile_set = ExtResource("3_q26ly")
+tile_set = ExtResource("3_t1ns4")
 collision_enabled = false
 
 [node name="SolidTiles" type="TileMapLayer" parent="RoomContent/Terrain" unique_id=256295016]
-tile_set = ExtResource("3_q26ly")
+tile_set = ExtResource("3_t1ns4")
 
 [node name="GlassTiles" type="TileMapLayer" parent="RoomContent/Terrain" unique_id=1038592908]
-tile_set = ExtResource("3_q26ly")
+tile_set = ExtResource("3_t1ns4")
 
 [node name="VisionBlockTiles" type="TileMapLayer" parent="RoomContent/Terrain" unique_id=1633890796]
-tile_set = ExtResource("3_q26ly")
+tile_set = ExtResource("3_t1ns4")
 collision_enabled = false
 
 [node name="DetailTiles" type="TileMapLayer" parent="RoomContent/Terrain" unique_id=1044817251]
-tile_set = ExtResource("3_q26ly")
+tile_set = ExtResource("3_t1ns4")
 collision_enabled = false
 
 [node name="MarkerTiles" type="TileMapLayer" parent="RoomContent/Terrain" unique_id=1231469021]
-tile_set = ExtResource("3_q26ly")
+tile_set = ExtResource("3_t1ns4")
 collision_enabled = false
 
 [node name="Entities" type="Node2D" parent="RoomContent" unique_id=190854283]
@@ -82,3 +82,4 @@ vision_block_tiles_path = NodePath("../../RoomContent/Terrain/VisionBlockTiles")
 [node name="UI" type="CanvasLayer" parent="." unique_id=1435291588]
 
 [node name="DebugHud" parent="UI" unique_id=586873470 instance=ExtResource("6_qmbol")]
+visible = false

@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="WorldData" format=3 uid="uid://b8ewxghnemvrq"]
+
+[ext_resource type="Script" uid="uid://dkcwb87qn5n2c" path="res://addons/platformer_kit/world/data/world_data.gd" id="1_4y1g7"]
+[ext_resource type="Script" uid="uid://b1ws1oeewd0ks" path="res://addons/platformer_kit/world/data/world_room_placement_data.gd" id="1_io8hw"]
+[ext_resource type="Resource" uid="uid://bb1yt0l2h1puu" path="res://resources/rooms/generated/room_00_00.tres" id="2_8lgcq"]
+[ext_resource type="Resource" uid="uid://dlwa4yichnpq" path="res://resources/rooms/generated/room_01_00.tres" id="3_8lgcq"]
+
+[sub_resource type="Resource" id="Resource_8lgcq"]
+script = ExtResource("1_io8hw")
+room_id = "room_00_00"
+
+[sub_resource type="Resource" id="Resource_a4lqt"]
+script = ExtResource("1_io8hw")
+room_id = "room_01_00"
+origin_chunk = Vector2i(1, 0)
+
+[resource]
+script = ExtResource("1_4y1g7")
+world_id = "the_world"
+start_room_id = "room_00_00"
+start_spawn_id = "start"
+rooms = Array[Resource]([ExtResource("2_8lgcq"), ExtResource("3_8lgcq")])
+placements = Array[Resource]([SubResource("Resource_8lgcq"), SubResource("Resource_a4lqt")])
+tags = PackedStringArray()
