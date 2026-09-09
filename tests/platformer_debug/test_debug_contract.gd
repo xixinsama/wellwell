@@ -18,6 +18,10 @@ const MOVEMENT_LAB_PATH := "res://examples/movement_lab/movement_lab.tscn"
 class DebugSubject extends Node:
 	var state := {
 		"velocity": Vector2(12.0, -4.0),
+		"relative_velocity": Vector2(12.0, -4.0),
+		"platform_velocity": Vector2(56.0, 0.0),
+		"world_velocity": Vector2(68.0, -4.0),
+		"platform_id": &"lab:conveyor",
 		"on_floor": true,
 		"wall_left": true,
 		"wall_right": false,
@@ -61,6 +65,12 @@ func _assert_addon_contract(failures: Array[String]) -> void:
 	for path: String in [HUD_SCENE_PATH, DEBUG_MAP_SCENE_PATH, GRID_OVERLAY_SCENE_PATH]:
 		if load(path) as PackedScene == null:
 			failures.append("platformer_debug scene could not be loaded: %s" % path)
+	var hud_scene := load(HUD_SCENE_PATH) as PackedScene
+	if hud_scene != null:
+		var hud_instance := hud_scene.instantiate()
+		if hud_instance.find_child("DebugPanel", true, false) == null:
+			failures.append("debug HUD scene has no compact panel container")
+		hud_instance.free()
 
 
 func _assert_read_only_debug_binding(failures: Array[String]) -> void:
@@ -79,7 +89,11 @@ func _assert_read_only_debug_binding(failures: Array[String]) -> void:
 		if not hud.set_section_enabled(section, true):
 			failures.append("debug HUD rejected section: %s" % section)
 	hud.refresh_display()
-	if not label.text.contains("vel 12.0, -4.0") or not label.text.contains("wall L true"):
+	if not label.text.contains("relative 12.0, -4.0") or not label.text.contains("platform 56.0, 0.0"):
+		failures.append("debug HUD did not distinguish relative and platform velocity")
+	if not label.text.contains("world 68.0, -4.0") or not label.text.contains("lab:conveyor"):
+		failures.append("debug HUD did not render world velocity and platform identity")
+	if not label.text.contains("wall L true"):
 		failures.append("debug HUD did not render motor and sensor state")
 	if not label.text.contains("player:debug:subject"):
 		failures.append("debug HUD did not render stable identity")
@@ -87,6 +101,12 @@ func _assert_read_only_debug_binding(failures: Array[String]) -> void:
 		failures.append("debug HUD mutated its bound gameplay subject")
 	var visualizer: Node2D = visualizer_script.new()
 	visualizer.bind_subject(subject)
+	if not visualizer.has_method("get_velocity_vectors"):
+		failures.append("debug visualizer does not expose velocity vectors")
+	else:
+		var vectors: Dictionary = visualizer.call("get_velocity_vectors")
+		if vectors.get("relative") != Vector2(12.0, -4.0) or vectors.get("platform") != Vector2(56.0, 0.0) or vectors.get("world") != Vector2(68.0, -4.0):
+			failures.append("debug visualizer lost one or more velocity channels")
 	if not visualizer.set_layer_enabled(&"collision", false):
 		failures.append("debug visualizer rejected collision toggle")
 	if visualizer.is_layer_enabled(&"collision"):

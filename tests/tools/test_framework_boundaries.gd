@@ -4,6 +4,13 @@ const VALIDATOR_PATH := "res://tools/validate_framework_boundaries.gd"
 const FIXTURE_ROOT := "user://framework_boundary_fixture"
 const FRAMEWORK_ROOT := FIXTURE_ROOT + "/addons/platformer_kit"
 const GAME_ROOT := FIXTURE_ROOT + "/game"
+const FRAMEWORK_MODULE_ROOTS: Array[String] = [
+	"res://addons/platformer_kit",
+	"res://addons/platformer_debug",
+	"res://addons/platformer_abilities",
+	"res://addons/platformer_combat",
+	"res://addons/metroidvania_kit",
+]
 
 
 func run() -> Array[String]:
@@ -25,6 +32,9 @@ func run() -> Array[String]:
 		failures.append("framework boundary validator did not report exactly one forbidden dependency")
 	elif not errors[0].contains("forbidden.gd") or not errors[0].contains("res://game/"):
 		failures.append("framework boundary error did not identify the file and forbidden target")
+	for module_root: String in FRAMEWORK_MODULE_ROOTS:
+		for error: String in validator.call("validate", module_root):
+			failures.append("actual framework boundary violation: %s" % error)
 	_cleanup_fixture()
 	return failures
 

@@ -1,156 +1,213 @@
-[gd_scene load_steps=10 format=3]
+[gd_scene format=3 uid="uid://dcystrpeeh24x"]
 
-[ext_resource type="Script" path="res://examples/movement_lab/movement_lab.gd" id="1_lab"]
-[ext_resource type="PackedScene" path="res://scenes/player/player.tscn" id="2_player"]
-[ext_resource type="Script" path="res://addons/platformer_kit/camera/pixel_camera_2d.gd" id="3_camera"]
-[ext_resource type="Script" path="res://addons/platformer_kit/platforms/one_way_platform.gd" id="4_one_way"]
-[ext_resource type="Script" path="res://addons/platformer_kit/platforms/moving_platform.gd" id="5_moving"]
-[ext_resource type="Script" path="res://addons/platformer_kit/platforms/falling_platform.gd" id="6_falling"]
-[ext_resource type="Script" path="res://addons/platformer_kit/platforms/conveyor_platform.gd" id="7_conveyor"]
+[ext_resource type="Script" uid="uid://c7kux5v3qwcc8" path="res://examples/movement_lab/movement_lab.gd" id="1_lab"]
+[ext_resource type="PackedScene" uid="uid://cejq022r3hjrd" path="res://scenes/player/player.tscn" id="2_player"]
+[ext_resource type="Script" uid="uid://mx2n1010061e" path="res://addons/platformer_kit/camera/pixel_camera_2d.gd" id="3_camera"]
+[ext_resource type="Script" uid="uid://cu6ud84ix44e" path="res://addons/platformer_kit/platforms/platform_body_2d.gd" id="4_body"]
+[ext_resource type="Script" uid="uid://dpnnwyncyrnak" path="res://addons/platformer_kit/platforms/components/ping_pong_motion_component_2d.gd" id="5_ping"]
+[ext_resource type="Script" uid="uid://cch0ondacugn3" path="res://addons/platformer_kit/platforms/components/fall_motion_component_2d.gd" id="6_fall"]
+[ext_resource type="Script" uid="uid://c5hvj7hvcnfdg" path="res://addons/platformer_kit/platforms/components/conveyor_surface_component_2d.gd" id="7_conveyor"]
+[ext_resource type="Script" uid="uid://chw3gl0jdqyuh" path="res://addons/platformer_kit/platforms/components/rider_trigger_component_2d.gd" id="8_trigger"]
 
 [sub_resource type="RectangleShape2D" id="Rectangle_ground"]
 size = Vector2(960, 32)
 
+[sub_resource type="ConvexPolygonShape2D" id="Convex_slope"]
+points = PackedVector2Array(-56, 24, 56, -24, 56, 24)
+
 [sub_resource type="RectangleShape2D" id="Rectangle_platform"]
 size = Vector2(80, 8)
-
-[sub_resource type="RectangleShape2D" id="Rectangle_wall"]
-size = Vector2(16, 96)
 
 [sub_resource type="RectangleShape2D" id="Rectangle_ceiling"]
 size = Vector2(112, 12)
 
-[sub_resource type="ConvexPolygonShape2D" id="Convex_slope"]
-points = PackedVector2Array(-56, 24, 56, -24, 56, 24)
+[sub_resource type="RectangleShape2D" id="Rectangle_wall"]
+size = Vector2(16, 96)
 
-[node name="MovementLab" type="Node2D"]
+[sub_resource type="RectangleShape2D" id="Rectangle_trigger"]
+size = Vector2(76, 12)
+
+[node name="MovementLab" type="Node2D" unique_id=527402627]
 script = ExtResource("1_lab")
 
-[node name="Backdrop" type="Polygon2D" parent="."]
+[node name="Backdrop" type="Polygon2D" parent="." unique_id=748828451]
 z_index = -10
 color = Color(0.047, 0.063, 0.078, 1)
 polygon = PackedVector2Array(-320, -180, 1280, -180, 1280, 540, -320, 540)
 
-[node name="Player" parent="." instance=ExtResource("2_player")]
+[node name="Player" parent="." unique_id=916250212 instance=ExtResource("2_player")]
 position = Vector2(40, 288)
 
-[node name="PixelCamera2D" type="Camera2D" parent="."]
+[node name="PixelCamera2D" type="Camera2D" parent="." unique_id=1007183194]
+zoom = Vector2(2, 2)
 position_smoothing_enabled = true
 position_smoothing_speed = 8.0
 script = ExtResource("3_camera")
+target_path = NodePath("../Player")
 camera_mode = 1
 
-[node name="Fixtures" type="Node2D" parent="."]
+[node name="Fixtures" type="Node2D" parent="." unique_id=64245501]
 
-[node name="Ground" type="StaticBody2D" parent="Fixtures"]
+[node name="Ground" type="StaticBody2D" parent="Fixtures" unique_id=2007440028]
 position = Vector2(480, 344)
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Fixtures/Ground"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Fixtures/Ground" unique_id=1116849713]
 shape = SubResource("Rectangle_ground")
 
-[node name="Visual" type="Polygon2D" parent="Fixtures/Ground"]
+[node name="Visual" type="Polygon2D" parent="Fixtures/Ground" unique_id=1480520602]
 color = Color(0.165, 0.2, 0.224, 1)
 polygon = PackedVector2Array(-480, -16, 480, -16, 480, 16, -480, 16)
 
-[node name="Slope" type="StaticBody2D" parent="Fixtures"]
+[node name="Slope" type="StaticBody2D" parent="Fixtures" unique_id=969538447]
 position = Vector2(152, 304)
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Fixtures/Slope"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Fixtures/Slope" unique_id=13388945]
 shape = SubResource("Convex_slope")
 
-[node name="Visual" type="Polygon2D" parent="Fixtures/Slope"]
+[node name="Visual" type="Polygon2D" parent="Fixtures/Slope" unique_id=48142398]
 color = Color(0.243, 0.58, 0.455, 1)
 polygon = PackedVector2Array(-56, 24, 56, -24, 56, 24)
 
-[node name="OneWayPlatform" type="StaticBody2D" parent="Fixtures"]
-position = Vector2(280, 264)
-script = ExtResource("4_one_way")
-platform_id = &"lab:one_way"
+[node name="ConveyorPlatform" type="AnimatableBody2D" parent="Fixtures" unique_id=1107307947]
+position = Vector2(392, 280)
+script = ExtResource("4_body")
+platform_id = &"lab:conveyor"
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Fixtures/OneWayPlatform"]
+[node name="ConveyorSurface" type="Node" parent="Fixtures/ConveyorPlatform" unique_id=992477747]
+script = ExtResource("7_conveyor")
+surface_velocity = Vector2(56, 0)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Fixtures/ConveyorPlatform" unique_id=1318838573]
 shape = SubResource("Rectangle_platform")
 
-[node name="Visual" type="Polygon2D" parent="Fixtures/OneWayPlatform"]
+[node name="Visual" type="Polygon2D" parent="Fixtures/ConveyorPlatform" unique_id=746691980]
+color = Color(0.298, 0.784, 0.82, 1)
+polygon = PackedVector2Array(-40, -4, 40, -4, 40, 4, -40, 4)
+
+[node name="OneWayPlatform" type="StaticBody2D" parent="Fixtures" unique_id=238222299]
+position = Vector2(287, 303)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Fixtures/OneWayPlatform" unique_id=1511908591]
+shape = SubResource("Rectangle_platform")
+one_way_collision = true
+
+[node name="Visual" type="Polygon2D" parent="Fixtures/OneWayPlatform" unique_id=1022790930]
 color = Color(0.333, 0.686, 0.91, 1)
 polygon = PackedVector2Array(-40, -4, 40, -4, 40, 4, -40, 4)
 
-[node name="MovingPlatform" type="AnimatableBody2D" parent="Fixtures"]
+[node name="MovingPlatform" type="AnimatableBody2D" parent="Fixtures" unique_id=1550344424]
 position = Vector2(392, 280)
-script = ExtResource("5_moving")
+script = ExtResource("4_body")
 platform_id = &"lab:moving"
+
+[node name="PingPongMotion" type="Node" parent="Fixtures/MovingPlatform" unique_id=1998796439]
+script = ExtResource("5_ping")
 travel_offset = Vector2(96, -48)
 cycle_duration = 3.0
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Fixtures/MovingPlatform"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Fixtures/MovingPlatform" unique_id=1024285405]
 shape = SubResource("Rectangle_platform")
 
-[node name="Visual" type="Polygon2D" parent="Fixtures/MovingPlatform"]
+[node name="Visual" type="Polygon2D" parent="Fixtures/MovingPlatform" unique_id=160175245]
 color = Color(0.949, 0.702, 0.239, 1)
 polygon = PackedVector2Array(-40, -4, 40, -4, 40, 4, -40, 4)
 
-[node name="LowCeiling" type="StaticBody2D" parent="Fixtures"]
+[node name="LowCeiling" type="StaticBody2D" parent="Fixtures" unique_id=1749053663]
 position = Vector2(520, 282)
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Fixtures/LowCeiling"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Fixtures/LowCeiling" unique_id=791849524]
 shape = SubResource("Rectangle_ceiling")
 
-[node name="Visual" type="Polygon2D" parent="Fixtures/LowCeiling"]
+[node name="Visual" type="Polygon2D" parent="Fixtures/LowCeiling" unique_id=955795491]
 color = Color(0.71, 0.396, 0.396, 1)
 polygon = PackedVector2Array(-56, -6, 56, -6, 56, 6, -56, 6)
 
-[node name="Wall" type="StaticBody2D" parent="Fixtures"]
-position = Vector2(608, 280)
+[node name="Wall" type="StaticBody2D" parent="Fixtures" unique_id=1245608890]
+position = Vector2(607, 349)
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Fixtures/Wall"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Fixtures/Wall" unique_id=1236425592]
 shape = SubResource("Rectangle_wall")
 
-[node name="Visual" type="Polygon2D" parent="Fixtures/Wall"]
+[node name="Visual" type="Polygon2D" parent="Fixtures/Wall" unique_id=786019331]
 color = Color(0.671, 0.427, 0.718, 1)
 polygon = PackedVector2Array(-8, -48, 8, -48, 8, 48, -8, 48)
 
-[node name="NarrowGap" type="Node2D" parent="Fixtures"]
+[node name="NarrowGap" type="Node2D" parent="Fixtures" unique_id=63204485]
+position = Vector2(-8, 68)
 
-[node name="Left" type="StaticBody2D" parent="Fixtures/NarrowGap"]
+[node name="Left" type="StaticBody2D" parent="Fixtures/NarrowGap" unique_id=170052828]
 position = Vector2(648, 280)
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Fixtures/NarrowGap/Left"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Fixtures/NarrowGap/Left" unique_id=641199596]
 shape = SubResource("Rectangle_wall")
 
-[node name="Visual" type="Polygon2D" parent="Fixtures/NarrowGap/Left"]
+[node name="Visual" type="Polygon2D" parent="Fixtures/NarrowGap/Left" unique_id=2053771312]
 color = Color(0.671, 0.427, 0.718, 1)
 polygon = PackedVector2Array(-8, -48, 8, -48, 8, 48, -8, 48)
 
-[node name="Right" type="StaticBody2D" parent="Fixtures/NarrowGap"]
+[node name="Right" type="StaticBody2D" parent="Fixtures/NarrowGap" unique_id=1607906404]
 position = Vector2(672, 280)
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Fixtures/NarrowGap/Right"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Fixtures/NarrowGap/Right" unique_id=1878364313]
 shape = SubResource("Rectangle_wall")
 
-[node name="Visual" type="Polygon2D" parent="Fixtures/NarrowGap/Right"]
+[node name="Visual" type="Polygon2D" parent="Fixtures/NarrowGap/Right" unique_id=427594146]
 color = Color(0.671, 0.427, 0.718, 1)
 polygon = PackedVector2Array(-8, -48, 8, -48, 8, 48, -8, 48)
 
-[node name="FallingPlatform" type="AnimatableBody2D" parent="Fixtures"]
-position = Vector2(704, 264)
-script = ExtResource("6_falling")
+[node name="FallingPlatform" type="AnimatableBody2D" parent="Fixtures" unique_id=2059852251]
+position = Vector2(721, 295)
+script = ExtResource("4_body")
 platform_id = &"lab:falling"
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Fixtures/FallingPlatform"]
+[node name="FallMotion" type="Node" parent="Fixtures/FallingPlatform" unique_id=1611929301]
+script = ExtResource("6_fall")
+activation_delay = 0.2
+
+[node name="RiderTrigger" type="Area2D" parent="Fixtures/FallingPlatform" unique_id=1904797031]
+position = Vector2(0, -9)
+collision_layer = 0
+collision_mask = 2
+script = ExtResource("8_trigger")
+target_paths = Array[NodePath]([NodePath("../FallMotion")])
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Fixtures/FallingPlatform/RiderTrigger" unique_id=280565700]
+shape = SubResource("Rectangle_trigger")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Fixtures/FallingPlatform" unique_id=886902855]
 shape = SubResource("Rectangle_platform")
 
-[node name="Visual" type="Polygon2D" parent="Fixtures/FallingPlatform"]
+[node name="Visual" type="Polygon2D" parent="Fixtures/FallingPlatform" unique_id=183547603]
 color = Color(0.906, 0.337, 0.337, 1)
 polygon = PackedVector2Array(-40, -4, 40, -4, 40, 4, -40, 4)
 
-[node name="ConveyorPlatform" type="StaticBody2D" parent="Fixtures"]
-position = Vector2(824, 296)
-script = ExtResource("7_conveyor")
-platform_id = &"lab:conveyor"
-conveyor_velocity = Vector2(56, 0)
+[node name="CombinedMovingFallingPlatform" type="AnimatableBody2D" parent="Fixtures" unique_id=1155622340]
+position = Vector2(815, 295)
+script = ExtResource("4_body")
+platform_id = &"lab:moving_fall"
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Fixtures/ConveyorPlatform"]
+[node name="PingPongMotion" type="Node" parent="Fixtures/CombinedMovingFallingPlatform" unique_id=533923259]
+script = ExtResource("5_ping")
+travel_offset = Vector2(72, 0)
+cycle_duration = 2.4
+
+[node name="FallMotion" type="Node" parent="Fixtures/CombinedMovingFallingPlatform" unique_id=2046417606]
+script = ExtResource("6_fall")
+activation_delay = 0.25
+
+[node name="RiderTrigger" type="Area2D" parent="Fixtures/CombinedMovingFallingPlatform" unique_id=1453980635]
+position = Vector2(0, -9)
+collision_layer = 0
+collision_mask = 2
+script = ExtResource("8_trigger")
+target_paths = Array[NodePath]([NodePath("../FallMotion")])
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Fixtures/CombinedMovingFallingPlatform/RiderTrigger" unique_id=1362234003]
+shape = SubResource("Rectangle_trigger")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Fixtures/CombinedMovingFallingPlatform" unique_id=185499357]
 shape = SubResource("Rectangle_platform")
 
-[node name="Visual" type="Polygon2D" parent="Fixtures/ConveyorPlatform"]
-color = Color(0.298, 0.784, 0.82, 1)
+[node name="Visual" type="Polygon2D" parent="Fixtures/CombinedMovingFallingPlatform" unique_id=2022989703]
+color = Color(0.95, 0.46, 0.23, 1)
 polygon = PackedVector2Array(-40, -4, 40, -4, 40, 4, -40, 4)

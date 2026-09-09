@@ -22,6 +22,7 @@ var _movement_context: RefCounted = MOVEMENT_CONTEXT.new()
 var _environment: RefCounted = ENVIRONMENT_SNAPSHOT.new()
 var _sensors: RefCounted = CHARACTER_SENSORS.new()
 var _input_source: RefCounted = PLAYER_INPUT_SOURCE.new()
+var _world_velocity := Vector2.ZERO
 
 @onready var sprite_root: Node2D = $SpriteRoot
 
@@ -70,6 +71,8 @@ func _physics_process(delta: float) -> void:
 
     move_and_slide()
     _movement_context.velocity = velocity
+    _world_velocity = get_real_velocity()
+    _capture_environment()
     was_on_floor = is_on_floor()
 
 
@@ -77,6 +80,7 @@ func respawn_at(pos: Vector2) -> void:
     global_position = pos
     spawn_position = pos
     velocity = Vector2.ZERO
+    _world_velocity = Vector2.ZERO
     _movement_context.call("reset")
     sprite_root.scale = Vector2(facing, 1.0)
 
@@ -84,6 +88,10 @@ func respawn_at(pos: Vector2) -> void:
 func get_debug_state() -> Dictionary:
     return {
         "velocity": velocity,
+        "relative_velocity": velocity,
+        "platform_velocity": _environment.floor_velocity,
+        "world_velocity": _world_velocity,
+        "platform_id": _environment.platform_id,
         "on_floor": is_on_floor(),
         "jump_buffer_remaining": _movement_context.jump_buffer_remaining,
         "coyote_remaining": _movement_context.coyote_remaining,
@@ -92,7 +100,6 @@ func get_debug_state() -> Dictionary:
         "wall_left": _environment.wall_left,
         "wall_right": _environment.wall_right,
         "floor_normal": _environment.floor_normal,
-        "platform_velocity": _environment.floor_velocity,
     }
 
 

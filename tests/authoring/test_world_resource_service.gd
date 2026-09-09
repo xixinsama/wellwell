@@ -1,13 +1,13 @@
 extends Node
 
-const SERVICE_PATH := "res://scripts/authoring/world/world_resource_service.gd"
+const SERVICE_PATH := "res://addons/world_editor/authoring/world/world_resource_service.gd"
 const WORLD_DATA := preload("res://addons/platformer_kit/world/data/world_data.gd")
 const ROOM_DATA := preload("res://addons/platformer_kit/world/data/room_data.gd")
 const WORLD_PATH := "res://resources/worlds/test_main_world.tres"
 const WRONG_TYPE_PATH := "res://resources/worlds/test_wrong_world_resource.tres"
 
 
-class FailingWorldResourceService extends "res://scripts/authoring/world/world_resource_service.gd":
+class FailingWorldResourceService extends "res://addons/world_editor/authoring/world/world_resource_service.gd":
 	func _save_resource(_resource: Resource, _path: String) -> Error:
 		return ERR_CANT_CREATE
 

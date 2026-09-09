@@ -6,6 +6,10 @@ const VALID_LAYERS: Array[StringName] = [&"collision", &"sensors", &"motor", &"i
 @export var collision_color := Color(0.2, 0.9, 0.7, 0.9)
 @export var active_sensor_color := Color(1.0, 0.75, 0.2, 0.95)
 @export var inactive_sensor_color := Color(0.45, 0.5, 0.55, 0.65)
+@export var relative_velocity_color := Color(0.35, 0.85, 1.0, 0.95)
+@export var platform_velocity_color := Color(1.0, 0.72, 0.2, 0.95)
+@export var world_velocity_color := Color(0.55, 1.0, 0.45, 0.95)
+@export_range(0.01, 1.0, 0.01) var velocity_draw_scale := 0.12
 
 var _subject: Node
 var _layers := {
@@ -46,6 +50,19 @@ func _draw() -> void:
 		_draw_collision_shapes(subject_2d)
 	if is_layer_enabled(&"sensors") and subject_2d.has_method("get_debug_state"):
 		_draw_sensors(origin, subject_2d.call("get_debug_state"))
+	if is_layer_enabled(&"motor"):
+		_draw_velocity_vectors(origin, get_velocity_vectors())
+
+
+func get_velocity_vectors() -> Dictionary:
+	if _subject == null or not is_instance_valid(_subject) or not _subject.has_method("get_debug_state"):
+		return {"relative": Vector2.ZERO, "platform": Vector2.ZERO, "world": Vector2.ZERO}
+	var state: Dictionary = _subject.call("get_debug_state")
+	return {
+		"relative": Vector2(state.get("relative_velocity", state.get("velocity", Vector2.ZERO))),
+		"platform": Vector2(state.get("platform_velocity", Vector2.ZERO)),
+		"world": Vector2(state.get("world_velocity", Vector2.ZERO)),
+	}
 
 
 func _draw_collision_shapes(subject: Node2D) -> void:
@@ -74,3 +91,19 @@ func _draw_sensors(origin: Vector2, state: Dictionary) -> void:
 
 func _draw_sensor_line(origin: Vector2, offset: Vector2, active: bool) -> void:
 	draw_line(origin, origin + offset, active_sensor_color if active else inactive_sensor_color, 1.0)
+
+
+func _draw_velocity_vectors(origin: Vector2, vectors: Dictionary) -> void:
+	_draw_velocity_vector(origin, Vector2(vectors.get("relative", Vector2.ZERO)), relative_velocity_color)
+	_draw_velocity_vector(origin, Vector2(vectors.get("platform", Vector2.ZERO)), platform_velocity_color)
+	_draw_velocity_vector(origin, Vector2(vectors.get("world", Vector2.ZERO)), world_velocity_color)
+
+
+func _draw_velocity_vector(origin: Vector2, velocity: Vector2, color: Color) -> void:
+	var offset := velocity * velocity_draw_scale
+	if offset.length() > 64.0:
+		offset = offset.normalized() * 64.0
+	if offset.length_squared() < 1.0:
+		return
+	draw_line(origin, origin + offset, color, 1.5)
+	draw_circle(origin + offset, 2.0, color)

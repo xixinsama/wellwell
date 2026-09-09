@@ -65,20 +65,23 @@ text = "COMMON_BACK"
 [node name="CopyDialog" type="ConfirmationDialog" parent="." unique_id=753624470]
 unique_name_in_owner = true
 process_mode = 3
+oversampling_override = 1.0
+position = Vector2i(0, 36)
 size = Vector2i(460, 220)
 ok_button_text = "COMMON_CONFIRM"
 cancel_button_text = "COMMON_CANCEL"
 
 [node name="CopyTarget" type="OptionButton" parent="CopyDialog" unique_id=432863427]
 unique_name_in_owner = true
-offset_left = 24.0
-offset_top = 112.0
-offset_right = 436.0
-offset_bottom = 154.0
+offset_left = 8.0
+offset_top = 8.0
+offset_right = 452.0
+offset_bottom = 174.0
 
 [node name="DeleteDialog" type="ConfirmationDialog" parent="." unique_id=2106516653]
 unique_name_in_owner = true
 process_mode = 3
+oversampling_override = 1.0
 size = Vector2i(460, 200)
 ok_button_text = "COMMON_CONFIRM"
 cancel_button_text = "COMMON_CANCEL"

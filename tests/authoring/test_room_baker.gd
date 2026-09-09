@@ -1,7 +1,7 @@
 extends Node
 
 
-class FailingRoomBaker extends "res://scripts/authoring/room/room_baker.gd":
+class FailingRoomBaker extends "res://addons/world_editor/authoring/room/room_baker.gd":
 	var promote_attempts := 0
 
 	func _promote_staged_file(staged_path: String, final_path: String) -> Error:
@@ -11,12 +11,12 @@ class FailingRoomBaker extends "res://scripts/authoring/room/room_baker.gd":
 		return super._promote_staged_file(staged_path, final_path)
 
 
-class WarningRoomBaker extends "res://scripts/authoring/room/room_baker.gd":
+class WarningRoomBaker extends "res://addons/world_editor/authoring/room/room_baker.gd":
 	func validate(_source_root: Node) -> Dictionary:
 		return {"ok": true, "errors": [], "warnings": ["test authoring warning"]}
 
 
-class RemovalFailingRoomBaker extends "res://scripts/authoring/room/room_baker.gd":
+class RemovalFailingRoomBaker extends "res://addons/world_editor/authoring/room/room_baker.gd":
 	var promote_attempts := 0
 	var fail_removal_path := ""
 
@@ -32,7 +32,7 @@ class RemovalFailingRoomBaker extends "res://scripts/authoring/room/room_baker.g
 		return super._remove_file(path)
 
 
-class PostSaveMutationBaker extends "res://scripts/authoring/room/room_baker.gd":
+class PostSaveMutationBaker extends "res://addons/world_editor/authoring/room/room_baker.gd":
 	var mutation := ""
 
 	func _after_staged_resources_saved(staged_paths: Dictionary, _staged: Dictionary) -> Dictionary:
@@ -72,7 +72,7 @@ class PostSaveMutationBaker extends "res://scripts/authoring/room/room_baker.gd"
 			_assign_owner_recursive(child, root)
 
 
-class BackupCleanupFailingRoomBaker extends "res://scripts/authoring/room/room_baker.gd":
+class BackupCleanupFailingRoomBaker extends "res://addons/world_editor/authoring/room/room_baker.gd":
 	var failing_backup_path := ""
 
 	func _remove_file(path: String) -> Error:
@@ -81,12 +81,12 @@ class BackupCleanupFailingRoomBaker extends "res://scripts/authoring/room/room_b
 		return super._remove_file(path)
 
 
-class CanonicalizationInspectingRoomBaker extends "res://scripts/authoring/room/room_baker.gd":
+class CanonicalizationInspectingRoomBaker extends "res://addons/world_editor/authoring/room/room_baker.gd":
 	func canonicalize(value: Variant) -> Variant:
 		return _canonicalize_value(value)
 
 
-class UIDRegisteringRoomBaker extends "res://scripts/authoring/room/room_baker.gd":
+class UIDRegisteringRoomBaker extends "res://addons/world_editor/authoring/room/room_baker.gd":
 	var registered_ids: Array[int] = []
 	var final_paths_by_uid: Dictionary = {}
 
@@ -101,10 +101,10 @@ class UIDRegisteringRoomBaker extends "res://scripts/authoring/room/room_baker.g
 		return {"ok": true, "errors": [], "warnings": []}
 
 
-const ROOM_BAKER: Script = preload("res://scripts/authoring/room/room_baker.gd")
-const ROOM_BAKE_PATHS: Script = preload("res://scripts/authoring/room/room_bake_paths.gd")
+const ROOM_BAKER: Script = preload("res://addons/world_editor/authoring/room/room_baker.gd")
+const ROOM_BAKE_PATHS: Script = preload("res://addons/world_editor/authoring/room/room_bake_paths.gd")
 const ROOM_DATA: Script = preload("res://addons/platformer_kit/world/data/room_data.gd")
-const ROOM_AUTHORING_ROOT: Script = preload("res://scripts/authoring/room/room_authoring_root.gd")
+const ROOM_AUTHORING_ROOT: Script = preload("res://addons/world_editor/authoring/room/room_authoring_root.gd")
 const ROOM_ENTRANCE: Script = preload("res://addons/platformer_kit/world/entities/room_entrance.gd")
 const SPAWN_POINT: Script = preload("res://addons/platformer_kit/world/entities/spawn_point.gd")
 const WORLD_ENTITY: Script = preload("res://addons/platformer_kit/world/entities/world_entity.gd")

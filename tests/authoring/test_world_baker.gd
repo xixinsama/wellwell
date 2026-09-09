@@ -3,9 +3,9 @@ extends Node
 const ROOM_DATA: Script = preload("res://addons/platformer_kit/world/data/room_data.gd")
 const WORLD_DATA: Script = preload("res://addons/platformer_kit/world/data/world_data.gd")
 const ROOM_PLACEMENT_DATA: Script = preload("res://addons/platformer_kit/world/data/world_room_placement_data.gd")
-const ROOM_AUTHORING_ROOT: Script = preload("res://scripts/authoring/room/room_authoring_root.gd")
-const WORLD_BAKER_PATH := "res://scripts/authoring/world/world_baker.gd"
-const WORLD_SERVICE_PATH := "res://scripts/authoring/world/world_resource_service.gd"
+const ROOM_AUTHORING_ROOT: Script = preload("res://addons/world_editor/authoring/room/room_authoring_root.gd")
+const WORLD_BAKER_PATH := "res://addons/world_editor/authoring/world/world_baker.gd"
+const WORLD_SERVICE_PATH := "res://addons/world_editor/authoring/world/world_resource_service.gd"
 const WORLD_PATH := "user://task7_world_baker_world.tres"
 const SOURCE_SCENE_PATH := "user://task7_world_baker_source.tscn"
 const RUNTIME_SCENE_PATH := "user://task7_world_baker_runtime.tscn"
@@ -21,7 +21,7 @@ const TERRAIN_LAYER_NAMES: Array[String] = [
 ]
 
 
-class FailingPromoteService extends "res://scripts/authoring/world/world_resource_service.gd":
+class FailingPromoteService extends "res://addons/world_editor/authoring/world/world_resource_service.gd":
 	func _promote_staged_file(_staged_path: String, _final_path: String) -> Error:
 		return ERR_CANT_CREATE
 

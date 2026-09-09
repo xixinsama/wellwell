@@ -13,7 +13,7 @@ class MethodCompatibleRoot extends Node2D:
 	func get_manifest() -> Dictionary:
 		return {}
 
-class OverridingAuthoringRoot extends "res://scripts/authoring/room/room_authoring_root.gd":
+class OverridingAuthoringRoot extends "res://addons/world_editor/authoring/room/room_authoring_root.gd":
 	var external_room_content: Node
 	var external_preview_root: Node
 
@@ -23,8 +23,8 @@ class OverridingAuthoringRoot extends "res://scripts/authoring/room/room_authori
 	func get_preview_root() -> Node:
 		return external_preview_root
 
-const RoomAuthoringRootScript: Script = preload("res://scripts/authoring/room/room_authoring_root.gd")
-const RoomAuthoringContractScript: Script = preload("res://scripts/authoring/room/room_authoring_contract.gd")
+const RoomAuthoringRootScript: Script = preload("res://addons/world_editor/authoring/room/room_authoring_root.gd")
+const RoomAuthoringContractScript: Script = preload("res://addons/world_editor/authoring/room/room_authoring_contract.gd")
 const SpawnPointScript: Script = preload("res://addons/platformer_kit/world/entities/spawn_point.gd")
 const DerivedSpawnPointScript: Script = preload("res://tests/world/derived_spawn_point_fixture.gd")
 const RoomEntranceScript: Script = preload("res://addons/platformer_kit/world/entities/room_entrance.gd")

@@ -2,7 +2,7 @@ extends Node
 
 const WORLD_DATA := preload("res://addons/platformer_kit/world/data/world_data.gd")
 const ROOM_DATA := preload("res://addons/platformer_kit/world/data/room_data.gd")
-const MAP_MODEL := preload("res://scripts/world/data/map_model.gd")
+const MAP_MODEL := preload("res://addons/metroidvania_kit/map/runtime/legacy_world_map_model.gd")
 
 
 func run() -> Array[String]:

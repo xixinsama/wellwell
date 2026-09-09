@@ -1,6 +1,6 @@
 extends Node
 
-const ROOM_BAKE_PATHS: Script = preload("res://scripts/authoring/room/room_bake_paths.gd")
+const ROOM_BAKE_PATHS: Script = preload("res://addons/world_editor/authoring/room/room_bake_paths.gd")
 
 
 func run() -> Array[String]:

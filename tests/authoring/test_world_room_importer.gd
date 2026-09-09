@@ -1,7 +1,7 @@
 extends Node
 
-const IMPORTER_PATH := "res://scripts/authoring/world/world_room_importer.gd"
-const WORLD_SERVICE := preload("res://scripts/authoring/world/world_resource_service.gd")
+const IMPORTER_PATH := "res://addons/world_editor/authoring/world/world_room_importer.gd"
+const WORLD_SERVICE := preload("res://addons/world_editor/authoring/world/world_resource_service.gd")
 const WORLD_DATA := preload("res://addons/platformer_kit/world/data/world_data.gd")
 const ROOM_DATA := preload("res://addons/platformer_kit/world/data/room_data.gd")
 const WORLD_PATH := "res://resources/worlds/test_import_world.tres"

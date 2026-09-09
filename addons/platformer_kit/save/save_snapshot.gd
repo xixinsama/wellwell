@@ -10,45 +10,8 @@ var respawn_room_id := ""
 var respawn_spawn_id := ""
 var respawn_position := Vector2.ZERO
 var saved_unix_time := 0
-var _explored_cells: Dictionary[String, bool] = {}
-var _explored_chunks: Dictionary[String, bool] = {}
 var _entity_states: Dictionary[String, Dictionary] = {}
-
-
-func add_explored_cell(cell_id: String) -> bool:
-	if cell_id.is_empty() or _explored_cells.has(cell_id):
-		return false
-	_explored_cells[cell_id] = true
-	return true
-
-
-func has_explored_cell(cell_id: String) -> bool:
-	return _explored_cells.has(cell_id)
-
-
-func get_explored_cells() -> Array[String]:
-	var result: Array[String] = []
-	result.assign(_explored_cells.keys())
-	result.sort()
-	return result
-
-
-func add_explored_chunk(chunk_id: String) -> bool:
-	if chunk_id.is_empty() or _explored_chunks.has(chunk_id):
-		return false
-	_explored_chunks[chunk_id] = true
-	return true
-
-
-func has_explored_chunk(chunk_id: String) -> bool:
-	return _explored_chunks.has(chunk_id)
-
-
-func get_explored_chunks() -> Array[String]:
-	var result: Array[String] = []
-	result.assign(_explored_chunks.keys())
-	result.sort()
-	return result
+var _module_states: Dictionary[StringName, Dictionary] = {}
 
 
 func set_entity_state(entity_key: String, state: Dictionary) -> void:
@@ -58,6 +21,17 @@ func set_entity_state(entity_key: String, state: Dictionary) -> void:
 
 func get_entity_state(entity_key: String) -> Dictionary:
 	return _entity_states.get(entity_key, {}).duplicate(true)
+
+
+func set_module_state(module_id: StringName, state: Dictionary) -> bool:
+	if module_id.is_empty():
+		return false
+	_module_states[module_id] = state.duplicate(true)
+	return true
+
+
+func get_module_state(module_id: StringName) -> Dictionary:
+	return _module_states.get(module_id, {}).duplicate(true)
 
 
 func to_dictionary() -> Dictionary:
@@ -72,9 +46,8 @@ func to_dictionary() -> Dictionary:
 			"x": respawn_position.x,
 			"y": respawn_position.y,
 		},
-		"explored_cells": get_explored_cells(),
-		"explored_chunks": get_explored_chunks(),
 		"entity_states": _entity_states.duplicate(true),
+		"module_states": _serialize_module_states(),
 		"saved_unix_time": saved_unix_time,
 	}
 
@@ -95,24 +68,6 @@ func load_from_dictionary(data: Dictionary) -> RefCounted:
 		return null
 	if not position_data.has("x") or not position_data.has("y"):
 		return null
-	var parsed_cells: Dictionary[String, bool] = {}
-	var explored_data: Variant = data.get("explored_cells", [])
-	if not explored_data is Array:
-		return null
-	for value: Variant in explored_data:
-		if not value is String:
-			return null
-		if not String(value).is_empty():
-			parsed_cells[String(value)] = true
-	var parsed_chunks: Dictionary[String, bool] = {}
-	var explored_chunks: Variant = data.get("explored_chunks", [])
-	if not explored_chunks is Array:
-		return null
-	for value: Variant in explored_chunks:
-		if not value is String:
-			return null
-		if not String(value).is_empty():
-			parsed_chunks[String(value)] = true
 	var parsed_entity_states: Dictionary[String, Dictionary] = {}
 	var entity_states: Variant = data.get("entity_states", {})
 	if not entity_states is Dictionary:
@@ -122,6 +77,14 @@ func load_from_dictionary(data: Dictionary) -> RefCounted:
 			return null
 		if not String(key).is_empty():
 			parsed_entity_states[String(key)] = (entity_states[key] as Dictionary).duplicate(true)
+	var parsed_module_states: Dictionary[StringName, Dictionary] = {}
+	var module_states: Variant = data.get("module_states", {})
+	if not module_states is Dictionary:
+		return null
+	for key: Variant in module_states:
+		if String(key).is_empty() or not module_states[key] is Dictionary:
+			return null
+		parsed_module_states[StringName(key)] = (module_states[key] as Dictionary).duplicate(true)
 
 	slot = parsed_slot
 	world_id = String(data.get("world_id", ""))
@@ -130,7 +93,13 @@ func load_from_dictionary(data: Dictionary) -> RefCounted:
 	respawn_spawn_id = String(data.get("respawn_spawn_id", ""))
 	respawn_position = Vector2(float(position_data["x"]), float(position_data["y"]))
 	saved_unix_time = int(data.get("saved_unix_time", 0))
-	_explored_cells = parsed_cells
-	_explored_chunks = parsed_chunks
 	_entity_states = parsed_entity_states
+	_module_states = parsed_module_states
 	return self
+
+
+func _serialize_module_states() -> Dictionary:
+	var result: Dictionary = {}
+	for module_id: StringName in _module_states:
+		result[String(module_id)] = _module_states[module_id].duplicate(true)
+	return result

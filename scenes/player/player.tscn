@@ -3,13 +3,14 @@
 [ext_resource type="Script" uid="uid://cbx1gcy30d8d2" path="res://scripts/player/player_controller.gd" id="1_player"]
 [ext_resource type="Resource" uid="uid://bo4x5hdpx5xu4" path="res://resources/player/default_player_tuning.tres" id="2_tuning"]
 
-[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_dovo2"]
-radius = 3.0
-height = 7.0
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_gmlin"]
+size = Vector2(6, 6)
 
 [sub_resource type="QuadMesh" id="QuadMesh_mrvaw"]
+size = Vector2(2, 1)
 
 [sub_resource type="QuadMesh" id="QuadMesh_dovo2"]
+size = Vector2(2, 1)
 
 [node name="Player" type="CharacterBody2D" unique_id=43758805]
 collision_layer = 2
@@ -17,8 +18,8 @@ script = ExtResource("1_player")
 tuning = ExtResource("2_tuning")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=2008286553]
-position = Vector2(0, -3.5)
-shape = SubResource("CapsuleShape2D_dovo2")
+position = Vector2(0, -3)
+shape = SubResource("RectangleShape2D_gmlin")
 
 [node name="SpriteRoot" type="Node2D" parent="." unique_id=1110208382]
 

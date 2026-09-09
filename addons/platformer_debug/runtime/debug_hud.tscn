@@ -2,6 +2,18 @@
 
 [ext_resource type="Script" uid="uid://cvl8r3ckkvwjv" path="res://addons/platformer_debug/runtime/debug_hud.gd" id="1_debug_hud"]
 
+[sub_resource type="StyleBoxFlat" id="StyleBox_debug_panel"]
+bg_color = Color(0.03529412, 0.047058824, 0.05490196, 0.36078432)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.02741419, 0.05576331, 0.067110956, 0.9490196)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
 [node name="DebugHud" type="Control" unique_id=586873470]
 layout_mode = 3
 anchors_preset = 15
@@ -12,11 +24,35 @@ grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("1_debug_hud")
 
-[node name="Label" type="Label" parent="." unique_id=1563987400]
+[node name="DebugPanel" type="PanelContainer" parent="." unique_id=1940877537]
 layout_mode = 0
 offset_left = 8.0
 offset_top = 8.0
-offset_right = 248.0
-offset_bottom = 136.0
-theme_override_font_sizes/font_size = 12
+offset_right = 260.0
+offset_bottom = 196.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBox_debug_panel")
+
+[node name="Margin" type="MarginContainer" parent="DebugPanel" unique_id=2026271176]
+layout_mode = 2
+theme_override_constants/margin_left = 8
+theme_override_constants/margin_top = 6
+theme_override_constants/margin_right = 8
+theme_override_constants/margin_bottom = 6
+
+[node name="Content" type="VBoxContainer" parent="DebugPanel/Margin" unique_id=345583860]
+layout_mode = 2
+theme_override_constants/separation = 3
+
+[node name="Title" type="Label" parent="DebugPanel/Margin/Content" unique_id=247897958]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.47, 0.91, 0.82, 1)
+theme_override_font_sizes/font_size = 11
+text = "PLATFORMER RUNTIME"
+
+[node name="DebugText" type="Label" parent="DebugPanel/Margin/Content" unique_id=720890108]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.88, 0.92, 0.91, 1)
+theme_override_font_sizes/font_size = 10
 text = "Debug"

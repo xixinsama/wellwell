@@ -21,7 +21,7 @@ func _assert_write_and_read_slot(failures: Array[String]) -> void:
 	var snapshot: RefCounted = SAVE_SNAPSHOT.new()
 	snapshot.slot = 1
 	snapshot.respawn_position = Vector2(16, 24)
-	snapshot.add_explored_cell("level_01:2,3")
+	snapshot.set_module_state(&"test_module", {"room": "level_01", "cell": "2,3"})
 
 	if not storage.write_slot(snapshot):
 		failures.append("write_slot returned false")
@@ -32,15 +32,15 @@ func _assert_write_and_read_slot(failures: Array[String]) -> void:
 		return
 	if loaded.respawn_position != Vector2(16, 24):
 		failures.append("loaded respawn position was wrong")
-	if not loaded.has_explored_cell("level_01:2,3"):
-		failures.append("loaded explored cell was missing")
+	if loaded.get_module_state(&"test_module").get("cell", "") != "2,3":
+		failures.append("loaded module state was missing")
 
 
 func _assert_backup_is_used_when_primary_is_invalid(failures: Array[String]) -> void:
 	var storage: RefCounted = SAVE_STORAGE.new(TEST_ROOT)
 	var snapshot: RefCounted = SAVE_SNAPSHOT.new()
 	snapshot.slot = 1
-	snapshot.add_explored_cell("level_01:backup")
+	snapshot.set_module_state(&"test_module", {"source": "backup"})
 	if not storage.write_slot(snapshot):
 		failures.append("initial write failed")
 		return
@@ -56,7 +56,7 @@ func _assert_backup_is_used_when_primary_is_invalid(failures: Array[String]) -> 
 	file.close()
 
 	var loaded: RefCounted = storage.read_slot(1)
-	if loaded == null or not loaded.has_explored_cell("level_01:backup"):
+	if loaded == null or loaded.get_module_state(&"test_module").get("source", "") != "backup":
 		failures.append("backup snapshot was not loaded")
 
 

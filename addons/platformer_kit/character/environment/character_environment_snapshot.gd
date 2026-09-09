@@ -8,4 +8,4 @@ var wall_right := false
 var floor_normal := Vector2.UP
 var floor_velocity := Vector2.ZERO
 var on_moving_platform := false
-
+var platform_id := StringName()

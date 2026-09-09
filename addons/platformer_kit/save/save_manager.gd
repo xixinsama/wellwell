@@ -111,38 +111,6 @@ func commit(snapshot: RefCounted = null) -> bool:
     return true
 
 
-func mark_cell_explored(cell_id: String) -> bool:
-    if current_snapshot == null:
-        return false
-    var changed: bool = current_snapshot.add_explored_cell(cell_id)
-    if changed:
-        queue_commit()
-    return changed
-
-
-func has_explored_cell(cell_id: String) -> bool:
-    return current_snapshot != null and current_snapshot.has_explored_cell(cell_id)
-
-
-func get_explored_cells() -> Array[String]:
-    if current_snapshot == null:
-        return []
-    return current_snapshot.get_explored_cells()
-
-
-func mark_chunk_explored(chunk_id: String) -> bool:
-    if current_snapshot == null:
-        return false
-    var changed: bool = current_snapshot.add_explored_chunk(chunk_id)
-    if changed:
-        queue_commit()
-    return changed
-
-
-func is_chunk_explored(chunk_id: String) -> bool:
-    return current_snapshot != null and current_snapshot.has_explored_chunk(chunk_id)
-
-
 func set_entity_state(entity_key: String, state: Dictionary) -> void:
     if current_snapshot == null:
         return

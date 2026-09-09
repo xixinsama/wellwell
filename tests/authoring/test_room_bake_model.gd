@@ -1,9 +1,9 @@
 extends Node
 
-const ROOM_BAKE_PATHS: Script = preload("res://scripts/authoring/room/room_bake_paths.gd")
-const ROOM_BAKE_MANIFEST: Script = preload("res://scripts/authoring/room/room_bake_manifest.gd")
+const ROOM_BAKE_PATHS: Script = preload("res://addons/world_editor/authoring/room/room_bake_paths.gd")
+const ROOM_BAKE_MANIFEST: Script = preload("res://addons/world_editor/authoring/room/room_bake_manifest.gd")
 const ROOM_DATA: Script = preload("res://addons/platformer_kit/world/data/room_data.gd")
-const ROOM_AUTHORING_ROOT: Script = preload("res://scripts/authoring/room/room_authoring_root.gd")
+const ROOM_AUTHORING_ROOT: Script = preload("res://addons/world_editor/authoring/room/room_authoring_root.gd")
 const ROOM_ENTRANCE: Script = preload("res://addons/platformer_kit/world/entities/room_entrance.gd")
 const SPAWN_POINT: Script = preload("res://addons/platformer_kit/world/entities/spawn_point.gd")
 const WORLD_ENTITY: Script = preload("res://addons/platformer_kit/world/entities/world_entity.gd")
@@ -47,13 +47,13 @@ func _assert_generates_deterministic_paths(failures: Array[String]) -> void:
 
 func _assert_rejects_invalid_manifest_inputs(failures: Array[String]) -> void:
 	var root := Node2D.new()
-	root.set_script(preload("res://scripts/authoring/room/room_authoring_root.gd"))
+	root.set_script(preload("res://addons/world_editor/authoring/room/room_authoring_root.gd"))
 	root.set("room_id", "!!!")
 	var invalid_id: Dictionary = ROOM_BAKE_MANIFEST.from_authoring_root(root, "res://scenes/rooms/source/room.tscn")
 	if not invalid_id.is_empty():
 		failures.append("sanitized-empty room id was accepted")
 	var valid_root := Node2D.new()
-	valid_root.set_script(preload("res://scripts/authoring/room/room_authoring_root.gd"))
+	valid_root.set_script(preload("res://addons/world_editor/authoring/room/room_authoring_root.gd"))
 	valid_root.set("room_id", "room_a")
 	if not ROOM_BAKE_MANIFEST.from_authoring_root(valid_root, "").is_empty():
 		failures.append("empty source path was accepted")
@@ -63,7 +63,7 @@ func _assert_rejects_invalid_manifest_inputs(failures: Array[String]) -> void:
 
 func _assert_normalizes_authoring_manifest(failures: Array[String]) -> void:
 	var root := Node2D.new()
-	root.set_script(preload("res://scripts/authoring/room/room_authoring_root.gd"))
+	root.set_script(preload("res://addons/world_editor/authoring/room/room_authoring_root.gd"))
 	root.set("room_id", "Level 0")
 	root.set("display_name", "Level Zero")
 	root.set("room_size_chunks", Vector2i(2, 1))
@@ -116,7 +116,7 @@ func _assert_sorts_and_deduplicates_manifest_arrays(failures: Array[String]) -> 
 
 func _assert_applies_metadata_without_overwriting_world_fields(failures: Array[String]) -> void:
 	var root := Node2D.new()
-	root.set_script(preload("res://scripts/authoring/room/room_authoring_root.gd"))
+	root.set_script(preload("res://addons/world_editor/authoring/room/room_authoring_root.gd"))
 	root.set("room_id", "Room A")
 	root.set("display_name", "Room A")
 	root.set("room_size_chunks", Vector2i(3, 2))

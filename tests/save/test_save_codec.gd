@@ -15,20 +15,18 @@ class RecordingStorage extends RefCounted:
 
 func run() -> Array[String]:
 	var failures: Array[String] = []
-	_assert_round_trip_preserves_explored_cells(failures)
+	_assert_round_trip_preserves_module_state(failures)
 	_assert_invalid_data_is_rejected(failures)
 	_assert_invalid_load_does_not_mutate_existing_snapshot(failures)
 	_assert_commits_announce_the_snapshot_before_writing(failures)
 	return failures
 
 
-func _assert_round_trip_preserves_explored_cells(failures: Array[String]) -> void:
+func _assert_round_trip_preserves_module_state(failures: Array[String]) -> void:
 	var snapshot: RefCounted = SAVE_SNAPSHOT.new()
 	snapshot.slot = 1
 	snapshot.respawn_position = Vector2(-120, 48)
-	snapshot.add_explored_cell("level_01:-15,6")
-	snapshot.add_explored_cell("level_01:-14,6")
-	snapshot.add_explored_cell("level_01:-15,6")
+	snapshot.set_module_state(&"test_module", {"visited": ["room_a"]})
 	var codec: RefCounted = SAVE_CODEC.new()
 
 	var decoded: RefCounted = codec.decode(codec.encode(snapshot), 1)
@@ -40,8 +38,8 @@ func _assert_round_trip_preserves_explored_cells(failures: Array[String]) -> voi
 		failures.append("slot did not round trip")
 	if decoded.respawn_position != Vector2(-120, 48):
 		failures.append("respawn position did not round trip")
-	if decoded.get_explored_cells() != ["level_01:-14,6", "level_01:-15,6"]:
-		failures.append("explored cells were not unique and sorted")
+	if decoded.get_module_state(&"test_module") != {"visited": ["room_a"]}:
+		failures.append("generic module state did not round trip")
 
 
 func _assert_invalid_data_is_rejected(failures: Array[String]) -> void:
@@ -60,23 +58,19 @@ func _assert_invalid_load_does_not_mutate_existing_snapshot(failures: Array[Stri
 	var snapshot: RefCounted = SAVE_SNAPSHOT.new()
 	snapshot.slot = 1
 	snapshot.world_id = "preserved_world"
-	snapshot.add_explored_cell("preserved:cell")
-	snapshot.add_explored_chunk("preserved:chunk")
+	snapshot.set_module_state(&"preserved_module", {"active": true})
 	snapshot.set_entity_state("preserved:entity", {"active": true})
 	var invalid_data: Dictionary = snapshot.to_dictionary()
 	invalid_data["world_id"] = "invalid_world"
-	invalid_data["explored_cells"] = ["replacement:cell"]
-	invalid_data["explored_chunks"] = ["replacement:chunk"]
+	invalid_data["module_states"] = {"replacement_module": {"active": true}}
 	invalid_data["entity_states"] = {"replacement:entity": "not_a_dictionary"}
 	if snapshot.load_from_dictionary(invalid_data) != null:
 		failures.append("snapshot accepted invalid entity state data")
 		return
 	if snapshot.world_id != "preserved_world":
 		failures.append("invalid load mutated snapshot metadata")
-	if not snapshot.has_explored_cell("preserved:cell") or snapshot.has_explored_cell("replacement:cell"):
-		failures.append("invalid load mutated explored cells")
-	if not snapshot.has_explored_chunk("preserved:chunk") or snapshot.has_explored_chunk("replacement:chunk"):
-		failures.append("invalid load mutated explored chunks")
+	if not bool(snapshot.get_module_state(&"preserved_module").get("active", false)) or not snapshot.get_module_state(&"replacement_module").is_empty():
+		failures.append("invalid load mutated module states")
 	if not bool(snapshot.get_entity_state("preserved:entity").get("active", false)):
 		failures.append("invalid load mutated entity states")
 

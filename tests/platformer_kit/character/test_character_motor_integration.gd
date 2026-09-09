@@ -22,6 +22,12 @@ func run() -> Array[String]:
 		failures.append("PlayerController does not expose sensor composition seams")
 	elif player.call("get_character_sensors") == null or player.call("get_environment_snapshot") == null:
 		failures.append("PlayerController did not create its framework sensors")
+	var debug_state: Dictionary = player.call("get_debug_state")
+	for key: String in ["relative_velocity", "platform_velocity", "world_velocity"]:
+		if not debug_state.has(key) or not debug_state[key] is Vector2:
+			failures.append("PlayerController debug state is missing %s" % key)
+	if debug_state.get("relative_velocity") != player.velocity:
+		failures.append("relative velocity does not match CharacterBody2D velocity")
 	if player.has_method("get_movement_context"):
 		var context: RefCounted = player.call("get_movement_context")
 		if context != null:

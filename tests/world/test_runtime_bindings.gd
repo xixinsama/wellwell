@@ -2,7 +2,7 @@ extends Node
 
 const PIXEL_CAMERA: Script = preload("res://addons/platformer_kit/camera/pixel_camera_2d.gd")
 const DEBUG_HUD: Script = preload("res://addons/platformer_debug/runtime/debug_hud.gd")
-const FOG_OF_WAR: Script = preload("res://scripts/world/fog/fog_of_war.gd")
+const FOG_OF_WAR: Script = preload("res://addons/metroidvania_kit/map/discovery/fog_of_war.gd")
 const ROOM_DATA: Script = preload("res://addons/platformer_kit/world/data/room_data.gd")
 
 
@@ -43,7 +43,7 @@ func _assert_explicit_player_bindings(failures: Array[String]) -> void:
 	root.add_child(debug_player)
 	hud.bind_player(debug_player)
 	hud._process(0.0)
-	if hud.player != debug_player or not label.text.contains("vel 12.0, -4.0"):
+	if hud.player != debug_player or not label.text.contains("relative 12.0, -4.0"):
 		failures.append("debug HUD did not retain the explicit player binding")
 	remove_child(root)
 	root.free()

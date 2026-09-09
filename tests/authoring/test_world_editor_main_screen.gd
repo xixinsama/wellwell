@@ -1,7 +1,7 @@
 extends Node
 
-const PLUGIN := preload("res://addons/wellwell_world_editor/world_editor_plugin.gd")
-const MAIN_SCENE_PATH := "res://addons/wellwell_world_editor/world_editor_main.tscn"
+const PLUGIN := preload("res://addons/world_editor/world_editor_plugin.gd")
+const MAIN_SCENE_PATH := "res://addons/world_editor/world_editor_main.tscn"
 
 
 func run() -> Array[String]:

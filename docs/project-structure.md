@@ -4,10 +4,10 @@
 
 - `scenes/app/main.tscn`: application entry scene.
 - `scenes/runtime/world_root.tscn`: streamed world, player, room camera, fog, and UI bindings.
-- `scripts/world/data/`: serialized room/world contracts and validation.
-- `scripts/world/runtime/`: room instancing, terrain loading, transitions, and session orchestration.
-- `scripts/world/entities/`: reusable persistent and trigger entities.
-- `scripts/world/fog/`: room flood-fill visibility and fog-mask generation.
+- `addons/platformer_kit/`: reusable core, character, platform, camera, world, and save runtime.
+- `addons/platformer_abilities/` and `addons/platformer_combat/`: optional gameplay modules.
+- `addons/metroidvania_kit/`: optional progression, map discovery, fog, and fast travel.
+- `game/`: project-specific composition and authored map data.
 
 ## Authoring
 
@@ -15,8 +15,9 @@
 - `scenes/rooms/source/`: editable room source scenes. Do not hand-edit generated files.
 - `scenes/rooms/generated/<room_id>/`: baked runtime and terrain scenes.
 - `resources/rooms/generated/<room_id>.tres`: baked local `RoomData`.
+- `addons/world_editor/`: optional main-screen editor plugin and its authoring helpers.
 - `resources/worlds/main_world.tres`: shipped `WorldData`, including room placements and connections.
-- `addons/wellwell_world_editor/`: Godot main-screen World Editor.
+- `addons/world_editor/`: Godot main-screen World Editor.
 
 ## Conventions
 

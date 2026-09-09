@@ -1,6 +1,6 @@
 extends Node
 
-const ROOM_BAKER_PATH := "res://scripts/authoring/room/room_baker.gd"
+const ROOM_BAKER_PATH := "res://addons/world_editor/authoring/room/room_baker.gd"
 const FIXTURE_PATH := "user://room_baker_fingerprint_fixture.tscn"
 
 

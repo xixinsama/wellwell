@@ -27,6 +27,7 @@ class FakeRuntime extends Node2D:
 	var fail_world_id := ""
 	var clear_count := 0
 	var tracking_position := Vector2.ZERO
+	var persist_count := 0
 	func setup_session(world: Resource, snapshot: RefCounted, value: Node2D) -> bool:
 		setup_world_ids.append(world.world_id)
 		player = value
@@ -36,6 +37,12 @@ class FakeRuntime extends Node2D:
 	func clear_world() -> void: clear_count += 1
 	func synchronize_player_tracking() -> void:
 		tracking_position = player.global_position
+	func persist_loaded_entity_states() -> void:
+		persist_count += 1
+
+
+class FakeSaveManager extends Node:
+	signal snapshot_committing(snapshot: RefCounted)
 
 
 class FakeBinding extends Node:
@@ -70,10 +77,33 @@ func run() -> Array[String]:
 	_assert_invalid_start_spawn_fails_preflight(session_script, failures)
 	_assert_failed_restart_rolls_back(session_script, failures)
 	_assert_first_start_failure_clears_components(session_script, failures)
-	_assert_fog_failure_rolls_back(session_script, failures)
-	_assert_start_without_optional_fog(session_script, failures)
+	_assert_extension_failure_rolls_back(session_script, failures)
+	_assert_start_without_optional_extension(session_script, failures)
+	_assert_snapshot_commit_flushes_active_runtime(session_script, failures)
+	_assert_world_session_has_no_fog_contract(session_script, failures)
 	_assert_default_world_root_is_startable(failures)
 	return failures
+
+
+func _assert_snapshot_commit_flushes_active_runtime(script: Script, failures: Array[String]) -> void:
+	var session: Node = _make_session(script)
+	var manager := FakeSaveManager.new()
+	session.call("bind_persistence_source", manager)
+	var active_snapshot: RefCounted = SAVE_SNAPSHOT.new()
+	if not session.call("start", _make_world(), active_snapshot):
+		failures.append("snapshot commit fixture could not start WorldSession")
+		manager.free()
+		session.free()
+		return
+	var runtime := session.get_node("Runtime") as FakeRuntime
+	manager.snapshot_committing.emit(active_snapshot)
+	if runtime.persist_count != 1:
+		failures.append("active snapshot commit did not flush loaded entity states")
+	manager.snapshot_committing.emit(SAVE_SNAPSHOT.new())
+	if runtime.persist_count != 1:
+		failures.append("foreign snapshot commit flushed the active WorldSession")
+	manager.free()
+	session.free()
 
 
 func _assert_default_world_root_is_startable(failures: Array[String]) -> void:
@@ -111,7 +141,6 @@ func _assert_success_emits_ready_after_bindings(script: Script, failures: Array[
 	session.connect("world_ready", func() -> void: ready_count[0] += 1)
 	var world: Resource = _make_world()
 	var snapshot: RefCounted = SAVE_SNAPSHOT.new()
-	snapshot.add_explored_cell("room_a:7,4")
 	if not session.call("start", world, snapshot):
 		failures.append("WorldSession rejected successful component setup")
 	if ready_count[0] != 1:
@@ -120,11 +149,6 @@ func _assert_success_emits_ready_after_bindings(script: Script, failures: Array[
 	for path: String in ["Camera", "Fog", "Hud"]:
 		if session.get_node(path).get("bound") != player:
 			failures.append("WorldSession did not bind persistent player to %s" % path)
-	var fog := session.get_node("Fog") as FakeBinding
-	if fog.persistence_source != session:
-		failures.append("WorldSession did not bind fog persistence to the pending snapshot adapter")
-	elif not session.call("get_explored_cells").has("room_a:7,4"):
-		failures.append("WorldSession fog persistence adapter did not expose selected snapshot exploration")
 	var camera := session.get_node("Camera") as FakeBinding
 	if camera.room_bounds.size != Vector2(320, 180):
 		failures.append("WorldSession did not configure camera bounds for the active room")
@@ -183,8 +207,6 @@ func _assert_failed_restart_rolls_back(script: Script, failures: Array[String]) 
 		failures.append("WorldSession did not restore player position after failed restart")
 	if runtime.tracking_position != Vector2(41, 27):
 		failures.append("WorldSession did not restore runtime safe-position tracking")
-	if session.get("_persistence_snapshot") != snapshot_a:
-		failures.append("WorldSession did not restore fog persistence snapshot after failed restart")
 	session.free()
 
 
@@ -200,12 +222,10 @@ func _assert_first_start_failure_clears_components(script: Script, failures: Arr
 		failures.append("WorldSession did not clear terrain after first-start failure")
 	if (session.get_node("Fog") as FakeBinding).clear_count < 1:
 		failures.append("WorldSession did not clear fog after first-start failure")
-	if session.get("_persistence_snapshot") != null:
-		failures.append("WorldSession retained pending fog persistence after first-start failure")
 	session.free()
 
 
-func _assert_fog_failure_rolls_back(script: Script, failures: Array[String]) -> void:
+func _assert_extension_failure_rolls_back(script: Script, failures: Array[String]) -> void:
 	var session: Node = _make_session(script)
 	var world_a := _make_world("world_a")
 	if not session.call("start", world_a, SAVE_SNAPSHOT.new()):
@@ -223,14 +243,28 @@ func _assert_fog_failure_rolls_back(script: Script, failures: Array[String]) -> 
 	session.free()
 
 
-func _assert_start_without_optional_fog(script: Script, failures: Array[String]) -> void:
+func _assert_start_without_optional_extension(script: Script, failures: Array[String]) -> void:
 	var session: Node = _make_session(script)
 	var fog := session.get_node("Fog")
+	if session.has_method("unregister_room_extension"):
+		session.call("unregister_room_extension", fog)
 	session.remove_child(fog)
 	fog.free()
-	session.set("fog_path", NodePath())
 	if not session.call("start", _make_world(), SAVE_SNAPSHOT.new()):
 		failures.append("WorldSession requires the optional map/fog adapter")
+	session.free()
+
+
+func _assert_world_session_has_no_fog_contract(script: Script, failures: Array[String]) -> void:
+	var session: Node = script.new()
+	if not session.has_method("register_room_extension"):
+		failures.append("WorldSession has no generic room-extension contract")
+	for method: StringName in [&"mark_cell_explored", &"mark_chunk_explored", &"get_explored_cells", &"get_explored_chunks"]:
+		if session.has_method(method):
+			failures.append("WorldSession retains fog-specific API: %s" % method)
+	for property: Dictionary in session.get_property_list():
+		if String(property.get("name", "")) == "fog_path":
+			failures.append("WorldSession retains a fog-specific node path")
 	session.free()
 
 
@@ -246,7 +280,8 @@ func _make_session(script: Script) -> Node:
 	session.set("world_runtime_path", NodePath("Runtime"))
 	session.set("player_path", NodePath("Player"))
 	session.set("camera_path", NodePath("Camera"))
-	session.set("fog_path", NodePath("Fog"))
+	if session.has_method("register_room_extension"):
+		session.call("register_room_extension", fog)
 	session.set("debug_hud_path", NodePath("Hud"))
 	return session
 

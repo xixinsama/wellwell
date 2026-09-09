@@ -10,6 +10,7 @@ const REQUIRED_FIXTURES := [
 	"NarrowGap",
 	"FallingPlatform",
 	"ConveyorPlatform",
+	"CombinedMovingFallingPlatform",
 ]
 
 
@@ -28,5 +29,16 @@ func run() -> Array[String]:
 	var camera := lab.find_child("PixelCamera2D", true, false)
 	if camera == null or not camera.has_method("set_room_bounds"):
 		failures.append("movement_lab is missing the framework camera")
+	var one_way := lab.find_child("OneWayPlatform", true, false)
+	var one_way_shape := one_way.find_child("CollisionShape2D", true, false) as CollisionShape2D if one_way != null else null
+	if one_way_shape == null or not one_way_shape.one_way_collision:
+		failures.append("movement_lab one-way fixture does not use native collision")
+	for fixture_name: String in ["MovingPlatform", "FallingPlatform", "CombinedMovingFallingPlatform"]:
+		var fixture := lab.find_child(fixture_name, true, false)
+		if fixture == null or not fixture.has_method("get_motion_velocity"):
+			failures.append("movement_lab fixture is not component-hosted: %s" % fixture_name)
+	var conveyor := lab.find_child("ConveyorPlatform", true, false)
+	if conveyor == null or not conveyor.has_method("get_platform_id") or conveyor.find_child("ConveyorSurface", false, false) == null:
+		failures.append("movement_lab conveyor has no surface component")
 	lab.free()
 	return failures

@@ -265,11 +265,11 @@ removed only after the full suite and headless editor load pass.
 - Combat uses `DamageData`, `DamageEvent`, `HealthComponent`, `Hitbox`, `Hurtbox`, `Invulnerability`, and `Knockback`.
 - Neither addon references concrete game content.
 
-- [ ] Write tests for cooldown, activation eligibility, cancellation, damage routing, invulnerability, knockback, and module-disabled startup.
-- [ ] Run focused tests before implementation.
-- [ ] Implement ability and combat primitives with data-driven resources.
-- [ ] Build the two labs and verify they launch independently.
-- [ ] Run all framework, lab, and reference-game tests.
+- [x] Write tests for cooldown, activation eligibility, cancellation, damage routing, invulnerability, knockback, and module-disabled startup.
+- [x] Run focused tests before implementation.
+- [x] Implement ability and combat primitives with data-driven resources.
+- [x] Build the two labs and verify they launch independently.
+- [x] Run all framework, lab, and reference-game tests.
 
 ### Task 10: Implement `metroidvania_kit` as an optional layer
 
@@ -298,10 +298,10 @@ removed only after the full suite and headless editor load pass.
 - Save data contains stable room/marker discovery state, never map controls, zoom, renderer nodes, or TileMap state.
 - Discovery and fast travel consume stable room IDs and save state.
 
-- [ ] Write tests for condition evaluation, gate denial/approval, independent map coordinates, discovery transitions, marker state, reveal rules, persistence, and fast-travel eligibility.
-- [ ] Run them before implementation.
-- [ ] Implement the optional module and its demo using only public framework APIs.
-- [ ] Run the demo with the module enabled and verify the base movement lab still works without it.
+- [x] Write tests for condition evaluation, gate denial/approval, independent map coordinates, discovery transitions, marker state, reveal rules, persistence, and fast-travel eligibility.
+- [x] Run them before implementation.
+- [x] Implement the optional module and its demo using only public framework APIs.
+- [x] Run the demo with the module enabled and verify the base movement lab still works without it.
 
 ### Task 11: Reconnect and rename the World Editor
 
@@ -317,11 +317,11 @@ removed only after the full suite and headless editor load pass.
 - Runtime framework has no dependency on World Editor.
 - Existing room baking, terrain preview, snapping, focus, and WorldData operations retain their current public behavior.
 
-- [ ] Write a boundary test that loads the editor with the framework plugin disabled and confirms runtime scenes still load.
-- [ ] Run it before rewiring and capture the expected old-path failure.
-- [ ] Move the plugin and update all resource paths without changing authored room tile data.
-- [ ] Run World Editor contract tests, project validation, and headless editor initialization.
-- [ ] Leave new editor features out of this task.
+- [x] Write a boundary test that loads the editor with the framework plugin disabled and confirms runtime scenes still load.
+- [x] Run it before rewiring and capture the expected old-path failure.
+- [x] Move the plugin and update all resource paths without changing authored room tile data.
+- [x] Run World Editor contract tests, project validation, and headless editor initialization.
+- [x] Leave new editor features out of this task.
 
 ### Task 12: Package documentation and framework versioning
 
@@ -338,11 +338,11 @@ removed only after the full suite and headless editor load pass.
 - Public classes, resources, signals, and methods are listed as API surface.
 - Migration notes describe path and API changes from the current reference game.
 
-- [ ] Add a documentation contract test for the version, dependency rules, and lab launch commands.
-- [ ] Run it before the documents exist and verify the expected failure.
-- [ ] Write the framework README, changelog, and migration guide with the final directory map.
-- [ ] Run documentation, boundary, full runtime, project validation, and headless editor checks.
-- [ ] Confirm the reference game and all labs launch before considering the migration complete.
+- [x] Add a documentation contract test for the version, dependency rules, and lab launch commands.
+- [x] Run it before the documents exist and verify the expected failure.
+- [x] Write the framework README, changelog, and migration guide with the final directory map.
+- [x] Run documentation, boundary, full runtime, project validation, and headless editor checks.
+- [x] Confirm the reference game and all labs launch before considering the migration complete.
 
 ## Verification Matrix
 

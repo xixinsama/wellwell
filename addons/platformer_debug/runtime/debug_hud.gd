@@ -15,7 +15,7 @@ var _sections := {
 	&"identity": true,
 }
 
-@onready var label: Label = $Label
+@onready var label: Label = _find_debug_label()
 
 
 func _ready() -> void:
@@ -51,7 +51,7 @@ func _process(_delta: float) -> void:
 
 func refresh_display() -> void:
 	if label == null:
-		label = get_node_or_null("Label") as Label
+		label = _find_debug_label()
 	if label == null:
 		return
 	if player == null or not player.has_method("get_debug_state"):
@@ -59,18 +59,26 @@ func refresh_display() -> void:
 		return
 
 	var state: Dictionary = player.call("get_debug_state")
-	var velocity_value: Vector2 = state.get("velocity", Vector2.ZERO)
+	var relative_velocity: Vector2 = state.get("relative_velocity", state.get("velocity", Vector2.ZERO))
+	var platform_velocity: Vector2 = state.get("platform_velocity", Vector2.ZERO)
+	var world_velocity: Vector2 = state.get("world_velocity", relative_velocity)
 	var jump_buffer: float = state.get("jump_buffer_remaining", 0.0)
 	var coyote: float = state.get("coyote_remaining", 0.0)
 	var lines: Array[String] = []
 	if is_section_enabled(&"performance"):
 		lines.append("FPS %d  TPS %d" % [Engine.get_frames_per_second(), Engine.physics_ticks_per_second])
 	if is_section_enabled(&"motor"):
-		lines.append("vel %.1f, %.1f" % [velocity_value.x, velocity_value.y])
+		lines.append("MOTION")
+		lines.append("relative %.1f, %.1f" % [relative_velocity.x, relative_velocity.y])
+		lines.append("platform %.1f, %.1f" % [platform_velocity.x, platform_velocity.y])
+		lines.append("world %.1f, %.1f" % [world_velocity.x, world_velocity.y])
 		lines.append("jump buf %.0f ms  coyote %.0f ms" % [jump_buffer * 1000.0, coyote * 1000.0])
 	if is_section_enabled(&"sensors"):
+		lines.append("CONTACTS")
 		lines.append("floor %s  ceiling %s" % [str(state.get("on_floor", false)), str(state.get("ceiling", false))])
 		lines.append("wall L %s  R %s" % [str(state.get("wall_left", false)), str(state.get("wall_right", false))])
+		var platform_id := StringName(state.get("platform_id", StringName()))
+		lines.append("support %s" % ("-" if platform_id.is_empty() else String(platform_id)))
 	if is_section_enabled(&"collision"):
 		lines.append("collision shapes %d" % player.find_children("*", "CollisionShape2D", true, false).size())
 	if is_section_enabled(&"identity"):
@@ -81,3 +89,10 @@ func refresh_display() -> void:
 			persistent_id = StringName(player.get("persistent_id"))
 		lines.append("id %s" % ("-" if persistent_id.is_empty() else String(persistent_id)))
 	label.text = "\n".join(lines)
+
+
+func _find_debug_label() -> Label:
+	var debug_text := find_child("DebugText", true, false) as Label
+	if debug_text != null:
+		return debug_text
+	return get_node_or_null("Label") as Label

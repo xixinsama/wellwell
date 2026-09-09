@@ -1,10 +1,10 @@
 extends Node
 
-const ROOM_AUTHORING_ROOT: Script = preload("res://scripts/authoring/room/room_authoring_root.gd")
-const ROOM_PREVIEW_CONTROLLER: Script = preload("res://scripts/authoring/room/room_preview_controller.gd")
+const ROOM_AUTHORING_ROOT: Script = preload("res://addons/world_editor/authoring/room/room_authoring_root.gd")
+const ROOM_PREVIEW_CONTROLLER: Script = preload("res://addons/world_editor/authoring/room/room_preview_controller.gd")
 const ROOM_ENTRANCE: Script = preload("res://addons/platformer_kit/world/entities/room_entrance.gd")
 const SPAWN_POINT: Script = preload("res://addons/platformer_kit/world/entities/spawn_point.gd")
-const FOG_OF_WAR: Script = preload("res://scripts/world/fog/fog_of_war.gd")
+const FOG_OF_WAR: Script = preload("res://addons/metroidvania_kit/map/discovery/fog_of_war.gd")
 
 
 class PreviewCamera extends Node:

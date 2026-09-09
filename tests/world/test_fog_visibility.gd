@@ -1,7 +1,7 @@
 extends Node
 
-const FOG_VISIBILITY: Script = preload("res://scripts/world/fog/fog_visibility.gd")
-const FOG_OF_WAR: Script = preload("res://scripts/world/fog/fog_of_war.gd")
+const FOG_VISIBILITY: Script = preload("res://addons/metroidvania_kit/map/discovery/fog_visibility.gd")
+const FOG_OF_WAR: Script = preload("res://addons/metroidvania_kit/map/discovery/fog_of_war.gd")
 const ROOM_DATA: Script = preload("res://addons/platformer_kit/world/data/room_data.gd")
 
 
@@ -42,6 +42,8 @@ func run() -> Array[String]:
 	_assert_only_vision_layer_blocks_spread(failures)
 	_assert_room_switch_clears_old_state_and_mask(failures)
 	_assert_process_refreshes_mask_texture(failures)
+	_assert_saved_exploration_updates_mask(failures)
+	_assert_minimal_terrain_contract(failures)
 	return failures
 
 
@@ -278,7 +280,7 @@ func _assert_room_switch_clears_old_state_and_mask(failures: Array[String]) -> v
 				failures.append("room switch retained the old fog mask")
 		var previous_vision: TileMapLayer = fog.get("_vision_block_tiles")
 		var invalid_terrain := _make_terrain_root()
-		invalid_terrain.get_node("Terrain/MarkerTiles").free()
+		invalid_terrain.get_node("Terrain/VisionBlockTiles").free()
 		if fog.call("bind_room", room_a, invalid_terrain, Vector2i.ZERO) == true:
 			failures.append("FogOfWar accepted an invalid room terrain binding")
 		if fog.get("_vision_block_tiles") != previous_vision or fog.get("level_id") != "room_b":
@@ -328,6 +330,37 @@ func _assert_process_refreshes_mask_texture(failures: Array[String]) -> void:
 			failures.append("FogOfWar reveal update changed mask dimensions")
 
 	root.free()
+
+
+func _assert_saved_exploration_updates_mask(failures: Array[String]) -> void:
+	var fog: Node2D = FOG_OF_WAR.new()
+	fog.level_id = "saved_room"
+	fog.map_origin_cell = Vector2i.ZERO
+	fog.map_size_cells = Vector2i(4, 1)
+	fog.cell_size = Vector2i(8, 8)
+	var saved_cells: Array[String] = ["saved_room:2,0"]
+	fog.load_explored_cells(saved_cells)
+	fog.call("_update_mask_image")
+	var mask: Image = fog.get_mask_image()
+	if mask == null or mask.get_pixel(20, 4).a != 0.0:
+		failures.append("saved fog exploration was not transparent in the mask")
+	fog.free()
+
+
+func _assert_minimal_terrain_contract(failures: Array[String]) -> void:
+	var fog: Node2D = FOG_OF_WAR.new()
+	var room: Resource = _make_room("minimal", Vector2i.ZERO)
+	var root := Node2D.new()
+	var terrain := Node2D.new()
+	terrain.name = "Terrain"
+	root.add_child(terrain)
+	var vision := TileMapLayer.new()
+	vision.name = "VisionBlockTiles"
+	terrain.add_child(vision)
+	if not fog.bind_room(room, root, Vector2i.ZERO):
+		failures.append("fog rejected a terrain containing only VisionBlockTiles")
+	root.free()
+	fog.free()
 
 
 func _make_room(room_id: String, _origin_chunk: Vector2i) -> Resource:

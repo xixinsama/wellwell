@@ -1,7 +1,7 @@
 extends Node
 
-const ROOM_AUTHORING_CONTRACT: Script = preload("res://scripts/authoring/room/room_authoring_contract.gd")
-const ROOM_BAKER: Script = preload("res://scripts/authoring/room/room_baker.gd")
+const ROOM_AUTHORING_CONTRACT: Script = preload("res://addons/world_editor/authoring/room/room_authoring_contract.gd")
+const ROOM_BAKER: Script = preload("res://addons/world_editor/authoring/room/room_baker.gd")
 
 const TEMPLATE_PATH := "res://scenes/rooms/template/level_template.tscn"
 const LEVEL_ZERO_PATH := "res://scenes/rooms/source/level_0.tscn"
