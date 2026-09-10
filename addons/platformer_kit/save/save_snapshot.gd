@@ -14,6 +14,15 @@ var _entity_states: Dictionary[String, Dictionary] = {}
 var _module_states: Dictionary[StringName, Dictionary] = {}
 
 
+func set_respawn(room_id: String, spawn_id: String, position: Vector2) -> bool:
+	if room_id.is_empty() or spawn_id.is_empty() or not position.is_finite():
+		return false
+	respawn_room_id = room_id
+	respawn_spawn_id = spawn_id
+	respawn_position = position
+	return true
+
+
 func set_entity_state(entity_key: String, state: Dictionary) -> void:
 	if not entity_key.is_empty():
 		_entity_states[entity_key] = state.duplicate(true)

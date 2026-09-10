@@ -4,7 +4,7 @@ const ROOM_AUTHORING_CONTRACT: Script = preload("res://addons/world_editor/autho
 const ROOM_BAKER: Script = preload("res://addons/world_editor/authoring/room/room_baker.gd")
 
 const TEMPLATE_PATH := "res://scenes/rooms/template/level_template.tscn"
-const LEVEL_ZERO_PATH := "res://scenes/rooms/source/level_0.tscn"
+const LEVEL_ZERO_PATH := "res://scenes/levels/room_00_00.tscn"
 const LAYER_NAMES: Array[String] = [
 	"BackTiles",
 	"SolidTiles",
@@ -20,13 +20,13 @@ func run() -> Array[String]:
 	var template_scene := load(TEMPLATE_PATH) as PackedScene
 	var level_scene := load(LEVEL_ZERO_PATH) as PackedScene
 	if template_scene == null or level_scene == null:
-		failures.append("template or level_0 scene could not be loaded")
+		failures.append("template or room_00_00 scene could not be loaded")
 		return failures
 
 	var template_root := template_scene.instantiate()
 	var level_root := level_scene.instantiate()
 	_assert_contract(template_root, "template", failures)
-	_assert_contract(level_root, "level_0", failures)
+	_assert_contract(level_root, "room_00_00", failures)
 	_assert_template_is_empty(template_root, failures)
 	_assert_level_metadata_and_content(level_root, failures)
 	_assert_preview_and_stage(level_root, failures)
@@ -59,44 +59,44 @@ func _assert_template_is_empty(root: Node, failures: Array[String]) -> void:
 
 
 func _assert_level_metadata_and_content(root: Node, failures: Array[String]) -> void:
-	if String(root.get("room_id")) != "level_0":
-		failures.append("level_0 room_id override is missing")
+	if String(root.get("room_id")) != "room_00_00":
+		failures.append("room_00_00 room_id override is missing")
 	if String(root.get("display_name")).is_empty():
-		failures.append("level_0 display_name override is missing")
+		failures.append("room_00_00 display_name override is missing")
 	if root.get("room_size_chunks") != Vector2i.ONE:
-		failures.append("level_0 validation room must remain one chunk")
+		failures.append("room_00_00 validation room must remain one chunk")
 	if String(root.get("preview_spawn_id")).is_empty():
-		failures.append("level_0 preview_spawn_id must not be empty")
+		failures.append("room_00_00 preview_spawn_id must not be empty")
 	var start_spawn := root.get_node_or_null("RoomContent/Entities/StartSpawn")
 	if not start_spawn is SpawnPoint:
-		failures.append("level_0 StartSpawn must be a SpawnPoint")
+		failures.append("room_00_00 StartSpawn must be a SpawnPoint")
 	elif String(start_spawn.get("spawn_id")) != String(root.get("preview_spawn_id")):
-		failures.append("level_0 StartSpawn id must match preview_spawn_id")
+		failures.append("room_00_00 StartSpawn id must match preview_spawn_id")
 	var solid := root.get_node("RoomContent/Terrain/SolidTiles") as TileMapLayer
 	var glass := root.get_node("RoomContent/Terrain/GlassTiles") as TileMapLayer
 	if solid.get_used_cells().is_empty():
-		failures.append("level_0 validation room has no solid tiles")
+		failures.append("room_00_00 validation room has no solid tiles")
 	if glass.get_used_cells().is_empty():
-		failures.append("level_0 validation room has no glass tiles")
+		failures.append("room_00_00 validation room has no glass tiles")
 
 
 func _assert_preview_and_stage(root: Node, failures: Array[String]) -> void:
 	add_child(root)
 	var controller := root.get_node_or_null("RoomPreviewController")
 	if controller == null:
-		failures.append("level_0 preview controller is missing")
+		failures.append("room_00_00 preview controller is missing")
 	else:
 		var snapshot: RefCounted = controller.call("get_preview_snapshot")
 		if snapshot == null:
-			failures.append("level_0 preview controller did not initialize on scene ready")
-		elif String(snapshot.get("current_room_id")) != "level_0":
-			failures.append("level_0 preview snapshot has the wrong room id")
+			failures.append("room_00_00 preview controller did not initialize on scene ready")
+		elif String(snapshot.get("current_room_id")) != "room_00_00":
+			failures.append("room_00_00 preview snapshot has the wrong room id")
 		elif int(snapshot.get("slot")) != 0:
-			failures.append("level_0 preview snapshot must use in-memory slot 0")
+			failures.append("room_00_00 preview snapshot must use in-memory slot 0")
 	var baker: RefCounted = ROOM_BAKER.new()
 	var staged: Dictionary = baker.stage(root, LEVEL_ZERO_PATH)
 	if not staged.get("ok", false):
-		failures.append("level_0 could not stage: %s" % staged.get("errors", []))
+		failures.append("room_00_00 could not stage: %s" % staged.get("errors", []))
 		return
 	var runtime_root: Node = (staged["runtime_scene"] as PackedScene).instantiate()
 	var terrain_root: Node = (staged["terrain_scene"] as PackedScene).instantiate()

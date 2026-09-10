@@ -37,6 +37,9 @@ func run() -> Array[String]:
 		var fixture := lab.find_child(fixture_name, true, false)
 		if fixture == null or not fixture.has_method("get_motion_velocity"):
 			failures.append("movement_lab fixture is not component-hosted: %s" % fixture_name)
+	var waypoint := lab.find_child("WaypointMotion", true, false)
+	if waypoint == null or not waypoint.has_method("get_current_waypoint_index"):
+		failures.append("movement_lab moving fixture has no waypoint motion component")
 	var conveyor := lab.find_child("ConveyorPlatform", true, false)
 	if conveyor == null or not conveyor.has_method("get_platform_id") or conveyor.find_child("ConveyorSurface", false, false) == null:
 		failures.append("movement_lab conveyor has no surface component")

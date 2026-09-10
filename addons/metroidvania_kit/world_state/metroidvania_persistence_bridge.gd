@@ -1,6 +1,8 @@
 class_name MetroidvaniaPersistenceBridge
 extends Node
 
+signal state_restored
+
 const SAVE_ADAPTER := preload("res://addons/metroidvania_kit/world_state/metroidvania_save_adapter.gd")
 const MODULE_ID: StringName = &"metroidvania_kit"
 
@@ -108,6 +110,7 @@ func _restore(snapshot: RefCounted) -> bool:
 		_explored_cells.clear()
 		_explored_chunks.clear()
 		_sync_fog()
+		state_restored.emit()
 		return true
 	var parsed_fog: Variant = _parse_fog_state(state.get("fog", {}))
 	if parsed_fog == null:
@@ -117,6 +120,7 @@ func _restore(snapshot: RefCounted) -> bool:
 	_explored_cells = parsed_fog["cells"]
 	_explored_chunks = parsed_fog["chunks"]
 	_sync_fog()
+	state_restored.emit()
 	return true
 
 

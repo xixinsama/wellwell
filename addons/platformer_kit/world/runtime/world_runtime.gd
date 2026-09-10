@@ -357,6 +357,7 @@ func _register_staged_rooms(staged_rooms: Dictionary) -> void:
 	for room_id: String in room_ids:
 		var room_runtime: Node = staged_rooms[room_id]
 		room_runtime.connect("transition_requested", Callable(self, "request_transition"))
+		room_runtime.connect("save_requested", Callable(self, "_on_save_requested"))
 		_loaded_rooms[room_id] = room_runtime
 		room_loaded.emit(room_id, room_runtime)
 	staged_rooms.clear()
@@ -484,6 +485,18 @@ func _queue_snapshot_commit() -> void:
 		return
 	var manager := _get_save_manager()
 	if manager != null and manager.has_method("queue_commit") and manager.get("current_snapshot") == _snapshot:
+		manager.call("queue_commit")
+
+
+func _on_save_requested(immediate: bool) -> void:
+	if _persistence_suspended or _snapshot == null:
+		return
+	var manager := _get_save_manager()
+	if manager == null or manager.get("current_snapshot") != _snapshot:
+		return
+	if immediate and manager.has_method("commit"):
+		manager.call("commit", _snapshot)
+	elif not immediate and manager.has_method("queue_commit"):
 		manager.call("queue_commit")
 
 

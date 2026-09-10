@@ -4,7 +4,6 @@ class_name Main
 const SAFE_SIZE: Vector2i = Vector2i(320, 180)
 const VIEWPORT_SIZE: Vector2i = Vector2i(322, 182)
 const MIN_SCALE: int = 1
-const MAIN_MAP: Resource = preload("res://game/data/maps/main_map.tres")
 const PROGRESSION_CONTEXT := preload("res://addons/metroidvania_kit/progression/progression_context.gd")
 const MAP_DISCOVERY := preload("res://addons/metroidvania_kit/map/discovery/map_discovery.gd")
 const MARKER_REGISTRY := preload("res://addons/metroidvania_kit/map/markers/marker_registry.gd")
@@ -13,6 +12,7 @@ const MAP_TRACKER := preload("res://addons/metroidvania_kit/map/runtime/map_trac
 const REVEAL_ADJACENT := preload("res://addons/metroidvania_kit/map/discovery/rules/reveal_adjacent_rooms.gd")
 const WORLD_STATE := preload("res://addons/metroidvania_kit/world_state/metroidvania_world_state.gd")
 const FAST_TRAVEL_REGISTRY := preload("res://addons/metroidvania_kit/fast_travel/fast_travel_registry.gd")
+const MAIN_MAP := preload("res://game/data/maps/main_map.tres")
 
 @onready var viewport_container: SubViewportContainer = $SubViewportContainer
 @onready var sub_viewport: SubViewport = $SubViewportContainer/SubViewport
@@ -56,6 +56,15 @@ func _configure_metroidvania_runtime(world_root: Node, persistence_bridge: Node,
         world_runtime.connect("current_room_changed", func(room_id: String) -> void:
             tracker.call("track_room", StringName(room_id))
         )
+    var player := world_root.get_node_or_null("Player")
+    var loadout := player.get_node_or_null("AbilityLoadout") if player != null else null
+    if loadout != null and loadout.has_method("bind_progression"):
+        loadout.call("bind_progression", progression)
+        if persistence_bridge.has_signal("state_restored"):
+            persistence_bridge.connect(
+                "state_restored",
+                Callable(loadout, "synchronize_unlocked_abilities")
+            )
     persistence_bridge.call("configure", progression, discovery, markers, world_state, fast_travel, fog)
 
 

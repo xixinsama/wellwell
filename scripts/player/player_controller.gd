@@ -25,6 +25,7 @@ var _input_source: RefCounted = PLAYER_INPUT_SOURCE.new()
 var _world_velocity := Vector2.ZERO
 
 @onready var sprite_root: Node2D = $SpriteRoot
+@onready var _ability_loadout: Node = get_node_or_null("AbilityLoadout")
 
 
 func _ready() -> void:
@@ -32,6 +33,7 @@ func _ready() -> void:
         tuning = PLAYER_TUNING_SCRIPT.new()
     if spawn_position == Vector2.ZERO:
         spawn_position = global_position
+    _input_source.set("additional_actions", Array([&"dash"], TYPE_STRING_NAME, &"", null))
 
 
 func set_input_source(value: RefCounted) -> bool:
@@ -53,6 +55,10 @@ func get_environment_snapshot() -> RefCounted:
     return _environment
 
 
+func grant_ability_definition(definition: Resource) -> bool:
+    return _ability_loadout != null and bool(_ability_loadout.call("grant_ability_definition", definition))
+
+
 func _physics_process(delta: float) -> void:
     var profile := tuning as MOVEMENT_PROFILE
     if profile == null:
@@ -67,6 +73,7 @@ func _physics_process(delta: float) -> void:
     _motor.call("step", _movement_context, intent, _environment, profile, delta)
     velocity = _movement_context.velocity
     _update_facing(intent.move_axis)
+    _apply_ability_motion(intent)
     _recover_visual(delta)
 
     move_and_slide()
@@ -74,6 +81,22 @@ func _physics_process(delta: float) -> void:
     _world_velocity = get_real_velocity()
     _capture_environment()
     was_on_floor = is_on_floor()
+
+
+func _apply_ability_motion(intent: RefCounted) -> bool:
+    if _ability_loadout == null:
+        return false
+    var motion: Dictionary = _ability_loadout.call(
+        "get_motion_override",
+        intent,
+        _environment,
+        facing
+    )
+    if not bool(motion.get("active", false)):
+        return false
+    velocity = Vector2(motion.get("velocity", velocity))
+    _movement_context.velocity = velocity
+    return true
 
 
 func respawn_at(pos: Vector2) -> void:

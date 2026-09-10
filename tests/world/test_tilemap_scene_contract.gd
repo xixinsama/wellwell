@@ -3,7 +3,7 @@ extends Node
 
 func run() -> Array[String]:
 	var failures: Array[String] = []
-	var packed: PackedScene = load("res://scenes/rooms/generated/level_0/terrain.tscn") as PackedScene
+	var packed: PackedScene = load("res://scenes/rooms/generated/room_00_00/terrain.tscn") as PackedScene
 	if packed == null:
 		failures.append("generated terrain scene did not load")
 		return failures

@@ -1,0 +1,8 @@
+[gd_resource type="Resource" script_class="DashAbilityDefinition" format=3 uid="uid://ckoqbfyfnstkp"]
+
+[ext_resource type="Script" uid="uid://c0dktxytt8dbr" path="res://addons/platformer_abilities/abilities/dash/dash_ability_definition.gd" id="1_dash"]
+
+[resource]
+script = ExtResource("1_dash")
+ability_id = &"dash"
+cooldown_seconds = 0.35

@@ -45,6 +45,7 @@ func run() -> Array[String]:
 	pickup.free()
 
 	_assert_entity_mutations_commit_to_the_state_sink(failures)
+	_assert_entity_emits_save_requests(failures)
 
 	var entrance: Node = ROOM_ENTRANCE.new()
 	for property_info: Dictionary in entrance.get_property_list():
@@ -53,6 +54,21 @@ func run() -> Array[String]:
 			failures.append("room entrance still serializes a transition target")
 	entrance.free()
 	return failures
+
+
+func _assert_entity_emits_save_requests(failures: Array[String]) -> void:
+	var entity: Node = WORLD_ENTITY.new()
+	if not entity.has_signal("save_requested") or not entity.has_method("request_save"):
+		failures.append("world entities must expose generic save requests")
+		entity.free()
+		return
+	var requests: Array[bool] = []
+	entity.connect("save_requested", func(immediate: bool) -> void: requests.append(immediate))
+	entity.call("request_save")
+	entity.call("request_save", true)
+	if requests != [false, true]:
+		failures.append("world entity save requests did not preserve immediate intent")
+	entity.free()
 
 
 func _assert_entity_mutations_commit_to_the_state_sink(failures: Array[String]) -> void:

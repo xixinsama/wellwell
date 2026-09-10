@@ -133,7 +133,7 @@ func _assert_remove_room_clears_referencing_connections_without_files(failures: 
 	var world: Resource = _make_world()
 	_assert_ok(model.call("add_room", world, _make_room("room_a")), "add room_a for removal", failures)
 	var room_b: Resource = _make_room("room_b")
-	room_b.source_scene_path = "res://scenes/rooms/source/level_0.tscn"
+	room_b.source_scene_path = "res://scenes/levels/room_00_00.tscn"
 	_assert_ok(model.call("add_room", world, room_b), "add room_b for removal", failures)
 	_assert_ok(model.call("connect_rooms", world, _make_connection("room_a", "exit", "room_b", "spawn_main")), "add outgoing connection", failures)
 	_assert_ok(model.call("connect_rooms", world, _make_connection("room_b", "exit", "room_a", "spawn_main")), "add incoming connection", failures)

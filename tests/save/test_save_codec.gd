@@ -15,11 +15,34 @@ class RecordingStorage extends RefCounted:
 
 func run() -> Array[String]:
 	var failures: Array[String] = []
+	_assert_respawn_updates_are_validated(failures)
 	_assert_round_trip_preserves_module_state(failures)
 	_assert_invalid_data_is_rejected(failures)
 	_assert_invalid_load_does_not_mutate_existing_snapshot(failures)
 	_assert_commits_announce_the_snapshot_before_writing(failures)
 	return failures
+
+
+func _assert_respawn_updates_are_validated(failures: Array[String]) -> void:
+	var snapshot: RefCounted = SAVE_SNAPSHOT.new()
+	snapshot.respawn_room_id = "old_room"
+	snapshot.respawn_spawn_id = "old_spawn"
+	snapshot.respawn_position = Vector2(4, 8)
+	if not snapshot.has_method("set_respawn"):
+		failures.append("SaveSnapshot is missing validated set_respawn")
+		return
+	if snapshot.call("set_respawn", "", "checkpoint", Vector2.ZERO):
+		failures.append("SaveSnapshot accepted an empty respawn room id")
+	if snapshot.call("set_respawn", "room_a", "", Vector2.ZERO):
+		failures.append("SaveSnapshot accepted an empty respawn spawn id")
+	if snapshot.call("set_respawn", "room_a", "checkpoint", Vector2(INF, 0)):
+		failures.append("SaveSnapshot accepted a non-finite respawn position")
+	if snapshot.respawn_room_id != "old_room" or snapshot.respawn_position != Vector2(4, 8):
+		failures.append("invalid respawn data mutated the snapshot")
+	if not snapshot.call("set_respawn", "room_a", "checkpoint", Vector2(12, 24)):
+		failures.append("SaveSnapshot rejected valid respawn data")
+	elif snapshot.respawn_room_id != "room_a" or snapshot.respawn_spawn_id != "checkpoint" or snapshot.respawn_position != Vector2(12, 24):
+		failures.append("SaveSnapshot did not apply valid respawn data atomically")
 
 
 func _assert_round_trip_preserves_module_state(failures: Array[String]) -> void:

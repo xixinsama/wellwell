@@ -24,4 +24,16 @@ func run() -> Array[String]:
 		failures.append("CharacterIntent cleared continuous input state")
 	if bool(intent.get("jump_pressed")) or bool(intent.get("jump_released")):
 		failures.append("CharacterIntent retained transient jump input")
+	if not intent.has_method("press_action") or not intent.has_method("is_action_pressed"):
+		failures.append("CharacterIntent is missing generic transient actions")
+		return failures
+	if intent.call("press_action", &""):
+		failures.append("CharacterIntent accepted an empty action")
+	if not intent.call("press_action", &"dash") or not intent.call("is_action_pressed", &"dash"):
+		failures.append("CharacterIntent did not record a named action")
+	if intent.call("press_action", &"dash"):
+		failures.append("CharacterIntent reported a duplicate action as newly pressed")
+	intent.call("clear_transient")
+	if intent.call("is_action_pressed", &"dash"):
+		failures.append("CharacterIntent retained a generic transient action")
 	return failures

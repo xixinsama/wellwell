@@ -1,0 +1,51 @@
+[gd_scene format=3 uid="uid://b1x7griwahpw"]
+
+[ext_resource type="Script" uid="uid://cgico4r57qm4m" path="res://addons/platformer_kit/world/entities/save_point.gd" id="1_save_point"]
+[ext_resource type="Script" uid="uid://bo5asnakkt3ao" path="res://addons/platformer_kit/world/entities/spawn_point.gd" id="2_spawn_point"]
+[ext_resource type="Script" uid="uid://djlg6ewfrpb8a" path="res://addons/platformer_kit/interaction/interactable.gd" id="3_interactable"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape_activation"]
+size = Vector2(24, 32)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape_interaction"]
+size = Vector2(32, 36)
+
+[node name="SavePoint" type="Node2D" unique_id=939447865]
+script = ExtResource("1_save_point")
+entity_id = "checkpoint"
+
+[node name="VisualRoot" type="Node2D" parent="." unique_id=1854276615]
+
+[node name="Pole" type="Polygon2D" parent="VisualRoot" unique_id=1530133621]
+color = Color(0.75, 0.79, 0.82, 1)
+polygon = PackedVector2Array(-2, 0, 2, 0, 2, -28, -2, -28)
+
+[node name="Flag" type="Polygon2D" parent="VisualRoot" unique_id=957334540]
+polygon = PackedVector2Array(2, -28, 18, -23, 2, -17)
+
+[node name="Base" type="Polygon2D" parent="VisualRoot" unique_id=608111670]
+color = Color(0.65, 0.7, 0.74, 1)
+polygon = PackedVector2Array(-8, 0, 8, 0, 5, -4, -5, -4)
+
+[node name="ActivationArea" type="Area2D" parent="." unique_id=1201975166]
+position = Vector2(0, -16)
+collision_layer = 0
+collision_mask = 2
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="ActivationArea" unique_id=927462723]
+shape = SubResource("RectangleShape_activation")
+
+[node name="Interactable" type="Area2D" parent="." unique_id=602600738]
+position = Vector2(0, -16)
+collision_layer = 4
+collision_mask = 0
+script = ExtResource("3_interactable")
+interaction_id = &"save_point"
+interaction_priority = 20
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Interactable" unique_id=1270620948]
+shape = SubResource("RectangleShape_interaction")
+
+[node name="SpawnPoint" type="Marker2D" parent="." unique_id=1888059450]
+script = ExtResource("2_spawn_point")
+spawn_id = "checkpoint"

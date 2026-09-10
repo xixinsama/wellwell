@@ -25,7 +25,7 @@ All `class_name` declarations under this addon are source-level public in `0.x`.
 | --- | --- | --- |
 | Core | `StateMachine`, `ScopedEventBus`, `TagContainer`, `GameEvent` | State transitions, scoped events, and tag queries |
 | Character | `CharacterIntent`, `CharacterMotor2D`, `MovementContext`, `MovementProfile`, `CharacterSensors` | `CharacterMotor2D.step(intent, context, profile, delta)` |
-| Platforms | `PlatformBody2D`, `PingPongMotionComponent2D`, `FallMotionComponent2D`, `RiderTriggerComponent2D`, `ConveyorSurfaceComponent2D` | `advance_motion()`, `reset_platform()`, `activate()`, `reset_component()` |
+| Platforms | `PlatformBody2D`, `WaypointMotionComponent2D`, `FallMotionComponent2D`, `RiderTriggerComponent2D`, `ConveyorSurfaceComponent2D` | `advance_motion()`, `reset_platform()`, `activate()`, `reset_component()` |
 | Interaction | `Interactable`, `InteractionDetector` | `can_interact()`, `interact()`, `get_best_candidate()` |
 | Camera | `PixelCamera2D` | `bind_target()`, `set_camera_mode()`, `set_room_bounds()`, `add_shake()` |
 | Save | `PlatformerSaveManager`, `SaveSnapshot`, `SaveStorage`, `PersistentId`, `Saveable` | Slot operations, `commit()`, entity/module state serialization |
@@ -42,13 +42,20 @@ Stable integration signals include:
 - `WorldSession.world_ready()` and `world_start_failed(errors)`.
 - `Interactable.interacted(actor)` and `InteractionDetector.candidate_changed(candidate)`.
 - `PlatformBody2D.motion_collided(normal)` and `platform_reset(position)`.
+- `WaypointMotionComponent2D.waypoint_reached(index)`.
 - `FallMotionComponent2D.activated()`, `landed()`, and `reset()`.
 
 Connect through these signals or the listed public methods. Do not call underscore-prefixed methods or depend on scene-internal node order unless a scene contract documents it.
 
 ## Platform Composition
 
-Create an `AnimatableBody2D` with `PlatformBody2D`, then add direct child components. Components can be combined; for example, a platform can use both `PingPongMotionComponent2D` and `FallMotionComponent2D`. Use `CollisionShape2D.one_way_collision` for native one-way behavior. Character relative velocity remains separate from `get_platform_velocity()` and `get_real_velocity()`.
+Create an `AnimatableBody2D` with `PlatformBody2D`, then add direct child components. Components can be combined; for example, a platform can use both `WaypointMotionComponent2D` and `FallMotionComponent2D`. Waypoints are local offsets, start with `(0, 0)`, and support `PING_PONG` or `CYCLE` traversal plus a pause at every arrival. Use `CollisionShape2D.one_way_collision` for native one-way behavior. Character relative velocity remains separate from `get_platform_velocity()` and `get_real_velocity()`.
+
+## World Entities
+
+Instance `world/entities/save_point.tscn` under a source room's `RoomContent/Entities`. Give each instance a unique `entity_id` or `persistent_id`, choose `CONTACT` or `INTERACT`, and set its nested `SpawnPoint.spawn_id` to a room-unique value. Re-bake the room so the spawn ID enters its manifest.
+
+For an ability reward, instance `addons/platformer_abilities/entities/ability_pickup.tscn`, assign a stable ID, and set `ability_definition`. The supplied Dash uses `addons/platformer_abilities/abilities/dash/default_dash.tres`. A compatible body must implement `grant_ability_definition(definition) -> bool`; collection occurs only after that method returns `true`.
 
 ## Example Labs
 

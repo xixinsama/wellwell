@@ -1,0 +1,26 @@
+[gd_scene format=3 uid="uid://dons4yo63slat"]
+
+[ext_resource type="Script" uid="uid://6kpop3ke1gni" path="res://addons/platformer_abilities/entities/ability_pickup.gd" id="1_pickup"]
+
+[sub_resource type="CircleShape2D" id="CircleShape_pickup"]
+
+[node name="AbilityPickup" type="Node2D" unique_id=261258473]
+script = ExtResource("1_pickup")
+entity_id = "ability_pickup"
+
+[node name="VisualRoot" type="Node2D" parent="." unique_id=716267154]
+
+[node name="Outer" type="Polygon2D" parent="VisualRoot" unique_id=488042765]
+color = Color(0.2, 0.92, 0.95, 1)
+polygon = PackedVector2Array(0, -12, 9, -4, 7, 8, 0, 13, -7, 8, -9, -4)
+
+[node name="Inner" type="Polygon2D" parent="VisualRoot" unique_id=1097187165]
+color = Color(0.9, 1, 1, 1)
+polygon = PackedVector2Array(0, -8, 5, -2, 3, 6, 0, 9, -3, 6, -5, -2)
+
+[node name="ActivationArea" type="Area2D" parent="." unique_id=1845122032]
+collision_layer = 0
+collision_mask = 2
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="ActivationArea" unique_id=1663492711]
+shape = SubResource("CircleShape_pickup")

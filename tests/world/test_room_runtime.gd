@@ -25,12 +25,38 @@ func run() -> Array[String]:
 	_assert_room_runtime_instances_scene_and_applies_position(failures)
 	_assert_room_runtime_requires_explicit_world_placement(failures)
 	_assert_room_runtime_exposes_spawns_and_transition_requests(failures)
+	_assert_room_runtime_relays_entity_save_requests(failures)
 	_assert_room_runtime_ignores_missing_terrain_scene(failures)
 	_assert_room_runtime_rejects_missing_scene(failures)
 	_assert_room_runtime_rejects_wrong_resource_type(failures)
 	_remove_user_file(FIXTURE_PATH)
 	_remove_user_file(RUNTIME_ONLY_FIXTURE_PATH)
 	return failures
+
+
+func _assert_room_runtime_relays_entity_save_requests(failures: Array[String]) -> void:
+	var data: Resource = ROOM_DATA.new()
+	data.room_id = "room_a"
+	data.scene_path = FIXTURE_PATH
+	var runtime: Node2D = ROOM_RUNTIME.new() as Node2D
+	if not runtime.setup_room(data, "world_a", null, Vector2i.ZERO):
+		failures.append("room runtime could not load save-request fixture")
+		runtime.free()
+		return
+	if not runtime.has_signal("save_requested"):
+		failures.append("room runtime does not expose entity save requests")
+		runtime.free()
+		return
+	var requests: Array[bool] = []
+	runtime.connect("save_requested", func(immediate: bool) -> void: requests.append(immediate))
+	var entrance: Node = runtime.get_entity("exit_right")
+	if entrance == null or not entrance.has_method("request_save"):
+		failures.append("room save-request fixture has no requesting entity")
+	else:
+		entrance.call("request_save", true)
+		if requests != [true]:
+			failures.append("room runtime did not relay an entity save request")
+	runtime.free()
 
 
 func _assert_room_runtime_instances_scene_and_applies_position(failures: Array[String]) -> void:

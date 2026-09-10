@@ -1,7 +1,10 @@
-[gd_scene format=3 uid="uid://cejq022r3hjrd"]
+[gd_scene load_steps=7 format=3 uid="uid://cejq022r3hjrd"]
 
 [ext_resource type="Script" uid="uid://cbx1gcy30d8d2" path="res://scripts/player/player_controller.gd" id="1_player"]
 [ext_resource type="Resource" uid="uid://bo4x5hdpx5xu4" path="res://resources/player/default_player_tuning.tres" id="2_tuning"]
+[ext_resource type="Script" path="res://game/player/player_ability_loadout.gd" id="3_loadout"]
+[ext_resource type="Script" path="res://addons/platformer_abilities/runtime/ability_controller.gd" id="4_controller"]
+[ext_resource type="Resource" path="res://addons/platformer_abilities/abilities/dash/default_dash.tres" id="5_dash"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_gmlin"]
 size = Vector2(6, 6)
@@ -35,3 +38,10 @@ mesh = SubResource("QuadMesh_mrvaw")
 modulate = Color(0, 0, 0, 1)
 position = Vector2(2, -5)
 mesh = SubResource("QuadMesh_dovo2")
+
+[node name="AbilityLoadout" type="Node" parent="."]
+script = ExtResource("3_loadout")
+ability_definitions = Array[Resource]([ExtResource("5_dash")])
+
+[node name="AbilityController" type="Node" parent="AbilityLoadout"]
+script = ExtResource("4_controller")

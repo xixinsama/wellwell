@@ -6,6 +6,7 @@ const SPAWN_POINT_SCRIPT: Script = preload("res://addons/platformer_kit/world/en
 const ROOM_GRID: Script = preload("res://addons/platformer_kit/world/data/room_grid.gd")
 
 signal transition_requested(entrance: Node)
+signal save_requested(immediate: bool)
 
 var _room_data: Resource
 var _room_instance: Node
@@ -150,6 +151,10 @@ func _setup_entity_tree(entity: Node) -> void:
 		var callback := Callable(self, "_on_transition_requested")
 		if not entity.is_connected("transition_requested", callback):
 			entity.connect("transition_requested", callback)
+	if entity.has_signal("save_requested") and entity.has_method("request_save"):
+		var save_callback := Callable(self, "_on_save_requested")
+		if not entity.is_connected("save_requested", save_callback):
+			entity.connect("save_requested", save_callback)
 	for child: Node in entity.get_children():
 		_setup_entity_tree(child)
 
@@ -182,6 +187,10 @@ func _is_spawn_point_node(node: Node) -> bool:
 
 func _on_transition_requested(entrance: Node) -> void:
 	transition_requested.emit(entrance)
+
+
+func _on_save_requested(immediate: bool) -> void:
+	save_requested.emit(immediate)
 
 
 func _get_entity_state_source() -> Object:

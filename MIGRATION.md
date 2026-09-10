@@ -20,13 +20,19 @@ Historical design documents may retain old paths as records. Active scenes, scri
 
 Replace concrete platform scripts with a `PlatformBody2D` host and child components:
 
-- Moving platform: add `PingPongMotionComponent2D`.
+- Moving platform: add `WaypointMotionComponent2D` and start `waypoints` with `(0, 0)`.
 - Falling platform: add `FallMotionComponent2D` and optionally `RiderTriggerComponent2D`.
-- Moving-then-falling platform: combine ping-pong, fall, and rider-trigger components.
+- Moving-then-falling platform: combine waypoint, fall, and rider-trigger components.
 - Conveyor: add `ConveyorSurfaceComponent2D`.
 - One-way platform: remove the framework script and set `CollisionShape2D.one_way_collision = true`.
 
 Do not add platform velocity to `CharacterBody2D.velocity`. The character motor owns relative velocity, `get_platform_velocity()` reports support transport, and `get_real_velocity()` reports collision-corrected world movement.
+
+`PingPongMotionComponent2D` has no compatibility alias. Replace its script with
+`addons/platformer_kit/platforms/components/waypoint_motion_component_2d.gd`.
+Convert the old target to `PackedVector2Array([Vector2.ZERO, target_offset])`
+and set `travel_speed` to `target_offset.length() / (cycle_duration / 2.0)`.
+Use `PING_PONG` to preserve the old return trip.
 
 ## Save Integration
 

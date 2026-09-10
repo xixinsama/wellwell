@@ -114,10 +114,10 @@ func _assert_default_world_root_is_startable(failures: Array[String]) -> void:
 		failures.append("world_root has no default WorldData")
 		root.free()
 		return
-	if world.start_room_id != "level_0" or not world.has_room("level_0"):
-		failures.append("world_root default WorldData does not start in level_0")
+	if world.start_room_id != "room_00_00" or not world.has_room("room_00_00"):
+		failures.append("world_root default WorldData does not start in room_00_00")
 	else:
-		var room: Resource = world.get_room("level_0")
+		var room: Resource = world.get_room("room_00_00")
 		for path: String in [room.scene_path, room.terrain_scene_path, room.source_scene_path]:
 			if path.is_empty() or not ResourceLoader.exists(path):
 				failures.append("world_root default room artifact is missing: %s" % path)
@@ -130,8 +130,8 @@ func _assert_default_world_root_is_startable(failures: Array[String]) -> void:
 	root.connect("world_ready", func() -> void: ready_count[0] += 1)
 	if not root.call("start_selected_snapshot", SAVE_SNAPSHOT.new()):
 		failures.append("world_root could not start its generated default world")
-	elif ready_count[0] != 1 or root.get_node("WorldRuntime").call("get_current_room_id") != "level_0":
-		failures.append("world_root became ready before level_0 runtime was active")
+	elif ready_count[0] != 1 or root.get_node("WorldRuntime").call("get_current_room_id") != "room_00_00":
+		failures.append("world_root became ready before room_00_00 runtime was active")
 	root.free()
 
 

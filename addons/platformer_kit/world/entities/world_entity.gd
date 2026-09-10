@@ -2,6 +2,8 @@
 class_name WorldEntity
 extends Node2D
 
+signal save_requested(immediate: bool)
+
 @export var entity_id := ""
 @export var persistent_id: StringName
 @export var entity_type := "entity"
@@ -10,6 +12,10 @@ extends Node2D
 
 var room_id := ""
 var _entity_state_sink: Object
+
+
+func request_save(immediate: bool = false) -> void:
+	save_requested.emit(immediate)
 
 func setup_entity(context: Dictionary) -> void:
 	room_id = String(context.get("room_id", room_id))
@@ -26,6 +32,14 @@ func commit_save_state() -> bool:
 		return false
 	_entity_state_sink.call("set_entity_state", get_save_key(), get_save_state())
 	return true
+
+
+func set_respawn_state(spawn_id: String, position: Vector2) -> bool:
+	if room_id.is_empty() or _entity_state_sink == null or not is_instance_valid(_entity_state_sink):
+		return false
+	if not _entity_state_sink.has_method("set_respawn"):
+		return false
+	return bool(_entity_state_sink.call("set_respawn", room_id, spawn_id, position))
 
 func get_save_key() -> String:
 	if not persistent_id.is_empty():

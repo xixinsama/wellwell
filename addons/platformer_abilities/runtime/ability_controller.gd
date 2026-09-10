@@ -6,7 +6,7 @@ const BASE_RUNTIME := preload("res://addons/platformer_abilities/runtime/ability
 var _runtimes: Dictionary[StringName, RefCounted] = {}
 
 
-func _process(delta: float) -> void:
+func _physics_process(delta: float) -> void:
 	tick(delta)
 
 

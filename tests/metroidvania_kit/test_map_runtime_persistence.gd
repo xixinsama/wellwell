@@ -173,11 +173,18 @@ func run() -> Array[String]:
 	else:
 		var manager := FakeSaveManager.new()
 		var bridge: Node = bridge_script.new()
+		var restore_count := [0]
+		if not bridge.has_signal("state_restored"):
+			failures.append("persistence bridge does not announce successful restores")
+		else:
+			bridge.connect("state_restored", func() -> void: restore_count[0] += 1)
 		var live_snapshot: RefCounted = snapshot_script.new()
 		live_snapshot.set("slot", 1)
 		manager.current_snapshot = live_snapshot
 		bridge.call("configure", null, discovery, registry, world_state, travel_registry)
 		bridge.call("bind_save_manager", manager)
+		if restore_count[0] != 1:
+			failures.append("persistence bridge did not announce initial empty-state restore")
 		discovery.call("mark_visited", &"room_a")
 		registry.call("set_discovered", &"checkpoint:forest:01", true)
 		registry.call("set_completed", &"checkpoint:forest:01", true)
@@ -190,6 +197,8 @@ func run() -> Array[String]:
 		manager.slot_selected.emit(1, live_snapshot)
 		if int(discovery.call("get_state", &"room_a")) != 2:
 			failures.append("persistence bridge did not restore state when a slot was selected")
+		if restore_count[0] != 2:
+			failures.append("persistence bridge did not announce valid slot restore")
 		var invalid_bridge_state: Dictionary = live_snapshot.call("get_module_state", &"metroidvania_kit")
 		invalid_bridge_state["rooms"] = {"room_b": 2}
 		invalid_bridge_state["fog"] = {"cells": "invalid", "chunks": []}
@@ -197,6 +206,8 @@ func run() -> Array[String]:
 		manager.slot_selected.emit(1, live_snapshot)
 		if int(discovery.call("get_state", &"room_a")) != 2 or int(discovery.call("get_state", &"room_b")) != 0:
 			failures.append("invalid fog persistence partially restored module state")
+		if restore_count[0] != 2:
+			failures.append("persistence bridge announced a failed restore")
 		var empty_snapshot: RefCounted = snapshot_script.new()
 		empty_snapshot.set("slot", 2)
 		manager.slot_selected.emit(2, empty_snapshot)
@@ -204,6 +215,8 @@ func run() -> Array[String]:
 			failures.append("slot without Metroidvania data retained room discovery")
 		if bool(registry.call("get_state", &"checkpoint:forest:01").get("discovered", false)):
 			failures.append("slot without Metroidvania data retained marker state")
+		if restore_count[0] != 3:
+			failures.append("persistence bridge did not announce empty slot reset")
 		bridge.free()
 		manager.free()
 	return failures

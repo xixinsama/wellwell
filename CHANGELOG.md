@@ -4,7 +4,21 @@ All notable Platformer Kit changes are recorded here. The project follows Semant
 
 ## [Unreleased]
 
-- No unreleased framework changes recorded.
+### Added
+
+- Reusable contact/interaction checkpoints with nested respawn points and immediate persistence requests.
+- Persistent generic ability pickups and a data-driven Dash definition/runtime.
+- Reference-player ability loadout synchronized with Metroidvania progression and save restoration.
+- Interactive Ability Lab using the same player, pickup, and Dash resources as the reference game.
+
+### Changed
+
+- Replaced two-point platform motion with paused multi-waypoint `PING_PONG` and `CYCLE` routes.
+- Routed entity save requests through room and world runtimes instead of direct singleton access.
+
+### Removed
+
+- Removed `PingPongMotionComponent2D`; migrate authored platforms to `WaypointMotionComponent2D`.
 
 ## [0.1.0] - 2026-09-09
 

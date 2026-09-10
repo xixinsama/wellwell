@@ -2,11 +2,12 @@ extends Node
 
 const BODY_PATH := "res://addons/platformer_kit/platforms/platform_body_2d.gd"
 const MOTION_PATH := "res://addons/platformer_kit/platforms/components/platform_motion_component_2d.gd"
-const PING_PONG_PATH := "res://addons/platformer_kit/platforms/components/ping_pong_motion_component_2d.gd"
+const WAYPOINT_PATH := "res://addons/platformer_kit/platforms/components/waypoint_motion_component_2d.gd"
 const FALL_PATH := "res://addons/platformer_kit/platforms/components/fall_motion_component_2d.gd"
 const RIDER_TRIGGER_PATH := "res://addons/platformer_kit/platforms/components/rider_trigger_component_2d.gd"
 const CONVEYOR_PATH := "res://addons/platformer_kit/platforms/components/conveyor_surface_component_2d.gd"
 const REMOVED_ONE_WAY_PATH := "res://addons/platformer_kit/platforms/one_way_platform.gd"
+const REMOVED_PING_PONG_PATH := "res://addons/platformer_kit/platforms/components/ping_pong_motion_component_2d.gd"
 
 
 func run() -> Array[String]:
@@ -14,6 +15,7 @@ func run() -> Array[String]:
 	var scripts := _load_contract_scripts(failures)
 	if not failures.is_empty():
 		return failures
+	_assert_waypoint_routes(scripts, failures)
 	_assert_composed_motion(scripts, failures)
 	_assert_fall_collision_policies(scripts, failures)
 	_assert_rider_activation(scripts, failures)
@@ -24,7 +26,7 @@ func run() -> Array[String]:
 
 func _load_contract_scripts(failures: Array[String]) -> Dictionary:
 	var scripts := {}
-	for path: String in [BODY_PATH, MOTION_PATH, PING_PONG_PATH, FALL_PATH, RIDER_TRIGGER_PATH, CONVEYOR_PATH]:
+	for path: String in [BODY_PATH, MOTION_PATH, WAYPOINT_PATH, FALL_PATH, RIDER_TRIGGER_PATH, CONVEYOR_PATH]:
 		var script := load(path) as Script
 		if script == null or not script.can_instantiate():
 			failures.append("platform component could not be loaded: %s" % path)
@@ -33,13 +35,54 @@ func _load_contract_scripts(failures: Array[String]) -> Dictionary:
 	return scripts
 
 
+func _assert_waypoint_routes(scripts: Dictionary, failures: Array[String]) -> void:
+	var motion: Node = scripts[WAYPOINT_PATH].new()
+	motion.waypoints = PackedVector2Array([Vector2.ZERO, Vector2(10.0, 0.0), Vector2(10.0, 10.0)])
+	motion.travel_speed = 10.0
+	motion.arrival_pause_seconds = 0.25
+	var reached: Array[int] = []
+	motion.waypoint_reached.connect(func(index: int) -> void: reached.append(index))
+	var first_velocity: Vector2 = motion.sample_velocity(1.0)
+	if first_velocity != Vector2(10.0, 0.0) or reached != [1]:
+		failures.append("waypoint motion did not arrive exactly at point 2")
+	if not motion.sample_velocity(0.25).is_zero_approx():
+		failures.append("waypoint motion did not pause after arrival")
+	motion.sample_velocity(1.0)
+	motion.sample_velocity(0.25)
+	motion.sample_velocity(1.0)
+	motion.sample_velocity(0.25)
+	motion.sample_velocity(1.0)
+	if reached != [1, 2, 1, 0]:
+		failures.append("ping-pong waypoint order was not 1,2,3,2,1")
+	motion.loop_mode = motion.LoopMode.CYCLE
+	motion.reset_component()
+	reached.clear()
+	motion.sample_velocity(1.0)
+	motion.sample_velocity(0.25)
+	motion.sample_velocity(1.0)
+	motion.sample_velocity(0.25)
+	motion.sample_velocity(2.0)
+	motion.sample_velocity(0.25)
+	if reached != [1, 2, 0]:
+		failures.append("cycle waypoint order was not 1,2,3,1")
+	if motion.get_current_waypoint_index() != 0:
+		failures.append("cycle motion did not expose its current waypoint")
+	motion.waypoints = PackedVector2Array([Vector2.ONE, Vector2(10.0, 0.0)])
+	motion.reset_component()
+	if motion.is_route_valid() or not motion.sample_velocity(1.0).is_zero_approx():
+		failures.append("waypoint motion accepted a route that does not begin at zero")
+	motion.free()
+	if FileAccess.file_exists(REMOVED_PING_PONG_PATH):
+		failures.append("obsolete PingPongMotionComponent2D still exists")
+
+
 func _assert_composed_motion(scripts: Dictionary, failures: Array[String]) -> void:
 	var body: AnimatableBody2D = scripts[BODY_PATH].new()
 	body.platform_id = &"lab:moving_fall"
-	var ping: Node = scripts[PING_PONG_PATH].new()
-	ping.travel_offset = Vector2(120.0, 0.0)
-	ping.cycle_duration = 2.0
-	body.add_child(ping)
+	var waypoint: Node = scripts[WAYPOINT_PATH].new()
+	waypoint.waypoints = PackedVector2Array([Vector2.ZERO, Vector2(120.0, 0.0)])
+	waypoint.travel_speed = 120.0
+	body.add_child(waypoint)
 	var fall: Node = scripts[FALL_PATH].new()
 	fall.gravity = 100.0
 	fall.terminal_velocity = 200.0

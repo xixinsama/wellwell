@@ -20,6 +20,19 @@ class TestPlayer extends Node2D:
 		respawn_count += 1
 
 
+class RecordingPersistence extends Node:
+	var current_snapshot: RefCounted
+	var committed_snapshots: Array[RefCounted] = []
+	var queued_count := 0
+
+	func commit(snapshot: RefCounted = null) -> bool:
+		committed_snapshots.append(snapshot)
+		return true
+
+	func queue_commit(_delay_seconds: float = 0.35) -> void:
+		queued_count += 1
+
+
 func run() -> Array[String]:
 	var failures: Array[String] = []
 	if _save_room_fixture() != OK:
@@ -27,9 +40,35 @@ func run() -> Array[String]:
 	_assert_explicit_placements_drive_residency(failures)
 	_assert_failed_stage_preserves_active_world(failures)
 	_assert_session_restores_persistent_entities(failures)
+	_assert_entity_save_request_reaches_persistence(failures)
 	_assert_connection_transition_uses_target_spawn(failures)
 	_remove_fixture()
 	return failures
+
+
+func _assert_entity_save_request_reaches_persistence(failures: Array[String]) -> void:
+	var world := _make_world([["room_a", Vector2i.ZERO, FIXTURE_PATH]])
+	var snapshot: RefCounted = SAVE_SNAPSHOT.new()
+	var persistence := RecordingPersistence.new()
+	persistence.current_snapshot = snapshot
+	var runtime := WORLD_RUNTIME.new() as Node2D
+	runtime.bind_persistence_source(persistence)
+	if not runtime.setup_session(world, snapshot):
+		failures.append("world runtime could not load save-request fixture")
+	else:
+		persistence.queued_count = 0
+		var pickup: Node = runtime.get_room_runtime("room_a").get_entity("pickup_01")
+		if pickup == null or not pickup.has_method("request_save"):
+			failures.append("world runtime save-request fixture has no requesting entity")
+		else:
+			pickup.call("request_save", true)
+			if persistence.committed_snapshots != [snapshot]:
+				failures.append("immediate entity save request did not commit the active snapshot")
+			pickup.call("request_save", false)
+			if persistence.queued_count != 1:
+				failures.append("deferred entity save request did not queue the active snapshot")
+	runtime.free()
+	persistence.free()
 
 
 func _assert_explicit_placements_drive_residency(failures: Array[String]) -> void:

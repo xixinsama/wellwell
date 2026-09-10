@@ -40,19 +40,38 @@ If you change the viewport size, preserve the same idea:
 ## Adding Mechanics
 
 Platform behavior is composed under `PlatformBody2D`: use
-`PingPongMotionComponent2D`, `FallMotionComponent2D`,
+`WaypointMotionComponent2D`, `FallMotionComponent2D`,
 `RiderTriggerComponent2D`, and `ConveyorSurfaceComponent2D` independently or
 together. Native one-way platforms only require
 `CollisionShape2D.one_way_collision`; no framework script is needed.
 
+Configure `WaypointMotionComponent2D.waypoints` as offsets from the platform's
+authored position. Point zero must be `Vector2.ZERO`. Choose `PING_PONG` for
+routes such as `1, 2, 3, 2, 1`, or `CYCLE` for `1, 2, 3, 1`; set
+`arrival_pause_seconds` for the delay at each point.
+
+## Checkpoints and Ability Rewards
+
+Add `addons/platformer_kit/world/entities/save_point.tscn` below a source
+room's `RoomContent/Entities`. Set a unique `entity_id` or `persistent_id`, set
+the nested `SpawnPoint.spawn_id`, and choose `CONTACT` or `INTERACT`. The entity
+updates respawn state before requesting an immediate save. Bake the source room
+after adding it; never add checkpoints directly to generated scenes.
+
+Add `addons/platformer_abilities/entities/ability_pickup.tscn` for a persistent
+ability reward. Assign a stable ID and an `AbilityDefinition`; use
+`addons/platformer_abilities/abilities/dash/default_dash.tres` for the supplied
+Dash. Player-like receivers opt in with
+`grant_ability_definition(definition: Resource) -> bool`. A rejected grant does
+not consume the pickup.
+
 Good first game-specific extensions:
 
-- Checkpoints.
 - Moving platforms.
 - Ladders.
 - Simple hazards.
 - Room transition tests.
-- Dash as a separate component.
+- Additional data-driven abilities.
 
 For rooms, edit source scenes only. Generated runtime scenes, terrain scenes, and `RoomData` resources are bake outputs. `RoomData` is reusable local content; `WorldData.placements` owns each room's chunk origin and `WorldData.connections` owns transitions.
 

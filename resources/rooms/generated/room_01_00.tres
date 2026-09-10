@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="RoomData" format=3 uid="uid://dlwa4yichnpq"]
+[gd_resource type="Resource" script_class="RoomData" format=3 uid="uid://cu73ap10eduij"]
 
 [ext_resource type="Script" uid="uid://iffewvgc6ofw" path="res://addons/platformer_kit/world/data/room_data.gd" id="1_o3ny0"]
 
