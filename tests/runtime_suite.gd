@@ -2,6 +2,7 @@ extends Node
 
 const TESTS: Array[Script] = [
 	preload("res://tests/input_mapping/test_input_mapping_model.gd"),
+	preload("res://tests/input_mapping/test_input_mapping_service.gd"),
 	preload("res://tests/platformer_kit/test_platformer_kit_contract.gd"),
 	preload("res://tests/platformer_kit/test_core_primitives.gd"),
 	preload("res://tests/platformer_kit/character/test_character_intent.gd"),

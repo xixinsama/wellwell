@@ -22,6 +22,7 @@ config/features=PackedStringArray("4.7", "Forward Plus")
 SaveManager="*res://addons/platformer_kit/save/save_manager.gd"
 MenuLocalization="*res://scripts/ui/menu_localization.gd"
 GlobalSettings="*res://scripts/save/global_settings_manager.gd"
+InputMapping="*res://addons/input_mapping/runtime/input_mapping_service.gd"
 
 [display]
 
@@ -34,7 +35,7 @@ window/per_pixel_transparency/allowed=true
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/metroidvania_kit/plugin.cfg", "res://addons/platformer_abilities/plugin.cfg", "res://addons/platformer_combat/plugin.cfg", "res://addons/platformer_debug/plugin.cfg", "res://addons/platformer_kit/plugin.cfg", "res://addons/world_editor/plugin.cfg")
+enabled=PackedStringArray("res://addons/input_mapping/plugin.cfg", "res://addons/metroidvania_kit/plugin.cfg", "res://addons/platformer_abilities/plugin.cfg", "res://addons/platformer_combat/plugin.cfg", "res://addons/platformer_debug/plugin.cfg", "res://addons/platformer_kit/plugin.cfg", "res://addons/world_editor/plugin.cfg")
 
 [input]
 
