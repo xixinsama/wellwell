@@ -16,6 +16,7 @@ func run() -> Array[String]:
 	_assert_binding_capture_rules(failures)
 	_assert_dynamic_rows_and_single_capture(failures)
 	_assert_empty_state(failures)
+	_assert_explicit_builtin_action_opt_in(failures)
 	_assert_translation_catalog(failures)
 	_cleanup()
 	return failures
@@ -123,6 +124,22 @@ func _assert_empty_state(failures: Array[String]) -> void:
 			"menu did not show its empty state when filters removed every action (filter=%s, rows=%d)"
 			% [menu.get("included_actions"), (menu.get_node("Panel/Content/ActionScroll/ActionsGrid") as GridContainer).get_child_count()]
 		)
+	menu.queue_free()
+	service.queue_free()
+
+
+func _assert_explicit_builtin_action_opt_in(failures: Array[String]) -> void:
+	var action := _new_action("builtin_opt_in", [_key(KEY_U)])
+	var service := _new_service(_new_path("builtin_opt_in"), [action])
+	var menu := MENU_SCENE.instantiate() as Control
+	var included: Array[StringName] = [&"ui_accept"]
+	menu.set("included_actions", included)
+	add_child(menu)
+	menu.call("bind_service", service)
+	menu.call("open_menu")
+	var actions_grid := menu.get_node("Panel/Content/ActionScroll/ActionsGrid") as GridContainer
+	if actions_grid.get_child_count() != 4:
+		failures.append("explicitly included built-in ui_accept did not generate an editable row")
 	menu.queue_free()
 	service.queue_free()
 

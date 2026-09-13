@@ -85,6 +85,8 @@ func _build_rows() -> void:
 		child.free()
 	var source: Array[StringName] = []
 	if _service != null and _service.has_method("get_actions"):
+		if not included_actions.is_empty() and _service.has_method("register_actions"):
+			_service.call("register_actions", included_actions)
 		source = _service.call("get_actions")
 	var actions := MODEL.discover_project_actions(
 		source,

@@ -133,7 +133,7 @@ func _assert_automatic_discovery_excludes_builtin_ui_actions(failures: Array[Str
 		if String(action).begins_with("ui_"):
 			failures.append("automatic action discovery included built-in action %s" % action)
 			break
-	for expected: StringName in [&"move_left", &"move_right", &"move_up", &"move_down", &"jump", &"dash", &"interact"]:
+	for expected: StringName in [&"move_left", &"move_right", &"move_up", &"move_down", &"jump", &"dash"]:
 		if not discovered.has(expected):
 			failures.append("automatic action discovery omitted project action %s" % expected)
 

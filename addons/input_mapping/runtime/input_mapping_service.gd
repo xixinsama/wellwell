@@ -52,6 +52,19 @@ func get_actions() -> Array[StringName]:
 	return _actions.duplicate()
 
 
+func register_actions(actions: Array[StringName]) -> void:
+	for action: StringName in actions:
+		if not InputMap.has_action(action) or _actions.has(action):
+			continue
+		_actions.append(action)
+		_defaults[action] = MODEL.duplicate_events(InputMap.action_get_events(action))
+		var action_key := String(action)
+		if _overrides.has(action_key):
+			var record: Variant = _overrides[action_key]
+			if record is Dictionary and bool((record as Dictionary).get("customized", false)):
+				_apply_record(action, record as Dictionary)
+
+
 func get_slot_events(action: StringName, slot: int) -> Array[InputEvent]:
 	if not _is_known_action(action) or not _is_valid_slot(slot):
 		return []
