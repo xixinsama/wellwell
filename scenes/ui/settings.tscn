@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" uid="uid://ddbxuwkgutjhe" path="res://scripts/ui/settings_menu.gd" id="1"]
 [ext_resource type="Theme" uid="uid://dl2h74k2356hx" path="res://resources/ui/menu_theme.tres" id="2"]
+[ext_resource type="PackedScene" path="res://addons/input_mapping/ui/input_mapping_menu.tscn" id="3_input_mapping"]
 
 [node name="Settings" type="Control" unique_id=469392416]
 process_mode = 3
@@ -166,6 +167,19 @@ layout_mode = 2
 [node name="DropSpacer" type="Control" parent="Panel/Content/Options" unique_id=986316546]
 layout_mode = 2
 
+[node name="InputMappingLabel" type="Label" parent="Panel/Content/Options"]
+layout_mode = 2
+text = "SETTINGS_INPUT_MAPPING"
+
+[node name="InputMappingButton" type="Button" parent="Panel/Content/Options"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(240, 40)
+layout_mode = 2
+text = "SETTINGS_INPUT_MAPPING_OPEN"
+
+[node name="InputMappingSpacer" type="Control" parent="Panel/Content/Options"]
+layout_mode = 2
+
 [node name="Actions" type="HBoxContainer" parent="Panel/Content" unique_id=733032895]
 layout_mode = 2
 theme_override_constants/separation = 14
@@ -182,3 +196,8 @@ unique_name_in_owner = true
 custom_minimum_size = Vector2(180, 44)
 layout_mode = 2
 text = "COMMON_BACK"
+
+[node name="InputMappingMenu" parent="." instance=ExtResource("3_input_mapping")]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1

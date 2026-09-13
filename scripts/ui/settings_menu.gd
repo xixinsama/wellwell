@@ -14,15 +14,20 @@ signal back_requested
 @onready var fog_toggle: CheckButton = %FogToggle
 @onready var camera_shake_toggle: CheckButton = %CameraShakeToggle
 @onready var one_way_drop_toggle: CheckButton = %OneWayDropToggle
+@onready var input_mapping_button: Button = %InputMappingButton
+@onready var input_mapping_menu: Control = %InputMappingMenu
 @onready var reset_button: Button = %ResetButton
 @onready var back_button: Button = %BackButton
+@onready var panel: PanelContainer = $Panel
 
 var _settings: Node
+var _input_mapping: Node
 var _syncing := false
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_settings = get_node_or_null("/root/GlobalSettings")
+	_input_mapping = get_node_or_null("/root/InputMapping")
 	language_option.item_selected.connect(_on_language_selected)
 	display_mode_option.item_selected.connect(_on_display_mode_selected)
 	master_slider.value_changed.connect(_on_audio_changed)
@@ -31,9 +36,12 @@ func _ready() -> void:
 	fog_toggle.toggled.connect(_on_fog_toggled)
 	camera_shake_toggle.toggled.connect(_on_camera_shake_toggled)
 	one_way_drop_toggle.toggled.connect(_on_one_way_drop_toggled)
+	input_mapping_button.pressed.connect(_open_input_mapping)
 	reset_button.pressed.connect(_reset_defaults)
 	back_button.pressed.connect(_request_back)
-	for control: Control in [language_option, display_mode_option, master_slider, music_slider, sfx_slider, fog_toggle, camera_shake_toggle, one_way_drop_toggle, reset_button, back_button]:
+	input_mapping_menu.connect("back_requested", _close_input_mapping)
+	input_mapping_menu.call("bind_service", _input_mapping)
+	for control: Control in [language_option, display_mode_option, master_slider, music_slider, sfx_slider, fog_toggle, camera_shake_toggle, one_way_drop_toggle, input_mapping_button, reset_button, back_button]:
 		control.mouse_entered.connect(control.grab_focus)
 	hide()
 
@@ -42,14 +50,24 @@ func _notification(what: int) -> void:
 		_refresh_options()
 
 func _unhandled_input(event: InputEvent) -> void:
+	if input_mapping_menu.visible:
+		return
 	if visible and event.is_action_pressed("ui_cancel"):
 		_request_back()
 		get_viewport().set_input_as_handled()
 
 func open_menu() -> void:
+	input_mapping_menu.hide()
+	panel.show()
 	show()
 	_sync_from_settings()
 	language_option.grab_focus.call_deferred()
+
+
+func bind_settings_dependencies(settings: Node, input_mapping: Node) -> void:
+	_settings = settings
+	_input_mapping = input_mapping
+	input_mapping_menu.call("bind_service", _input_mapping)
 
 func _sync_from_settings() -> void:
 	if _settings == null:
@@ -112,7 +130,20 @@ func _on_one_way_drop_toggled(enabled: bool) -> void:
 func _reset_defaults() -> void:
 	if _settings != null:
 		_settings.reset_defaults()
+	if _input_mapping != null and _input_mapping.has_method("restore_defaults"):
+		_input_mapping.call("restore_defaults")
 	_sync_from_settings()
+
+
+func _open_input_mapping() -> void:
+	panel.hide()
+	input_mapping_menu.call("open_menu")
+
+
+func _close_input_mapping() -> void:
+	input_mapping_menu.hide()
+	panel.show()
+	input_mapping_button.grab_focus.call_deferred()
 
 func _update_volume_labels() -> void:
 	master_value.text = "%d%%" % roundi(master_slider.value * 100.0)
@@ -120,5 +151,7 @@ func _update_volume_labels() -> void:
 	sfx_value.text = "%d%%" % roundi(sfx_slider.value * 100.0)
 
 func _request_back() -> void:
+	if input_mapping_menu.visible:
+		return
 	hide()
 	back_requested.emit()

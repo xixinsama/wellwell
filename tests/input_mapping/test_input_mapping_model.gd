@@ -9,6 +9,7 @@ func run() -> Array[String]:
 	_assert_slot_replacement(failures)
 	_assert_capture_compatibility_and_axis_normalization(failures)
 	_assert_action_filtering_and_order(failures)
+	_assert_automatic_discovery_excludes_builtin_ui_actions(failures)
 	return failures
 
 
@@ -124,6 +125,17 @@ func _assert_action_filtering_and_order(failures: Array[String]) -> void:
 	)
 	if included != [&"jump"]:
 		failures.append("explicit include and exclude lists were not intersected with project actions")
+
+
+func _assert_automatic_discovery_excludes_builtin_ui_actions(failures: Array[String]) -> void:
+	var discovered: Array[StringName] = MODEL.discover_project_actions()
+	for action: StringName in discovered:
+		if String(action).begins_with("ui_"):
+			failures.append("automatic action discovery included built-in action %s" % action)
+			break
+	for expected: StringName in [&"move_left", &"move_right", &"move_up", &"move_down", &"jump", &"dash", &"interact"]:
+		if not discovered.has(expected):
+			failures.append("automatic action discovery omitted project action %s" % expected)
 
 
 func _key(code: Key) -> InputEventKey:

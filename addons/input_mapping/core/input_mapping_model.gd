@@ -18,6 +18,10 @@ static func discover_project_actions(
 	preferred_order: Array[StringName] = []
 ) -> Array[StringName]:
 	var source := source_actions if not source_actions.is_empty() else _read_project_actions()
+	if source_actions.is_empty():
+		for action: StringName in included_actions:
+			if InputMap.has_action(action) and not source.has(action):
+				source.append(action)
 	var candidates: Array[StringName] = []
 	for action: StringName in source:
 		if candidates.has(action):
@@ -133,6 +137,8 @@ static func _read_project_actions() -> Array[StringName]:
 		if not property_name.begins_with("input/"):
 			continue
 		var action := StringName(property_name.trim_prefix("input/"))
+		if String(action).begins_with("ui_"):
+			continue
 		if not action.is_empty() and InputMap.has_action(action) and not actions.has(action):
 			actions.append(action)
 	return actions

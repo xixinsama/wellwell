@@ -130,7 +130,7 @@ alignment = 1
 
 [node name="ResetButton" type="Button" parent="Panel/Content/Actions"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(190, 44)
+custom_minimum_size = Vector2(230, 44)
 layout_mode = 2
 text = "INPUT_MAPPING_RESET"
 
