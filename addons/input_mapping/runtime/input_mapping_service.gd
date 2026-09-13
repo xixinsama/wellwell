@@ -8,6 +8,7 @@ signal persistence_failed(message: String)
 const MODEL := preload("res://addons/input_mapping/core/input_mapping_model.gd")
 const STORE := preload("res://addons/input_mapping/core/input_mapping_store.gd")
 const DEFAULT_CONFIG_PATH := "user://input_mappings.cfg"
+const TRANSLATION_CATALOG_PATH := "res://addons/input_mapping/translations/input_mapping.csv"
 
 @export var auto_initialize := true
 
@@ -17,6 +18,17 @@ var _actions: Array[StringName] = []
 var _defaults: Dictionary = {}
 var _overrides: Dictionary = {}
 var _initialized := false
+var _translations: Array[Translation] = []
+
+
+func _enter_tree() -> void:
+	_load_translation_catalog()
+
+
+func _exit_tree() -> void:
+	for translation: Translation in _translations:
+		TranslationServer.remove_translation(translation)
+	_translations.clear()
 
 
 func _ready() -> void:
@@ -169,3 +181,28 @@ func _is_known_action(action: StringName) -> bool:
 
 func _is_valid_slot(slot: int) -> bool:
 	return slot >= MODEL.BindingSlot.KEYBOARD_PRIMARY and slot <= MODEL.BindingSlot.GAMEPAD
+
+
+func _load_translation_catalog() -> void:
+	var file := FileAccess.open(TRANSLATION_CATALOG_PATH, FileAccess.READ)
+	if file == null:
+		push_warning("Could not open input mapping translation catalog: %s" % TRANSLATION_CATALOG_PATH)
+		return
+	var header := file.get_csv_line()
+	if header.size() < 2 or header[0] != "keys":
+		file.close()
+		push_warning("Input mapping translation catalog has an invalid header")
+		return
+	for column: int in range(1, header.size()):
+		var translation := Translation.new()
+		translation.locale = header[column]
+		_translations.append(translation)
+	while not file.eof_reached():
+		var row := file.get_csv_line()
+		if row.is_empty() or row[0].is_empty():
+			continue
+		for column: int in range(1, mini(row.size(), header.size())):
+			_translations[column - 1].add_message(row[0], row[column])
+	file.close()
+	for translation: Translation in _translations:
+		TranslationServer.add_translation(translation)

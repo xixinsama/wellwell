@@ -1,0 +1,141 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://addons/input_mapping/ui/input_mapping_menu.gd" id="1_menu"]
+
+[node name="InputMappingMenu" type="Control"]
+process_mode = 3
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_menu")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.025, 0.03, 0.038, 1)
+
+[node name="Panel" type="PanelContainer" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -570.0
+offset_top = -330.0
+offset_right = 570.0
+offset_bottom = 330.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Content" type="VBoxContainer" parent="Panel"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Title" type="Label" parent="Panel/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 28
+text = "INPUT_MAPPING_TITLE"
+horizontal_alignment = 1
+
+[node name="Instruction" type="Label" parent="Panel/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "INPUT_MAPPING_INSTRUCTION"
+horizontal_alignment = 1
+
+[node name="Divider" type="HSeparator" parent="Panel/Content"]
+layout_mode = 2
+
+[node name="HeaderGrid" type="GridContainer" parent="Panel/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/h_separation = 12
+columns = 4
+
+[node name="ActionHeader" type="Label" parent="Panel/Content/HeaderGrid"]
+custom_minimum_size = Vector2(200, 34)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "INPUT_MAPPING_ACTION"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="PrimaryHeader" type="Label" parent="Panel/Content/HeaderGrid"]
+custom_minimum_size = Vector2(240, 34)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "INPUT_MAPPING_PRIMARY"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="SecondaryHeader" type="Label" parent="Panel/Content/HeaderGrid"]
+custom_minimum_size = Vector2(240, 34)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "INPUT_MAPPING_SECONDARY"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="GamepadHeader" type="Label" parent="Panel/Content/HeaderGrid"]
+custom_minimum_size = Vector2(240, 34)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "INPUT_MAPPING_GAMEPAD"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ActionScroll" type="ScrollContainer" parent="Panel/Content"]
+custom_minimum_size = Vector2(0, 400)
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="ActionsGrid" type="GridContainer" parent="Panel/Content/ActionScroll"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/h_separation = 12
+theme_override_constants/v_separation = 8
+columns = 4
+
+[node name="EmptyLabel" type="Label" parent="Panel/Content/ActionScroll"]
+unique_name_in_owner = true
+visible = false
+custom_minimum_size = Vector2(1080, 80)
+layout_mode = 2
+text = "INPUT_MAPPING_NO_ACTIONS"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="StatusLabel" type="Label" parent="Panel/Content"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 26)
+layout_mode = 2
+horizontal_alignment = 1
+
+[node name="Actions" type="HBoxContainer" parent="Panel/Content"]
+layout_mode = 2
+theme_override_constants/separation = 14
+alignment = 1
+
+[node name="ResetButton" type="Button" parent="Panel/Content/Actions"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(190, 44)
+layout_mode = 2
+text = "INPUT_MAPPING_RESET"
+
+[node name="BackButton" type="Button" parent="Panel/Content/Actions"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(190, 44)
+layout_mode = 2
+text = "INPUT_MAPPING_BACK"
