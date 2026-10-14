@@ -8,6 +8,9 @@ extends RefCounted
 ## collision wall (or the board border / blocked cells).
 
 var definition: PuzzleDefinition
+## Extra relative cells glued to a piece (piece_index -> Array[Vector2i]).
+## The view layer registers the player here so it moves as part of one piece.
+var extra_offsets: Dictionary = {}
 
 
 func _init(p_definition: PuzzleDefinition) -> void:
@@ -20,10 +23,23 @@ func get_piece_shape(piece_index: int) -> Array[Vector2i]:
 	return definition.pieces[piece_index].shape
 
 
+## The piece's shape plus any registered extra cells (e.g. the player rider).
+func get_piece_offsets(piece_index: int) -> Array[Vector2i]:
+	var offsets: Array[Vector2i] = []
+	if definition == null or piece_index < 0 or piece_index >= definition.pieces.size():
+		return offsets
+	offsets.append_array(definition.pieces[piece_index].shape)
+	var extras: Variant = extra_offsets.get(piece_index)
+	if extras is Array:
+		for extra: Vector2i in extras:
+			offsets.append(extra)
+	return offsets
+
+
 ## Every cell a piece covers when its anchor cell is [param cell].
 func get_occupied_cells(piece_index: int, cell: Vector2i) -> Array[Vector2i]:
 	var cells: Array[Vector2i] = []
-	for offset: Vector2i in get_piece_shape(piece_index):
+	for offset: Vector2i in get_piece_offsets(piece_index):
 		cells.append(cell + offset)
 	return cells
 
@@ -39,13 +55,15 @@ func is_cell_blocked(cell: Vector2i) -> bool:
 ## Whether the piece can rest at [param cell] without leaving the board,
 ## touching a blocked cell, or overlapping another piece.
 ## [param ignore_piece_index] is usually the moving piece itself.
-func can_place_piece(state: BoardState, piece_index: int, cell: Vector2i, ignore_piece_index: int = -1) -> bool:
+func can_place_piece(state: BoardState, piece_index: int, cell: Vector2i, ignore_piece_index: int = -1, extra_blocked_cells: Array[Vector2i] = []) -> bool:
 	if state == null:
 		return false
 	for occupied: Vector2i in get_occupied_cells(piece_index, cell):
 		if not is_cell_inside_board(occupied):
 			return false
 		if is_cell_blocked(occupied):
+			return false
+		if extra_blocked_cells.has(occupied):
 			return false
 
 	for other in state.pieces:
@@ -58,7 +76,7 @@ func can_place_piece(state: BoardState, piece_index: int, cell: Vector2i, ignore
 
 
 func _piece_covers_cell(piece_index: int, cell: Vector2i, target: Vector2i) -> bool:
-	for offset: Vector2i in get_piece_shape(piece_index):
+	for offset: Vector2i in get_piece_offsets(piece_index):
 		if cell + offset == target:
 			return true
 	return false

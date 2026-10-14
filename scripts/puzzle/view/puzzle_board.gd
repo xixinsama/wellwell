@@ -90,7 +90,6 @@ func _process(_delta: float) -> void:
             _exit_drag_mode()
     _handle_mouse()
     if mode == ControlMode.DRAG:
-        _attach_player_to_piece(_piece_under_player())
         _handle_move_keys()
 
 
@@ -124,6 +123,7 @@ func _build_session_from_scene_pieces() -> void:
             piece_def.shape = piece_node.shape
             piece_def.initial_cell = piece_node.get_logical_cell()
             piece_def.movement_mode = piece_node.movement_mode
+            piece_def.move_distance = piece_node.move_distance
             piece_def.color = piece_node.color
             definition.pieces.append(piece_def)
             index += 1
@@ -189,16 +189,6 @@ func _lock_player(locked: bool) -> void:
         _player.set_physics_process(not locked)
 
 
-func _attach_player_to_piece(piece: PuzzlePiece) -> void:
-    if piece == null or _player == null or not is_instance_valid(_player):
-        _detach_player()
-        return
-    if _attached_piece == piece:
-        return
-    _attached_piece = piece
-    _attached_offset = _player.global_position - piece.global_position
-
-
 func _detach_player() -> void:
     _attached_piece = null
 
@@ -212,20 +202,66 @@ func _follow_attached_piece() -> void:
     _player.global_position = _attached_piece.global_position + _attached_offset
 
 
-## Finds the block the player is standing on by probing a thin box at its feet.
-func _piece_under_player() -> PuzzlePiece:
+## The player is an 8x8 block: its origin is its bottom-centre, so its top-left
+## corner sits at (-4, -8) in local space.
+func player_cell_from_world() -> Vector2i:
     if _player == null or not is_instance_valid(_player):
-        return null
-    var probe := Rect2(_player.global_position + Vector2(-3.0, 0.0), Vector2(6.0, 2.0))
-    for piece in _pieces:
-        var bounds := piece.get_bounds()
-        var world_rect := Rect2(
-            piece.global_position + Vector2(bounds.position) * float(cell_size),
-            Vector2(bounds.size) * float(cell_size)
-        )
-        if world_rect.intersects(probe):
-            return piece
-    return null
+        return Vector2i.ZERO
+    var top_left := _player.global_position + Vector2(-4.0, -8.0)
+    var local := to_local(top_left)
+    return Vector2i(roundi(local.x / float(cell_size)), roundi(local.y / float(cell_size)))
+
+
+func set_player_to_cell(cell: Vector2i) -> void:
+    if _player == null or not is_instance_valid(_player):
+        return
+    _player.global_position = to_global(cell_to_world(cell)) + Vector2(4.0, 8.0)
+
+
+## Whether the player rides [param piece]. Two cases:
+##  1. the player stands on the piece (the cell under its feet belongs to it);
+##  2. the player's cell lies inside the piece's minimal bounding rect.
+func _player_rides(piece: PuzzlePiece) -> bool:
+    if _player == null or not is_instance_valid(_player):
+        return false
+    var player_cell := player_cell_from_world()
+    var support_offset := player_cell + Vector2i.DOWN - piece.get_logical_cell()
+    if piece.shape.has(support_offset):
+        return true
+    return _piece_rect(piece, piece.get_logical_cell()).has_point(player_cell)
+
+
+## Snaps the player to the nearest world grid cell (smallest displacement).
+func _snap_player_to_nearest_cell() -> void:
+    if _player == null or not is_instance_valid(_player):
+        return
+    set_player_to_cell(player_cell_from_world())
+
+
+func _attach_player_to(piece: PuzzlePiece) -> void:
+    _snap_player_to_nearest_cell()
+    _attached_piece = piece
+    _attached_offset = _player.global_position - piece.global_position
+
+
+## Registers the player as an extra cell glued to [param piece] so the piece's
+## own move is checked with it and other pieces are blocked by it.
+func _register_rider(piece: PuzzlePiece) -> void:
+    if session == null:
+        return
+    var offset := player_cell_from_world() - piece.get_logical_cell()
+    session.set_rider(piece.piece_index, offset)
+
+
+func _piece_rect(piece: PuzzlePiece, anchor_cell: Vector2i) -> Rect2i:
+    var bounds := piece.get_bounds()
+    return Rect2i(anchor_cell + bounds.position, bounds.size)
+
+
+func _piece_move_distance(piece: PuzzlePiece) -> int:
+    if definition == null or piece.piece_index < 0 or piece.piece_index >= definition.pieces.size():
+        return 1
+    return maxi(1, definition.pieces[piece.piece_index].move_distance)
 
 
 # --- Selection & movement -----------------------------------------------------
@@ -256,12 +292,11 @@ func _handle_mouse() -> void:
                     _dragging = true
                     _drag_direction = direction
         if _dragging:
-            var target := _selected_piece.get_logical_cell() + _drag_direction
+            var target := _selected_piece.get_logical_cell() + _drag_direction * _piece_move_distance(_selected_piece)
             _show_preview(_selected_piece, target)
     elif not down and _mouse_was_down:
         if _dragging and _selected_piece != null:
-            var target := _selected_piece.get_logical_cell() + _drag_direction
-            _move_piece_to(_selected_piece, target)
+            _move_piece_to(_selected_piece, _drag_direction)
         _end_drag()
     _mouse_was_down = down
 
@@ -272,12 +307,18 @@ func _select_piece(piece: PuzzlePiece) -> void:
     _deselect_piece()
     _selected_piece = piece
     _selected_piece.set_highlight(true)
+    if _player_rides(piece):
+        _attach_player_to(piece)
+        _register_rider(piece)
 
 
 func _deselect_piece() -> void:
     if _selected_piece != null and is_instance_valid(_selected_piece):
         _selected_piece.set_highlight(false)
     _selected_piece = null
+    _detach_player()
+    if session != null:
+        session.clear_rider()
 
 
 func _end_drag() -> void:
@@ -299,21 +340,35 @@ func _handle_move_keys() -> void:
         direction = Vector2i.DOWN
     if direction == Vector2i.ZERO:
         return
-    _move_piece_to(_selected_piece, _selected_piece.get_logical_cell() + direction)
+    _move_piece_to(_selected_piece, direction)
 
 
-func _move_piece_to(piece: PuzzlePiece, target: Vector2i) -> void:
+func _move_piece_to(piece: PuzzlePiece, direction: Vector2i) -> void:
     if piece == null or not is_instance_valid(piece):
         return
-    var from := piece.get_logical_cell()
-    var direction := (target - from).sign()
     if direction == Vector2i.ZERO:
         return
+    var from := piece.get_logical_cell()
+    var distance := _piece_move_distance(piece)
+    var target := from + direction * distance
     if not _piece_allows_axis(piece.piece_index, direction):
         _flash_invalid(piece, target)
         return
+    # The player rides a block when it stands on it or its cell is inside the
+    # block's bounding rect. A rider is glued onto the block (its own extra
+    # cell); otherwise the player is an independent wall for the block.
+    var riding := _player_rides(piece)
+    var extra_blocked: Array[Vector2i] = []
+    if riding:
+        _register_rider(piece)
+    else:
+        if session != null:
+            session.clear_rider()
+        extra_blocked.append(player_cell_from_world())
     var move := PuzzleMove.new(piece.piece_index, from, target)
-    if session != null and session.try_move(move):
+    if session != null and session.try_move(move, extra_blocked):
+        if riding:
+            _attach_player_to(piece)
         _animate_piece_to(piece, target)
         _hide_preview()
     else:

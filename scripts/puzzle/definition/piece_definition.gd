@@ -20,6 +20,9 @@ enum MovementMode {
 @export var shape: Array[Vector2i] = [Vector2i.ZERO]
 @export var initial_cell: Vector2i = Vector2i.ZERO
 @export var movement_mode: MovementMode = MovementMode.FREE
+## Cells travelled per input step. 1 is the classic single-cell slide; larger
+## values jump straight to the destination without checking intermediate cells.
+@export var move_distance: int = 1
 ## Face colour used by the view layer's background wall.
 @export var color: Color = Color(0.55, 0.55, 0.55, 1.0)
 

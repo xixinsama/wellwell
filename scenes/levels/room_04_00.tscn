@@ -23,9 +23,17 @@ position = Vector2(128, 40)
 color = Color(0.9, 0.3, 0.3, 1)
 polygon = PackedVector2Array(0, 0, 136, 0, 136, 80, 88, 80, 88, 64, 104, 64, 104, 48, 88, 48, 88, 40, 72, 40, 40, 40, 40, 80, 0, 80)
 script = ExtResource("3_piece")
+move_distance = 4
 
 [node name="PieceB" type="Polygon2D" parent="RoomContent/Entities/PuzzleBoard" index="1" unique_id=1450010003]
 position = Vector2(176, 128)
 color = Color(0.3, 0.6, 0.9, 1)
 polygon = PackedVector2Array(0, -8, 24, -8, 24, 0, 40, 0, 40, 16, 24, 16, 24, 24, 0, 24, 0, 16, 16, 16, 16, 8, 0, 8)
 script = ExtResource("3_piece")
+
+[node name="PieceC" type="Polygon2D" parent="RoomContent/Entities/PuzzleBoard" index="2" unique_id=2060724517]
+position = Vector2(56, 56)
+polygon = PackedVector2Array(0, 0, 40, 0, 40, 8, 8, 8, 8, 40, 0, 40)
+script = ExtResource("3_piece")
+move_distance = 2
+metadata/_custom_type_script = "uid://xcsc1lptdek6"

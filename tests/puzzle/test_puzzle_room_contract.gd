@@ -13,6 +13,7 @@ func run() -> Array[String]:
 	var failures: Array[String] = []
 	_assert_world_registration(failures)
 	_assert_runtime_scene_boots_board(failures)
+	_assert_player_riding_rules(failures)
 	return failures
 
 
@@ -55,4 +56,49 @@ func _assert_runtime_scene_boots_board(failures: Array[String]) -> void:
 		failures.append("PieceB L-shape did not cover cell (5, 3)")
 	if board.call("get_piece_at_cell", Vector2i(6, 3)) == null:
 		failures.append("PieceB L-shape did not cover cell (6, 3)")
+	root.free()
+
+
+func _assert_player_riding_rules(failures: Array[String]) -> void:
+	var scene: PackedScene = load(RUNTIME_SCENE_PATH)
+	if scene == null:
+		failures.append("room_04_00 runtime scene is missing")
+		return
+	var root: Node = scene.instantiate()
+	add_child(root)
+	var board: Node = root.get_node_or_null("Entities/PuzzleBoard")
+	if board == null:
+		failures.append("riding test could not find the PuzzleBoard")
+		root.free()
+		return
+	var player := Node2D.new()
+	player.name = "TestPlayer"
+	player.add_to_group("player")
+	root.add_child(player)
+	board.call("_resolve_player_lazy")
+
+	var pieces: Array = board.get("_pieces")
+	if pieces.size() < 2:
+		failures.append("riding test needs the two scene pieces")
+		root.free()
+		return
+	var piece_a: Node = pieces[0]
+	var piece_b: Node = pieces[1]
+
+	# Case 1: standing on top of PieceA, outside its bounding rect.
+	board.call("set_player_to_cell", Vector2i(1, 1))
+	if not board.call("_player_rides", piece_a):
+		failures.append("player standing on PieceA did not ride")
+	# Case 2: inside PieceB's bounding rect with empty support.
+	board.call("set_player_to_cell", Vector2i(5, 3))
+	if not board.call("_player_rides", piece_b):
+		failures.append("player inside PieceB's rect did not ride")
+	# Far from every piece: no ride.
+	board.call("set_player_to_cell", Vector2i(0, 0))
+	if board.call("_player_rides", piece_a):
+		failures.append("distant player incorrectly rode PieceA")
+	# Touching from below (piece above the head): no ride.
+	board.call("set_player_to_cell", Vector2i(1, 4))
+	if board.call("_player_rides", piece_a):
+		failures.append("player under PieceA incorrectly rode")
 	root.free()

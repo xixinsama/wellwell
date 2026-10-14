@@ -26,6 +26,10 @@ func run() -> Array[String]:
 	_assert_session_flow(failures)
 	_assert_solved_state(failures)
 	_assert_free_form_shape_occupancy(failures)
+	_assert_target_only_move(failures)
+	_assert_extra_blocked_cells(failures)
+	_assert_move_distance_generation(failures)
+	_assert_rider_registration(failures)
 	return failures
 
 
@@ -147,7 +151,7 @@ func _assert_move_validation(failures: Array[String]) -> void:
 	if rules.can_apply_move(state, PuzzleMove.new(0, Vector2i(1, 1), Vector2i(1, 2))):
 		failures.append("move with a stale from_cell was accepted")
 	if rules.can_apply_move(state, PuzzleMove.new(0, Vector2i(1, 0), Vector2i(1, 3))):
-		failures.append("multi-step slide through a blocked path was accepted")
+		failures.append("multi-step slide onto an occupied target was accepted")
 
 
 func _assert_movement_mode_restrictions(failures: Array[String]) -> void:
@@ -198,7 +202,7 @@ func _assert_session_flow(failures: Array[String]) -> void:
 		failures.append("session did not apply the move to its state")
 
 	if session.try_move(PuzzleMove.new(0, Vector2i(1, 1), Vector2i(1, 3))):
-		failures.append("session accepted an invalid multi-step move")
+		failures.append("session accepted a move onto an occupied target")
 	if session.get_move_count() != 1:
 		failures.append("failed move changed the move count")
 
@@ -246,3 +250,90 @@ func _assert_free_form_shape_occupancy(failures: Array[String]) -> void:
 		failures.append("free-form L-shape blocked a free cell inside its bounding box")
 	if l.get_bounds() != Rect2i(Vector2i.ZERO, Vector2i(2, 2)):
 		failures.append("free-form L-shape reported wrong bounds")
+
+
+func _assert_target_only_move(failures: Array[String]) -> void:
+	var def := PuzzleDefinition.new()
+	def.board.board_size = Vector2i(4, 1)
+	def.board.blocked_cells.append(Vector2i(1, 0))
+	def.board.blocked_cells.append(Vector2i(3, 0))
+	var piece := PieceDefinition.new()
+	piece.id = &"p"
+	piece.shape = [Vector2i.ZERO]
+	piece.initial_cell = Vector2i(0, 0)
+	piece.move_distance = 2
+	def.pieces.append(piece)
+
+	var rules := SlidingPuzzleRuleSet.new(def)
+	var state := PuzzleSession.new(def).current_state
+	if not rules.can_apply_move(state, PuzzleMove.new(0, Vector2i(0, 0), Vector2i(2, 0))):
+		failures.append("target-only move was rejected despite a free target past a blocked cell")
+	if rules.can_apply_move(state, PuzzleMove.new(0, Vector2i(0, 0), Vector2i(3, 0))):
+		failures.append("target-only move onto a blocked target was accepted")
+
+
+func _assert_extra_blocked_cells(failures: Array[String]) -> void:
+	var def := PuzzleDefinition.new()
+	def.board.board_size = Vector2i(3, 1)
+	var piece := PieceDefinition.new()
+	piece.id = &"p"
+	piece.shape = [Vector2i.ZERO]
+	piece.initial_cell = Vector2i(0, 0)
+	def.pieces.append(piece)
+
+	var rules := SlidingPuzzleRuleSet.new(def)
+	var state := PuzzleSession.new(def).current_state
+	var move := PuzzleMove.new(0, Vector2i(0, 0), Vector2i(1, 0))
+	if rules.can_apply_move(state, move, [Vector2i(1, 0)]):
+		failures.append("player wall did not block a move onto its cell")
+	if not rules.can_apply_move(state, move):
+		failures.append("move was rejected without the player wall")
+
+
+func _assert_move_distance_generation(failures: Array[String]) -> void:
+	var def := PuzzleDefinition.new()
+	def.board.board_size = Vector2i(3, 1)
+	var piece := PieceDefinition.new()
+	piece.id = &"p"
+	piece.shape = [Vector2i.ZERO]
+	piece.initial_cell = Vector2i(0, 0)
+	piece.move_distance = 2
+	def.pieces.append(piece)
+
+	var rules := SlidingPuzzleRuleSet.new(def)
+	var state := PuzzleSession.new(def).current_state
+	var moves := rules.get_legal_moves(state)
+	if moves.size() != 1:
+		failures.append("move_distance piece should have 1 legal move, got %d" % moves.size())
+	elif moves[0].get_distance() != 2:
+		failures.append("legal move did not travel the piece's move_distance")
+
+
+func _assert_rider_registration(failures: Array[String]) -> void:
+	var def := PuzzleDefinition.new()
+	def.board.board_size = Vector2i(3, 1)
+	var a := PieceDefinition.new()
+	a.id = &"a"
+	a.shape = [Vector2i.ZERO]
+	a.initial_cell = Vector2i(0, 0)
+	def.pieces.append(a)
+	var b := PieceDefinition.new()
+	b.id = &"b"
+	b.shape = [Vector2i.ZERO]
+	b.initial_cell = Vector2i(2, 0)
+	def.pieces.append(b)
+
+	var rules := SlidingPuzzleRuleSet.new(def)
+	var state := PuzzleSession.new(def).current_state
+	var b_into_cell := PuzzleMove.new(1, Vector2i(2, 0), Vector2i(1, 0))
+	if not rules.can_apply_move(state, b_into_cell):
+		failures.append("piece could not move into an unregistered free cell")
+	# Glue a rider to the right of A: it now occupies cell (1, 0).
+	rules.set_rider(0, Vector2i(1, 0))
+	if rules.can_apply_move(state, b_into_cell):
+		failures.append("rider did not block another piece")
+	if rules.can_apply_move(state, PuzzleMove.new(0, Vector2i(0, 0), Vector2i(1, 0))):
+		failures.append("rider did not block its own piece's destination")
+	rules.clear_rider()
+	if not rules.can_apply_move(state, b_into_cell):
+		failures.append("clearing the rider did not free the cell")

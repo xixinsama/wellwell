@@ -19,9 +19,9 @@ func _get_occupancy() -> BoardOccupancy:
 	return _occupancy
 
 
-## All single-cell moves currently available. Multi-cell drags use
-## [method can_apply_move] directly.
-func get_legal_moves(state: BoardState) -> Array[PuzzleMove]:
+## All moves currently available, each travelling the piece's move_distance.
+## Interactive input may call [method can_apply_move] directly instead.
+func get_legal_moves(state: BoardState, extra_blocked_cells: Array[Vector2i] = []) -> Array[PuzzleMove]:
 	var moves: Array[PuzzleMove] = []
 	if state == null or definition == null:
 		return moves
@@ -29,16 +29,17 @@ func get_legal_moves(state: BoardState) -> Array[PuzzleMove]:
 	if occupancy == null:
 		return moves
 	for piece in state.pieces:
+		var distance := _piece_move_distance(piece)
 		for axis: Vector2i in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
 			if not _allows_direction(piece, axis):
 				continue
-			var move := PuzzleMove.new(piece.piece_index, piece.cell, piece.cell + axis)
-			if can_apply_move(state, move):
+			var move := PuzzleMove.new(piece.piece_index, piece.cell, piece.cell + axis * distance)
+			if can_apply_move(state, move, extra_blocked_cells):
 				moves.append(move)
 	return moves
 
 
-func can_apply_move(state: BoardState, move: PuzzleMove) -> bool:
+func can_apply_move(state: BoardState, move: PuzzleMove, extra_blocked_cells: Array[Vector2i] = []) -> bool:
 	if state == null or move == null or definition == null:
 		return false
 	var occupancy := _get_occupancy()
@@ -60,14 +61,9 @@ func can_apply_move(state: BoardState, move: PuzzleMove) -> bool:
 	if not _allows_direction(piece, step):
 		return false
 
-	# Sweep one cell at a time, including the final cell, so the whole
-	# collision wall must fit on every step of the path.
-	var current := move.from_cell
-	while current != move.to_cell:
-		current += step
-		if not occupancy.can_place_piece(state, move.piece_index, current, move.piece_index):
-			return false
-	return true
+	# Only the destination cells are checked. Intermediate cells are skipped, so
+	# a multi-cell jump can enter a hollow block through surrounding walls.
+	return occupancy.can_place_piece(state, move.piece_index, move.to_cell, move.piece_index, extra_blocked_cells)
 
 
 func is_solved(state: BoardState) -> bool:
@@ -80,3 +76,26 @@ func _allows_direction(piece: PieceState, direction: Vector2i) -> bool:
 	if definition == null or piece.piece_index < 0 or piece.piece_index >= definition.pieces.size():
 		return false
 	return definition.pieces[piece.piece_index].allows_axis(direction)
+
+
+func _piece_move_distance(piece: PieceState) -> int:
+	if definition == null or piece.piece_index < 0 or piece.piece_index >= definition.pieces.size():
+		return 1
+	return maxi(1, definition.pieces[piece.piece_index].move_distance)
+
+
+## Glue a single extra cell (the player rider) onto [param piece_index]. The
+## rider is then part of that piece's footprint for every occupancy question.
+func set_rider(piece_index: int, offset: Vector2i) -> void:
+	var occupancy := _get_occupancy()
+	if occupancy == null:
+		return
+	var offsets: Array[Vector2i] = [offset]
+	occupancy.extra_offsets.clear()
+	occupancy.extra_offsets[piece_index] = offsets
+
+
+func clear_rider() -> void:
+	var occupancy := _get_occupancy()
+	if occupancy != null:
+		occupancy.extra_offsets.clear()

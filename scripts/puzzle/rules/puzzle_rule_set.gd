@@ -8,7 +8,7 @@ func get_legal_moves(_state: BoardState) -> Array[PuzzleMove]:
 	return []
 
 
-func can_apply_move(_state: BoardState, _move: PuzzleMove) -> bool:
+func can_apply_move(_state: BoardState, _move: PuzzleMove, _extra_blocked_cells: Array[Vector2i] = []) -> bool:
 	return false
 
 
@@ -24,3 +24,12 @@ func apply_move(state: BoardState, move: PuzzleMove) -> BoardState:
 
 func is_solved(_state: BoardState) -> bool:
 	return false
+
+
+## Optional hook: glue an extra cell (the player rider) onto a piece.
+func set_rider(_piece_index: int, _offset: Vector2i) -> void:
+	pass
+
+
+func clear_rider() -> void:
+	pass

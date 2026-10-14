@@ -26,8 +26,8 @@ func reset() -> void:
 	redo_history.clear()
 
 
-func try_move(move: PuzzleMove) -> bool:
-	if rules == null or not rules.can_apply_move(current_state, move):
+func try_move(move: PuzzleMove, extra_blocked_cells: Array[Vector2i] = []) -> bool:
+	if rules == null or not rules.can_apply_move(current_state, move, extra_blocked_cells):
 		return false
 	current_state = rules.apply_move(current_state, move)
 	move_history.append(move)
@@ -65,6 +65,17 @@ func get_legal_moves() -> Array[PuzzleMove]:
 	if rules == null:
 		return []
 	return rules.get_legal_moves(current_state)
+
+
+## Register the player as an extra cell glued to [param piece_index].
+func set_rider(piece_index: int, offset: Vector2i) -> void:
+	if rules != null:
+		rules.set_rider(piece_index, offset)
+
+
+func clear_rider() -> void:
+	if rules != null:
+		rules.clear_rider()
 
 
 func _build_initial_state() -> BoardState:
