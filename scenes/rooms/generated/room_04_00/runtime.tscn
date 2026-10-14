@@ -1,0 +1,31 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://addons/platformer_kit/world/entities/spawn_point.gd" id="1_eyolv"]
+[ext_resource type="Script" path="res://scripts/puzzle/view/puzzle_board.gd" id="2_pbdly"]
+[ext_resource type="Script" path="res://scripts/puzzle/view/puzzle_piece.gd" id="3_0fgh0"]
+
+[node name="RoomRuntimeContent" type="Node2D" unique_id=1167984506]
+
+[node name="Entities" type="Node2D" parent="." unique_id=978679270]
+
+[node name="StartSpawn" type="Marker2D" parent="Entities" unique_id=115961501]
+position = Vector2(40, 144)
+script = ExtResource("1_eyolv")
+
+[node name="PuzzleBoard" type="Node2D" parent="Entities" unique_id=1756173302]
+position = Vector2(128, 120)
+script = ExtResource("2_pbdly")
+
+[node name="PieceA" type="Polygon2D" parent="Entities/PuzzleBoard" unique_id=2104964495]
+position = Vector2(8, 16)
+color = Color(0.9, 0.3, 0.3, 1)
+polygon = PackedVector2Array(0, 0, 16, 0, 16, 16, 0, 16)
+script = ExtResource("3_0fgh0")
+
+[node name="PieceB" type="Polygon2D" parent="Entities/PuzzleBoard" unique_id=1634811153]
+position = Vector2(40, 16)
+color = Color(0.3, 0.6, 0.9, 1)
+polygon = PackedVector2Array(0, 0, 8, 0, 8, 8, 16, 8, 16, 16, 0, 16)
+script = ExtResource("3_0fgh0")
+
+[node name="Foreground" type="Node2D" parent="." unique_id=105335786]

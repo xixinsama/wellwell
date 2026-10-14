@@ -49,6 +49,8 @@ const TESTS: Array[Script] = [
 	preload("res://tests/save/test_save_storage.gd"),
 	preload("res://tests/save/test_save_slots.gd"),
 	preload("res://tests/world/test_fog_visibility.gd"),
+	preload("res://tests/puzzle/test_sliding_puzzle_core.gd"),
+	preload("res://tests/puzzle/test_puzzle_room_contract.gd"),
 	preload("res://tests/world/data/test_room_grid.gd"),
 	preload("res://tests/world/test_pixel_camera.gd"),
 	preload("res://tests/world/test_runtime_bindings.gd"),

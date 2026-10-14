@@ -1,4 +1,4 @@
-[gd_scene format=3 uid="uid://ckqu7y7vwa2yp"]
+[gd_scene format=3 uid="uid://bdo5ndgeyfj8e"]
 
 [ext_resource type="PackedScene" uid="uid://dons4yo63slat" path="res://addons/platformer_abilities/entities/ability_pickup.tscn" id="1_ou72k"]
 [ext_resource type="Script" uid="uid://6kpop3ke1gni" path="res://addons/platformer_abilities/entities/ability_pickup.gd" id="2_nqtjo"]
@@ -11,14 +11,14 @@
 [sub_resource type="CircleShape2D" id="CircleShape_pickup"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape_activation"]
-size = Vector2(24, 32)
+size = Vector2(16, 20)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape_interaction"]
-size = Vector2(32, 36)
+size = Vector2(32, 28)
 
-[node name="RoomRuntimeContent" type="Node2D" unique_id=222918416]
+[node name="RoomRuntimeContent" type="Node2D" unique_id=153760663]
 
-[node name="Entities" type="Node2D" parent="." unique_id=1296157545]
+[node name="Entities" type="Node2D" parent="." unique_id=1942927402]
 
 [node name="AbilityPickup" type="Node2D" parent="Entities" unique_id=261258473 instance=ExtResource("1_ou72k")]
 position = Vector2(93, 315)
@@ -48,23 +48,18 @@ shape = SubResource("CircleShape_pickup")
 [node name="SavePoint" type="Node2D" parent="Entities" unique_id=939447865 instance=ExtResource("4_o8akd")]
 position = Vector2(87, 152)
 script = ExtResource("5_3igum")
+activation_mode = 1
 inactive_color = Color(0.31023967, 0.6653145, 0.7608393, 1)
 active_color = Color(1.6364455e-06, 0.95945245, 0.23636574, 1)
 entity_id = "checkpoint"
 persistent_id = &"checkpoint"
 
-[node name="VisualRoot" type="Node2D" parent="Entities/SavePoint" unique_id=1854276615]
+[node name="Visual" type="Node2D" parent="Entities/SavePoint" unique_id=1854276615]
 
-[node name="Pole" type="Polygon2D" parent="Entities/SavePoint/VisualRoot" unique_id=1530133621]
-color = Color(0.75, 0.79, 0.82, 1)
-polygon = PackedVector2Array(-2, 0, 2, 0, 2, -28, -2, -28)
-
-[node name="Flag" type="Polygon2D" parent="Entities/SavePoint/VisualRoot" unique_id=957334540]
-polygon = PackedVector2Array(2, -28, 18, -23, 2, -17)
-
-[node name="Base" type="Polygon2D" parent="Entities/SavePoint/VisualRoot" unique_id=608111670]
-color = Color(0.65, 0.7, 0.74, 1)
-polygon = PackedVector2Array(-8, 0, 8, 0, 5, -4, -5, -4)
+[node name="Polygon2D" type="Polygon2D" parent="Entities/SavePoint/Visual" unique_id=509490264]
+modulate = Color(0.9843137, 0.16862746, 0.44705883, 1)
+position = Vector2(0, -4)
+polygon = PackedVector2Array(-4, -4, 4, -4, 4, 0, 0, 0, -4, 0, -4, 4, 8, 4, 8, -4, 8, -8, 0, -8, 0, -12, 8, -12, 8, -16, -4, -16)
 
 [node name="ActivationArea" type="Area2D" parent="Entities/SavePoint" unique_id=1201975166]
 position = Vector2(0, -16)
@@ -72,6 +67,7 @@ collision_layer = 0
 collision_mask = 2
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Entities/SavePoint/ActivationArea" unique_id=927462723]
+position = Vector2(0, 6)
 shape = SubResource("RectangleShape_activation")
 
 [node name="Interactable" type="Area2D" parent="Entities/SavePoint" unique_id=602600738]
@@ -83,13 +79,14 @@ interaction_id = &"save_point"
 interaction_priority = 20
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Entities/SavePoint/Interactable" unique_id=1270620948]
+position = Vector2(0, 2)
 shape = SubResource("RectangleShape_interaction")
 
 [node name="SpawnPoint" type="Marker2D" parent="Entities/SavePoint" unique_id=1888059450]
 script = ExtResource("7_6ifd7")
 spawn_id = "checkpoint"
 
-[node name="StartSpawn" type="Marker2D" parent="Entities" unique_id=703198738]
+[node name="StartSpawn" type="Marker2D" parent="Entities" unique_id=747360478]
 script = ExtResource("7_6ifd7")
 
-[node name="Foreground" type="Node2D" parent="." unique_id=36115951]
+[node name="Foreground" type="Node2D" parent="." unique_id=1991366098]

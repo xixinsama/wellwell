@@ -16,6 +16,9 @@ const PLAYER_INPUT_SOURCE := preload("res://addons/platformer_kit/character/inpu
 
 var facing: int = 1
 var was_on_floor: bool = false
+## When true (puzzle drag mode) the player ignores all input and freezes in
+## place. PuzzleBoard toggles this and keeps the player riding a block.
+var control_locked: bool = false
 
 var _motor: RefCounted = CHARACTER_MOTOR.new()
 var _movement_context: RefCounted = MOVEMENT_CONTEXT.new()
@@ -29,6 +32,7 @@ var _world_velocity := Vector2.ZERO
 
 
 func _ready() -> void:
+    add_to_group("player")
     if tuning == null:
         tuning = PLAYER_TUNING_SCRIPT.new()
     if spawn_position == Vector2.ZERO:
@@ -59,7 +63,19 @@ func grant_ability_definition(definition: Resource) -> bool:
     return _ability_loadout != null and bool(_ability_loadout.call("grant_ability_definition", definition))
 
 
+func set_control_locked(value: bool) -> void:
+    control_locked = value
+    if value:
+        velocity = Vector2.ZERO
+        _movement_context.velocity = Vector2.ZERO
+        _world_velocity = Vector2.ZERO
+
+
 func _physics_process(delta: float) -> void:
+    if control_locked:
+        velocity = Vector2.ZERO
+        _movement_context.velocity = Vector2.ZERO
+        return
     var profile := tuning as MOVEMENT_PROFILE
     if profile == null:
         return
