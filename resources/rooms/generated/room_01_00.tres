@@ -1,14 +1,14 @@
-[gd_resource type="Resource" script_class="RoomData" format=3 uid="uid://cu73ap10eduij"]
+[gd_resource type="Resource" script_class="RoomData" format=3 uid="uid://s17586p45rs6"]
 
 [ext_resource type="Script" uid="uid://iffewvgc6ofw" path="res://addons/platformer_kit/world/data/room_data.gd" id="1_o3ny0"]
 
 [resource]
 script = ExtResource("1_o3ny0")
 room_id = "room_01_00"
-display_name = "room_01_00"
+display_name = "出生房间的右边"
 scene_path = "res://scenes/rooms/generated/room_01_00/runtime.tscn"
-source_scene_path = "res://scenes/levels/room_01_00.tscn"
-source_fingerprint = "0d1bf7f47f1bb1856f9b7fd3ba3ca2c5486989b613ede31a0c8baaa1b53c0d89"
+source_scene_path = "res://scenes/levels/main/room_01_00.tscn"
+source_fingerprint = "70d7b57bb912bfcd35687a267b7fdad080d8e70fbb926643152f7e74d4274947"
 terrain_scene_path = "res://scenes/rooms/generated/room_01_00/terrain.tscn"
 entrance_ids = PackedStringArray()
 spawn_ids = PackedStringArray("start")

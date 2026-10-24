@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="RoomData" format=3 uid="uid://dm25j5xwmd3y0"]
+
+[ext_resource type="Script" uid="uid://iffewvgc6ofw" path="res://addons/platformer_kit/world/data/room_data.gd" id="1_3ygso"]
+
+[resource]
+script = ExtResource("1_3ygso")
+room_id = "template_room"
+display_name = "Template Room"
+scene_path = "res://scenes/rooms/generated/template_room/runtime.tscn"
+source_scene_path = "res://scenes/levels/main/room_start_00.tscn"
+source_fingerprint = "4575a2cbf70ff5e75a38d49c3b382e7c4eec133a4065b4135c2d6048f3751a18"
+terrain_scene_path = "res://scenes/rooms/generated/template_room/terrain.tscn"
+entrance_ids = PackedStringArray()
+spawn_ids = PackedStringArray("start")
+entity_ids = PackedStringArray()
+tags = PackedStringArray()

@@ -3,6 +3,7 @@
 [ext_resource type="Script" uid="uid://c4885ofxnwufl" path="res://scripts/app/main.gd" id="1_main"]
 [ext_resource type="Shader" uid="uid://nq1da1uidaxy" path="res://scripts/shaders/sub_pixel.gdshader" id="2_jyhfs"]
 [ext_resource type="PackedScene" uid="uid://hbo4lyjj1f0x" path="res://scenes/runtime/world_root.tscn" id="2_sugp2"]
+[ext_resource type="Resource" uid="uid://n1i166t07xts" path="res://resources/worlds/main_world.tres" id="4_laar2"]
 [ext_resource type="PackedScene" uid="uid://xdpcjsmnvhkj" path="res://addons/platformer_debug/runtime/debug_hud.tscn" id="7_debug_hud"]
 [ext_resource type="PackedScene" uid="uid://drj26wtbpstxe" path="res://scenes/ui/main_menu.tscn" id="8_main_menu"]
 [ext_resource type="PackedScene" uid="uid://dcpnuqlqrftuv" path="res://scenes/ui/settings.tscn" id="9_settings"]
@@ -42,6 +43,7 @@ size = Vector2i(322, 182)
 render_target_update_mode = 4
 
 [node name="WorldRoot" parent="SubViewportContainer/SubViewport" unique_id=1552118021 instance=ExtResource("2_sugp2")]
+world_data = ExtResource("4_laar2")
 
 [node name="HUD" type="CanvasLayer" parent="." unique_id=1657073427]
 
