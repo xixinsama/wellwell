@@ -111,6 +111,11 @@ not consume the pickup.
 - Test selection through `PuzzleBoard._handle_selection_input(previous, next,
   select, cancel)` with explicit booleans. Do not rely on
   `Input.action_press()` edge timing in headless tests.
+- Right-stick aiming uses `aim_left/right/up/down` actions and
+  `PuzzleBoard._handle_stick_selection(aim)`. The board chooses the nearest
+  `_controllable_pieces()` center inside a 45-degree cone, draws
+  `PuzzleAimArrow`, and switches selection only on release. The explicit aim
+  vector is the test seam; no history entry is created.
 - A successful slide that carries the rider earns one air jump on leaving drag
   mode. `PuzzleBoard` grants it through
   `PlayerController.grant_air_jump()`; the motor exposes the one-shot state as

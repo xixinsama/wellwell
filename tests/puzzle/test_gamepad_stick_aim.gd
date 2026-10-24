@@ -16,6 +16,7 @@ func run() -> Array[String]:
 	_assert_no_target_release(failures)
 	_assert_cancel_discards_target(failures)
 	_assert_mode_exit_discards_target(failures)
+	_assert_live_wiring(failures)
 	return failures
 
 
@@ -154,3 +155,19 @@ func _make_board() -> Dictionary:
 func _cleanup(fixture: Dictionary) -> void:
 	(fixture.board as PuzzleBoard).free()
 	(fixture.player as Node2D).free()
+
+
+func _assert_live_wiring(failures: Array[String]) -> void:
+	var source := FileAccess.get_file_as_string("res://scripts/puzzle/view/puzzle_board.gd")
+	if not source.contains("_read_stick_aim()"):
+		failures.append("PuzzleBoard does not read the right-stick aim vector")
+	for action: StringName in [
+		&"aim_left_action",
+		&"aim_right_action",
+		&"aim_up_action",
+		&"aim_down_action",
+	]:
+		if not source.contains(String(action)):
+			failures.append("PuzzleBoard is missing live aim action %s" % action)
+	if not source.contains("_handle_stick_selection(_read_stick_aim())"):
+		failures.append("PuzzleBoard does not poll the right stick in _process")

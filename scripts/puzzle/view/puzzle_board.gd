@@ -124,6 +124,7 @@ func _process(_delta: float) -> void:
 			Input.is_action_just_pressed(String(select_rider_action)),
 			Input.is_action_just_pressed(String(cancel_selection_action))
 		)
+		_handle_stick_selection(_read_stick_aim())
 	_handle_mouse()
 	if mode == ControlMode.DRAG:
 		_handle_move_keys()
