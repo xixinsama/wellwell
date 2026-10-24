@@ -107,6 +107,13 @@ func _process(_delta: float) -> void:
 			_enter_drag_mode()
 		else:
 			_exit_drag_mode()
+	if mode == ControlMode.DRAG:
+		_handle_selection_input(
+			Input.is_action_just_pressed(String(prev_piece_action)),
+			Input.is_action_just_pressed(String(next_piece_action)),
+			Input.is_action_just_pressed(String(select_rider_action)),
+			Input.is_action_just_pressed(String(cancel_selection_action))
+		)
 	_handle_mouse()
 	if mode == ControlMode.DRAG:
 		_handle_move_keys()

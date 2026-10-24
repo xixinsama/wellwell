@@ -18,6 +18,7 @@ func run() -> Array[String]:
 	_assert_inactive_board(failures)
 	_assert_reset_reselects(failures)
 	_assert_selection_does_not_create_history(failures)
+	_assert_process_wiring(failures)
 	return failures
 
 
@@ -190,3 +191,25 @@ func _make_board(rider_at: Vector2i) -> Dictionary:
 func _cleanup(fixture: Dictionary) -> void:
 	(fixture.board as PuzzleBoard).free()
 	(fixture.player as Node2D).free()
+
+
+func _assert_process_wiring(failures: Array[String]) -> void:
+	var source := FileAccess.get_file_as_string("res://scripts/puzzle/view/puzzle_board.gd")
+	for action: StringName in [
+		&"prev_piece_action",
+		&"next_piece_action",
+		&"select_rider_action",
+		&"cancel_selection_action",
+	]:
+		if not source.contains(String(action)):
+			failures.append("PuzzleBoard is missing live action export %s" % action)
+	if not source.contains("_handle_selection_input("):
+		failures.append("PuzzleBoard does not call the selection input seam")
+	for action: StringName in [
+		&"prev_piece_action",
+		&"next_piece_action",
+		&"select_rider_action",
+		&"cancel_selection_action",
+	]:
+		if not source.contains("Input.is_action_just_pressed(String(%s))" % action):
+			failures.append("PuzzleBoard does not poll live action %s" % action)

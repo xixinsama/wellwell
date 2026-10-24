@@ -100,6 +100,17 @@ not consume the pickup.
   player, and every overlapping board reacts independently. A compound primary
   move plus its induced void moves is one history entry. `Z` takes priority over
   `R` in the same frame. The player is never moved by reset.
+- Gamepad selection uses the project actions `slider_prev`, `slider_next`,
+  `slider_select_rider`, and `slider_cancel`. `PuzzleBoard` filters these to
+  `enable` + non-`STATIC` pieces in scene order. Entering drag mode auto-selects
+  the ridden piece, or the first eligible piece. Controller selection is scoped
+  to the board containing the player or a board the player is riding.
+- `undo` keeps Z and gains Back/View; `reset` keeps R and gains Start/Menu.
+  New slider actions have no keyboard defaults; assign them through the existing
+  Input Mapping menu if needed.
+- Test selection through `PuzzleBoard._handle_selection_input(previous, next,
+  select, cancel)` with explicit booleans. Do not rely on
+  `Input.action_press()` edge timing in headless tests.
 - A successful slide that carries the rider earns one air jump on leaving drag
   mode. `PuzzleBoard` grants it through
   `PlayerController.grant_air_jump()`; the motor exposes the one-shot state as
