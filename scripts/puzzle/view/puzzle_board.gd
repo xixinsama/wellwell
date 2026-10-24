@@ -27,6 +27,10 @@ enum ControlMode { JUMP, DRAG }
 @export var player_group: StringName = &"player"
 @export var undo_action: StringName = &"undo"
 @export var reset_action: StringName = &"reset"
+@export var prev_piece_action: StringName = &"slider_prev"
+@export var next_piece_action: StringName = &"slider_next"
+@export var select_rider_action: StringName = &"slider_select_rider"
+@export var cancel_selection_action: StringName = &"slider_cancel"
 ## Static board walls. Sliders and the void target validation respect these.
 @export var blocked_cells: Array[Vector2i] = []
 ## Optional child defining cells that only the player collides with in jump mode.
@@ -182,6 +186,7 @@ func _enter_drag_mode() -> void:
 	_lock_player(true)
 	if _mode_overlay != null:
 		_mode_overlay.set_active(true)
+	_select_initial_piece()
 
 
 func _exit_drag_mode(force: bool = false) -> void:
@@ -248,6 +253,98 @@ func _is_player_inside_board_rect() -> bool:
 	if _player == null or not is_instance_valid(_player):
 		return false
 	return Rect2i(Vector2i.ZERO, board_size).has_point(player_cell_from_world())
+
+
+func _is_selection_active() -> bool:
+	if _player == null or not is_instance_valid(_player):
+		return false
+	if _is_player_inside_board_rect():
+		return true
+	for piece in _pieces:
+		if not piece.is_void and _player_rides(piece):
+			return true
+	return false
+
+
+func _controllable_pieces() -> Array[PuzzlePiece]:
+	var result: Array[PuzzlePiece] = []
+	for piece in _pieces:
+		if _can_drag_piece(piece):
+			result.append(piece)
+	return result
+
+
+func _select_initial_piece() -> void:
+	if mode != ControlMode.DRAG:
+		return
+	if not _is_selection_active():
+		_deselect_piece(true)
+		return
+	var candidates := _controllable_pieces()
+	if candidates.is_empty():
+		_deselect_piece(true)
+		return
+	for piece in candidates:
+		if _player_rides(piece):
+			_select_piece(piece)
+			return
+	_select_piece(candidates[0])
+
+
+func _cycle_selection(direction: int) -> bool:
+	if mode != ControlMode.DRAG or direction == 0 or not _is_selection_active():
+		return false
+	var candidates := _controllable_pieces()
+	if candidates.is_empty():
+		return false
+	var index := candidates.find(_selected_piece)
+	var target_index: int
+	if index < 0:
+		target_index = 0 if direction > 0 else candidates.size() - 1
+	else:
+		target_index = (index + direction + candidates.size()) % candidates.size()
+	_select_piece(candidates[target_index])
+	return true
+
+
+func _select_rider_piece() -> bool:
+	if mode != ControlMode.DRAG or not _is_selection_active():
+		return false
+	for piece in _controllable_pieces():
+		if _player_rides(piece):
+			_select_piece(piece)
+			return true
+	return false
+
+
+func _cancel_selection() -> bool:
+	if mode != ControlMode.DRAG or not _is_selection_active():
+		return false
+	_deselect_piece()
+	return true
+
+
+func _handle_selection_input(
+	previous_pressed: bool,
+	next_pressed: bool,
+	select_pressed: bool,
+	cancel_pressed: bool
+) -> bool:
+	if mode != ControlMode.DRAG:
+		return false
+	if select_pressed:
+		_select_rider_piece()
+		return true
+	if next_pressed:
+		_cycle_selection(1)
+		return true
+	if previous_pressed:
+		_cycle_selection(-1)
+		return true
+	if cancel_pressed:
+		_cancel_selection()
+		return true
+	return false
 
 
 func _detach_player() -> void:
@@ -496,12 +593,16 @@ func _undo() -> void:
 
 
 func _reset_puzzle() -> void:
-	if session == null or not session.reset():
+	if session == null:
 		return
-	_deselect_piece(true)
-	_end_drag()
-	_hide_preview()
-	_sync_pieces_from_state(true)
+	var did_reset := session.reset()
+	if did_reset:
+		_deselect_piece(true)
+		_end_drag()
+		_hide_preview()
+		_sync_pieces_from_state(true)
+	if mode == ControlMode.DRAG:
+		_select_initial_piece()
 
 
 func _kill_piece_tween(piece_index: int) -> void:
