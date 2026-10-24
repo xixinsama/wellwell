@@ -2,7 +2,7 @@
 
 Date: 2026-10-24
 Project: wellwell / newcore01 puzzle branch
-Status: Approved by user; implementation pending
+Status: Implemented 2026-10-24; pending manual controller acceptance
 
 ## Goal
 
