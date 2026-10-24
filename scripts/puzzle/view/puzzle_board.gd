@@ -31,6 +31,10 @@ enum ControlMode { JUMP, DRAG }
 @export var next_piece_action: StringName = &"slider_next"
 @export var select_rider_action: StringName = &"slider_select_rider"
 @export var cancel_selection_action: StringName = &"slider_cancel"
+@export var aim_left_action: StringName = &"aim_left"
+@export var aim_right_action: StringName = &"aim_right"
+@export var aim_up_action: StringName = &"aim_up"
+@export var aim_down_action: StringName = &"aim_down"
 ## Static board walls. Sliders and the void target validation respect these.
 @export var blocked_cells: Array[Vector2i] = []
 ## Optional child defining cells that only the player collides with in jump mode.
@@ -38,6 +42,9 @@ enum ControlMode { JUMP, DRAG }
 
 const DRAG_THRESHOLD_PX := 4.0
 const DRAG_ANIMATION_SECONDS := 0.08
+const AIM_ARROW_SCRIPT := preload("res://scripts/puzzle/view/puzzle_aim_arrow.gd")
+const AIM_DEADZONE := 0.3
+const AIM_MIN_DOT := 0.7071068
 
 var session: PuzzleSession
 var definition: PuzzleDefinition
@@ -48,6 +55,8 @@ var _player: Node2D = null
 var _void_zone: PuzzleVoidZone = null
 var _mode_overlay: PuzzleModeOverlay = null
 var _target_preview: PuzzleTargetPreview = null
+var _aim_arrow: Node2D = null
+var _stick_target: PuzzlePiece = null
 var _piece_tweens: Dictionary = {}
 
 var _attached_piece: PuzzlePiece = null
@@ -70,6 +79,7 @@ func _ready() -> void:
 	_resolve_void_zone()
 	_build_target_preview()
 	_build_mode_overlay()
+	_build_aim_arrow()
 
 
 func _draw() -> void:
@@ -185,11 +195,19 @@ func _build_mode_overlay() -> void:
 	add_child(_mode_overlay)
 
 
+func _build_aim_arrow() -> void:
+	_aim_arrow = AIM_ARROW_SCRIPT.new() as Node2D
+	_aim_arrow.name = "AimArrow"
+	_aim_arrow.call("setup")
+	add_child(_aim_arrow)
+
+
 # --- Mode switching -----------------------------------------------------------
 
 func _enter_drag_mode() -> void:
 	mode = ControlMode.DRAG
 	_carried_during_drag = false
+	_clear_stick_aim()
 	_lock_player(true)
 	if _mode_overlay != null:
 		_mode_overlay.set_active(true)
@@ -201,6 +219,7 @@ func _exit_drag_mode(force: bool = false) -> void:
 		return
 	var grant_air_jump := _carried_during_drag and not force
 	_carried_during_drag = false
+	_clear_stick_aim()
 	mode = ControlMode.JUMP
 	_deselect_piece(force)
 	_end_drag()
@@ -354,6 +373,77 @@ func _handle_selection_input(
 	return false
 
 
+func _read_stick_aim() -> Vector2:
+	return Input.get_vector(
+		String(aim_left_action),
+		String(aim_right_action),
+		String(aim_up_action),
+		String(aim_down_action)
+	)
+
+
+func _handle_stick_selection(aim: Vector2) -> void:
+	if mode != ControlMode.DRAG or not _is_selection_active() or _selected_piece == null:
+		_clear_stick_aim()
+		return
+	if aim.length() < AIM_DEADZONE:
+		_release_stick_selection()
+		return
+	_stick_target = _find_directional_target(_selected_piece, aim)
+	if _aim_arrow == null:
+		return
+	if _stick_target == null:
+		_aim_arrow.call("hide_arrow")
+	else:
+		_aim_arrow.call(
+			"show_between",
+			_piece_center(_selected_piece),
+			_piece_center(_stick_target)
+		)
+
+
+func _release_stick_selection() -> void:
+	var target := _stick_target
+	_clear_stick_aim()
+	if target != null and is_instance_valid(target) and _can_drag_piece(target):
+		_select_piece(target)
+
+
+func _clear_stick_aim() -> void:
+	_stick_target = null
+	if _aim_arrow != null:
+		_aim_arrow.call("hide_arrow")
+
+
+func _find_directional_target(selected: PuzzlePiece, aim: Vector2) -> PuzzlePiece:
+	if selected == null or aim.length_squared() <= 0.0001:
+		return null
+	var aim_dir := aim.normalized()
+	var origin := _piece_center(selected)
+	var best: PuzzlePiece = null
+	var best_distance_sq := INF
+	for piece in _controllable_pieces():
+		if piece == selected:
+			continue
+		var delta := _piece_center(piece) - origin
+		var distance_sq := delta.length_squared()
+		if distance_sq <= 0.0001:
+			continue
+		var alignment := aim_dir.dot(delta / sqrt(distance_sq))
+		if alignment < AIM_MIN_DOT:
+			continue
+		if distance_sq < best_distance_sq:
+			best_distance_sq = distance_sq
+			best = piece
+	return best
+
+
+func _piece_center(piece: PuzzlePiece) -> Vector2:
+	var bounds := piece.get_bounds()
+	var center_offset := Vector2(bounds.position) + Vector2(bounds.size) * 0.5
+	return piece.position + center_offset * float(cell_size)
+
+
 func _detach_player() -> void:
 	_attached_piece = null
 
@@ -471,6 +561,7 @@ func _handle_mouse() -> void:
 func _select_piece(piece: PuzzlePiece) -> void:
 	if not _can_drag_piece(piece):
 		return
+	_clear_stick_aim()
 	if _selected_piece == piece:
 		return
 	if _player_cell_inside_void() and _attached_piece != null and piece != _attached_piece:
@@ -489,6 +580,7 @@ func _select_piece(piece: PuzzlePiece) -> void:
 func _deselect_piece(force: bool = false) -> void:
 	if not force and _player_cell_inside_void() and _attached_piece != null:
 		return
+	_clear_stick_aim()
 	_selected_piece = null
 	if _mode_overlay != null:
 		_mode_overlay.set_selected(null)
