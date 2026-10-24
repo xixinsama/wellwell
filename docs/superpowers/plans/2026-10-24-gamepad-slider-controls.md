@@ -10,6 +10,9 @@
 
 **Design source:** `docs/superpowers/specs/2026-10-24-gamepad-slider-controls-design.md`
 
+**Status:** Implemented 2026-10-24. Runtime suite passed twice; project validation
+passed. Manual controller acceptance is still pending.
+
 ---
 
 ## File Structure
@@ -32,7 +35,7 @@
 - Modify: `project.godot`
 - Modify: `localization/menu.csv`
 
-- [ ] **Step 1: Write the failing input-contract test**
+- [x] **Step 1: Write the failing input-contract test**
 
 Create `tests/puzzle/test_gamepad_selection.gd` with:
 
@@ -97,7 +100,7 @@ Register the file in `tests/runtime_suite.gd` immediately after
 	preload("res://tests/puzzle/test_rider_jump_reset.gd"),
 ```
 
-- [ ] **Step 2: Run the test and confirm it fails**
+- [x] **Step 2: Run the test and confirm it fails**
 
 Run:
 
@@ -109,7 +112,7 @@ Expected: failure messages for missing `slider_prev`, `slider_next`,
 `slider_select_rider`, `slider_cancel`, and missing gamepad events on
 `undo`/`reset`.
 
-- [ ] **Step 3: Add the four actions and gamepad events**
+- [x] **Step 3: Add the four actions and gamepad events**
 
 Add these actions after the existing `reset` action in `project.godot`:
 
@@ -148,7 +151,7 @@ Append a Start/Menu event to the existing `reset` event array:
 , Object(InputEventJoypadButton,"resource_local_to_scene":false,"resource_name":"","device":-1,"button_index":6,"pressure":0.0,"pressed":true,"script":null)
 ```
 
-- [ ] **Step 4: Add localized action labels**
+- [x] **Step 4: Add localized action labels**
 
 Add to `localization/menu.csv` after `INPUT_ACTION_INTERACT`:
 
@@ -162,7 +165,7 @@ INPUT_ACTION_SLIDER_SELECT_RIDER,Select Ridden Slider,选中骑乘滑块
 INPUT_ACTION_SLIDER_CANCEL,Cancel Selection,取消选中
 ```
 
-- [ ] **Step 5: Run the contract test and confirm it passes**
+- [x] **Step 5: Run the contract test and confirm it passes**
 
 Run:
 
@@ -172,7 +175,7 @@ godot --headless --path . -s res://tests/run_runtime_suite.gd
 
 Expected: `EXIT=0`; no missing-action failures.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add project.godot localization/menu.csv tests/puzzle/test_gamepad_selection.gd \
@@ -188,7 +191,7 @@ git commit -m "feat: add gamepad slider action bindings"
 - Modify: `scripts/puzzle/view/puzzle_board.gd`
 - Test: `tests/puzzle/test_gamepad_selection.gd`
 
-- [ ] **Step 1: Replace the empty fixture and add selection tests**
+- [x] **Step 1: Replace the empty fixture and add selection tests**
 
 Replace `_make_board()` in `tests/puzzle/test_gamepad_selection.gd` and add these
 calls to `run()`:
@@ -342,7 +345,7 @@ func _cleanup(fixture: Dictionary) -> void:
 	(fixture.player as Node2D).free()
 ```
 
-- [ ] **Step 2: Run the suite and confirm the selection tests fail**
+- [x] **Step 2: Run the suite and confirm the selection tests fail**
 
 Run:
 
@@ -353,7 +356,7 @@ godot --headless --path . -s res://tests/run_runtime_suite.gd
 Expected: failures for auto-selection, `_handle_selection_input`, reset
 re-selection, and no history changes.
 
-- [ ] **Step 3: Add the selection helpers**
+- [x] **Step 3: Add the selection helpers**
 
 Add exports near the existing action exports:
 
@@ -459,7 +462,7 @@ func _handle_selection_input(
 	return false
 ```
 
-- [ ] **Step 4: Wire auto-selection and reset re-selection**
+- [x] **Step 4: Wire auto-selection and reset re-selection**
 
 In `_enter_drag_mode()`, call `_select_initial_piece()` after locking the player:
 
@@ -489,7 +492,7 @@ func _reset_puzzle() -> void:
 		_select_initial_piece()
 ```
 
-- [ ] **Step 5: Run the selection tests and confirm they pass**
+- [x] **Step 5: Run the selection tests and confirm they pass**
 
 Run:
 
@@ -499,7 +502,7 @@ godot --headless --path . -s res://tests/run_runtime_suite.gd
 
 Expected: `EXIT=0`; all selection tests pass, existing tests unchanged.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add scripts/puzzle/view/puzzle_board.gd tests/puzzle/test_gamepad_selection.gd
@@ -515,7 +518,7 @@ git commit -m "feat: add gamepad slider selection model"
 - Modify: `游戏机制设计.md`
 - Modify: `docs/extension-guide.md`
 
-- [ ] **Step 1: Add a source-level assertion for live input wiring**
+- [x] **Step 1: Add a source-level assertion for live input wiring**
 
 In `tests/puzzle/test_gamepad_selection.gd`, add this to `run()`:
 
@@ -542,7 +545,7 @@ func _assert_process_wiring(failures: Array[String]) -> void:
 		failures.append("PuzzleBoard does not read live Input actions")
 ```
 
-- [ ] **Step 2: Run the test and confirm it fails**
+- [x] **Step 2: Run the test and confirm it fails**
 
 Run:
 
@@ -552,7 +555,7 @@ godot --headless --path . -s res://tests/run_runtime_suite.gd
 
 Expected: failure because `_process()` does not yet read the four action names.
 
-- [ ] **Step 3: Wire `_process()`**
+- [x] **Step 3: Wire `_process()`**
 
 In `_process()`, after the mode-switch block and before `_handle_mouse()`, add:
 
@@ -569,7 +572,7 @@ In `_process()`, after the mode-switch block and before `_handle_mouse()`, add:
 The final order in `_process()` must be: history, switch, selection,
 mouse, movement. Keep the existing `if _handle_history_input(...): return`.
 
-- [ ] **Step 4: Document player-facing controls**
+- [x] **Step 4: Document player-facing controls**
 
 Add to `游戏机制设计.md` after the keyboard/mouse slider controls:
 
@@ -602,7 +605,7 @@ Add to `docs/extension-guide.md` under `Puzzle Sliding Regions`:
   `Input.action_press()` edge timing in headless tests.
 ```
 
-- [ ] **Step 5: Run the full suite and validate the project**
+- [x] **Step 5: Run the full suite and validate the project**
 
 Run:
 
@@ -613,7 +616,7 @@ godot --headless --path . -s res://tools/validate_project.gd
 
 Expected: both `EXIT=0`.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add scripts/puzzle/view/puzzle_board.gd tests/puzzle/test_gamepad_selection.gd \
@@ -628,7 +631,7 @@ git commit -m "feat: wire gamepad slider controls"
 **Files:**
 - Modify: `docs/superpowers/plans/2026-10-24-gamepad-slider-controls.md` (status only)
 
-- [ ] **Step 1: Run the suite twice**
+- [x] **Step 1: Run the suite twice**
 
 ```bash
 for i in 1 2; do
@@ -639,7 +642,7 @@ done
 
 Expected: both runs `EXIT=0`.
 
-- [ ] **Step 2: Run project validation**
+- [x] **Step 2: Run project validation**
 
 ```bash
 godot --headless --path . -s res://tools/validate_project.gd
@@ -647,7 +650,7 @@ godot --headless --path . -s res://tools/validate_project.gd
 
 Expected: `EXIT=0`.
 
-- [ ] **Step 3: Update the plan status**
+- [x] **Step 3: Update the plan status**
 
 Change the plan header status to `Implemented and verified on 2026-10-24` and
 record that the runtime suite passed twice and project validation passed.
@@ -663,7 +666,7 @@ Ask the user to run `room_start_00.tscn` with a controller and verify:
 - Back undoes, Start resets and re-selects;
 - mouse/keyboard and disabled-void passive pushes still work.
 
-- [ ] **Step 5: Commit the verification note**
+- [x] **Step 5: Commit the verification note**
 
 ```bash
 git add docs/superpowers/plans/2026-10-24-gamepad-slider-controls.md
