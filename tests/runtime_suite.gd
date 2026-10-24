@@ -56,6 +56,7 @@ const TESTS: Array[Script] = [
 	preload("res://tests/puzzle/test_start_room_void.gd"),
 	preload("res://tests/puzzle/test_puzzle_history.gd"),
 	preload("res://tests/puzzle/test_piece_enable.gd"),
+	preload("res://tests/puzzle/test_gamepad_selection.gd"),
 	preload("res://tests/puzzle/test_rider_jump_reset.gd"),
 	preload("res://tests/puzzle/test_puzzle_tile_piece.gd"),
 	preload("res://tests/puzzle/test_puzzle_room_contract.gd"),
