@@ -23,6 +23,7 @@ SaveManager="*res://addons/platformer_kit/save/save_manager.gd"
 MenuLocalization="*res://scripts/ui/menu_localization.gd"
 GlobalSettings="*res://scripts/save/global_settings_manager.gd"
 InputMapping="*res://addons/input_mapping/runtime/input_mapping_service.gd"
+MCPGameBridge="*res://addons/godot_mcp/game_bridge/mcp_game_bridge.gd"
 
 [display]
 
@@ -35,7 +36,14 @@ window/per_pixel_transparency/allowed=true
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/input_mapping/plugin.cfg", "res://addons/metroidvania_kit/plugin.cfg", "res://addons/platformer_abilities/plugin.cfg", "res://addons/platformer_combat/plugin.cfg", "res://addons/platformer_debug/plugin.cfg", "res://addons/platformer_kit/plugin.cfg", "res://addons/world_editor/plugin.cfg")
+enabled=PackedStringArray("res://addons/input_mapping/plugin.cfg", "res://addons/metroidvania_kit/plugin.cfg", "res://addons/platformer_abilities/plugin.cfg", "res://addons/platformer_combat/plugin.cfg", "res://addons/platformer_debug/plugin.cfg", "res://addons/platformer_kit/plugin.cfg", "res://addons/world_editor/plugin.cfg", "res://addons/godot_mcp/plugin.cfg")
+
+[godot_mcp]
+
+bind_mode=1
+custom_bind_ip=""
+port_override_enabled=true
+port_override=6550
 
 [input]
 
@@ -95,6 +103,17 @@ interact={
 switch_mode={
 "deadzone": 0.2,
 "events": [Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":4194306,"physical_keycode":4194306,"key_label":0,"unicode":0,"location":0,"echo":false,"script":null)
+, Object(InputEventJoypadButton,"resource_local_to_scene":false,"resource_name":"","device":-1,"button_index":3,"pressure":0.0,"pressed":true,"script":null)
+]
+}
+undo={
+"deadzone": 0.2,
+"events": [Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":90,"physical_keycode":90,"key_label":0,"unicode":122,"location":0,"echo":false,"script":null)
+]
+}
+reset={
+"deadzone": 0.2,
+"events": [Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":82,"physical_keycode":82,"key_label":0,"unicode":114,"location":0,"echo":false,"script":null)
 ]
 }
 
@@ -111,6 +130,7 @@ locale/translations=PackedStringArray("res://localization/menu.zh_CN.translation
 2d_physics/layer_1="world"
 2d_physics/layer_2="player"
 2d_physics/layer_3="trigger"
+2d_physics/layer_4="void"
 
 [physics]
 

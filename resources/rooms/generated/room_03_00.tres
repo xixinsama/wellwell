@@ -1,6 +1,6 @@
-[gd_resource type="Resource" script_class="RoomData" format=3 uid="uid://k5pa07hjiafl"]
+[gd_resource type="Resource" script_class="RoomData" format=3]
 
-[ext_resource type="Script" uid="uid://iffewvgc6ofw" path="res://addons/platformer_kit/world/data/room_data.gd" id="1_5ox36"]
+[ext_resource type="Script" path="res://addons/platformer_kit/world/data/room_data.gd" id="1_5ox36"]
 
 [resource]
 script = ExtResource("1_5ox36")
@@ -8,7 +8,7 @@ room_id = "room_03_00"
 display_name = "room_03_00"
 scene_path = "res://scenes/rooms/generated/room_03_00/runtime.tscn"
 source_scene_path = "res://scenes/levels/room_03_00.tscn"
-source_fingerprint = "ffa0e07c434cedfb752bf4d8d276e338fc7b44e78e8cb04a1098ae7822b0df9e"
+source_fingerprint = "0b47bfb2c0da30cd4665d9f9cf73f1c579f8240c844d1a1bb6b005fb77f6f93f"
 terrain_scene_path = "res://scenes/rooms/generated/room_03_00/terrain.tscn"
 entrance_ids = PackedStringArray()
 spawn_ids = PackedStringArray("checkpoint", "start")

@@ -22,6 +22,12 @@ class PreviewSnapshot extends RefCounted:
 	func get_entity_state(entity_key: String) -> Dictionary:
 		return _entity_states.get(entity_key, {}).duplicate(true)
 
+	func set_respawn(room_id: String, spawn_id: String, position: Vector2) -> bool:
+		respawn_room_id = room_id
+		respawn_spawn_id = spawn_id
+		respawn_position = position
+		return true
+
 
 @export var authoring_root_path := NodePath("..")
 @export var player_path := NodePath("../PreviewOnly/Player")
@@ -58,6 +64,7 @@ func setup_preview(authoring_root: Node = null) -> bool:
 		return false
 
 	_ensure_preview_snapshot(String(root.get("room_id")), String(root.get("preview_spawn_id")), spawn.global_position)
+	_setup_preview_entities(room_content, String(root.get("room_id")))
 	player.global_position = spawn.global_position
 	_bind_target(camera, player)
 	_bind_player(fog, player)
@@ -116,8 +123,27 @@ func get_entity_state(entity_key: String) -> Dictionary:
 	return _preview_snapshot.get_entity_state(entity_key)
 
 
+func set_respawn(room_id: String, spawn_id: String, position: Vector2) -> bool:
+	if _preview_snapshot == null:
+		return false
+	return _preview_snapshot.set_respawn(room_id, spawn_id, position)
+
+
 func queue_commit() -> bool:
 	return false
+
+
+func _setup_preview_entities(node: Node, room_id: String) -> void:
+	if node == null:
+		return
+	if node.has_method("setup_entity"):
+		node.call("setup_entity", {
+			"world_id": "preview",
+			"room_id": room_id,
+			"entity_state_sink": self,
+		})
+	for child: Node in node.get_children():
+		_setup_preview_entities(child, room_id)
 
 
 func _ensure_preview_snapshot(room_id: String, spawn_id: String, spawn_position: Vector2) -> void:

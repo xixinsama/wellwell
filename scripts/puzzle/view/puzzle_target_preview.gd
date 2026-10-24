@@ -11,7 +11,7 @@ var dash_color: Color = Color(1.0, 1.0, 1.0, 0.9)
 func setup(p_cell_size: int) -> void:
     cell_size = p_cell_size
     visible = false
-    z_index = 10
+    z_index = 20
 
 
 func show_at(cell: Vector2i, size: Vector2i) -> void:

@@ -1,10 +1,10 @@
-[gd_scene load_steps=7 format=3 uid="uid://cejq022r3hjrd"]
+[gd_scene format=3 uid="uid://cejq022r3hjrd"]
 
 [ext_resource type="Script" uid="uid://cbx1gcy30d8d2" path="res://scripts/player/player_controller.gd" id="1_player"]
 [ext_resource type="Resource" uid="uid://bo4x5hdpx5xu4" path="res://resources/player/default_player_tuning.tres" id="2_tuning"]
-[ext_resource type="Script" path="res://game/player/player_ability_loadout.gd" id="3_loadout"]
-[ext_resource type="Script" path="res://addons/platformer_abilities/runtime/ability_controller.gd" id="4_controller"]
-[ext_resource type="Resource" path="res://addons/platformer_abilities/abilities/dash/default_dash.tres" id="5_dash"]
+[ext_resource type="Script" uid="uid://ceenddibdecxe" path="res://game/player/player_ability_loadout.gd" id="3_loadout"]
+[ext_resource type="Script" uid="uid://kisdkdvvx8tl" path="res://addons/platformer_abilities/runtime/ability_controller.gd" id="4_controller"]
+[ext_resource type="Resource" uid="uid://ckoqbfyfnstkp" path="res://addons/platformer_abilities/abilities/dash/default_dash.tres" id="5_dash"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_gmlin"]
 size = Vector2(6, 6)
@@ -16,7 +16,9 @@ size = Vector2(2, 1)
 size = Vector2(2, 1)
 
 [node name="Player" type="CharacterBody2D" unique_id=43758805]
+z_index = 10
 collision_layer = 2
+collision_mask = 9
 script = ExtResource("1_player")
 tuning = ExtResource("2_tuning")
 
@@ -39,9 +41,9 @@ modulate = Color(0, 0, 0, 1)
 position = Vector2(2, -5)
 mesh = SubResource("QuadMesh_dovo2")
 
-[node name="AbilityLoadout" type="Node" parent="."]
+[node name="AbilityLoadout" type="Node" parent="." unique_id=1039003736]
 script = ExtResource("3_loadout")
 ability_definitions = Array[Resource]([ExtResource("5_dash")])
 
-[node name="AbilityController" type="Node" parent="AbilityLoadout"]
+[node name="AbilityController" type="Node" parent="AbilityLoadout" unique_id=1623685778]
 script = ExtResource("4_controller")

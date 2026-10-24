@@ -28,7 +28,7 @@ func run() -> Array[String]:
 	_assert_free_form_shape_occupancy(failures)
 	_assert_target_only_move(failures)
 	_assert_extra_blocked_cells(failures)
-	_assert_move_distance_generation(failures)
+	_assert_axis_move_distance_generation(failures)
 	_assert_rider_registration(failures)
 	return failures
 
@@ -261,7 +261,8 @@ func _assert_target_only_move(failures: Array[String]) -> void:
 	piece.id = &"p"
 	piece.shape = [Vector2i.ZERO]
 	piece.initial_cell = Vector2i(0, 0)
-	piece.move_distance = 2
+	piece.x_move_distance = 2
+	piece.y_move_distance = 2
 	def.pieces.append(piece)
 
 	var rules := SlidingPuzzleRuleSet.new(def)
@@ -290,23 +291,42 @@ func _assert_extra_blocked_cells(failures: Array[String]) -> void:
 		failures.append("move was rejected without the player wall")
 
 
-func _assert_move_distance_generation(failures: Array[String]) -> void:
+func _assert_axis_move_distance_generation(failures: Array[String]) -> void:
 	var def := PuzzleDefinition.new()
 	def.board.board_size = Vector2i(3, 1)
 	var piece := PieceDefinition.new()
 	piece.id = &"p"
 	piece.shape = [Vector2i.ZERO]
 	piece.initial_cell = Vector2i(0, 0)
-	piece.move_distance = 2
+	piece.x_move_distance = 2
+	piece.y_move_distance = 1
 	def.pieces.append(piece)
 
 	var rules := SlidingPuzzleRuleSet.new(def)
 	var state := PuzzleSession.new(def).current_state
 	var moves := rules.get_legal_moves(state)
 	if moves.size() != 1:
-		failures.append("move_distance piece should have 1 legal move, got %d" % moves.size())
+		failures.append("axis-distance piece should have 1 legal move, got %d" % moves.size())
 	elif moves[0].get_distance() != 2:
-		failures.append("legal move did not travel the piece's move_distance")
+		failures.append("horizontal move did not travel x_move_distance")
+	# The board is one row tall, so a vertical move would leave it; use a taller
+	# fixture to verify the Y distance independently.
+	var tall := PuzzleDefinition.new()
+	tall.board.board_size = Vector2i(1, 4)
+	var tall_piece := PieceDefinition.new()
+	tall_piece.id = &"p"
+	tall_piece.shape = [Vector2i.ZERO]
+	tall_piece.initial_cell = Vector2i(0, 0)
+	tall_piece.x_move_distance = 2
+	tall_piece.y_move_distance = 3
+	tall.pieces.append(tall_piece)
+	var tall_rules := SlidingPuzzleRuleSet.new(tall)
+	var tall_state := PuzzleSession.new(tall).current_state
+	var tall_moves := tall_rules.get_legal_moves(tall_state)
+	if tall_moves.size() != 1:
+		failures.append("axis-distance tall piece should have 1 legal move, got %d" % tall_moves.size())
+	elif tall_moves[0].get_distance() != 3:
+		failures.append("vertical move did not travel y_move_distance")
 
 
 func _assert_rider_registration(failures: Array[String]) -> void:

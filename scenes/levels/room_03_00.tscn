@@ -24,6 +24,7 @@ map_visible = true
 
 [node name="SavePoint" parent="RoomContent/Entities" parent_id_path=PackedInt32Array(190854283) index="1" unique_id=939447865 instance=ExtResource("2_h44uv")]
 position = Vector2(87, 152)
+activation_mode = 0
 inactive_color = Color(0.31023967, 0.6653145, 0.7608393, 1)
 active_color = Color(1.6364455e-06, 0.95945245, 0.23636574, 1)
 persistent_id = &"checkpoint"

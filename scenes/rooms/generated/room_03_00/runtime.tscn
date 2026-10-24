@@ -1,12 +1,12 @@
-[gd_scene format=3 uid="uid://bdo5ndgeyfj8e"]
+[gd_scene format=3]
 
-[ext_resource type="PackedScene" uid="uid://dons4yo63slat" path="res://addons/platformer_abilities/entities/ability_pickup.tscn" id="1_ou72k"]
-[ext_resource type="Script" uid="uid://6kpop3ke1gni" path="res://addons/platformer_abilities/entities/ability_pickup.gd" id="2_nqtjo"]
-[ext_resource type="Resource" uid="uid://ckoqbfyfnstkp" path="res://addons/platformer_abilities/abilities/dash/default_dash.tres" id="3_5qyxo"]
-[ext_resource type="PackedScene" uid="uid://b1x7griwahpw" path="res://addons/platformer_kit/world/entities/save_point.tscn" id="4_o8akd"]
-[ext_resource type="Script" uid="uid://cgico4r57qm4m" path="res://addons/platformer_kit/world/entities/save_point.gd" id="5_3igum"]
-[ext_resource type="Script" uid="uid://djlg6ewfrpb8a" path="res://addons/platformer_kit/interaction/interactable.gd" id="6_4yw2n"]
-[ext_resource type="Script" uid="uid://bo5asnakkt3ao" path="res://addons/platformer_kit/world/entities/spawn_point.gd" id="7_6ifd7"]
+[ext_resource type="PackedScene" path="res://addons/platformer_abilities/entities/ability_pickup.tscn" id="1_ou72k"]
+[ext_resource type="Script" path="res://addons/platformer_abilities/entities/ability_pickup.gd" id="2_nqtjo"]
+[ext_resource type="Resource" path="res://addons/platformer_abilities/abilities/dash/default_dash.tres" id="3_5qyxo"]
+[ext_resource type="PackedScene" path="res://addons/platformer_kit/world/entities/save_point.tscn" id="4_o8akd"]
+[ext_resource type="Script" path="res://addons/platformer_kit/world/entities/save_point.gd" id="5_3igum"]
+[ext_resource type="Script" path="res://addons/platformer_kit/interaction/interactable.gd" id="6_4yw2n"]
+[ext_resource type="Script" path="res://addons/platformer_kit/world/entities/spawn_point.gd" id="7_6ifd7"]
 
 [sub_resource type="CircleShape2D" id="CircleShape_pickup"]
 
@@ -16,9 +16,9 @@ size = Vector2(16, 20)
 [sub_resource type="RectangleShape2D" id="RectangleShape_interaction"]
 size = Vector2(32, 28)
 
-[node name="RoomRuntimeContent" type="Node2D" unique_id=153760663]
+[node name="RoomRuntimeContent" type="Node2D" unique_id=1033499516]
 
-[node name="Entities" type="Node2D" parent="." unique_id=1942927402]
+[node name="Entities" type="Node2D" parent="." unique_id=1532494657]
 
 [node name="AbilityPickup" type="Node2D" parent="Entities" unique_id=261258473 instance=ExtResource("1_ou72k")]
 position = Vector2(93, 315)
@@ -48,16 +48,14 @@ shape = SubResource("CircleShape_pickup")
 [node name="SavePoint" type="Node2D" parent="Entities" unique_id=939447865 instance=ExtResource("4_o8akd")]
 position = Vector2(87, 152)
 script = ExtResource("5_3igum")
-activation_mode = 1
 inactive_color = Color(0.31023967, 0.6653145, 0.7608393, 1)
 active_color = Color(1.6364455e-06, 0.95945245, 0.23636574, 1)
 entity_id = "checkpoint"
 persistent_id = &"checkpoint"
 
-[node name="Visual" type="Node2D" parent="Entities/SavePoint" unique_id=1854276615]
+[node name="VisualRoot" type="Node2D" parent="Entities/SavePoint" unique_id=1854276615]
 
-[node name="Polygon2D" type="Polygon2D" parent="Entities/SavePoint/Visual" unique_id=509490264]
-modulate = Color(0.9843137, 0.16862746, 0.44705883, 1)
+[node name="Polygon2D" type="Polygon2D" parent="Entities/SavePoint/VisualRoot" unique_id=509490264]
 position = Vector2(0, -4)
 polygon = PackedVector2Array(-4, -4, 4, -4, 4, 0, 0, 0, -4, 0, -4, 4, 8, 4, 8, -4, 8, -8, 0, -8, 0, -12, 8, -12, 8, -16, -4, -16)
 
@@ -86,7 +84,7 @@ shape = SubResource("RectangleShape_interaction")
 script = ExtResource("7_6ifd7")
 spawn_id = "checkpoint"
 
-[node name="StartSpawn" type="Marker2D" parent="Entities" unique_id=747360478]
+[node name="StartSpawn" type="Marker2D" parent="Entities" unique_id=1782965366]
 script = ExtResource("7_6ifd7")
 
-[node name="Foreground" type="Node2D" parent="." unique_id=1991366098]
+[node name="Foreground" type="Node2D" parent="." unique_id=1390284591]

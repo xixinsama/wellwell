@@ -4,7 +4,7 @@
 [ext_resource type="Resource" uid="uid://dtq1tkqtexvr6" path="res://resources/rooms/generated/room_00_00.tres" id="2_lks8w"]
 [ext_resource type="Resource" uid="uid://cu73ap10eduij" path="res://resources/rooms/generated/room_01_00.tres" id="3_13oic"]
 [ext_resource type="Resource" uid="uid://b4wcyhfootkjc" path="res://resources/rooms/generated/room_02_00.tres" id="4_0i5gd"]
-[ext_resource type="Resource" uid="uid://k5pa07hjiafl" path="res://resources/rooms/generated/room_03_00.tres" id="5_xwv7a"]
+[ext_resource type="Resource" path="res://resources/rooms/generated/room_03_00.tres" id="5_xwv7a"]
 [ext_resource type="Resource" path="res://resources/rooms/generated/room_04_00.tres" id="6_642bf"]
 [ext_resource type="Script" uid="uid://dkcwb87qn5n2c" path="res://addons/platformer_kit/world/data/world_data.gd" id="7_iqxs7"]
 

@@ -18,6 +18,7 @@ func run() -> Array[String]:
 	_assert_gravity_and_terminal_velocity(failures)
 	_assert_jump_buffer(failures)
 	_assert_coyote_time(failures)
+	_assert_air_jump(failures)
 	_assert_variable_jump(failures)
 	return failures
 
@@ -80,6 +81,37 @@ func _assert_coyote_time(failures: Array[String]) -> void:
 	fixture.motor.step(fixture.context, fixture.intent, fixture.environment, fixture.profile, 0.04)
 	if not fixture.context.just_jumped or fixture.context.velocity.y >= 0.0:
 		failures.append("CharacterMotor2D rejected a jump during coyote time")
+
+
+func _assert_air_jump(failures: Array[String]) -> void:
+	var fixture := _fixture()
+	fixture.context.air_jump_available = true
+	fixture.intent.jump_pressed = true
+	fixture.intent.jump_held = true
+	fixture.motor.step(fixture.context, fixture.intent, fixture.environment, fixture.profile, 0.01)
+	if not fixture.context.just_jumped or fixture.context.velocity.y >= 0.0:
+		failures.append("CharacterMotor2D rejected a granted mid-air jump")
+	if fixture.context.air_jump_available:
+		failures.append("CharacterMotor2D did not consume the granted mid-air jump")
+	if fixture.context.jump_buffer_remaining != 0.0 or fixture.context.coyote_remaining != 0.0:
+		failures.append("CharacterMotor2D left jump timers set after the mid-air jump")
+	fixture.intent.jump_pressed = false
+	fixture.motor.step(fixture.context, fixture.intent, fixture.environment, fixture.profile, 0.01)
+	fixture.context.velocity.y = 30.0
+	fixture.intent.jump_pressed = true
+	fixture.motor.step(fixture.context, fixture.intent, fixture.environment, fixture.profile, 0.01)
+	if fixture.context.just_jumped or fixture.context.velocity.y < 30.0:
+		failures.append("CharacterMotor2D granted a second mid-air jump")
+	var grounded := _fixture()
+	grounded.environment.grounded = true
+	grounded.context.air_jump_available = true
+	grounded.motor.step(grounded.context, grounded.intent, grounded.environment, grounded.profile, 0.01)
+	if grounded.context.air_jump_available:
+		failures.append("landing did not clear the unused mid-air jump")
+	grounded.context.air_jump_available = true
+	grounded.context.call("reset")
+	if grounded.context.air_jump_available:
+		failures.append("MovementContext.reset did not clear the mid-air jump")
 
 
 func _assert_variable_jump(failures: Array[String]) -> void:

@@ -810,6 +810,10 @@ func _cleanup(paths: Dictionary) -> void:
 	for path: String in _all_paths(paths):
 		if FileAccess.file_exists(path):
 			DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
+	var generated_dir := String(paths["runtime_scene_path"]).get_base_dir()
+	var absolute_dir := ProjectSettings.globalize_path(generated_dir)
+	if DirAccess.dir_exists_absolute(absolute_dir):
+		DirAccess.remove_absolute(absolute_dir)
 
 
 func _all_paths(paths: Dictionary) -> Array[String]:

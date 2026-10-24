@@ -55,8 +55,13 @@ routes such as `1, 2, 3, 2, 1`, or `CYCLE` for `1, 2, 3, 1`; set
 Add `addons/platformer_kit/world/entities/save_point.tscn` below a source
 room's `RoomContent/Entities`. Set a unique `entity_id` or `persistent_id`, set
 the nested `SpawnPoint.spawn_id`, and choose `CONTACT` or `INTERACT`. The entity
-updates respawn state before requesting an immediate save. Bake the source room
-after adding it; never add checkpoints directly to generated scenes.
+updates respawn state before requesting an immediate save. `CONTACT` is the
+prefab default; set `activation_mode = 1` for interaction-only checkpoints.
+Bake the source room after adding it; never add checkpoints directly to generated
+scenes. After changing an instanced entity prefab or a room-instance override,
+re-bake and inspect the generated runtime — a source override equal to the
+script default can be omitted by scene packing, exposing a different prefab
+default.
 
 Add `addons/platformer_abilities/entities/ability_pickup.tscn` for a persistent
 ability reward. Assign a stable ID and an `AbilityDefinition`; use
@@ -64,6 +69,44 @@ ability reward. Assign a stable ID and an `AbilityDefinition`; use
 Dash. Player-like receivers opt in with
 `grant_ability_definition(definition: Resource) -> bool`. A rejected grant does
 not consume the pickup.
+
+## Puzzle Sliding Regions
+
+- A sliding piece uses `x_move_distance` / `y_move_distance` (cells per axis).
+  The rule set generates and validates moves with the axis-specific distance.
+- Set `PuzzlePiece.enable = false` to disable interactive control. The piece
+  still occupies and blocks cells. Only primary moves are gated: a disabled
+  void piece can still be moved by an A+ induced turn, but cannot be selected,
+  dragged, or moved by direction input itself.
+- A movable void slider is a `PuzzleTilePiece` whose `VoidTiles` child (collision
+  disabled) defines its footprint. The script builds a player-only `VoidBody` on
+  physics layer 4 (`void`). Other sliders pass through it; the player cannot
+  enter it on foot or ride it, but may be carried through it while riding a
+  normal piece. Give the piece `x_move_distance` / `y_move_distance` for its
+  own moves. Do not mix `VoidTiles` with `SolidTiles`/`OneWayTiles`; void wins and
+  the wall layers are ignored.
+- Void pushes are atomic: if the mover's target min rectangle fully encloses a
+  void's current min rectangle, the void moves by the opposite displacement.
+  Validate the whole void footprint against board bounds, `blocked_cells`, and
+  the player's post-move cell; any invalid void target rejects the entire turn.
+  Partial overlap and void-primary moves never push another piece, and pushes do
+  not chain.
+- Keep void visuals above normal pieces but below the player and mode overlay
+  (for example `z_index = 5` for the piece). Reusable legacy static region:
+  `scenes/puzzle/puzzle_void_zone.tscn`; static `PuzzleVoidZone` still works for
+  cells that never move.
+- In slider mode, `Z` undoes one operation and `R` resets the board; reset is
+  itself undoable. Both are scoped to boards whose rectangle contains the
+  player, and every overlapping board reacts independently. A compound primary
+  move plus its induced void moves is one history entry. `Z` takes priority over
+  `R` in the same frame. The player is never moved by reset.
+- A successful slide that carries the rider earns one air jump on leaving drag
+  mode. `PuzzleBoard` grants it through
+  `PlayerController.grant_air_jump()`; the motor exposes the one-shot state as
+  `MovementContext.air_jump_available`, consumes it on the next jump, and clears
+  it when grounded or respawned. Selecting without moving, a rejected move, and
+  a forced exit do not grant it. Extend the board rather than setting the motor
+  flag directly so the carry bookkeeping stays authoritative.
 
 Good first game-specific extensions:
 

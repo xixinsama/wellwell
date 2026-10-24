@@ -5,6 +5,7 @@ const ROOM_PREVIEW_CONTROLLER: Script = preload("res://addons/world_editor/autho
 const ROOM_ENTRANCE: Script = preload("res://addons/platformer_kit/world/entities/room_entrance.gd")
 const SPAWN_POINT: Script = preload("res://addons/platformer_kit/world/entities/spawn_point.gd")
 const FOG_OF_WAR: Script = preload("res://addons/metroidvania_kit/map/discovery/fog_of_war.gd")
+const SAVE_POINT_SCENE := preload("res://addons/platformer_kit/world/entities/save_point.tscn")
 
 
 class PreviewCamera extends Node:
@@ -29,6 +30,7 @@ func run() -> Array[String]:
 	_assert_missing_spawn_does_not_move_player(failures)
 	_assert_entrances_only_emit_preview_blocking_signal(failures)
 	_assert_repeated_setup_does_not_duplicate_entrance_callbacks(failures)
+	_assert_save_point_activates_in_preview(failures)
 	return failures
 
 
@@ -196,3 +198,29 @@ func _add_controller(root: RoomAuthoringRoot) -> Node:
 	controller.name = "RoomPreviewController"
 	root.add_child(controller)
 	return controller
+
+
+func _assert_save_point_activates_in_preview(failures: Array[String]) -> void:
+	var root := _make_root("start")
+	add_child(root)
+	_add_spawn(root, "start", Vector2.ZERO)
+	var save_point: Node2D = SAVE_POINT_SCENE.instantiate() as Node2D
+	save_point.name = "SavePoint"
+	save_point.position = Vector2(24.0, 32.0)
+	root.get_node("RoomContent/Entities").add_child(save_point)
+	var controller := _add_controller(root)
+	if not controller.setup_preview(root):
+		failures.append("preview setup failed with a save point")
+		root.free()
+		return
+	var snapshot: RefCounted = controller.get_preview_snapshot()
+	var player := root.get_node("PreviewOnly/Player") as Node2D
+	save_point.get_node("ActivationArea").emit_signal("body_entered", player)
+	if not bool(save_point.get("activated")):
+		failures.append("preview save point did not activate on contact")
+	if snapshot.respawn_room_id != "preview_room" or snapshot.respawn_spawn_id != "checkpoint":
+		failures.append("preview save point did not update the in-memory respawn")
+	var entity_key := String(save_point.call("get_save_key"))
+	if not bool(snapshot.get_entity_state(entity_key).get("activated", false)):
+		failures.append("preview save point did not persist its activated state")
+	root.free()

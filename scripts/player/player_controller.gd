@@ -10,6 +10,10 @@ const CHARACTER_SENSORS := preload("res://addons/platformer_kit/character/sensor
 const CHARACTER_INTENT := preload("res://addons/platformer_kit/character/input/character_intent.gd")
 const PLAYER_INPUT_SOURCE := preload("res://addons/platformer_kit/character/input/player_input_source.gd")
 
+## Layer 4 ("void") blocks the player in jump mode only. Slider riding removes
+## this bit so a rider can follow its piece through a void region.
+const VOID_COLLISION_MASK := 1 << 3
+
 @export var tuning: Resource
 @export var spawn_position: Vector2 = Vector2.ZERO
 @export var visual_recover_speed: float = 16.0
@@ -33,6 +37,7 @@ var _world_velocity := Vector2.ZERO
 
 func _ready() -> void:
     add_to_group("player")
+    collision_mask |= VOID_COLLISION_MASK
     if tuning == null:
         tuning = PLAYER_TUNING_SCRIPT.new()
     if spawn_position == Vector2.ZERO:
@@ -65,10 +70,28 @@ func grant_ability_definition(definition: Resource) -> bool:
 
 func set_control_locked(value: bool) -> void:
     control_locked = value
+    set_void_collision_enabled(not value)
     if value:
         velocity = Vector2.ZERO
         _movement_context.velocity = Vector2.ZERO
         _world_velocity = Vector2.ZERO
+
+
+## Grants exactly one jump that can be used without touching the floor. The
+## puzzle board calls this after a rider has been carried by a slider and exits
+## drag mode. A fresh jump press is required: stale coyote/buffer windows are
+## cleared so the grant cannot be spent automatically on exit.
+func grant_air_jump() -> void:
+    _movement_context.air_jump_available = true
+    _movement_context.coyote_remaining = 0.0
+    _movement_context.jump_buffer_remaining = 0.0
+
+
+func set_void_collision_enabled(enabled: bool) -> void:
+    if enabled:
+        collision_mask |= VOID_COLLISION_MASK
+    else:
+        collision_mask &= ~VOID_COLLISION_MASK
 
 
 func _physics_process(delta: float) -> void:
@@ -134,6 +157,7 @@ func get_debug_state() -> Dictionary:
         "on_floor": is_on_floor(),
         "jump_buffer_remaining": _movement_context.jump_buffer_remaining,
         "coyote_remaining": _movement_context.coyote_remaining,
+        "air_jump_available": _movement_context.air_jump_available,
         "facing": facing,
         "ceiling": _environment.ceiling,
         "wall_left": _environment.wall_left,

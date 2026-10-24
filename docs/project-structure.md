@@ -12,6 +12,8 @@
 ## Authoring
 
 - `scenes/rooms/template/level_template.tscn`: empty room authoring template.
+- `scenes/puzzle/puzzle_tile_piece.tscn`: reusable tile-authored sliding region (background, walls, one-way platforms, and `VoidTiles` for movable void sliders).
+- `scenes/puzzle/puzzle_void_zone.tscn`: legacy static player-only void region for puzzle boards (sliders may cross; the player cannot enter in jump mode).
 - `scenes/rooms/source/`: editable room source scenes. Do not hand-edit generated files.
 - `scenes/rooms/generated/<room_id>/`: baked runtime and terrain scenes.
 - `resources/rooms/generated/<room_id>.tres`: baked local `RoomData`.
