@@ -10,6 +10,9 @@
 
 **Design source:** `docs/superpowers/specs/2026-10-24-gamepad-stick-aim-design.md`
 
+**Status:** Implemented 2026-10-24. Runtime suite passed twice; project validation
+passed. Manual right-stick acceptance is still pending.
+
 ---
 
 ## File Structure
@@ -32,7 +35,7 @@
 - Modify: `project.godot`
 - Modify: `localization/menu.csv`
 
-- [ ] **Step 1: Write the failing action-binding test**
+- [x] **Step 1: Write the failing action-binding test**
 
 Create `tests/puzzle/test_gamepad_stick_aim.gd`:
 
@@ -87,7 +90,7 @@ Register it in `tests/runtime_suite.gd` after `test_gamepad_selection.gd`:
 	preload("res://tests/puzzle/test_rider_jump_reset.gd"),
 ```
 
-- [ ] **Step 2: Run the test and confirm it fails**
+- [x] **Step 2: Run the test and confirm it fails**
 
 ```bash
 godot --headless --path . -s res://tests/run_runtime_suite.gd
@@ -95,7 +98,7 @@ godot --headless --path . -s res://tests/run_runtime_suite.gd
 
 Expected: missing `aim_left`, `aim_right`, `aim_up`, `aim_down`.
 
-- [ ] **Step 3: Add the actions**
+- [x] **Step 3: Add the actions**
 
 Add after `slider_cancel` in `project.godot`:
 
@@ -122,7 +125,7 @@ aim_down={
 }
 ```
 
-- [ ] **Step 4: Add labels**
+- [x] **Step 4: Add labels**
 
 Add to `localization/menu.csv` after the slider labels:
 
@@ -133,7 +136,7 @@ INPUT_ACTION_AIM_UP,Aim Up,右摇杆向上
 INPUT_ACTION_AIM_DOWN,Aim Down,右摇杆向下
 ```
 
-- [ ] **Step 5: Run the contract test and commit**
+- [x] **Step 5: Run the contract test and commit**
 
 ```bash
 godot --headless --path . -s res://tests/run_runtime_suite.gd
@@ -152,7 +155,7 @@ git commit -m "feat: add right-stick aim actions"
 - Modify: `scripts/puzzle/view/puzzle_board.gd`
 - Test: `tests/puzzle/test_gamepad_stick_aim.gd`
 
-- [ ] **Step 1: Add failing target and arrow tests**
+- [x] **Step 1: Add failing target and arrow tests**
 
 Replace `_make_board()` in `tests/puzzle/test_gamepad_stick_aim.gd` with:
 
@@ -282,7 +285,7 @@ func _cleanup(fixture: Dictionary) -> void:
 	(fixture.player as Node2D).free()
 ```
 
-- [ ] **Step 2: Run the suite and confirm target tests fail**
+- [x] **Step 2: Run the suite and confirm target tests fail**
 
 ```bash
 godot --headless --path . -s res://tests/run_runtime_suite.gd
@@ -291,7 +294,7 @@ godot --headless --path . -s res://tests/run_runtime_suite.gd
 Expected: failures for missing `_handle_stick_selection`, `_stick_target`, and
 `_aim_arrow`.
 
-- [ ] **Step 3: Create `PuzzleAimArrow`**
+- [x] **Step 3: Create `PuzzleAimArrow`**
 
 Create `scripts/puzzle/view/puzzle_aim_arrow.gd`:
 
@@ -351,7 +354,7 @@ func _draw() -> void:
 	)
 ```
 
-- [ ] **Step 4: Add board target geometry and arrow child**
+- [x] **Step 4: Add board target geometry and arrow child**
 
 At the top of `puzzle_board.gd`, add the preload and constants:
 
@@ -510,7 +513,7 @@ func _deselect_piece(force: bool = false) -> void:
 	...
 ```
 
-- [ ] **Step 5: Run the target tests and commit**
+- [x] **Step 5: Run the target tests and commit**
 
 ```bash
 godot --headless --path . -s res://tests/run_runtime_suite.gd
@@ -530,7 +533,7 @@ git commit -m "feat: add right-stick aim target and arrow"
 - Modify: `docs/extension-guide.md`
 - Test: `tests/puzzle/test_gamepad_stick_aim.gd`
 
-- [ ] **Step 1: Add the live wiring assertion**
+- [x] **Step 1: Add the live wiring assertion**
 
 Add `_assert_live_wiring(failures)` to `run()` and these assertions:
 
@@ -551,7 +554,7 @@ func _assert_live_wiring(failures: Array[String]) -> void:
 		failures.append("PuzzleBoard does not poll the right stick in _process")
 ```
 
-- [ ] **Step 2: Confirm the wiring test fails**
+- [x] **Step 2: Confirm the wiring test fails**
 
 ```bash
 godot --headless --path . -s res://tests/run_runtime_suite.gd
@@ -559,7 +562,7 @@ godot --headless --path . -s res://tests/run_runtime_suite.gd
 
 Expected: failure for missing live right-stick polling.
 
-- [ ] **Step 3: Wire `_process()`**
+- [x] **Step 3: Wire `_process()`**
 
 After the button selection block, still inside `if mode == ControlMode.DRAG:`, add:
 
@@ -570,7 +573,7 @@ After the button selection block, still inside `if mode == ControlMode.DRAG:`, a
 The order must be selection buttons, then stick aim, then `_handle_mouse()`,
 then movement.
 
-- [ ] **Step 4: Document controls and extension contract**
+- [x] **Step 4: Document controls and extension contract**
 
 Add to `游戏机制设计.md` under the gamepad section:
 
@@ -590,7 +593,7 @@ Add to `docs/extension-guide.md` under `Puzzle Sliding Regions`:
   vector is the test seam; no history entry is created.
 ```
 
-- [ ] **Step 5: Run full verification**
+- [x] **Step 5: Run full verification**
 
 ```bash
 for i in 1 2; do
@@ -602,7 +605,7 @@ godot --headless --path . -s res://tools/validate_project.gd
 
 Expected: `EXIT=0` for all three runs.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add scripts/puzzle/view/puzzle_board.gd tests/puzzle/test_gamepad_stick_aim.gd \
