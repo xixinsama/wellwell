@@ -9,8 +9,8 @@ extends Resource
 
 
 func contains_cell(cell: Vector2i) -> bool:
-	return cell.x >= 0 and cell.y >= 0 and cell.x < board_size.x and cell.y < board_size.y
+    return cell.x >= 0 and cell.y >= 0 and cell.x < board_size.x and cell.y < board_size.y
 
 
 func is_cell_blocked(cell: Vector2i) -> bool:
-	return blocked_cells.has(cell)
+    return blocked_cells.has(cell)

@@ -8,13 +8,13 @@ signal access_denied(context: RefCounted)
 
 
 func allows(context: RefCounted) -> bool:
-	return condition == null or (condition.has_method("evaluate") and condition.call("evaluate", context))
+    return condition == null or (condition.has_method("evaluate") and condition.call("evaluate", context))
 
 
 func request_access(context: RefCounted) -> bool:
-	var result := allows(context)
-	if result:
-		access_granted.emit(context)
-	else:
-		access_denied.emit(context)
-	return result
+    var result := allows(context)
+    if result:
+        access_granted.emit(context)
+    else:
+        access_denied.emit(context)
+    return result

@@ -8,8 +8,8 @@ var air_jump_grants: int = 0
 
 
 func set_control_locked(value: bool) -> void:
-	control_locked = value
+    control_locked = value
 
 
 func grant_air_jump() -> void:
-	air_jump_grants += 1
+    air_jump_grants += 1

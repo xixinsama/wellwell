@@ -9,11 +9,11 @@ extends Node2D
 
 
 func _ready() -> void:
-	health.reset_to_max()
-	hurtbox.bind_components(health, invulnerability, knockback)
-	hitbox.deliver_to(hurtbox)
-	status.text = "Health: %.0f / %.0f\nKnockback: %s" % [
-		health.current_health,
-		health.max_health,
-		str(knockback.get_velocity()),
-	]
+    health.reset_to_max()
+    hurtbox.bind_components(health, invulnerability, knockback)
+    hitbox.deliver_to(hurtbox)
+    status.text = "Health: %.0f / %.0f\nKnockback: %s" % [
+        health.current_health,
+        health.max_health,
+        str(knockback.get_velocity()),
+    ]

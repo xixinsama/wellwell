@@ -11,9 +11,9 @@ var air_jump_available := false
 
 
 func reset(initial_velocity: Vector2 = Vector2.ZERO) -> void:
-	velocity = initial_velocity
-	jump_buffer_remaining = 0.0
-	coyote_remaining = 0.0
-	just_jumped = false
-	air_jump_available = false
+    velocity = initial_velocity
+    jump_buffer_remaining = 0.0
+    coyote_remaining = 0.0
+    just_jumped = false
+    air_jump_available = false
 

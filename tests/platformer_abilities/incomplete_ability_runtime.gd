@@ -2,16 +2,16 @@ extends RefCounted
 
 
 func configure(_definition: Resource) -> void:
-	pass
+    pass
 
 
 func activate() -> bool:
-	return true
+    return true
 
 
 func cancel() -> bool:
-	return true
+    return true
 
 
 func tick() -> void:
-	pass
+    pass

@@ -9,11 +9,11 @@ signal interacted(actor: Node)
 
 
 func can_interact(_actor: Node) -> bool:
-	return enabled
+    return enabled
 
 
 func interact(actor: Node) -> bool:
-	if not can_interact(actor):
-		return false
-	interacted.emit(actor)
-	return true
+    if not can_interact(actor):
+        return false
+    interacted.emit(actor)
+    return true

@@ -10,20 +10,20 @@ var _tags: RefCounted = TAG_CONTAINER.new()
 
 
 func add_tag(tag: StringName) -> bool:
-	return _tags.add(tag)
+    return _tags.add(tag)
 
 
 func remove_tag(tag: StringName) -> bool:
-	return _tags.remove(tag)
+    return _tags.remove(tag)
 
 
 func has_tag(tag: StringName) -> bool:
-	return _tags.has(tag)
+    return _tags.has(tag)
 
 
 func has_all_tags(tags: Array) -> bool:
-	return _tags.has_all(tags)
+    return _tags.has_all(tags)
 
 
 func tags() -> Array[StringName]:
-	return _tags.values()
+    return _tags.values()

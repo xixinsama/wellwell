@@ -12,6 +12,6 @@ var cell: Vector2i = Vector2i.ZERO
 
 
 func _init(p_id: StringName = &"", p_index: int = -1, p_cell: Vector2i = Vector2i.ZERO) -> void:
-	id = p_id
-	piece_index = p_index
-	cell = p_cell
+    id = p_id
+    piece_index = p_index
+    cell = p_cell

@@ -11,4 +11,4 @@ extends Resource
 
 
 func get_world_room_id() -> StringName:
-	return room_id if world_room_id.is_empty() else world_room_id
+    return room_id if world_room_id.is_empty() else world_room_id

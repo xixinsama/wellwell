@@ -3,12 +3,12 @@ extends RefCounted
 
 
 func get_persistent_id() -> StringName:
-	return StringName()
+    return StringName()
 
 
 func capture_save_state() -> Dictionary:
-	return {}
+    return {}
 
 
 func restore_save_state(_state: Dictionary) -> void:
-	pass
+    pass

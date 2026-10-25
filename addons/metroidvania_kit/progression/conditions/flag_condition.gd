@@ -6,8 +6,8 @@ extends "res://addons/metroidvania_kit/progression/conditions/condition.gd"
 
 
 func evaluate(context: RefCounted) -> bool:
-	return (
-		context != null
-		and context.has_method("get_flag")
-		and bool(context.call("get_flag", flag_id, false)) == expected_value
-	)
+    return (
+        context != null
+        and context.has_method("get_flag")
+        and bool(context.call("get_flag", flag_id, false)) == expected_value
+    )

@@ -11,8 +11,8 @@ var moves: Array[PuzzleMove] = []
 
 
 func add(piece_index: int, from_cell: Vector2i, to_cell: Vector2i) -> void:
-	moves.append(PuzzleMove.new(piece_index, from_cell, to_cell))
+    moves.append(PuzzleMove.new(piece_index, from_cell, to_cell))
 
 
 func is_empty() -> bool:
-	return moves.is_empty()
+    return moves.is_empty()

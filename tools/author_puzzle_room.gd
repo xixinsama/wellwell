@@ -18,63 +18,63 @@ const ROOM_RESOURCE_PATH := "res://resources/rooms/generated/room_04_00.tres"
 
 
 func _init() -> void:
-	call_deferred("_run")
+    call_deferred("_run")
 
 
 func _run() -> void:
-	var failures: Array[String] = []
+    var failures: Array[String] = []
 
-	if not _bake_source(failures):
-		failures.append("could not bake room source")
+    if not _bake_source(failures):
+        failures.append("could not bake room source")
 
-	if not _register_world(failures):
-		failures.append("could not register room in world data")
+    if not _register_world(failures):
+        failures.append("could not register room in world data")
 
-	for failure: String in failures:
-		push_error("author_puzzle_room: %s" % failure)
-	print("author_puzzle_room: done with %d failure(s)" % failures.size())
-	quit(1 if not failures.is_empty() else 0)
+    for failure: String in failures:
+        push_error("author_puzzle_room: %s" % failure)
+    print("author_puzzle_room: done with %d failure(s)" % failures.size())
+    quit(1 if not failures.is_empty() else 0)
 
 
 func _bake_source(failures: Array[String]) -> bool:
-	if not ResourceLoader.exists(SOURCE_PATH, "PackedScene"):
-		failures.append("source scene is missing: %s" % SOURCE_PATH)
-		return false
-	var source_root: Node = (load(SOURCE_PATH) as PackedScene).instantiate()
-	if source_root == null:
-		failures.append("could not instantiate source scene")
-		return false
-	var baker: RefCounted = ROOM_BAKER.new()
-	var bake_result: Dictionary = baker.bake(source_root, SOURCE_PATH)
-	source_root.free()
-	if not bake_result.get("ok", false):
-		failures.append("bake failed: %s" % bake_result.get("errors", []))
-		return false
-	return true
+    if not ResourceLoader.exists(SOURCE_PATH, "PackedScene"):
+        failures.append("source scene is missing: %s" % SOURCE_PATH)
+        return false
+    var source_root: Node = (load(SOURCE_PATH) as PackedScene).instantiate()
+    if source_root == null:
+        failures.append("could not instantiate source scene")
+        return false
+    var baker: RefCounted = ROOM_BAKER.new()
+    var bake_result: Dictionary = baker.bake(source_root, SOURCE_PATH)
+    source_root.free()
+    if not bake_result.get("ok", false):
+        failures.append("bake failed: %s" % bake_result.get("errors", []))
+        return false
+    return true
 
 
 func _register_world(failures: Array[String]) -> bool:
-	var room_data: Resource = ResourceLoader.load(
-		ROOM_RESOURCE_PATH, "", ResourceLoader.CACHE_MODE_IGNORE
-	)
-	if room_data == null:
-		failures.append("generated RoomData missing at %s" % ROOM_RESOURCE_PATH)
-		return false
-	var world := load(WORLD_PATH) as WorldData
-	if world == null:
-		failures.append("could not load world data")
-		return false
-	if world.has_room(ROOM_ID):
-		return true
+    var room_data: Resource = ResourceLoader.load(
+        ROOM_RESOURCE_PATH, "", ResourceLoader.CACHE_MODE_IGNORE
+    )
+    if room_data == null:
+        failures.append("generated RoomData missing at %s" % ROOM_RESOURCE_PATH)
+        return false
+    var world := load(WORLD_PATH) as WorldData
+    if world == null:
+        failures.append("could not load world data")
+        return false
+    if world.has_room(ROOM_ID):
+        return true
 
-	world.rooms.append(room_data)
-	var placement: Resource = ROOM_PLACEMENT.new()
-	placement.room_id = ROOM_ID
-	placement.origin_chunk = Vector2i(4, 0)
-	world.placements.append(placement)
-	world.sort_for_serialization()
-	var save_err := ResourceSaver.save(world, WORLD_PATH)
-	if save_err != OK:
-		failures.append("save world data error: %s" % save_err)
-		return false
-	return true
+    world.rooms.append(room_data)
+    var placement: Resource = ROOM_PLACEMENT.new()
+    placement.room_id = ROOM_ID
+    placement.origin_chunk = Vector2i(4, 0)
+    world.placements.append(placement)
+    world.sort_for_serialization()
+    var save_err := ResourceSaver.save(world, WORLD_PATH)
+    if save_err != OK:
+        failures.append("save world data error: %s" % save_err)
+        return false
+    return true

@@ -5,5 +5,5 @@ const CHARACTER_INTENT := preload("res://addons/platformer_kit/character/input/c
 
 
 func get_intent() -> CHARACTER_INTENT:
-	return CHARACTER_INTENT.new()
+    return CHARACTER_INTENT.new()
 

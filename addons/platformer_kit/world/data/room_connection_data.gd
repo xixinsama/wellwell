@@ -3,11 +3,11 @@ class_name RoomConnectionData
 extends Resource
 
 enum Direction {
-	NONE,
-	UP,
-	DOWN,
-	LEFT,
-	RIGHT,
+    NONE,
+    UP,
+    DOWN,
+    LEFT,
+    RIGHT,
 }
 
 @export var from_room_id := ""

@@ -11,12 +11,12 @@ extends Resource
 
 
 func is_satisfied(state: BoardState) -> bool:
-	if state == null:
-		return false
-	var piece_index := state.find_piece_index(piece_id)
-	if piece_index < 0:
-		return false
-	var cell := state.pieces[piece_index].cell
-	if target_area.size.x > 0 and target_area.size.y > 0:
-		return target_area.has_point(cell)
-	return cell == target_cell
+    if state == null:
+        return false
+    var piece_index := state.find_piece_index(piece_id)
+    if piece_index < 0:
+        return false
+    var cell := state.pieces[piece_index].cell
+    if target_area.size.x > 0 and target_area.size.y > 0:
+        return target_area.has_point(cell)
+    return cell == target_cell

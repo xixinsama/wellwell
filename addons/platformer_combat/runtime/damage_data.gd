@@ -8,4 +8,4 @@ extends Resource
 
 
 func duplicate_damage() -> Resource:
-	return duplicate(true) as Resource
+    return duplicate(true) as Resource

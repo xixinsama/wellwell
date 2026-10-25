@@ -4,36 +4,36 @@ const INTENT_PATH := "res://addons/platformer_kit/character/input/character_inte
 
 
 func run() -> Array[String]:
-	if not ResourceLoader.exists(INTENT_PATH, "Script"):
-		return ["CharacterIntent script is missing"]
-	var failures: Array[String] = []
-	var intent: RefCounted = (load(INTENT_PATH) as Script).new()
-	if not "jump_held" in intent:
-		return ["CharacterIntent is missing continuous jump-held state"]
-	intent.set("move_axis", 0.75)
-	intent.set("jump_pressed", true)
-	intent.set("jump_released", true)
-	intent.set("jump_held", true)
-	intent.set("fast_fall", true)
-	intent.call("clear_transient")
-	if (
-		not is_equal_approx(float(intent.get("move_axis")), 0.75)
-		or not bool(intent.get("jump_held"))
-		or not bool(intent.get("fast_fall"))
-	):
-		failures.append("CharacterIntent cleared continuous input state")
-	if bool(intent.get("jump_pressed")) or bool(intent.get("jump_released")):
-		failures.append("CharacterIntent retained transient jump input")
-	if not intent.has_method("press_action") or not intent.has_method("is_action_pressed"):
-		failures.append("CharacterIntent is missing generic transient actions")
-		return failures
-	if intent.call("press_action", &""):
-		failures.append("CharacterIntent accepted an empty action")
-	if not intent.call("press_action", &"dash") or not intent.call("is_action_pressed", &"dash"):
-		failures.append("CharacterIntent did not record a named action")
-	if intent.call("press_action", &"dash"):
-		failures.append("CharacterIntent reported a duplicate action as newly pressed")
-	intent.call("clear_transient")
-	if intent.call("is_action_pressed", &"dash"):
-		failures.append("CharacterIntent retained a generic transient action")
-	return failures
+    if not ResourceLoader.exists(INTENT_PATH, "Script"):
+        return ["CharacterIntent script is missing"]
+    var failures: Array[String] = []
+    var intent: RefCounted = (load(INTENT_PATH) as Script).new()
+    if not "jump_held" in intent:
+        return ["CharacterIntent is missing continuous jump-held state"]
+    intent.set("move_axis", 0.75)
+    intent.set("jump_pressed", true)
+    intent.set("jump_released", true)
+    intent.set("jump_held", true)
+    intent.set("fast_fall", true)
+    intent.call("clear_transient")
+    if (
+        not is_equal_approx(float(intent.get("move_axis")), 0.75)
+        or not bool(intent.get("jump_held"))
+        or not bool(intent.get("fast_fall"))
+    ):
+        failures.append("CharacterIntent cleared continuous input state")
+    if bool(intent.get("jump_pressed")) or bool(intent.get("jump_released")):
+        failures.append("CharacterIntent retained transient jump input")
+    if not intent.has_method("press_action") or not intent.has_method("is_action_pressed"):
+        failures.append("CharacterIntent is missing generic transient actions")
+        return failures
+    if intent.call("press_action", &""):
+        failures.append("CharacterIntent accepted an empty action")
+    if not intent.call("press_action", &"dash") or not intent.call("is_action_pressed", &"dash"):
+        failures.append("CharacterIntent did not record a named action")
+    if intent.call("press_action", &"dash"):
+        failures.append("CharacterIntent reported a duplicate action as newly pressed")
+    intent.call("clear_transient")
+    if intent.call("is_action_pressed", &"dash"):
+        failures.append("CharacterIntent retained a generic transient action")
+    return failures

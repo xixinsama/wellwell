@@ -9,4 +9,4 @@ extends Resource
 
 
 func connects(room_id: StringName) -> bool:
-	return from_room_id == room_id or (not one_way and to_room_id == room_id)
+    return from_room_id == room_id or (not one_way and to_room_id == room_id)

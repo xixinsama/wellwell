@@ -7,8 +7,8 @@ extends Node
 
 
 func _ready() -> void:
-	var subject := get_node_or_null(subject_path)
-	if subject == null:
-		return
-	hud.call("bind_subject", subject)
-	visualizer.call("bind_subject", subject)
+    var subject := get_node_or_null(subject_path)
+    if subject == null:
+        return
+    hud.call("bind_subject", subject)
+    visualizer.call("bind_subject", subject)

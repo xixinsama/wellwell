@@ -17,34 +17,34 @@ extends RefCounted
 # axis-aligned bounds of the visible region, which is the right approximation
 # for a coarse on-screen flag.)
 static func visible_world_rect_2d(viewport: Viewport) -> Rect2:
-	return viewport.get_canvas_transform().affine_inverse() * viewport.get_visible_rect()
+    return viewport.get_canvas_transform().affine_inverse() * viewport.get_visible_rect()
 
 # Whether `node` is on screen. Returns a bool when it can be decided, or null
 # when it cannot (no camera of the matching dimension, or the node is neither
 # 2D nor 3D) so the caller can omit the field rather than report a guess.
 static func compute(node: Node) -> Variant:
-	var viewport := node.get_viewport()
-	if viewport == null:
-		return null
+    var viewport := node.get_viewport()
+    if viewport == null:
+        return null
 
-	# 3D: the engine's frustum test is authoritative (handles perspective and
-	# orthographic projections plus the near/far planes).
-	if node is Node3D:
-		var cam3d := viewport.get_camera_3d()
-		if cam3d == null or not cam3d.is_inside_tree():
-			return null
-		return cam3d.is_position_in_frustum((node as Node3D).global_position)
+    # 3D: the engine's frustum test is authoritative (handles perspective and
+    # orthographic projections plus the near/far planes).
+    if node is Node3D:
+        var cam3d := viewport.get_camera_3d()
+        if cam3d == null or not cam3d.is_inside_tree():
+            return null
+        return cam3d.is_position_in_frustum((node as Node3D).global_position)
 
-	# 2D: an opted-in notifier is the most accurate signal when the game has one.
-	if node is VisibleOnScreenNotifier2D:
-		return (node as VisibleOnScreenNotifier2D).is_on_screen()
+    # 2D: an opted-in notifier is the most accurate signal when the game has one.
+    if node is VisibleOnScreenNotifier2D:
+        return (node as VisibleOnScreenNotifier2D).is_on_screen()
 
-	# 2D fallback: test the world position against the camera's visible world
-	# rect. Requires an active Camera2D; without one "on screen" is ambiguous so
-	# we omit the field.
-	if node is Node2D:
-		if viewport.get_camera_2d() == null:
-			return null
-		return visible_world_rect_2d(viewport).has_point((node as Node2D).global_position)
+    # 2D fallback: test the world position against the camera's visible world
+    # rect. Requires an active Camera2D; without one "on screen" is ambiguous so
+    # we omit the field.
+    if node is Node2D:
+        if viewport.get_camera_2d() == null:
+            return null
+        return visible_world_rect_2d(viewport).has_point((node as Node2D).global_position)
 
-	return null
+    return null

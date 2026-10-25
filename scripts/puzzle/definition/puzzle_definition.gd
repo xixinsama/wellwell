@@ -9,12 +9,12 @@ extends Resource
 
 
 func _init() -> void:
-	board = BoardDefinition.new()
-	goal = GoalDefinition.new()
+    board = BoardDefinition.new()
+    goal = GoalDefinition.new()
 
 
 func find_piece_index(piece_id: StringName) -> int:
-	for i in pieces.size():
-		if pieces[i].id == piece_id:
-			return i
-	return -1
+    for i in pieces.size():
+        if pieces[i].id == piece_id:
+            return i
+    return -1

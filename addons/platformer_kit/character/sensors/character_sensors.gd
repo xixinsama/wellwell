@@ -9,17 +9,17 @@ var _snapshot: RefCounted = SNAPSHOT.new()
 
 
 func set_probe(probe: RefCounted) -> bool:
-	if probe == null or not probe.has_method("capture"):
-		return false
-	_probe = probe
-	return true
+    if probe == null or not probe.has_method("capture"):
+        return false
+    _probe = probe
+    return true
 
 
 func capture(body: CharacterBody2D) -> CharacterEnvironmentSnapshot:
-	var result := _probe.call("capture", body) as CharacterEnvironmentSnapshot
-	_snapshot = result if result != null else SNAPSHOT.new()
-	return _snapshot as CharacterEnvironmentSnapshot
+    var result := _probe.call("capture", body) as CharacterEnvironmentSnapshot
+    _snapshot = result if result != null else SNAPSHOT.new()
+    return _snapshot as CharacterEnvironmentSnapshot
 
 
 func get_snapshot() -> CharacterEnvironmentSnapshot:
-	return _snapshot as CharacterEnvironmentSnapshot
+    return _snapshot as CharacterEnvironmentSnapshot

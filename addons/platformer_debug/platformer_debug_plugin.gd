@@ -3,8 +3,8 @@ extends EditorPlugin
 
 
 func _enter_tree() -> void:
-	pass
+    pass
 
 
 func _exit_tree() -> void:
-	pass
+    pass

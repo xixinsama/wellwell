@@ -8,4 +8,4 @@ extends Resource
 
 
 func contains_room(room_id: StringName) -> bool:
-	return room_ids.has(room_id)
+    return room_ids.has(room_id)
