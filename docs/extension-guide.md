@@ -187,6 +187,10 @@ plus a collapsible problems panel and status bar.
 - New entity types appear on the canvas by extending
   `authoring/world/room_annotation_service.gd`; new room statuses plug into the
   status service and the list/inspector color maps.
+- The workbench follows the **editor language**: `zh*` uses the `zh_CN` table,
+  everything else uses English (`world_editor_localization.gd`, `t(key, args)`).
+  Room status messages carry a `message_key` so the list, inspector and problems
+  panel show the same translated text. Add new UI strings to both tables.
 
 Good first game-specific extensions:
 

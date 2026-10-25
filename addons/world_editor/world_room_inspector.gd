@@ -13,7 +13,9 @@ const STATUS_COLORS := {
 	&"error": Color(0.88, 0.35, 0.35),
 	&"unknown": Color(0.55, 0.60, 0.68),
 }
-const FIELD_WIDTH := 74.0
+const FIELD_WIDTH := 86.0
+const VALUE_COLOR := Color(0.82, 0.86, 0.93)
+const MUTED_COLOR := Color(0.58, 0.64, 0.73)
 
 var _room_id := ""
 var _content: VBoxContainer
@@ -31,6 +33,7 @@ func _ready() -> void:
 	_content.name = "InspectorContent"
 	_content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_content.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_content.add_theme_constant_override("separation", 6)
 	scroll.add_child(_content)
 	clear()
 
@@ -40,9 +43,10 @@ func clear() -> void:
 	_spawn_picker = null
 	_clear_content()
 	var hint := Label.new()
-	hint.text = "Select a room to inspect it."
+	hint.text = WorldEditorLocalization.t("WE_SELECT_ROOM_HINT")
 	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	hint.add_theme_color_override("font_color", Color(0.55, 0.60, 0.68))
+	hint.add_theme_font_size_override("font_size", 13)
+	hint.add_theme_color_override("font_color", MUTED_COLOR)
 	_content.add_child(hint)
 
 
@@ -59,75 +63,79 @@ func show_room(
 
 	var title := Label.new()
 	title.text = room.room_id if room.display_name.is_empty() else room.display_name
-	title.add_theme_font_size_override("font_size", 15)
+	title.add_theme_font_size_override("font_size", 16)
 	_content.add_child(title)
 
-	var id_label := _label(room.room_id, 11, Color(0.55, 0.60, 0.68))
-	_content.add_child(id_label)
+	_content.add_child(_label(room.room_id, 12, MUTED_COLOR))
 
-	var status_label := _label(String(message), 11, STATUS_COLORS.get(status, STATUS_COLORS[&"unknown"]))
+	var status_label := _label(message, 13, STATUS_COLORS.get(status, STATUS_COLORS[&"unknown"]))
 	status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_content.add_child(status_label)
 
 	_content.add_child(HSeparator.new())
-	_add_field("Size", "%d×%d chunks · %d×%d px" % [
+	_add_field(WorldEditorLocalization.t("WE_FIELD_SIZE"), "%d×%d chunks · %d×%d px" % [
 		room.room_size_chunks.x,
 		room.room_size_chunks.y,
 		room.room_size_chunks.x * 320,
 		room.room_size_chunks.y * 180,
 	])
 	var origin := _origin(room)
-	_add_field("Origin", "(%d, %d) chunks" % [origin.x, origin.y])
-	_add_field("Source", _short_path(room.source_scene_path))
-	_add_field("Runtime", _short_path(room.scene_path))
-	_add_field("Terrain", _short_path(room.terrain_scene_path))
-	_add_field("Preview spawn", room.preview_spawn_id if not room.preview_spawn_id.is_empty() else "—")
+	_add_field(WorldEditorLocalization.t("WE_FIELD_ORIGIN"), "(%d, %d) chunks" % [origin.x, origin.y])
+	_add_field(WorldEditorLocalization.t("WE_FIELD_SOURCE"), _short_path(room.source_scene_path))
+	_add_field(WorldEditorLocalization.t("WE_FIELD_RUNTIME"), _short_path(room.scene_path))
+	_add_field(WorldEditorLocalization.t("WE_FIELD_TERRAIN"), _short_path(room.terrain_scene_path))
 	if not room.tags.is_empty():
-		_add_field("Tags", ", ".join(room.tags))
+		_add_field(WorldEditorLocalization.t("WE_FIELD_TAGS"), ", ".join(room.tags))
 
 	if not room.spawn_ids.is_empty():
 		_content.add_child(HSeparator.new())
-		_content.add_child(_section_label("Spawns"))
+		_content.add_child(_section_label(WorldEditorLocalization.t("WE_SPAWNS")))
 		for spawn_id: String in room.spawn_ids:
 			var marker := " ★" if room.room_id == start_room_id and spawn_id == start_spawn_id else ""
-			_content.add_child(_label("S · %s%s" % [spawn_id, marker], 11, Color(0.72, 0.85, 0.78)))
+			_content.add_child(_label("S · %s%s" % [spawn_id, marker], 13, Color(0.72, 0.85, 0.78)))
 
 	if not room.entrance_ids.is_empty():
 		_content.add_child(HSeparator.new())
-		_content.add_child(_section_label("Entrances"))
+		_content.add_child(_section_label(WorldEditorLocalization.t("WE_ENTRANCES")))
 		for entrance_id: String in room.entrance_ids:
-			_content.add_child(_label("E · %s%s" % [entrance_id, _connection_target(connections, room.room_id, entrance_id)], 11, Color(0.92, 0.82, 0.64)))
+			_content.add_child(_label(
+				"E · %s%s" % [entrance_id, _connection_target(connections, room.room_id, entrance_id)],
+				13,
+				Color(0.92, 0.82, 0.64)
+			))
 
 	_content.add_child(HSeparator.new())
 	_add_actions([&"open_source", &"bake", &"validate", &"focus", &"remove"])
 	_content.add_child(HSeparator.new())
-	_add_start_row(room, start_room_id)
+	_add_start_row(room, start_room_id, start_spawn_id)
 
 
 func show_multi(rooms: Array[RoomData], statuses: Dictionary) -> void:
 	_room_id = ""
 	_clear_content()
 	var title := Label.new()
-	title.text = "%d rooms selected" % rooms.size()
-	title.add_theme_font_size_override("font_size", 15)
+	title.text = WorldEditorLocalization.t("WE_MULTI_ROOMS_SELECTED", [rooms.size()])
+	title.add_theme_font_size_override("font_size", 16)
 	_content.add_child(title)
 	var counts := {&"fresh": 0, &"stale": 0, &"error": 0, &"unknown": 0}
 	for room: RoomData in rooms:
 		var status: StringName = statuses.get(room.room_id, &"unknown")
 		counts[status] = int(counts.get(status, 0)) + 1
-	var summary := "Baked %d · Stale %d · Error %d · Unknown %d" % [
-		int(counts[&"fresh"]), int(counts[&"stale"]), int(counts[&"error"]), int(counts[&"unknown"])
-	]
-	_content.add_child(_label(summary, 11, Color(0.72, 0.78, 0.88)))
+	_content.add_child(_label(WorldEditorLocalization.t("WE_MULTI_SUMMARY", [
+		int(counts[&"fresh"]), int(counts[&"stale"]), int(counts[&"error"]), int(counts[&"unknown"]),
+	]), 13, VALUE_COLOR))
 	_content.add_child(HSeparator.new())
 	var shown := 0
 	for room: RoomData in rooms:
 		if shown >= 8:
-			_content.add_child(_label("… %d more" % (rooms.size() - shown), 11, Color(0.55, 0.60, 0.68)))
+			_content.add_child(_label(WorldEditorLocalization.t("WE_MORE", [rooms.size() - shown]), 12, MUTED_COLOR))
 			break
 		var status: StringName = statuses.get(room.room_id, &"unknown")
-		var dot := "● "
-		_content.add_child(_label("%s%s" % [dot, room.room_id], 11, STATUS_COLORS.get(status, STATUS_COLORS[&"unknown"])))
+		_content.add_child(_label(
+			"● %s" % room.room_id,
+			13,
+			STATUS_COLORS.get(status, STATUS_COLORS[&"unknown"])
+		))
 		shown += 1
 	_content.add_child(HSeparator.new())
 	_add_actions([&"bake_selected", &"validate_selected", &"remove_selected", &"open_first"])
@@ -152,7 +160,7 @@ func _clear_content() -> void:
 		child.free()
 
 
-func _label(text: String, font_size: int = 12, color: Color = Color(0.78, 0.82, 0.90)) -> Label:
+func _label(text: String, font_size: int = 13, color: Color = VALUE_COLOR) -> Label:
 	var label := Label.new()
 	label.text = text
 	label.add_theme_font_size_override("font_size", font_size)
@@ -161,17 +169,16 @@ func _label(text: String, font_size: int = 12, color: Color = Color(0.78, 0.82, 
 
 
 func _section_label(text: String) -> Label:
-	var label := _label(text.to_upper(), 10, Color(0.50, 0.55, 0.64))
-	label.add_theme_constant_override("outline_size", 0)
-	return label
+	return _label(text.to_upper(), 11, MUTED_COLOR)
 
 
 func _add_field(field: String, value: String) -> void:
 	var row := HBoxContainer.new()
-	var name_label := _label(field, 11, Color(0.55, 0.60, 0.68))
+	row.add_theme_constant_override("separation", 8)
+	var name_label := _label(field, 12, MUTED_COLOR)
 	name_label.custom_minimum_size.x = FIELD_WIDTH
 	row.add_child(name_label)
-	var value_label := _label(value, 11)
+	var value_label := _label(value, 13)
 	value_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	value_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	value_label.tooltip_text = value
@@ -190,9 +197,9 @@ func _add_actions(actions: Array) -> void:
 	_content.add_child(row)
 
 
-func _add_start_row(room: RoomData, start_room_id: String) -> void:
+func _add_start_row(room: RoomData, start_room_id: String, start_spawn_id: String) -> void:
 	var row := HFlowContainer.new()
-	row.add_child(_label("Start", 11, Color(0.55, 0.60, 0.68)))
+	row.add_child(_label(WorldEditorLocalization.t("WE_START"), 12, MUTED_COLOR))
 	_spawn_picker = OptionButton.new()
 	_spawn_picker.name = "StartSpawnPicker"
 	var spawns := room.spawn_ids
@@ -201,14 +208,17 @@ func _add_start_row(room: RoomData, start_room_id: String) -> void:
 	for index in spawns.size():
 		_spawn_picker.add_item(spawns[index], index)
 		_spawn_picker.set_item_metadata(index, spawns[index])
+	var preferred := start_spawn_id if room.room_id == start_room_id else ""
+	if preferred.is_empty() and not spawns.is_empty():
+		preferred = spawns[0]
 	for index in spawns.size():
-		if spawns[index] == room.preview_spawn_id:
+		if spawns[index] == preferred:
 			_spawn_picker.select(index)
 			break
 	row.add_child(_spawn_picker)
 	var button := Button.new()
-	button.text = "Set as Start"
-	button.disabled = spawns.is_empty() or room.room_id == start_room_id
+	button.text = WorldEditorLocalization.t("WE_SET_AS_START")
+	button.disabled = spawns.is_empty()
 	button.pressed.connect(func() -> void: action_requested.emit(&"set_start", _room_id))
 	row.add_child(button)
 	_content.add_child(row)
@@ -217,25 +227,25 @@ func _add_start_row(room: RoomData, start_room_id: String) -> void:
 func _action_label(action: StringName) -> String:
 	match action:
 		&"open_source":
-			return "Open Source"
+			return WorldEditorLocalization.t("WE_ACTION_OPEN_SOURCE")
 		&"bake":
-			return "Bake"
+			return WorldEditorLocalization.t("WE_ACTION_BAKE")
 		&"validate":
-			return "Validate"
+			return WorldEditorLocalization.t("WE_ACTION_VALIDATE")
 		&"focus":
-			return "Focus"
+			return WorldEditorLocalization.t("WE_ACTION_FOCUS")
 		&"remove":
-			return "Remove"
+			return WorldEditorLocalization.t("WE_ACTION_REMOVE")
 		&"set_start":
-			return "Set as Start"
+			return WorldEditorLocalization.t("WE_SET_AS_START")
 		&"bake_selected":
-			return "Bake Selected"
+			return WorldEditorLocalization.t("WE_ACTION_BAKE_SELECTED")
 		&"validate_selected":
-			return "Validate Selected"
+			return WorldEditorLocalization.t("WE_ACTION_VALIDATE_SELECTED")
 		&"remove_selected":
-			return "Remove Selected"
+			return WorldEditorLocalization.t("WE_ACTION_REMOVE_SELECTED")
 		&"open_first":
-			return "Open First"
+			return WorldEditorLocalization.t("WE_ACTION_OPEN_FIRST")
 		_:
 			return String(action)
 

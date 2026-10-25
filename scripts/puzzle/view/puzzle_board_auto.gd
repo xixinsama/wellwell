@@ -45,7 +45,7 @@ const REFRESH_DEBOUNCE_SECONDS := 0.2
 ## Whether generated void sliders may be driven directly by input.
 @export var void_enable: bool = false
 
-@export_tool_button("重新生成", "Reload") var regenerate_action = _regenerate_from_tool_button
+@export_tool_button("Regenerate", "Reload") var regenerate_action = _regenerate_from_tool_button
 
 ## Signature of the inputs that produced the current generated pieces. Saved so
 ## reopening a scene does not regenerate (and dirty) when nothing changed.

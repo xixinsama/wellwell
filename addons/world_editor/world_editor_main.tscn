@@ -200,6 +200,7 @@ script = ExtResource("5_inspector")
 layout_mode = 2
 
 [node name="ConnectionsTitle" type="Label" parent="Workspace/CanvasSplit/InspectorPanel/Connections"]
+unique_name_in_owner = true
 layout_mode = 2
 text = "CONNECTIONS"
 

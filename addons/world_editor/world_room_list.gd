@@ -16,12 +16,6 @@ const STATUS_COLORS := {
 	&"error": Color(0.88, 0.35, 0.35),
 	&"unknown": Color(0.55, 0.60, 0.68),
 }
-const STATUS_LABELS := {
-	&"fresh": "Baked",
-	&"stale": "Stale",
-	&"error": "Error",
-	&"unknown": "Unknown",
-}
 const ACTIONS: Array[Dictionary] = [
 	{"action": &"open_source", "label": "Open Source"},
 	{"action": &"bake", "label": "Bake"},
@@ -49,10 +43,10 @@ func _ready() -> void:
 	hide_root = true
 	select_mode = Tree.SELECT_ROW
 	column_titles_visible = true
-	set_column_title(0, "Room")
-	set_column_title(1, "Size")
-	set_column_title(2, "Origin")
-	set_column_title(3, "Status")
+	set_column_title(0, WorldEditorLocalization.t("WE_COL_ROOM"))
+	set_column_title(1, WorldEditorLocalization.t("WE_COL_SIZE"))
+	set_column_title(2, WorldEditorLocalization.t("WE_COL_ORIGIN"))
+	set_column_title(3, WorldEditorLocalization.t("WE_COL_STATUS"))
 	set_column_expand(0, true)
 	set_column_expand(1, false)
 	set_column_expand(2, false)
@@ -68,7 +62,7 @@ func _ready() -> void:
 	_menu.name = "RoomMenu"
 	add_child(_menu)
 	for index in ACTIONS.size():
-		_menu.add_item(String(ACTIONS[index]["label"]), index)
+		_menu.add_item(_action_label(ACTIONS[index]["action"]), index)
 	_menu.id_pressed.connect(_on_menu_id_pressed)
 
 
@@ -128,7 +122,7 @@ func _rebuild() -> void:
 		item.set_text(1, "%d×%d" % [room.room_size_chunks.x, room.room_size_chunks.y])
 		var origin := _origin(room)
 		item.set_text(2, "(%d,%d)" % [origin.x, origin.y])
-		item.set_text(STATUS_COLUMN, String(STATUS_LABELS.get(status, "Unknown")))
+		item.set_text(STATUS_COLUMN, _status_label(status))
 		var color: Color = STATUS_COLORS.get(status, STATUS_COLORS[&"unknown"])
 		item.set_custom_color(0, color)
 		item.set_custom_color(STATUS_COLUMN, color)
@@ -150,6 +144,36 @@ func _matches(room: RoomData) -> bool:
 	if _filter.is_empty():
 		return true
 	return _display_name(room).to_lower().contains(_filter) or room.room_id.to_lower().contains(_filter)
+
+
+func _status_label(state: StringName) -> String:
+	match state:
+		&"fresh":
+			return WorldEditorLocalization.t("WE_STATUS_FRESH")
+		&"stale":
+			return WorldEditorLocalization.t("WE_STATUS_STALE")
+		&"error":
+			return WorldEditorLocalization.t("WE_STATUS_ERROR")
+		_:
+			return WorldEditorLocalization.t("WE_STATUS_UNKNOWN")
+
+
+func _action_label(action: StringName) -> String:
+	match action:
+		&"open_source":
+			return WorldEditorLocalization.t("WE_ACTION_OPEN_SOURCE")
+		&"bake":
+			return WorldEditorLocalization.t("WE_ACTION_BAKE")
+		&"validate":
+			return WorldEditorLocalization.t("WE_ACTION_VALIDATE")
+		&"focus":
+			return WorldEditorLocalization.t("WE_ACTION_FOCUS")
+		&"set_start":
+			return WorldEditorLocalization.t("WE_ACTION_SET_START")
+		&"remove":
+			return WorldEditorLocalization.t("WE_ACTION_REMOVE")
+		_:
+			return String(action)
 
 
 func _display_name(room: RoomData) -> String:

@@ -316,7 +316,9 @@ func get_zoom() -> float:
 
 
 func _draw() -> void:
-	draw_rect(Rect2(Vector2.ZERO, size), Color(0.105, 0.115, 0.13), true)
+	# The dark canvas background lives in TerrainPreviewLayer, which draws behind
+	# this control (show_behind_parent) so the terrain stays visible underneath
+	# the grid, room frames and labels.
 	_draw_grid()
 	var world := _get_world()
 	if world != null:
@@ -604,10 +606,10 @@ func _draw_overlays(world: WorldData) -> void:
 	var font := ThemeDB.fallback_font
 	var world_position := get_cursor_world_pixels()
 	var chunk := get_cursor_chunk()
-	var cursor_text := "World %.0f, %.0f   Chunk %d, %d" % [world_position.x, world_position.y, chunk.x, chunk.y]
+	var cursor_text := WorldEditorLocalization.t("WE_CURSOR", [world_position.x, world_position.y, chunk.x, chunk.y])
 	draw_string(font, Vector2(8, size.y - 10), cursor_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color(0.86, 0.88, 0.92))
 	if not _selected_ids.is_empty():
-		var selection_text := "%d selected" % _selected_ids.size()
+		var selection_text := WorldEditorLocalization.t("WE_SELECTED_COUNT", [_selected_ids.size()])
 		draw_string(font, Vector2(8, size.y - 28), selection_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 12, SELECTED_COLOR)
 	if not _drag_room_id.is_empty():
 		var guide_world := Vector2(_drag_preview_chunk) * CHUNK_PIXELS

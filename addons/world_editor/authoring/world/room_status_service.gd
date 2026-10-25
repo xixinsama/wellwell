@@ -33,26 +33,26 @@ func _init() -> void:
 ## Evaluate one room. Returns {state: StringName, message: String}.
 func evaluate(room: RoomData) -> Dictionary:
 	if room == null:
-		return _result(UNKNOWN, "No room selected")
+		return _result(UNKNOWN, "No room selected", "WE_STATUS_MSG_NO_ROOM")
 	if room.room_id.is_empty():
-		return _result(UNKNOWN, "Room has no id")
+		return _result(UNKNOWN, "Room has no id", "WE_STATUS_MSG_NO_ID")
 	var failure := String(_bake_failures.get(room.room_id, ""))
 	if not failure.is_empty():
 		return _result(ERROR, failure)
 	var source_path := room.source_scene_path
 	if source_path.is_empty():
-		return _result(UNKNOWN, "Room has no source scene path")
+		return _result(UNKNOWN, "Room has no source scene path", "WE_STATUS_MSG_NO_SOURCE")
 	if not bool(exists_provider.call(source_path)):
-		return _result(ERROR, "Source scene is missing: %s" % source_path)
+		return _result(ERROR, "Source scene is missing: %s" % source_path, "WE_STATUS_MSG_MISSING_SOURCE", [source_path])
 	if room.source_fingerprint.is_empty():
-		return _result(UNKNOWN, "No bake fingerprint; re-bake the room")
+		return _result(UNKNOWN, "No bake fingerprint; re-bake the room", "WE_STATUS_MSG_NO_FINGERPRINT")
 	if room.scene_path.is_empty() or not bool(exists_provider.call(room.scene_path)):
-		return _result(ERROR, "Runtime scene is missing: %s" % room.scene_path)
+		return _result(ERROR, "Runtime scene is missing: %s" % room.scene_path, "WE_STATUS_MSG_MISSING_RUNTIME", [room.scene_path])
 	if room.terrain_scene_path.is_empty() or not bool(exists_provider.call(room.terrain_scene_path)):
-		return _result(ERROR, "Terrain scene is missing: %s" % room.terrain_scene_path)
+		return _result(ERROR, "Terrain scene is missing: %s" % room.terrain_scene_path, "WE_STATUS_MSG_MISSING_TERRAIN", [room.terrain_scene_path])
 	if _source_hash(source_path) != room.source_fingerprint:
-		return _result(STALE, "Source scene changed since the last bake")
-	return _result(FRESH, "Baked")
+		return _result(STALE, "Source scene changed since the last bake", "WE_STATUS_MSG_STALE")
+	return _result(FRESH, "Baked", "WE_STATUS_MSG_FRESH")
 
 
 ## Remember a failed bake/validate for the rest of the session.
@@ -105,5 +105,15 @@ static func _default_exists(path: String) -> bool:
 	return FileAccess.file_exists(path)
 
 
-static func _result(state: StringName, message: String) -> Dictionary:
-	return {"state": state, "message": message}
+static func _result(
+	state: StringName,
+	message: String,
+	message_key: String = "",
+	message_args: Array = []
+) -> Dictionary:
+	return {
+		"state": state,
+		"message": message,
+		"message_key": message_key,
+		"message_args": message_args,
+	}

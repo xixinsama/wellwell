@@ -102,6 +102,8 @@ func run() -> Array[String]:
 	if not FileAccess.file_exists(DOCK_PATH):
 		return ["missing production API: %s" % DOCK_PATH]
 	var failures: Array[String] = []
+	# Assertions below check English messages; pin the editor UI language.
+	WorldEditorLocalization.locale_override = "en"
 	_assert_editor_dependencies_are_tool_scripts(failures)
 	_assert_toolbar_contract(failures)
 	_assert_world_resource_controls(failures)
@@ -113,6 +115,8 @@ func run() -> Array[String]:
 	_assert_rebake_sync_and_overlap_connection_geometry(failures)
 	_assert_duplicate_existing_room_does_not_write_outputs(failures)
 	_cleanup_controller_fixtures()
+	WorldEditorLocalization.locale_override = ""
+	WorldEditorLocalization.reset_cache()
 	return failures
 
 

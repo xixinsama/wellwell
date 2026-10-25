@@ -83,6 +83,7 @@ func _ready() -> void:
 	if canvas.has_signal("delete_requested"):
 		canvas.connect("delete_requested", delete_selected_rooms)
 	canvas.call("set_main_screen", self)
+	_localize_ui()
 	_refresh()
 
 
@@ -217,7 +218,7 @@ func new_room() -> void:
 		return
 	var template_path := String(ProjectSettings.get_setting(TEMPLATE_SCENE_SETTING, ""))
 	if template_path.is_empty() or not ResourceLoader.exists(template_path, "PackedScene"):
-		_show_result(_failure("Room template is not configured: %s" % TEMPLATE_SCENE_SETTING))
+		_show_result(_failure(WorldEditorLocalization.t("WE_TEMPLATE_MISSING", [TEMPLATE_SCENE_SETTING])))
 		return
 	_editor_interface.open_scene_from_path(template_path, true)
 
@@ -228,7 +229,7 @@ func new_world() -> void:
 
 func save_world() -> Dictionary:
 	if world_data == null:
-		var failure := _failure("No WorldData selected")
+		var failure := _failure(WorldEditorLocalization.t("WE_NO_WORLD_DATA"))
 		_show_result(failure)
 		return failure
 	var result: Dictionary = _world_resources.call("save_world", world_data)
@@ -269,7 +270,7 @@ func connect_selected() -> void:
 	var to_room_id := _selected_option_value(target_room)
 	var to_spawn_id := _selected_option_value(target_spawn)
 	if selected_room_id.is_empty() or from_entrance_id.is_empty() or to_room_id.is_empty() or to_spawn_id.is_empty():
-		_show_result({"ok": false, "errors": ["Select a source entrance and target spawn"], "warnings": []})
+		_show_result({"ok": false, "errors": [WorldEditorLocalization.t("WE_CONNECT_ENDPOINTS_MISSING")], "warnings": []})
 		return
 	var connection := CONNECTION_DATA.new() as RoomConnectionData
 	connection.from_room_id = selected_room_id
@@ -286,7 +287,7 @@ func disconnect_selected() -> void:
 
 
 func validate_world() -> Dictionary:
-	var result: Dictionary = _model.validate_world(world_data) if world_data != null else {"ok": false, "errors": ["No WorldData selected"], "warnings": []}
+	var result: Dictionary = _model.validate_world(world_data) if world_data != null else {"ok": false, "errors": [WorldEditorLocalization.t("WE_NO_WORLD_DATA")], "warnings": []}
 	_world_report = result
 	_show_result(result)
 	_refresh()
@@ -294,7 +295,7 @@ func validate_world() -> Dictionary:
 
 
 func bake_world() -> Dictionary:
-	var result: Dictionary = WORLD_BAKER.new().bake(world_data) if world_data != null else {"ok": false, "errors": ["No WorldData selected"], "warnings": []}
+	var result: Dictionary = WORLD_BAKER.new().bake(world_data) if world_data != null else {"ok": false, "errors": [WorldEditorLocalization.t("WE_NO_WORLD_DATA")], "warnings": []}
 	_show_result(result)
 	return result
 
@@ -306,7 +307,7 @@ func validate_selected_room() -> Dictionary:
 func _validate_room(room_id: String) -> Dictionary:
 	var root := _instantiate_room_source(room_id)
 	if root == null:
-		var failure := {"ok": false, "errors": ["No room source selected"], "warnings": []}
+		var failure := {"ok": false, "errors": [WorldEditorLocalization.t("WE_NO_ROOM_SOURCE")], "warnings": []}
 		_show_result(failure)
 		return failure
 	var result: Dictionary = _room_baker.call("validate", root)
@@ -341,7 +342,7 @@ func _bake_room(room_id: String) -> Dictionary:
 			ResourceLoader.CACHE_MODE_IGNORE
 		) as RoomData
 		if baked_room == null or not sync_room_resource(room_id, baked_room):
-			result = {"ok": false, "errors": ["Baked RoomData could not be synchronized"], "warnings": result.get("warnings", [])}
+			result = {"ok": false, "errors": [WorldEditorLocalization.t("WE_SYNC_FAILED")], "warnings": result.get("warnings", [])}
 	if bool(result.get("ok", false)):
 		_status.clear_bake_failure(room_id)
 		_remove_session_issues(room_id)
@@ -432,6 +433,43 @@ func _mark_changed(result: Dictionary) -> void:
 		world_data.emit_changed()
 
 
+func _localize_ui() -> void:
+	var t := WorldEditorLocalization.t
+	%NewWorld.text = t.call("WE_NEW_WORLD")
+	%NewWorld.tooltip_text = t.call("WE_TT_NEW_WORLD")
+	%SaveWorld.text = t.call("WE_SAVE_WORLD")
+	%SaveWorld.tooltip_text = t.call("WE_TT_SAVE_WORLD")
+	%NewRoom.text = t.call("WE_NEW_ROOM")
+	%NewRoom.tooltip_text = t.call("WE_TT_NEW_ROOM")
+	%AddExisting.text = t.call("WE_ADD_EXISTING")
+	%AddExisting.tooltip_text = t.call("WE_TT_ADD_EXISTING_NO_WORLD")
+	%OpenSource.text = t.call("WE_OPEN_SOURCE")
+	%OpenSource.tooltip_text = t.call("WE_TT_OPEN_SOURCE")
+	%BakeRoom.text = t.call("WE_BAKE")
+	%BakeRoom.tooltip_text = t.call("WE_TT_BAKE_ROOM")
+	%ValidateRoom.text = t.call("WE_VALIDATE")
+	%ValidateRoom.tooltip_text = t.call("WE_TT_VALIDATE_ROOM")
+	%ValidateWorld.text = t.call("WE_VALIDATE_WORLD")
+	%ValidateWorld.tooltip_text = t.call("WE_TT_VALIDATE_WORLD")
+	%BakeWorld.text = t.call("WE_BAKE_WORLD")
+	%BakeWorld.tooltip_text = t.call("WE_TT_BAKE_WORLD")
+	%RoomsToggle.text = t.call("WE_ROOMS")
+	%RoomsToggle.tooltip_text = t.call("WE_TT_TOGGLE_ROOMS")
+	%InspectorToggle.text = t.call("WE_INSPECTOR")
+	%InspectorToggle.tooltip_text = t.call("WE_TT_TOGGLE_INSPECTOR")
+	%ProblemsToggle.text = t.call("WE_PROBLEMS")
+	%ProblemsToggle.tooltip_text = t.call("WE_TT_TOGGLE_PROBLEMS")
+	%RoomSearch.placeholder_text = t.call("WE_SEARCH_ROOMS")
+	%FocusAll.text = t.call("WE_FOCUS_ALL")
+	%FocusAll.tooltip_text = t.call("WE_TT_FOCUS_ALL")
+	%ResetView.text = t.call("WE_RESET_VIEW")
+	%ResetView.tooltip_text = t.call("WE_TT_RESET_VIEW")
+	%ProblemsBadge.tooltip_text = t.call("WE_TT_PROBLEMS_BADGE")
+	%Connect.text = t.call("WE_CONNECT")
+	%Disconnect.text = t.call("WE_DISCONNECT")
+	%ConnectionsTitle.text = t.call("WE_CONNECTIONS")
+
+
 func _sync_world_picker(resource: WorldData) -> void:
 	if not is_instance_valid(world_picker):
 		return
@@ -463,7 +501,7 @@ func _refresh() -> void:
 		)
 		room_list.call("set_filter", room_search.text if is_instance_valid(room_search) else "")
 	if is_instance_valid(room_count):
-		room_count.text = "%d rooms" % (0 if world_data == null else world_data.rooms.size())
+		room_count.text = WorldEditorLocalization.t("WE_ROOMS_COUNT", [0 if world_data == null else world_data.rooms.size()])
 	if is_instance_valid(inspector):
 		_refresh_inspector()
 	if is_instance_valid(problems_panel):
@@ -503,7 +541,11 @@ func _refresh_statuses() -> void:
 	for room: RoomData in _sorted_rooms():
 		var result: Dictionary = _status.evaluate(room)
 		room_statuses[room.room_id] = result.get("state", &"unknown")
-		room_status_messages[room.room_id] = String(result.get("message", ""))
+		var message := String(result.get("message", ""))
+		var message_key := String(result.get("message_key", ""))
+		if not message_key.is_empty():
+			message = WorldEditorLocalization.t(message_key, result.get("message_args", []))
+		room_status_messages[room.room_id] = message
 
 
 func _refresh_annotations() -> void:
@@ -574,7 +616,7 @@ func _refresh_problems() -> void:
 				warnings += 1
 	problems_panel.call("set_issues", issues, errors, warnings)
 	if is_instance_valid(problems_badge):
-		problems_badge.text = "%d problems" % issues.size()
+		problems_badge.text = WorldEditorLocalization.t("WE_PROBLEMS_COUNT", [issues.size()])
 
 
 func _refresh_status_bar() -> void:
@@ -587,9 +629,9 @@ func _refresh_status_bar() -> void:
 		if not preview_errors.is_empty():
 			status_label.text = String(preview_errors.values()[0])
 		else:
-			status_label.text = "No world selected" if world_data == null else "%d rooms" % world_data.rooms.size()
+			status_label.text = WorldEditorLocalization.t("WE_NO_WORLD_SELECTED") if world_data == null else WorldEditorLocalization.t("WE_ROOMS_COUNT", [world_data.rooms.size()])
 	if is_instance_valid(selection_label):
-		selection_label.text = "" if selected_room_ids.is_empty() else "%d selected" % selected_room_ids.size()
+		selection_label.text = "" if selected_room_ids.is_empty() else WorldEditorLocalization.t("WE_SELECTED_COUNT", [selected_room_ids.size()])
 
 
 func _start_room_id() -> String:
@@ -674,8 +716,8 @@ func _default_spawn(room_id: String) -> String:
 		var picked := String(inspector.call("get_selected_spawn_id"))
 		if not picked.is_empty():
 			return picked
-	if not room.preview_spawn_id.is_empty():
-		return room.preview_spawn_id
+	if world_data != null and world_data.start_room_id == room_id and not world_data.start_spawn_id.is_empty():
+		return world_data.start_spawn_id
 	return "" if room.spawn_ids.is_empty() else String(room.spawn_ids[0])
 
 
@@ -751,7 +793,7 @@ func _show_result(result: Dictionary) -> void:
 	var errors: Array = result.get("errors", [])
 	var warnings: Array = result.get("warnings", [])
 	var messages: Array = errors if not result.get("ok", false) else warnings
-	status_label.text = "Completed" if messages.is_empty() else String(messages[0])
+	status_label.text = WorldEditorLocalization.t("WE_COMPLETED") if messages.is_empty() else String(messages[0])
 	var details: Array[String] = []
 	for error: Variant in errors:
 		details.append("Error: %s" % String(error))
@@ -781,16 +823,16 @@ func _instantiate_room_source(room_id: String) -> Node:
 
 func _add_existing_source(path: String) -> void:
 	if world_data == null or world_data.resource_path.is_empty() or not FileAccess.file_exists(world_data.resource_path):
-		_show_result(_failure("Select or create a saved WorldData resource first"))
+		_show_result(_failure(WorldEditorLocalization.t("WE_SAVE_WORLD_FIRST")))
 		return
 	if _transaction_busy:
-		_show_result(_failure("Another world transaction is already running"))
+		_show_result(_failure(WorldEditorLocalization.t("WE_TRANSACTION_BUSY")))
 		return
 	_set_transaction_busy(true)
 	var source := _load_room_source(path)
 	var result: Dictionary
 	if source == null:
-		result = _failure("Room source could not be loaded: %s" % path)
+		result = _failure(WorldEditorLocalization.t("WE_ROOM_SOURCE_LOAD_FAILED", [path]))
 	else:
 		result = _world_room_importer.call("import_room", world_data, source, path)
 		source.free()
@@ -798,7 +840,7 @@ func _add_existing_source(path: String) -> void:
 		var imported_world := result.get("world") as WorldData
 		var imported_room := result.get("room") as RoomData
 		if imported_world == null or imported_room == null:
-			result = _failure("Room importer returned incomplete saved resources")
+			result = _failure(WorldEditorLocalization.t("WE_IMPORT_INCOMPLETE"))
 		else:
 			set_world_data(imported_world)
 			select_room(imported_room.room_id)
@@ -813,13 +855,13 @@ func get_command_state() -> Dictionary:
 	var has_world := world_data != null
 	var has_saved_world := has_world and not world_data.resource_path.is_empty() and FileAccess.file_exists(world_data.resource_path)
 	var has_room := has_world and not selected_room_id.is_empty() and world_data.has_room(selected_room_id)
-	var add_tooltip := "Add an authored room scene"
+	var add_tooltip := WorldEditorLocalization.t("WE_TT_ADD_EXISTING")
 	if not has_world:
-		add_tooltip = "Select or create a WorldData resource first"
+		add_tooltip = WorldEditorLocalization.t("WE_TT_ADD_EXISTING_NO_WORLD")
 	elif not has_saved_world:
-		add_tooltip = "Save the selected WorldData resource first"
+		add_tooltip = WorldEditorLocalization.t("WE_TT_ADD_EXISTING_UNSAVED")
 	elif _transaction_busy:
-		add_tooltip = "Another world transaction is already running"
+		add_tooltip = WorldEditorLocalization.t("WE_TT_BUSY")
 	return {
 		"has_selection": not selected_room_ids.is_empty(),
 		"selection_count": selected_room_ids.size(),
@@ -889,7 +931,7 @@ func _persist_import_state(payload: Dictionary) -> void:
 	var expected_world_id := String(payload.get("world_id", ""))
 	var state: Dictionary = payload.get("state", {})
 	if world_path.is_empty() or expected_world_id.is_empty() or state.is_empty():
-		_show_result(_failure("Import history payload is incomplete"))
+		_show_result(_failure(WorldEditorLocalization.t("WE_IMPORT_HISTORY_INCOMPLETE")))
 		return
 	var load_result: Dictionary = _world_resources.call("load_world", world_path)
 	if not bool(load_result.get("ok", false)):
@@ -897,7 +939,7 @@ func _persist_import_state(payload: Dictionary) -> void:
 		return
 	var stored_world := load_result.get("world") as WorldData
 	if stored_world == null or stored_world.world_id != expected_world_id:
-		_show_result(_failure("Import history WorldData identity no longer matches"))
+		_show_result(_failure(WorldEditorLocalization.t("WE_IMPORT_HISTORY_MISMATCH")))
 		return
 	var candidate := stored_world.duplicate(true) as WorldData
 	var restore_result: Dictionary = _model.restore_world_state(candidate, state)

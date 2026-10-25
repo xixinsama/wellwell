@@ -33,6 +33,8 @@ func _assert_fresh(failures: Array[String]) -> void:
 	var status := service.evaluate(_make_room())
 	if status["state"] != RoomStatusService.FRESH:
 		failures.append("fresh room was not reported fresh: %s" % status.get("state", ""))
+	if String(status.get("message_key", "")) != "WE_STATUS_MSG_FRESH":
+		failures.append("fresh status did not carry a localization key")
 
 
 func _assert_stale(failures: Array[String]) -> void:
@@ -40,6 +42,8 @@ func _assert_stale(failures: Array[String]) -> void:
 	var status := service.evaluate(_make_room("deadbeef"))
 	if status["state"] != RoomStatusService.STALE:
 		failures.append("changed source was not reported stale: %s" % status.get("state", ""))
+	if String(status.get("message_key", "")) != "WE_STATUS_MSG_STALE":
+		failures.append("stale status did not carry a localization key")
 
 
 func _assert_unknown_without_fingerprint(failures: Array[String]) -> void:

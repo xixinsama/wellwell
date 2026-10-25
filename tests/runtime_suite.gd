@@ -45,6 +45,7 @@ const TESTS: Array[Script] = [
 	preload("res://tests/authoring/test_room_status.gd"),
 	preload("res://tests/authoring/test_room_annotations.gd"),
 	preload("res://tests/authoring/test_world_canvas_selection.gd"),
+	preload("res://tests/authoring/test_world_editor_localization.gd"),
 	preload("res://tests/authoring/test_world_terrain_preview_layer.gd"),
 	preload("res://tests/authoring/test_world_editor_commands.gd"),
 	preload("res://tests/world_editor/test_world_editor_framework_boundary.gd"),

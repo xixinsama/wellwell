@@ -23,7 +23,7 @@ func _ready() -> void:
 
 
 func _draw() -> void:
-    draw_rect(Rect2(Vector2.ZERO, size), Color(0.106, 0.114, 0.129, 0.0), true)
+    draw_rect(Rect2(Vector2.ZERO, size), Color(0.106, 0.114, 0.129, 1.0), true)
 
 
 func set_view_transform(center_world: Vector2, zoom: float, viewport_size: Vector2) -> void:
