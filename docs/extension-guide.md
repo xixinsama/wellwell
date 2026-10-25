@@ -173,9 +173,11 @@ plus a collapsible problems panel and status bar.
   drag a selected room to move the whole group (one undo action), `Delete`
   removes the selected references, `Esc` clears, `Ctrl+A` selects all.
 - **Inspector** is read-only: display name, id, size, origin, source/runtime/
-  terrain paths, spawn and entrance lists, plus actions. Metadata such as
+  terrain paths, spawn and entrance lists, plus the Start row. Metadata such as
   `display_name` and `room_id` stays authorative in the source scene; rebaking
-  would overwrite edits made here. Connection editing lives at the bottom.
+  would overwrite edits made here. Room actions live in the command bar (they
+  apply to the whole selection) and the context menus, not in the inspector.
+  Connection editing lives at the bottom.
 - **Problems** aggregates room statuses, the session's last bake/validate
   failures and `WorldLayoutModel.validate_world()`. Click a row to select and
   focus its room; `Revalidate` reruns validation and status checks.
@@ -187,7 +189,7 @@ plus a collapsible problems panel and status bar.
 - New entity types appear on the canvas by extending
   `authoring/world/room_annotation_service.gd`; new room statuses plug into the
   status service and the list/inspector color maps.
-- The workbench follows the **editor language**: `zh*` uses the `zh_CN` table,
+- The workbench follows the **editor language** (Editor Settings → Interface → Editor Language, `zh*` uses the `zh_CN` table,
   everything else uses English (`world_editor_localization.gd`, `t(key, args)`).
   Room status messages carry a `message_key` so the list, inspector and problems
   panel show the same translated text. Add new UI strings to both tables.

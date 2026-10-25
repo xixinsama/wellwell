@@ -27,7 +27,7 @@
 ## 已确认的设计决策
 
 - 布局采用 **A · 三栏工作台**：左房间列表｜中画布｜右检查器｜底部问题面板。
-- 检查器**只读 + 动作**，不编辑元数据。
+- 检查器**只读 + 起点设置**，不编辑元数据；单房间/批量动作放在顶部命令栏与右键菜单。
 - 画布标记从**烘焙后的运行时场景**读取，只显示关键锚点（出生点/入口/存档点/道具/危险物/开关/ResetZone/自定义 WorldEntity），悬停给详情。
 - 「待重烘」用 `RoomData.source_fingerprint` 与源场景 sha256 比对；不改数据模型和烘焙器。
 - 框选=**相交即选中**；组拖动与批量删除各算**一次撤销**；`Delete` 不弹确认（可撤销）。
@@ -81,8 +81,8 @@ WorldEditorMain (VBoxContainer, 纵向扩展)
 - 头部状态徽章 + 说明。
 - 字段：显示名、id、尺寸（区块 + 世界像素）、origin（区块 + 像素）、源场景路径、runtime / terrain 路径、`preview_spawn_id`、tags。
 - 出生点列表（`S`，标出 world 起点 spawn）、入口列表（`E`，已连接时显示 `→ 目标房间 / spawn`）。
-- 动作：Open Source / Bake / Validate / Set as Start（多 spawn 时选择）/ Focus in Canvas / Remove Reference。
-- 多选：摘要（N 个房间、各状态计数）+ 批量 Bake / Validate / Remove / Open Source（第一个）。
+- 动作：只有 `Set as Start`（多 spawn 时用下拉选择）。单房间与批量动作统一由顶部命令栏（作用于整个选择）和房间列表/画布右键菜单提供，避免检查器与命令栏重复。
+- 多选：只显示摘要（N 个房间、各状态计数），不重复放批量按钮。
 - 元数据不可编辑。
 
 ## 画布
