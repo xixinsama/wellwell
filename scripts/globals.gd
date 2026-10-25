@@ -1,5 +1,5 @@
 class_name Globals
-## 全局引用脚本，需要赋值
+## Global reference script; assign it from the game root.
 
-## 缩放的viewport
+## Scaled viewport reference.
 static var SVC: SubViewportContainer

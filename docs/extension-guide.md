@@ -178,6 +178,12 @@ plus a collapsible problems panel and status bar.
   would overwrite edits made here. Room actions live in the command bar (they
   apply to the whole selection) and the context menus, not in the inspector.
   Connection editing lives at the bottom.
+- **New Room** opens a small wizard (room id, display name, source path).
+  It writes the room as an inherited scene of `world_editor/room_template_scene`
+  (so the template's player/camera/debug children stay instanced), imports and
+  bakes it into the saved world, then opens the source scene for editing.
+- **Bake Stale (N)** bakes every room whose source changed since the last bake.
+  The count comes from the same fingerprint comparison as the list status.
 - **Problems** aggregates room statuses, the session's last bake/validate
   failures and `WorldLayoutModel.validate_world()`. Click a row to select and
   focus its room; `Revalidate` reruns validation and status checks.

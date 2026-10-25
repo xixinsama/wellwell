@@ -136,6 +136,7 @@ func _assert_toolbar_contract(failures: Array[String]) -> void:
         "CommandBar/OpenSource",
         "CommandBar/ValidateRoom",
         "CommandBar/BakeRoom",
+        "CommandBar/BakeStale",
         "Workspace/CanvasSplit/InspectorPanel/Connections/ConnectionButtons/Connect",
         "Workspace/CanvasSplit/InspectorPanel/Connections/ConnectionButtons/Disconnect",
         "CommandBar/ValidateWorld",
@@ -335,6 +336,12 @@ func _assert_command_states_and_import_history(failures: Array[String]) -> void:
 
     var editor := FakeEditorInterface.new()
     main.call("set_editor_interface", editor)
+    main.call("set_world_data", null)
+    var guarded: Dictionary = main.call("create_room", "wizard_room", "Wizard Room", "res://scenes/levels/wizard_room.tscn")
+    if bool(guarded.get("ok", true)) or (guarded.get("errors", []) as Array).is_empty():
+        failures.append("create_room did not require a saved WorldData")
+    if FileAccess.file_exists("res://scenes/levels/wizard_room.tscn"):
+        failures.append("create_room wrote a scene without a world")
     main.call("new_room")
     if editor.opened_path != "res://scenes/rooms/template/level_template.tscn" or not editor.inherited:
         failures.append("New Room no longer opens an inherited level template")

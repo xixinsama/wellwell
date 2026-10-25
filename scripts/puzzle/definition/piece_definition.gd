@@ -1,9 +1,9 @@
 class_name PieceDefinition
 extends Resource
 
-## Static description of one sliding block ("华容道块").
+## Static description of one sliding block ("klotski block").
 ##
-## The puzzle core never knows names like "曹操"; it only knows the piece's
+## The puzzle core never knows names like "Cao Cao"; it only knows the piece's
 ## cell shape, starting cell and which axis the piece may slide along.
 
 enum MovementMode {

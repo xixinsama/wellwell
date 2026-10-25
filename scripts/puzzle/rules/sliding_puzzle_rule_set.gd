@@ -1,7 +1,7 @@
 class_name SlidingPuzzleRuleSet
 extends PuzzleRuleSet
 
-## Klotski ("华容道") rules: axis-aligned slides blocked by the board border,
+## Klotski ("klotski") rules: axis-aligned slides blocked by the board border,
 ## blocked cells, and other pieces' collision footprints.
 
 @export var definition: PuzzleDefinition

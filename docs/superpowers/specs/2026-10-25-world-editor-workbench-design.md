@@ -16,11 +16,11 @@
 
 本轮只做「界面 + 信息 + 多选/框选 + 问题面板」。房间入驻流水线（New Room 向导、保存后自动重烘、Bake Stale）留给下一轮 spec。
 
-## 非目标（下一轮 spec：房间入驻流水线）
+## 已补充实现（原下一轮 spec）
 
-- `New Room` 向导（id / 显示名 / 路径）与自动登记。
-- 源场景保存后自动重烘、进入世界时自动烘焙。
-- 「Bake Stale (N)」自动批量烘焙（多选手动 Bake 属于本轮）。
+- `New Room` 向导：写 inherited scene（继承 `world_editor/room_template_scene`），自动导入/烘焙/选中并打开源场景；错误信息保持英文。
+- `Bake Stale (N)`：按指纹比对批量烘焙所有待重烘房间。
+- 未做：源场景保存后自动重烘（需要文件系统监听，后续再评估）。
 - 实体标注持久化进 `RoomData`；画布拖线连接入口；房间缩略图。
 - 修改 `display_name` / `map_color` / `room_id` 等元数据（源场景是唯一真相）。
 

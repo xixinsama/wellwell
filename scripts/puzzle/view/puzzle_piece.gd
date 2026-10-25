@@ -67,7 +67,7 @@ func _draw() -> void:
     if polygon.is_empty():
         return
     draw_colored_polygon(polygon, color)
-    # Per-cell grid lines make the unit cells ("格子") visible.
+    # Per-cell grid lines make the unit cells ("unit cell") visible.
     var grid_color := Color(0.0, 0.0, 0.0, 0.28)
     for cell_offset: Vector2i in shape:
         draw_rect(

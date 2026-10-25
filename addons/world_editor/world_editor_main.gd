@@ -11,6 +11,7 @@ const CONNECTION_DATA := preload("res://addons/platformer_kit/world/data/room_co
 const TEMPLATE_SCENE_SETTING := "world_editor/room_template_scene"
 const ROOM_STATUS := preload("res://addons/world_editor/authoring/world/room_status_service.gd")
 const ROOM_ANNOTATIONS := preload("res://addons/world_editor/authoring/world/room_annotation_service.gd")
+const ROOM_SCENE_WRITER := preload("res://addons/world_editor/authoring/world/room_scene_writer.gd")
 
 var world_data: WorldData
 var selected_room_id := ""
@@ -29,6 +30,11 @@ var _annotations_service := ROOM_ANNOTATIONS.new()
 var _annotations: Dictionary = {}
 var _session_issues: Array[Dictionary] = []
 var _world_report: Dictionary = {}
+var _new_room_dialog: ConfirmationDialog
+var _wizard_id: LineEdit
+var _wizard_name: LineEdit
+var _wizard_path: LineEdit
+var _auto_path := ""
 
 @onready var canvas: Control = %LayoutCanvas
 @onready var status_label: Label = %Status
@@ -53,7 +59,8 @@ func _ready() -> void:
     if is_instance_valid(world_picker) and world_picker.has_signal("resource_changed"):
         world_picker.connect("resource_changed", _on_world_resource_changed)
     %NewWorldDialog.file_selected.connect(_on_new_world_path_selected)
-    %NewRoom.pressed.connect(new_room)
+    %NewRoom.pressed.connect(create_room_wizard)
+    %BakeStale.pressed.connect(bake_stale_rooms)
     %AddExisting.pressed.connect(add_existing)
     %ValidateWorld.pressed.connect(validate_world)
     %BakeWorld.pressed.connect(bake_world)
@@ -218,7 +225,7 @@ func new_room() -> void:
         return
     var template_path := String(ProjectSettings.get_setting(TEMPLATE_SCENE_SETTING, ""))
     if template_path.is_empty() or not ResourceLoader.exists(template_path, "PackedScene"):
-        _show_result(_failure(WorldEditorLocalization.t("WE_TEMPLATE_MISSING", [TEMPLATE_SCENE_SETTING])))
+        _show_result(_failure("Room template is not configured: %s" % TEMPLATE_SCENE_SETTING))
         return
     _editor_interface.open_scene_from_path(template_path, true)
 
@@ -229,7 +236,7 @@ func new_world() -> void:
 
 func save_world() -> Dictionary:
     if world_data == null:
-        var failure := _failure(WorldEditorLocalization.t("WE_NO_WORLD_DATA"))
+        var failure := _failure("No WorldData selected")
         _show_result(failure)
         return failure
     var result: Dictionary = _world_resources.call("save_world", world_data)
@@ -270,7 +277,7 @@ func connect_selected() -> void:
     var to_room_id := _selected_option_value(target_room)
     var to_spawn_id := _selected_option_value(target_spawn)
     if selected_room_id.is_empty() or from_entrance_id.is_empty() or to_room_id.is_empty() or to_spawn_id.is_empty():
-        _show_result({"ok": false, "errors": [WorldEditorLocalization.t("WE_CONNECT_ENDPOINTS_MISSING")], "warnings": []})
+        _show_result({"ok": false, "errors": ["Select a source entrance and target spawn"], "warnings": []})
         return
     var connection := CONNECTION_DATA.new() as RoomConnectionData
     connection.from_room_id = selected_room_id
@@ -287,7 +294,7 @@ func disconnect_selected() -> void:
 
 
 func validate_world() -> Dictionary:
-    var result: Dictionary = _model.validate_world(world_data) if world_data != null else {"ok": false, "errors": [WorldEditorLocalization.t("WE_NO_WORLD_DATA")], "warnings": []}
+    var result: Dictionary = _model.validate_world(world_data) if world_data != null else {"ok": false, "errors": ["No WorldData selected"], "warnings": []}
     _world_report = result
     _show_result(result)
     _refresh()
@@ -310,7 +317,7 @@ func validate_selected_room() -> Dictionary:
 func _validate_room(room_id: String) -> Dictionary:
     var root := _instantiate_room_source(room_id)
     if root == null:
-        var failure := {"ok": false, "errors": [WorldEditorLocalization.t("WE_NO_ROOM_SOURCE")], "warnings": []}
+        var failure := {"ok": false, "errors": ["No room source selected"], "warnings": []}
         _show_result(failure)
         return failure
     var result: Dictionary = _room_baker.call("validate", root)
@@ -348,7 +355,7 @@ func _bake_room(room_id: String) -> Dictionary:
             ResourceLoader.CACHE_MODE_IGNORE
         ) as RoomData
         if baked_room == null or not sync_room_resource(room_id, baked_room):
-            result = {"ok": false, "errors": [WorldEditorLocalization.t("WE_SYNC_FAILED")], "warnings": result.get("warnings", [])}
+            result = {"ok": false, "errors": ["Baked RoomData could not be synchronized"], "warnings": result.get("warnings", [])}
     if bool(result.get("ok", false)):
         _status.clear_bake_failure(room_id)
         _remove_session_issues(room_id)
@@ -439,6 +446,109 @@ func _mark_changed(result: Dictionary) -> void:
         world_data.emit_changed()
 
 
+func create_room_wizard() -> void:
+    if world_data == null or world_data.resource_path.is_empty() or not FileAccess.file_exists(world_data.resource_path):
+        _show_result(_failure("Select or create a saved WorldData resource first"))
+        return
+    _ensure_new_room_dialog()
+    _wizard_id.text = ""
+    _wizard_name.text = ""
+    _wizard_path.text = ""
+    _auto_path = ""
+    _new_room_dialog.popup_centered_ratio(0.4)
+    _wizard_id.grab_focus()
+
+
+## Create a room from the template, import/bake it into the world and open it.
+func create_room(room_id: String, display_name: String, source_path: String) -> Dictionary:
+    if world_data == null or world_data.resource_path.is_empty() or not FileAccess.file_exists(world_data.resource_path):
+        return _failure("Select or create a saved WorldData resource first")
+    var id := room_id.strip_edges()
+    var path := source_path.strip_edges()
+    if id.is_empty():
+        return _failure("Room id must not be empty")
+    if world_data.has_room(id):
+        return _failure("A room with this id already exists: %s" % id)
+    var result: Dictionary = ROOM_SCENE_WRITER.write_new_room(path, id, display_name)
+    if not bool(result.get("ok", false)):
+        return result
+    _add_existing_source(path)
+    if world_data == null or not world_data.has_room(id):
+        return _failure("Room could not be imported into the world")
+    select_room(id)
+    open_source_room(id)
+    return {"ok": true, "errors": [], "warnings": [], "path": path}
+
+
+func bake_stale_rooms() -> void:
+    var ids := _stale_room_ids()
+    for room_id: String in ids:
+        _bake_room(room_id)
+    if ids.is_empty():
+        _show_result({"ok": true, "errors": [], "warnings": []})
+
+
+func _stale_room_ids() -> Array[String]:
+    var ids: Array[String] = []
+    for room_id: String in room_statuses:
+        if room_statuses[room_id] == &"stale":
+            ids.append(room_id)
+    ids.sort()
+    return ids
+
+
+func _ensure_new_room_dialog() -> void:
+    if _new_room_dialog != null and is_instance_valid(_new_room_dialog):
+        return
+    _new_room_dialog = ConfirmationDialog.new()
+    _new_room_dialog.name = "NewRoomDialog"
+    _new_room_dialog.title = WorldEditorLocalization.t("WE_NEW_ROOM_DIALOG")
+    _new_room_dialog.ok_button_text = WorldEditorLocalization.t("WE_CREATE")
+    add_child(_new_room_dialog)
+    var root := VBoxContainer.new()
+    root.custom_minimum_size = Vector2(460, 0)
+    _new_room_dialog.add_child(root)
+    var grid := GridContainer.new()
+    grid.columns = 2
+    grid.add_theme_constant_override("h_separation", 10)
+    grid.add_theme_constant_override("v_separation", 8)
+    root.add_child(grid)
+    _wizard_id = _add_wizard_field(grid, "WE_FIELD_ROOM_ID")
+    _wizard_name = _add_wizard_field(grid, "WE_FIELD_DISPLAY_NAME")
+    _wizard_path = _add_wizard_field(grid, "WE_FIELD_SOURCE_PATH")
+    _wizard_id.text_changed.connect(_on_wizard_id_changed)
+    _new_room_dialog.confirmed.connect(_on_create_room_confirmed)
+
+
+func _add_wizard_field(grid: GridContainer, key: String) -> LineEdit:
+    var label := Label.new()
+    label.text = WorldEditorLocalization.t(key)
+    label.add_theme_font_size_override("font_size", 13)
+    grid.add_child(label)
+    var edit := LineEdit.new()
+    edit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+    edit.custom_minimum_size.x = 300
+    grid.add_child(edit)
+    return edit
+
+
+func _on_wizard_id_changed(text: String) -> void:
+    var id := text.strip_edges()
+    var next_auto := "" if id.is_empty() else "res://scenes/levels/main/%s.tscn" % id
+    if _wizard_path.text.is_empty() or _wizard_path.text == _auto_path:
+        _wizard_path.text = next_auto
+    _auto_path = next_auto
+
+
+func _on_create_room_confirmed() -> void:
+    var result: Dictionary = create_room(_wizard_id.text, _wizard_name.text, _wizard_path.text)
+    _show_result(result)
+    if bool(result.get("ok", false)):
+        _new_room_dialog.hide()
+    else:
+        _new_room_dialog.popup_centered_ratio(0.4)
+
+
 func _localize_ui() -> void:
     var t := WorldEditorLocalization.t
     %NewWorld.text = t.call("WE_NEW_WORLD")
@@ -453,6 +563,7 @@ func _localize_ui() -> void:
     %OpenSource.tooltip_text = t.call("WE_TT_OPEN_SOURCE")
     %BakeRoom.text = t.call("WE_BAKE")
     %BakeRoom.tooltip_text = t.call("WE_TT_BAKE_ROOM")
+    %BakeStale.tooltip_text = t.call("WE_TT_BAKE_STALE")
     %ValidateRoom.text = t.call("WE_VALIDATE")
     %ValidateRoom.tooltip_text = t.call("WE_TT_VALIDATE_ROOM")
     %ValidateWorld.text = t.call("WE_VALIDATE_WORLD")
@@ -840,16 +951,16 @@ func _instantiate_room_source(room_id: String) -> Node:
 
 func _add_existing_source(path: String) -> void:
     if world_data == null or world_data.resource_path.is_empty() or not FileAccess.file_exists(world_data.resource_path):
-        _show_result(_failure(WorldEditorLocalization.t("WE_SAVE_WORLD_FIRST")))
+        _show_result(_failure("Select or create a saved WorldData resource first"))
         return
     if _transaction_busy:
-        _show_result(_failure(WorldEditorLocalization.t("WE_TRANSACTION_BUSY")))
+        _show_result(_failure("Another world transaction is already running"))
         return
     _set_transaction_busy(true)
     var source := _load_room_source(path)
     var result: Dictionary
     if source == null:
-        result = _failure(WorldEditorLocalization.t("WE_ROOM_SOURCE_LOAD_FAILED", [path]))
+        result = _failure("Room source could not be loaded: %s" % path)
     else:
         result = _world_room_importer.call("import_room", world_data, source, path)
         source.free()
@@ -857,7 +968,7 @@ func _add_existing_source(path: String) -> void:
         var imported_world := result.get("world") as WorldData
         var imported_room := result.get("room") as RoomData
         if imported_world == null or imported_room == null:
-            result = _failure(WorldEditorLocalization.t("WE_IMPORT_INCOMPLETE"))
+            result = _failure("Room importer returned incomplete saved resources")
         else:
             set_world_data(imported_world)
             select_room(imported_room.room_id)
@@ -902,6 +1013,9 @@ func _refresh_command_state() -> void:
         button.disabled = bool(state["world_command_disabled"])
     for button: Button in [%OpenSource, %ValidateRoom, %BakeRoom]:
         button.disabled = bool(state["room_command_disabled"])
+    var stale_count := _stale_room_ids().size()
+    %BakeStale.text = WorldEditorLocalization.t("WE_BAKE_STALE", [stale_count])
+    %BakeStale.disabled = stale_count == 0 or bool(state["transaction_busy"])
     for button: Button in [%Connect, %Disconnect]:
         button.disabled = not bool(state["has_selection"]) or bool(state["transaction_busy"])
     for option: OptionButton in [source_entrance, target_room, target_spawn]:
@@ -948,7 +1062,7 @@ func _persist_import_state(payload: Dictionary) -> void:
     var expected_world_id := String(payload.get("world_id", ""))
     var state: Dictionary = payload.get("state", {})
     if world_path.is_empty() or expected_world_id.is_empty() or state.is_empty():
-        _show_result(_failure(WorldEditorLocalization.t("WE_IMPORT_HISTORY_INCOMPLETE")))
+        _show_result(_failure("Import history payload is incomplete"))
         return
     var load_result: Dictionary = _world_resources.call("load_world", world_path)
     if not bool(load_result.get("ok", false)):
@@ -956,7 +1070,7 @@ func _persist_import_state(payload: Dictionary) -> void:
         return
     var stored_world := load_result.get("world") as WorldData
     if stored_world == null or stored_world.world_id != expected_world_id:
-        _show_result(_failure(WorldEditorLocalization.t("WE_IMPORT_HISTORY_MISMATCH")))
+        _show_result(_failure("Import history WorldData identity no longer matches"))
         return
     var candidate := stored_world.duplicate(true) as WorldData
     var restore_result: Dictionary = _model.restore_world_state(candidate, state)
