@@ -30,7 +30,7 @@ func _make_visible(visible: bool) -> void:
 
 
 func _get_plugin_name() -> String:
-	return "World"
+	return WorldEditorLocalization.t("WE_WORKBENCH")
 
 
 func _get_plugin_icon() -> Texture2D:

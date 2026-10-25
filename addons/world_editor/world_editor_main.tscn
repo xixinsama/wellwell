@@ -192,7 +192,7 @@ script = ExtResource("7_markers")
 
 [node name="InspectorPanel" type="VBoxContainer" parent="Workspace/CanvasSplit"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(300, 0)
+custom_minimum_size = Vector2(340, 0)
 layout_mode = 2
 script = ExtResource("5_inspector")
 

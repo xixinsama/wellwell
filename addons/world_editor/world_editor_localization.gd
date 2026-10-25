@@ -114,6 +114,22 @@ const STRINGS := {
 		"WE_STATUS_MSG_VALIDATION_FAILED": "Validation failed",
 		"WE_IMPORT_HISTORY_INCOMPLETE": "Import history payload is incomplete",
 		"WE_IMPORT_HISTORY_MISMATCH": "Import history WorldData identity no longer matches",
+		"WE_WORKBENCH": "World",
+		"WE_UNIT_SIZE": "%d×%d chunks · %d×%d px",
+		"WE_UNIT_ORIGIN": "(%d, %d) chunks",
+		"WE_MARKER_SPAWN": "spawn",
+		"WE_MARKER_ENTRANCE": "entrance",
+		"WE_MARKER_SAVE": "save point",
+		"WE_MARKER_PICKUP": "pickup",
+		"WE_MARKER_HAZARD": "hazard",
+		"WE_MARKER_SWITCH": "switch",
+		"WE_MARKER_RESET_ZONE": "reset zone",
+		"WE_MARKER_ENTITY": "entity",
+		"WE_FROM_LAST_BAKE": "from last bake",
+		"WE_DIALOG_ADD_EXISTING": "Add Existing Room",
+		"WE_DIALOG_NEW_WORLD": "Create World",
+		"WE_PREVIEW_TERRAIN_LOAD_FAILED": "terrain scene could not be loaded: %s",
+		"WE_PREVIEW_TERRAIN_ROOT_INVALID": "terrain scene root must be Node2D",
 	},
 	"zh_CN": {
 		"WE_NEW_WORLD": "新建世界",
@@ -219,6 +235,22 @@ const STRINGS := {
 		"WE_STATUS_MSG_VALIDATION_FAILED": "校验失败",
 		"WE_IMPORT_HISTORY_INCOMPLETE": "导入历史数据不完整",
 		"WE_IMPORT_HISTORY_MISMATCH": "导入历史的 WorldData 标识已不匹配",
+		"WE_WORKBENCH": "世界",
+		"WE_UNIT_SIZE": "%d×%d 区块 · %d×%d 像素",
+		"WE_UNIT_ORIGIN": "(%d, %d) 区块",
+		"WE_MARKER_SPAWN": "出生点",
+		"WE_MARKER_ENTRANCE": "入口",
+		"WE_MARKER_SAVE": "存档点",
+		"WE_MARKER_PICKUP": "道具",
+		"WE_MARKER_HAZARD": "危险物",
+		"WE_MARKER_SWITCH": "开关",
+		"WE_MARKER_RESET_ZONE": "重置区",
+		"WE_MARKER_ENTITY": "实体",
+		"WE_FROM_LAST_BAKE": "基于上次烘焙",
+		"WE_DIALOG_ADD_EXISTING": "添加现有房间",
+		"WE_DIALOG_NEW_WORLD": "创建世界",
+		"WE_PREVIEW_TERRAIN_LOAD_FAILED": "地形场景无法加载：%s",
+		"WE_PREVIEW_TERRAIN_ROOT_INVALID": "地形场景根节点必须是 Node2D",
 	},
 }
 
@@ -251,7 +283,7 @@ static func _detect_locale() -> String:
 	if Engine.is_editor_hint():
 		var settings := EditorInterface.get_editor_settings()
 		if settings != null:
-			var language: Variant = settings.get_setting("interface/editor/editor_language")
+			var language: Variant = settings.get_setting("interface/editor/localization/editor_language")
 			if language != null:
 				return _normalize(String(language))
 	return _normalize(TranslationServer.get_locale())

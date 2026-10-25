@@ -18,15 +18,15 @@ const TYPE_COLORS := {
 	&"world_entity": Color(0.75, 0.78, 0.85),
 }
 const TYPE_LETTERS := {&"spawn": "S", &"entrance": "E"}
-const TYPE_LABELS := {
-	&"spawn": "spawn",
-	&"entrance": "entrance",
-	&"save": "save point",
-	&"pickup": "pickup",
-	&"hazard": "hazard",
-	&"switch": "switch",
-	&"reset_zone": "reset zone",
-	&"world_entity": "entity",
+const TYPE_LABEL_KEYS := {
+	&"spawn": "WE_MARKER_SPAWN",
+	&"entrance": "WE_MARKER_ENTRANCE",
+	&"save": "WE_MARKER_SAVE",
+	&"pickup": "WE_MARKER_PICKUP",
+	&"hazard": "WE_MARKER_HAZARD",
+	&"switch": "WE_MARKER_SWITCH",
+	&"reset_zone": "WE_MARKER_RESET_ZONE",
+	&"world_entity": "WE_MARKER_ENTITY",
 }
 const MARKER_SIZE := 9.0
 const HIT_RADIUS := 8.0
@@ -133,12 +133,13 @@ func _rebuild_screen_markers() -> void:
 			var screen: Vector2 = _view.call("world_to_screen", world_position, size)
 			var type: StringName = annotation.get("type", &"world_entity")
 			var id := String(annotation.get("id", ""))
-			var label := "%s · %s" % [String(annotation.get("name", "")), String(TYPE_LABELS.get(type, "entity"))]
+			var type_label := WorldEditorLocalization.t(String(TYPE_LABEL_KEYS.get(type, "WE_MARKER_ENTITY")))
+			var label := "%s · %s" % [String(annotation.get("name", "")), type_label]
 			if not id.is_empty():
 				label += " · %s" % id
 			label += "  (%d, %d)" % [roundi((annotation.get("position", Vector2.ZERO) as Vector2).x), roundi((annotation.get("position", Vector2.ZERO) as Vector2).y)]
 			if stale:
-				label += "  · from last bake"
+				label += "  · %s" % WorldEditorLocalization.t("WE_FROM_LAST_BAKE")
 			_screen_markers.append({
 				"key": "%s/%s" % [room_id, annotation.get("path", "")],
 				"screen": screen,

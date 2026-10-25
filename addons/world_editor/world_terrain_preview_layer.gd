@@ -99,11 +99,11 @@ func _refresh_room_internal(room_id: String) -> void:
     var room: Resource = _world.get_room(room_id)
     var scene := _load_terrain_scene(room)
     if scene == null:
-        preview_errors[room_id] = "terrain scene could not be loaded: %s" % room.terrain_scene_path
+        preview_errors[room_id] = WorldEditorLocalization.t("WE_PREVIEW_TERRAIN_LOAD_FAILED", [room.terrain_scene_path])
         return
     var instance := scene.instantiate() as Node2D
     if instance == null:
-        preview_errors[room_id] = "terrain scene root must be Node2D"
+        preview_errors[room_id] = WorldEditorLocalization.t("WE_PREVIEW_TERRAIN_ROOT_INVALID")
         return
     _configure_preview_tree(instance)
     var container := Control.new()

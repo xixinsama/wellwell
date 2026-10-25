@@ -301,6 +301,9 @@ func bake_world() -> Dictionary:
 
 
 func validate_selected_room() -> Dictionary:
+	if selected_room_ids.size() > 1:
+		_validate_selection()
+		return {"ok": true, "errors": [], "warnings": []}
 	return _validate_room(selected_room_id)
 
 
@@ -322,6 +325,9 @@ func _validate_room(room_id: String) -> Dictionary:
 
 
 func bake_selected_room() -> Dictionary:
+	if selected_room_ids.size() > 1:
+		_bake_selection()
+		return {"ok": true, "errors": [], "warnings": []}
 	return _bake_room(selected_room_id)
 
 
@@ -468,6 +474,8 @@ func _localize_ui() -> void:
 	%Connect.text = t.call("WE_CONNECT")
 	%Disconnect.text = t.call("WE_DISCONNECT")
 	%ConnectionsTitle.text = t.call("WE_CONNECTIONS")
+	%AddExistingDialog.title = t.call("WE_DIALOG_ADD_EXISTING")
+	%NewWorldDialog.title = t.call("WE_DIALOG_NEW_WORLD")
 
 
 func _sync_world_picker(resource: WorldData) -> void:
@@ -687,15 +695,24 @@ func _on_room_action(action: StringName, room_id: String) -> void:
 		&"open_source":
 			open_source_room(room_id)
 		&"bake":
-			_bake_room(room_id)
+			if selected_room_ids.size() > 1:
+				_bake_selection()
+			else:
+				_bake_room(room_id)
 		&"validate":
-			_validate_room(room_id)
+			if selected_room_ids.size() > 1:
+				_validate_selection()
+			else:
+				_validate_room(room_id)
 		&"focus":
 			select_room(room_id)
 			if is_instance_valid(canvas) and canvas.has_method("focus_room"):
 				canvas.call("focus_room", room_id)
 		&"remove":
-			remove_room(room_id)
+			if selected_room_ids.size() > 1:
+				delete_selected_rooms()
+			else:
+				remove_room(room_id)
 		&"set_start":
 			set_start_room(room_id, _default_spawn(room_id))
 		&"bake_selected":
