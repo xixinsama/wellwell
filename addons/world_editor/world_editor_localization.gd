@@ -270,15 +270,12 @@ const STRINGS := {
 
 ## Test hook: "en" / "zh_CN". Empty uses the editor language.
 static var locale_override := ""
-static var _cached_locale := ""
 
 
 static func current_locale() -> String:
     if not locale_override.is_empty():
         return _normalize(locale_override)
-    if _cached_locale.is_empty():
-        _cached_locale = _detect_locale()
-    return _cached_locale
+    return _detect_locale()
 
 
 static func t(key: String, args: Array = []) -> String:
@@ -290,16 +287,17 @@ static func t(key: String, args: Array = []) -> String:
 
 
 static func reset_cache() -> void:
-    _cached_locale = ""
+    pass
 
 
 static func _detect_locale() -> String:
     if Engine.is_editor_hint():
         var settings := EditorInterface.get_editor_settings()
         if settings != null:
-            var language: Variant = settings.get_setting("interface/editor/localization/editor_language")
-            if language != null:
-                return _normalize(String(language))
+            var language := String(settings.get_setting("interface/editor/localization/editor_language"))
+            if not language.is_empty() and language != "auto":
+                return _normalize(language)
+    # "auto" (or a missing setting) means the editor resolved the OS locale.
     return _normalize(TranslationServer.get_locale())
 
 
