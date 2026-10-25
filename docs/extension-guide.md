@@ -158,8 +158,8 @@ not consume the pickup.
 
 ## World Editor Workbench
 
-The World main screen is a three-column workbench: room list, canvas, inspector,
-plus a collapsible problems panel and status bar.
+The World main screen is a three-column workbench: room list, canvas, inspector
+and a status bar. Diagnostics are printed to the editor Output panel.
 
 - **Room list** shows a status dot (fresh / stale / error / unknown), the display
   name, chunk size and origin. Search filters by name/id; `Ctrl`/`Shift` selects
@@ -184,9 +184,12 @@ plus a collapsible problems panel and status bar.
   bakes it into the saved world, then opens the source scene for editing.
 - **Bake Stale (N)** bakes every room whose source changed since the last bake.
   The count comes from the same fingerprint comparison as the list status.
-- **Problems** aggregates room statuses, the session's last bake/validate
-  failures and `WorldLayoutModel.validate_world()`. Click a row to select and
-  focus its room; `Revalidate` reruns validation and status checks.
+- **Diagnostics** go to the editor Output panel, not a separate problems panel:
+  room statuses, the session's last bake/validate failures and
+  `WorldLayoutModel.validate_world()` are printed as
+  `[World Editor][ERROR] ...` / `[World Editor][WARNING] ...`. The list and
+  inspector still show the per-room status label, and repeating the same
+  diagnostics is suppressed until the set changes.
 - **Status** comes from `authoring/world/room_status_service.gd`: `fresh` when
   `RoomData.source_fingerprint` matches the current source sha256 and both
   artifacts exist, `stale` when the source changed after the last bake, `error`

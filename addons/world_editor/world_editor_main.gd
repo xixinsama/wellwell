@@ -29,6 +29,8 @@ var _status := ROOM_STATUS.new()
 var _annotations_service := ROOM_ANNOTATIONS.new()
 var _annotations: Dictionary = {}
 var _session_issues: Array[Dictionary] = []
+var room_status_raw_messages: Dictionary = {}
+var _output_signature := ""
 var _world_report: Dictionary = {}
 var _new_room_dialog: ConfirmationDialog
 var _wizard_id: LineEdit
@@ -46,8 +48,6 @@ var _auto_path := ""
 @onready var room_search: LineEdit = %RoomSearch
 @onready var room_count: Label = %RoomCount
 @onready var inspector: WorldRoomInspector = %InspectorPanel
-@onready var problems_panel: WorldProblemsPanel = %ProblemsPanel
-@onready var problems_badge: Button = %ProblemsBadge
 @onready var selection_label: Label = %SelectionLabel
 @onready var room_list_panel: VBoxContainer = %RoomListPanel
 @onready var inspector_panel: VBoxContainer = %InspectorPanel
@@ -78,13 +78,8 @@ func _ready() -> void:
     room_list.room_activated.connect(open_source_room)
     room_list.action_requested.connect(_on_room_action)
     inspector.action_requested.connect(_on_room_action)
-    problems_panel.issue_activated.connect(_on_problem_activated)
-    problems_panel.action_requested.connect(_on_room_action)
-    problems_panel.revalidate_requested.connect(_revalidate)
-    problems_badge.pressed.connect(_toggle_problems)
     %RoomsToggle.toggled.connect(func(on: bool) -> void: room_list_panel.visible = on)
     %InspectorToggle.toggled.connect(func(on: bool) -> void: inspector_panel.visible = on)
-    %ProblemsToggle.toggled.connect(func(on: bool) -> void: problems_panel.visible = on)
     if canvas.has_signal("selection_changed"):
         canvas.connect("selection_changed", _on_canvas_selection_changed)
     if canvas.has_signal("delete_requested"):
@@ -574,14 +569,11 @@ func _localize_ui() -> void:
     %RoomsToggle.tooltip_text = t.call("WE_TT_TOGGLE_ROOMS")
     %InspectorToggle.text = t.call("WE_INSPECTOR")
     %InspectorToggle.tooltip_text = t.call("WE_TT_TOGGLE_INSPECTOR")
-    %ProblemsToggle.text = t.call("WE_PROBLEMS")
-    %ProblemsToggle.tooltip_text = t.call("WE_TT_TOGGLE_PROBLEMS")
     %RoomSearch.placeholder_text = t.call("WE_SEARCH_ROOMS")
     %FocusAll.text = t.call("WE_FOCUS_ALL")
     %FocusAll.tooltip_text = t.call("WE_TT_FOCUS_ALL")
     %ResetView.text = t.call("WE_RESET_VIEW")
     %ResetView.tooltip_text = t.call("WE_TT_RESET_VIEW")
-    %ProblemsBadge.tooltip_text = t.call("WE_TT_PROBLEMS_BADGE")
     %Connect.text = t.call("WE_CONNECT")
     %Disconnect.text = t.call("WE_DISCONNECT")
     %ConnectionsTitle.text = t.call("WE_CONNECTIONS")
@@ -623,8 +615,7 @@ func _refresh() -> void:
         room_count.text = WorldEditorLocalization.t("WE_ROOMS_COUNT", [0 if world_data == null else world_data.rooms.size()])
     if is_instance_valid(inspector):
         _refresh_inspector()
-    if is_instance_valid(problems_panel):
-        _refresh_problems()
+    _report_diagnostics()
     if is_instance_valid(canvas):
         if canvas.has_method("set_statuses"):
             canvas.call("set_statuses", room_statuses)
@@ -657,10 +648,13 @@ func _sorted_rooms() -> Array[RoomData]:
 func _refresh_statuses() -> void:
     room_statuses.clear()
     room_status_messages.clear()
+    room_status_raw_messages.clear()
     for room: RoomData in _sorted_rooms():
         var result: Dictionary = _status.evaluate(room)
         room_statuses[room.room_id] = result.get("state", &"unknown")
-        var message := String(result.get("message", ""))
+        var raw_message := String(result.get("message", ""))
+        room_status_raw_messages[room.room_id] = raw_message
+        var message := raw_message
         var message_key := String(result.get("message_key", ""))
         if not message_key.is_empty():
             message = WorldEditorLocalization.t(message_key, result.get("message_args", []))
@@ -702,40 +696,36 @@ func _refresh_inspector() -> void:
         inspector.call("show_multi", rooms, room_statuses)
 
 
-func _refresh_problems() -> void:
-    if not is_instance_valid(problems_panel):
-        return
-    var issues: Array[Dictionary] = []
-    var errors := 0
-    var warnings := 0
+func _report_diagnostics() -> void:
+    var lines: Array[String] = []
     if world_data != null:
         _world_report = _model.validate_world(world_data)
         for message: Variant in _world_report.get("errors", []):
-            issues.append({"severity": &"error", "message": String(message), "room_id": ""})
-            errors += 1
+            lines.append(WorldEditorLog.format_error(String(message)))
         for message: Variant in _world_report.get("warnings", []):
-            issues.append({"severity": &"warning", "message": String(message), "room_id": ""})
-            warnings += 1
+            lines.append(WorldEditorLog.format_warning(String(message)))
         for room_id: String in room_statuses:
             var state: StringName = room_statuses[room_id]
             if state == &"fresh":
                 continue
-            var severity := &"error" if state == &"error" else &"warning"
-            var message := String(room_status_messages.get(room_id, ""))
-            issues.append({"severity": severity, "message": message, "room_id": room_id})
-            if severity == &"error":
-                errors += 1
+            var message := String(room_status_raw_messages.get(room_id, ""))
+            var text := "%s: %s" % [room_id, message] if not message.is_empty() else room_id
+            if state == &"error":
+                lines.append(WorldEditorLog.format_error(text))
             else:
-                warnings += 1
+                lines.append(WorldEditorLog.format_warning(text))
         for issue: Dictionary in _session_issues:
-            issues.append(issue)
+            var issue_text := "%s: %s" % [String(issue.get("room_id", "")), String(issue.get("message", ""))]
             if issue.get("severity", &"error") == &"error":
-                errors += 1
+                lines.append(WorldEditorLog.format_error(issue_text))
             else:
-                warnings += 1
-    problems_panel.call("set_issues", issues, errors, warnings)
-    if is_instance_valid(problems_badge):
-        problems_badge.text = WorldEditorLocalization.t("WE_PROBLEMS_COUNT", [issues.size()])
+                lines.append(WorldEditorLog.format_warning(issue_text))
+    var signature := "\n".join(lines)
+    if signature == _output_signature:
+        return
+    _output_signature = signature
+    for line: String in lines:
+        print(line)
 
 
 func _refresh_status_bar() -> void:
@@ -782,23 +772,6 @@ func _on_list_selection_changed(room_ids: Array, primary: String) -> void:
 
 func _on_canvas_selection_changed(room_ids: Array, primary: String) -> void:
     set_selection(room_ids, primary)
-
-
-func _on_problem_activated(room_id: String) -> void:
-    select_room(room_id)
-    if is_instance_valid(canvas) and canvas.has_method("focus_room"):
-        canvas.call("focus_room", room_id)
-
-
-func _revalidate() -> void:
-    _refresh()
-
-
-func _toggle_problems() -> void:
-    if not is_instance_valid(problems_panel):
-        return
-    problems_panel.visible = not problems_panel.visible
-    %ProblemsToggle.set_pressed_no_signal(problems_panel.visible)
 
 
 func _on_room_action(action: StringName, room_id: String) -> void:
@@ -925,8 +898,10 @@ func _show_result(result: Dictionary) -> void:
     var details: Array[String] = []
     for error: Variant in errors:
         details.append("Error: %s" % String(error))
+        WorldEditorLog.error(String(error))
     for warning: Variant in warnings:
         details.append("Warning: %s" % String(warning))
+        WorldEditorLog.warning(String(warning))
     var outputs: Dictionary = result.get("outputs", {})
     var output_keys: Array = outputs.keys()
     output_keys.sort()

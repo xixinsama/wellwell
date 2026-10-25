@@ -1,11 +1,10 @@
-[gd_scene load_steps=8 format=3]
+[gd_scene load_steps=7 format=3]
 
 [ext_resource type="Script" uid="uid://ckex4285744r4" path="res://addons/world_editor/world_editor_main.gd" id="1_main"]
 [ext_resource type="Script" uid="uid://bxnqqpgd0g3dh" path="res://addons/world_editor/world_layout_canvas.gd" id="2_canvas"]
 [ext_resource type="Script" uid="uid://b655bsmftww3a" path="res://addons/world_editor/world_terrain_preview_layer.gd" id="3_terrain"]
 [ext_resource type="Script" path="res://addons/world_editor/world_room_list.gd" id="4_list"]
 [ext_resource type="Script" path="res://addons/world_editor/world_room_inspector.gd" id="5_inspector"]
-[ext_resource type="Script" path="res://addons/world_editor/world_problems_panel.gd" id="6_problems"]
 [ext_resource type="Script" path="res://addons/world_editor/world_marker_layer.gd" id="7_markers"]
 
 [node name="WorldEditorMain" type="VBoxContainer"]
@@ -124,13 +123,6 @@ tooltip_text = "Show the room inspector"
 button_pressed = true
 text = "Inspector"
 
-[node name="ProblemsToggle" type="CheckButton" parent="CommandBar"]
-unique_name_in_owner = true
-layout_mode = 2
-tooltip_text = "Show the problems panel"
-button_pressed = true
-text = "Problems"
-
 [node name="Workspace" type="HSplitContainer" parent="."]
 unique_name_in_owner = true
 layout_mode = 2
@@ -138,7 +130,7 @@ size_flags_vertical = 3
 
 [node name="RoomListPanel" type="VBoxContainer" parent="Workspace"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(280, 0)
+custom_minimum_size = Vector2(360, 0)
 layout_mode = 2
 
 [node name="RoomSearch" type="LineEdit" parent="Workspace/RoomListPanel"]
@@ -241,12 +233,6 @@ layout_mode = 2
 disabled = true
 text = "Disconnect"
 
-[node name="ProblemsPanel" type="VBoxContainer" parent="."]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 110)
-layout_mode = 2
-script = ExtResource("6_problems")
-
 [node name="StatusBar" type="HBoxContainer" parent="."]
 layout_mode = 2
 
@@ -264,12 +250,6 @@ layout_mode = 2
 unique_name_in_owner = true
 layout_mode = 2
 text = "100%"
-
-[node name="ProblemsBadge" type="Button" parent="StatusBar"]
-unique_name_in_owner = true
-layout_mode = 2
-flat = true
-text = "0 problems"
 
 [node name="FocusAll" type="Button" parent="StatusBar"]
 unique_name_in_owner = true

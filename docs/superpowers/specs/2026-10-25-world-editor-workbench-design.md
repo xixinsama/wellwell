@@ -2,7 +2,7 @@
 
 日期：2026-10-25
 项目：wellwell / 华容道平台跳跃
-状态：已实现（2026-10-25），由无头运行时测试验证；主屏骨架写在 .tscn，列表/检查器/问题面板的行内容由组件在运行时构建。
+状态：已实现（2026-10-25），由无头运行时测试验证；主屏骨架写在 .tscn，列表/检查器的行内容由组件在运行时构建，诊断输出到编辑器 Output。
 
 ## 目标
 
@@ -14,7 +14,7 @@
 - 错误/警告只有一行 Status；无法定位到房间或源场景。
 - UI 只是按钮堆砌，没有信息层次和视觉设计。
 
-本轮只做「界面 + 信息 + 多选/框选 + 问题面板」。房间入驻流水线（New Room 向导、保存后自动重烘、Bake Stale）留给下一轮 spec。
+本轮只做「界面 + 信息 + 多选/框选 + 诊断输出」。房间入驻流水线（New Room 向导、保存后自动重烘、Bake Stale）留给下一轮 spec。
 
 ## 已补充实现（原下一轮 spec）
 
@@ -26,7 +26,7 @@
 
 ## 已确认的设计决策
 
-- 布局采用 **A · 三栏工作台**：左房间列表｜中画布｜右检查器｜底部问题面板。
+- 布局采用 **A · 三栏工作台**：左房间列表｜中画布｜右检查器｜底部状态栏。
 - 检查器**只读 + 起点设置**，不编辑元数据；单房间/批量动作放在顶部命令栏与右键菜单。
 - 画布标记从**烘焙后的运行时场景**读取，只显示关键锚点（出生点/入口/存档点/道具/危险物/开关/ResetZone/自定义 WorldEntity），悬停给详情。
 - 「待重烘」用 `RoomData.source_fingerprint` 与源场景 sha256 比对；不改数据模型和烘焙器。
@@ -39,7 +39,7 @@
 WorldEditorMain (VBoxContainer, 纵向扩展)
 ├─ WorldBar (HBox)          world picker · Save World · ⋯
 ├─ CommandBar (HBox)        [New Room][Add Existing] │ [Open Source][Bake][Validate] │
-│                           [Validate World][Bake World] │ [Rooms][Inspector][Problems]
+│                           [Validate World][Bake World] │ [Rooms][Inspector]
 ├─ Workspace (HSplit)
 │  ├─ RoomListPanel (VBox)  搜索 · 房间 Tree · 计数
 │  └─ CanvasSplit (HSplit)
@@ -47,14 +47,13 @@ WorldEditorMain (VBoxContainer, 纵向扩展)
 │     │  ├─ TerrainPreviewLayer
 │     │  └─ MarkerLayer
 │     └─ InspectorPanel (VBox, 只读 + 动作)
-├─ ProblemsPanel (VBox)     标题（E/W 计数、过滤、Revalidate）+ 列表
-└─ StatusBar (HBox)         world 路径 · 房间数 · 选中数 · 缩放 · 问题数
+└─ StatusBar (HBox)         world 路径 · 房间数 · 选中数 · 缩放
 ```
 
 - 原生 Godot 深色主题；图标取 `EditorIcons`；间距 4 的倍数；列表行高 22；分组标题 11px 大写弱化；分隔线 1px `#2c333f`。
 - 状态色：已烘焙 `#4fae74`、待重烘 `#e08a3c`、失败 `#e05a5a`、选中 `#5aa9e6`。
 - 画布底 `#101318`；房间标签两行（显示名 / `id · W×H · (cx,cy)`）+ 右上状态点；选中 2px 蓝框；多选显示 `N selected`。
-- 列表/检查器/问题面板可折叠；分隔条位置存 `EditorSettings` 项目元数据；折叠后画布占满。
+- 列表/检查器可折叠；分隔条位置存 `EditorSettings` 项目元数据；折叠后画布占满。
 - 空状态：未选 world → 居中提示 + New World；无房间 → Add Existing；无选中 → 检查器提示。
 - 快捷键只做局部：`Delete` 移除引用、`Esc` 清空选择、`Ctrl+A` 全选（焦点在列表/画布）、双击打开源场景；不覆盖编辑器全局键。
 - 命令分组：WorldBar 只放 world picker / Save / ⋯；CommandBar 四组主操作；右键菜单与检查器承载低频动作（Remove、Set as Start、Focus）。
@@ -74,7 +73,7 @@ WorldEditorMain (VBoxContainer, 纵向扩展)
   - `error`：源场景缺失 / 产物缺失 / 本次会话最近一次 Bake/Validate 失败；
   - `unknown`：world 未保存、房间无源路径或指纹为空。
 - sha256 按 `(path, mtime, size)` 缓存；只在刷新/保存/烘焙/校验时重算。
-- 列表、检查器、问题面板共用同一份结果。
+- 列表与检查器共用同一份结果。
 
 ## 检查器（只读 + 动作）
 
@@ -97,13 +96,12 @@ WorldEditorMain (VBoxContainer, 纵向扩展)
 - 平移：中键 / `Space+左键`；滚轮缩放不变。
 - 世界起点：在 `start_room_id` + `start_spawn_id` 处画 ★，找不到 spawn 时退化为房间左上角。
 
-## 问题面板
+## 诊断输出（替代独立问题面板）
 
-- 来源：房间状态（stale/error）+ 本次会话 Bake/Validate 结果 + `WorldLayoutModel.validate_world()`（重叠、缺起点、未连接入口、非法 id 等）。
-- 行：严重级图标、消息、房间名；点击 = 选中并聚焦房间；行内动作 Open Source / Bake。
-- 头部：`Problems (E, W)`、过滤 All/Errors/Warnings、`Revalidate`；空时 `No problems`。
-- 计数徽章同时出现在 CommandBar 与 StatusBar；点击展开。
-- 刷新时机：world 变化、保存、Bake/Validate、手动 Revalidate；不逐帧。
+- 不再有独立的问题面板/徽章。房间状态、本次会话 Bake/Validate 失败、`WorldLayoutModel.validate_world()` 的错误/警告直接打印到 Godot 编辑器 **Output**：
+  `[World Editor][ERROR] ...` / `[World Editor][WARNING] ...`（英文，符合“报错只用英文”的约定）。
+- 相同的诊断集合只在变化时打印一次，避免刷新时刷屏；单次动作的结果由动作本身打印。
+- 列表/检查器仍显示每个房间的状态标签与说明。
 
 ## 文件结构
 
@@ -133,7 +131,7 @@ WorldEditorMain (VBoxContainer, 纵向扩展)
 - 公开方法、命令状态字段、插件注册方式不变。
 - `LayoutCanvas` 从根直接子节点移入 `CanvasSplit`，测试路径断言同步更新，属性保持。
 - 旧 world / RoomData 无需迁移；指纹为空的房间显示 `unknown`（「无烘焙指纹，请重新烘焙」）。
-- 文档：本 spec + `docs/extension-guide.md` 的 World Editor 段落补状态/标记/多选/问题面板。
+- 文档：本 spec + `docs/extension-guide.md` 的 World Editor 段落补状态/标记/多选/诊断输出。
 
 ## 风险
 

@@ -37,8 +37,6 @@ func run() -> Array[String]:
             "Workspace/RoomListPanel/RoomSearch",
             "Workspace/RoomListPanel/RoomList",
             "Workspace/CanvasSplit/InspectorPanel",
-            "ProblemsPanel",
-            "StatusBar/ProblemsBadge",
         ]:
             if _scene_node_index(state, node_path) < 0:
                 failures.append("World Editor workbench is missing node: %s" % node_path)
