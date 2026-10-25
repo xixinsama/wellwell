@@ -127,16 +127,15 @@ func _assert_toolbar_contract(failures: Array[String]) -> void:
 	var packed := load(DOCK_SCENE_PATH) as PackedScene
 	var state := packed.get_state()
 	for node_path: String in [
-		"Toolbar/NewRoom",
-		"Toolbar/AddExisting",
-		"Toolbar/RemoveReference",
-		"Toolbar/OpenSource",
-		"Toolbar/ValidateRoom",
-		"Toolbar/BakeRoom",
-		"ConnectionBar/Connect",
-		"ConnectionBar/Disconnect",
-		"Toolbar/ValidateWorld",
-		"Toolbar/BakeWorld",
+		"CommandBar/NewRoom",
+		"CommandBar/AddExisting",
+		"CommandBar/OpenSource",
+		"CommandBar/ValidateRoom",
+		"CommandBar/BakeRoom",
+		"Workspace/CanvasSplit/InspectorPanel/Connections/ConnectionButtons/Connect",
+		"Workspace/CanvasSplit/InspectorPanel/Connections/ConnectionButtons/Disconnect",
+		"CommandBar/ValidateWorld",
+		"CommandBar/BakeWorld",
 	]:
 		if _scene_node_index(state, node_path) < 0:
 			failures.append("world editor dock is missing command control: %s" % node_path)
@@ -148,17 +147,17 @@ func _assert_world_resource_controls(failures: Array[String]) -> void:
 	var packed := load(DOCK_SCENE_PATH) as PackedScene
 	var state := packed.get_state()
 	for node_path: String in [
-		"WorldToolbar/WorldPicker",
-		"WorldToolbar/NewWorld",
-		"WorldToolbar/SaveWorld",
-		"ViewToolbar/FocusAll",
-		"ViewToolbar/ResetView",
-		"ViewToolbar/ZoomLabel",
+		"WorldBar/WorldPicker",
+		"WorldBar/NewWorld",
+		"WorldBar/SaveWorld",
+		"StatusBar/FocusAll",
+		"StatusBar/ResetView",
+		"StatusBar/ZoomLabel",
 		"NewWorldDialog",
 	]:
 		if _scene_node_index(state, node_path) < 0:
 			failures.append("world editor main screen is missing world control: %s" % node_path)
-	if String(_scene_node_property(state, "WorldToolbar/WorldPicker", &"base_type", "")) != "WorldData":
+	if String(_scene_node_property(state, "WorldBar/WorldPicker", &"base_type", "")) != "WorldData":
 		failures.append("world picker is not restricted to WorldData")
 	if int(_scene_node_property(state, "NewWorldDialog", &"access", -1)) != FileDialog.ACCESS_RESOURCES \
 		or int(_scene_node_property(state, "NewWorldDialog", &"file_mode", -1)) != FileDialog.FILE_MODE_SAVE_FILE:
@@ -169,11 +168,11 @@ func _assert_world_resource_controls(failures: Array[String]) -> void:
 	var filters: PackedStringArray = _scene_node_property(state, "NewWorldDialog", &"filters", PackedStringArray())
 	if not filters.has("*.tres ; WorldData Resource"):
 		failures.append("New World dialog does not filter WorldData .tres resources")
-	if not bool(_scene_node_property(state, "Toolbar/AddExisting", &"disabled", false)):
+	if not bool(_scene_node_property(state, "CommandBar/AddExisting", &"disabled", false)):
 		failures.append("Add Existing is not initially disabled without WorldData")
-	if String(_scene_node_property(state, "Toolbar/AddExisting", &"tooltip_text", "")) != "Select or create a WorldData resource first":
+	if String(_scene_node_property(state, "CommandBar/AddExisting", &"tooltip_text", "")) != "Select or create a WorldData resource first":
 		failures.append("Add Existing does not explain its missing WorldData prerequisite")
-	if int(_scene_node_property(state, "LayoutCanvas", &"focus_mode", Control.FOCUS_NONE)) != Control.FOCUS_ALL:
+	if int(_scene_node_property(state, "Workspace/CanvasSplit/LayoutCanvas", &"focus_mode", Control.FOCUS_NONE)) != Control.FOCUS_ALL:
 		failures.append("world canvas cannot receive Space key input")
 
 

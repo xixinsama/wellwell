@@ -9,9 +9,14 @@ const WORLD_RESOURCE_SERVICE := preload("res://addons/world_editor/authoring/wor
 const WORLD_ROOM_IMPORTER := preload("res://addons/world_editor/authoring/world/world_room_importer.gd")
 const CONNECTION_DATA := preload("res://addons/platformer_kit/world/data/room_connection_data.gd")
 const TEMPLATE_SCENE_SETTING := "world_editor/room_template_scene"
+const ROOM_STATUS := preload("res://addons/world_editor/authoring/world/room_status_service.gd")
+const ROOM_ANNOTATIONS := preload("res://addons/world_editor/authoring/world/room_annotation_service.gd")
 
 var world_data: WorldData
 var selected_room_id := ""
+var selected_room_ids: Array[String] = []
+var room_statuses: Dictionary = {}
+var room_status_messages: Dictionary = {}
 var _model: RefCounted = WORLD_LAYOUT_MODEL.new()
 var _room_baker: Object = ROOM_BAKER.new()
 var _world_resources: Object = WORLD_RESOURCE_SERVICE.new()
@@ -19,23 +24,37 @@ var _world_room_importer: Object = WORLD_ROOM_IMPORTER.new()
 var _undo_redo: Object
 var _editor_interface: Object
 var _transaction_busy := false
+var _status := ROOM_STATUS.new()
+var _annotations_service := ROOM_ANNOTATIONS.new()
+var _annotations: Dictionary = {}
+var _session_issues: Array[Dictionary] = []
+var _world_report: Dictionary = {}
 
 @onready var canvas: Control = %LayoutCanvas
 @onready var status_label: Label = %Status
 @onready var source_entrance: OptionButton = %SourceEntrance
 @onready var target_room: OptionButton = %TargetRoom
 @onready var target_spawn: OptionButton = %TargetSpawn
-@onready var world_picker: EditorResourcePicker = %WorldPicker
+@onready var world_picker: Node = %WorldPicker
+@onready var room_list: WorldRoomList = %RoomList
+@onready var room_search: LineEdit = %RoomSearch
+@onready var room_count: Label = %RoomCount
+@onready var inspector: WorldRoomInspector = %InspectorPanel
+@onready var problems_panel: WorldProblemsPanel = %ProblemsPanel
+@onready var problems_badge: Button = %ProblemsBadge
+@onready var selection_label: Label = %SelectionLabel
+@onready var room_list_panel: VBoxContainer = %RoomListPanel
+@onready var inspector_panel: VBoxContainer = %InspectorPanel
 
 
 func _ready() -> void:
 	%NewWorld.pressed.connect(new_world)
 	%SaveWorld.pressed.connect(save_world)
-	world_picker.resource_changed.connect(_on_world_resource_changed)
+	if is_instance_valid(world_picker) and world_picker.has_signal("resource_changed"):
+		world_picker.connect("resource_changed", _on_world_resource_changed)
 	%NewWorldDialog.file_selected.connect(_on_new_world_path_selected)
 	%NewRoom.pressed.connect(new_room)
 	%AddExisting.pressed.connect(add_existing)
-	%RemoveReference.pressed.connect(remove_selected_room)
 	%ValidateWorld.pressed.connect(validate_world)
 	%BakeWorld.pressed.connect(bake_world)
 	%OpenSource.pressed.connect(open_selected_source)
@@ -47,6 +66,22 @@ func _ready() -> void:
 	%ResetView.pressed.connect(reset_view)
 	%AddExistingDialog.file_selected.connect(_add_existing_source)
 	target_room.item_selected.connect(_on_target_room_selected)
+	%RoomSearch.text_changed.connect(_on_search_changed)
+	room_list.selection_changed.connect(_on_list_selection_changed)
+	room_list.room_activated.connect(open_source_room)
+	room_list.action_requested.connect(_on_room_action)
+	inspector.action_requested.connect(_on_room_action)
+	problems_panel.issue_activated.connect(_on_problem_activated)
+	problems_panel.action_requested.connect(_on_room_action)
+	problems_panel.revalidate_requested.connect(_revalidate)
+	problems_badge.pressed.connect(_toggle_problems)
+	%RoomsToggle.toggled.connect(func(on: bool) -> void: room_list_panel.visible = on)
+	%InspectorToggle.toggled.connect(func(on: bool) -> void: inspector_panel.visible = on)
+	%ProblemsToggle.toggled.connect(func(on: bool) -> void: problems_panel.visible = on)
+	if canvas.has_signal("selection_changed"):
+		canvas.connect("selection_changed", _on_canvas_selection_changed)
+	if canvas.has_signal("delete_requested"):
+		canvas.connect("delete_requested", delete_selected_rooms)
 	canvas.call("set_main_screen", self)
 	_refresh()
 
@@ -55,8 +90,11 @@ func set_world_data(value: WorldData, preserve_selection := false) -> void:
 	world_data = value
 	if not preserve_selection or world_data == null or not world_data.has_room(selected_room_id):
 		selected_room_id = ""
-	if is_instance_valid(world_picker) and world_picker.edited_resource != world_data:
-		world_picker.edited_resource = world_data
+	selected_room_ids.clear()
+	if not selected_room_id.is_empty():
+		selected_room_ids.append(selected_room_id)
+	_sync_world_picker(world_data)
+	_session_issues.clear()
 	_refresh()
 
 
@@ -85,8 +123,26 @@ func set_world_room_importer_adapter(value: Object) -> void:
 
 
 func select_room(room_id: String) -> void:
-	selected_room_id = room_id
-	_refresh()
+	set_selection([room_id] if not room_id.is_empty() else [], room_id)
+
+
+## Replace the whole selection (list, canvas, inspector) in one step.
+func set_selection(room_ids: Array, primary: String) -> void:
+	var valid: Array[String] = []
+	if world_data != null:
+		for value: Variant in room_ids:
+			var id := String(value)
+			if world_data.has_room(id) and not valid.has(id):
+				valid.append(id)
+	selected_room_ids = valid
+	selected_room_id = primary if valid.has(primary) else ("" if valid.is_empty() else valid[0])
+	if is_instance_valid(canvas) and canvas.has_method("set_selection"):
+		canvas.call("set_selection", selected_room_ids, selected_room_id)
+	if is_instance_valid(room_list):
+		room_list.call("set_selection", selected_room_ids, selected_room_id)
+	_refresh_inspector()
+	_refresh_status_bar()
+	_refresh_command_state()
 
 
 func move_room(room_id: String, origin_chunk: Vector2i) -> bool:
@@ -231,7 +287,9 @@ func disconnect_selected() -> void:
 
 func validate_world() -> Dictionary:
 	var result: Dictionary = _model.validate_world(world_data) if world_data != null else {"ok": false, "errors": ["No WorldData selected"], "warnings": []}
+	_world_report = result
 	_show_result(result)
+	_refresh()
 	return result
 
 
@@ -242,20 +300,33 @@ func bake_world() -> Dictionary:
 
 
 func validate_selected_room() -> Dictionary:
-	var source := _instantiate_selected_source()
-	if source == null:
+	return _validate_room(selected_room_id)
+
+
+func _validate_room(room_id: String) -> Dictionary:
+	var root := _instantiate_room_source(room_id)
+	if root == null:
 		var failure := {"ok": false, "errors": ["No room source selected"], "warnings": []}
 		_show_result(failure)
 		return failure
-	var result: Dictionary = _room_baker.call("validate", source)
-	source.free()
+	var result: Dictionary = _room_baker.call("validate", root)
+	root.free()
+	if bool(result.get("ok", false)):
+		_remove_session_issues(room_id)
+	else:
+		_add_session_issue(room_id, _first_error(result, "Validation failed"))
 	_show_result(result)
+	_refresh()
 	return result
 
 
 func bake_selected_room() -> Dictionary:
-	var room: Resource = null if world_data == null else world_data.get_room(selected_room_id)
-	var root := _instantiate_selected_source()
+	return _bake_room(selected_room_id)
+
+
+func _bake_room(room_id: String) -> Dictionary:
+	var room: Resource = null if world_data == null else world_data.get_room(room_id)
+	var root := _instantiate_room_source(room_id)
 	if room == null or root == null:
 		var failure := {"ok": false, "errors": ["No room source selected"], "warnings": []}
 		_show_result(failure)
@@ -269,10 +340,33 @@ func bake_selected_room() -> Dictionary:
 			"RoomData",
 			ResourceLoader.CACHE_MODE_IGNORE
 		) as RoomData
-		if baked_room == null or not sync_room_resource(selected_room_id, baked_room):
+		if baked_room == null or not sync_room_resource(room_id, baked_room):
 			result = {"ok": false, "errors": ["Baked RoomData could not be synchronized"], "warnings": result.get("warnings", [])}
+	if bool(result.get("ok", false)):
+		_status.clear_bake_failure(room_id)
+		_remove_session_issues(room_id)
+	else:
+		var message := _first_error(result, "Bake failed")
+		_status.mark_bake_failure(room_id, message)
+		_add_session_issue(room_id, message)
 	_show_result(result)
+	_refresh()
 	return result
+
+
+func _bake_selection() -> void:
+	for room_id: String in selected_room_ids.duplicate():
+		_bake_room(room_id)
+
+
+func _validate_selection() -> void:
+	for room_id: String in selected_room_ids.duplicate():
+		_validate_room(room_id)
+
+
+func _first_error(result: Dictionary, fallback: String) -> String:
+	var errors: Array = result.get("errors", [])
+	return fallback if errors.is_empty() else String(errors[0])
 
 
 func sync_room_resource(room_id: String, baked_room: RoomData) -> bool:
@@ -287,7 +381,11 @@ func sync_room_resource(room_id: String, baked_room: RoomData) -> bool:
 
 
 func open_selected_source() -> void:
-	var room: Resource = null if world_data == null else world_data.get_room(selected_room_id)
+	open_source_room(selected_room_id)
+
+
+func open_source_room(room_id: String) -> void:
+	var room: Resource = null if world_data == null else world_data.get_room(room_id)
 	if room != null and _editor_interface != null and not room.source_scene_path.is_empty():
 		_editor_interface.open_scene_from_path(room.source_scene_path)
 
@@ -334,24 +432,317 @@ func _mark_changed(result: Dictionary) -> void:
 		world_data.emit_changed()
 
 
+func _sync_world_picker(resource: WorldData) -> void:
+	if not is_instance_valid(world_picker):
+		return
+	var has_property := false
+	for property: Dictionary in world_picker.get_property_list():
+		if String(property.get("name", "")) == "edited_resource":
+			has_property = true
+			break
+	if not has_property:
+		return
+	if world_picker.get("edited_resource") != resource:
+		world_picker.set("edited_resource", resource)
+
+
 func _refresh() -> void:
+	_refresh_statuses()
+	_refresh_annotations()
+	if is_instance_valid(source_entrance):
+		_refresh_connection_options()
+	if is_instance_valid(room_list):
+		room_list.call(
+			"set_rooms",
+			_sorted_rooms(),
+			room_statuses,
+			room_status_messages,
+			selected_room_ids,
+			selected_room_id,
+			_start_room_id()
+		)
+		room_list.call("set_filter", room_search.text if is_instance_valid(room_search) else "")
+	if is_instance_valid(room_count):
+		room_count.text = "%d rooms" % (0 if world_data == null else world_data.rooms.size())
+	if is_instance_valid(inspector):
+		_refresh_inspector()
+	if is_instance_valid(problems_panel):
+		_refresh_problems()
 	if is_instance_valid(canvas):
+		if canvas.has_method("set_statuses"):
+			canvas.call("set_statuses", room_statuses)
+		if canvas.has_method("set_selection"):
+			canvas.call("set_selection", selected_room_ids, selected_room_id)
+		if canvas.has_method("set_annotations"):
+			canvas.call("set_annotations", _annotations)
 		if canvas.has_method("sync_preview"):
 			canvas.call("sync_preview")
 		canvas.queue_redraw()
-	if is_instance_valid(source_entrance):
-		_refresh_connection_options()
+	_refresh_status_bar()
+	_refresh_command_state()
+
+
+# --- Workbench refresh helpers ------------------------------------------------
+
+func _sorted_rooms() -> Array[RoomData]:
+	var rooms: Array[RoomData] = []
+	if world_data == null:
+		return rooms
+	var ids := world_data.get_room_ids()
+	ids.sort()
+	for id: String in ids:
+		var room := world_data.get_room(id)
+		if room != null:
+			rooms.append(room)
+	return rooms
+
+
+func _refresh_statuses() -> void:
+	room_statuses.clear()
+	room_status_messages.clear()
+	for room: RoomData in _sorted_rooms():
+		var result: Dictionary = _status.evaluate(room)
+		room_statuses[room.room_id] = result.get("state", &"unknown")
+		room_status_messages[room.room_id] = String(result.get("message", ""))
+
+
+func _refresh_annotations() -> void:
+	_annotations.clear()
+	for room: RoomData in _sorted_rooms():
+		_annotations[room.room_id] = _annotations_service.collect(room)
+
+
+func _refresh_inspector() -> void:
+	if not is_instance_valid(inspector):
+		return
+	if world_data == null or selected_room_ids.is_empty():
+		inspector.call("clear")
+		return
+	var rooms: Array[RoomData] = []
+	for id: String in selected_room_ids:
+		var room := world_data.get_room(id)
+		if room != null:
+			rooms.append(room)
+	if rooms.is_empty():
+		inspector.call("clear")
+		return
+	if rooms.size() == 1:
+		var room := rooms[0]
+		inspector.call(
+			"show_room",
+			room,
+			room_statuses.get(room.room_id, &"unknown"),
+			room_status_messages.get(room.room_id, ""),
+			world_data.connections,
+			_start_room_id(),
+			_start_spawn_id()
+		)
+	else:
+		inspector.call("show_multi", rooms, room_statuses)
+
+
+func _refresh_problems() -> void:
+	if not is_instance_valid(problems_panel):
+		return
+	var issues: Array[Dictionary] = []
+	var errors := 0
+	var warnings := 0
+	if world_data != null:
+		_world_report = _model.validate_world(world_data)
+		for message: Variant in _world_report.get("errors", []):
+			issues.append({"severity": &"error", "message": String(message), "room_id": ""})
+			errors += 1
+		for message: Variant in _world_report.get("warnings", []):
+			issues.append({"severity": &"warning", "message": String(message), "room_id": ""})
+			warnings += 1
+		for room_id: String in room_statuses:
+			var state: StringName = room_statuses[room_id]
+			if state == &"fresh":
+				continue
+			var severity := &"error" if state == &"error" else &"warning"
+			var message := String(room_status_messages.get(room_id, ""))
+			issues.append({"severity": severity, "message": message, "room_id": room_id})
+			if severity == &"error":
+				errors += 1
+			else:
+				warnings += 1
+		for issue: Dictionary in _session_issues:
+			issues.append(issue)
+			if issue.get("severity", &"error") == &"error":
+				errors += 1
+			else:
+				warnings += 1
+	problems_panel.call("set_issues", issues, errors, warnings)
+	if is_instance_valid(problems_badge):
+		problems_badge.text = "%d problems" % issues.size()
+
+
+func _refresh_status_bar() -> void:
+	var preview_errors: Dictionary = {}
+	if is_instance_valid(canvas):
+		var preview_layer := canvas.get_node_or_null("TerrainPreviewLayer")
+		if preview_layer != null and preview_layer.has_method("get_preview_errors"):
+			preview_errors = preview_layer.call("get_preview_errors")
 	if is_instance_valid(status_label):
-		var preview_errors: Dictionary = {}
-		if is_instance_valid(canvas):
-			var preview_layer := canvas.get_node_or_null("TerrainPreviewLayer")
-			if preview_layer != null and preview_layer.has_method("get_preview_errors"):
-				preview_errors = preview_layer.call("get_preview_errors")
 		if not preview_errors.is_empty():
 			status_label.text = String(preview_errors.values()[0])
 		else:
 			status_label.text = "No world selected" if world_data == null else "%d rooms" % world_data.rooms.size()
-	_refresh_command_state()
+	if is_instance_valid(selection_label):
+		selection_label.text = "" if selected_room_ids.is_empty() else "%d selected" % selected_room_ids.size()
+
+
+func _start_room_id() -> String:
+	return "" if world_data == null else world_data.start_room_id
+
+
+func _start_spawn_id() -> String:
+	return "" if world_data == null else world_data.start_spawn_id
+
+
+func _add_session_issue(room_id: String, message: String, severity: StringName = &"error") -> void:
+	_session_issues.append({"severity": severity, "message": message, "room_id": room_id})
+
+
+func _remove_session_issues(room_id: String) -> void:
+	for index in range(_session_issues.size() - 1, -1, -1):
+		if String(_session_issues[index].get("room_id", "")) == room_id:
+			_session_issues.remove_at(index)
+
+
+func _on_search_changed(text: String) -> void:
+	if is_instance_valid(room_list):
+		room_list.call("set_filter", text)
+
+
+func _on_list_selection_changed(room_ids: Array, primary: String) -> void:
+	set_selection(room_ids, primary)
+
+
+func _on_canvas_selection_changed(room_ids: Array, primary: String) -> void:
+	set_selection(room_ids, primary)
+
+
+func _on_problem_activated(room_id: String) -> void:
+	select_room(room_id)
+	if is_instance_valid(canvas) and canvas.has_method("focus_room"):
+		canvas.call("focus_room", room_id)
+
+
+func _revalidate() -> void:
+	_refresh()
+
+
+func _toggle_problems() -> void:
+	if not is_instance_valid(problems_panel):
+		return
+	problems_panel.visible = not problems_panel.visible
+	%ProblemsToggle.set_pressed_no_signal(problems_panel.visible)
+
+
+func _on_room_action(action: StringName, room_id: String) -> void:
+	match action:
+		&"open_source":
+			open_source_room(room_id)
+		&"bake":
+			_bake_room(room_id)
+		&"validate":
+			_validate_room(room_id)
+		&"focus":
+			select_room(room_id)
+			if is_instance_valid(canvas) and canvas.has_method("focus_room"):
+				canvas.call("focus_room", room_id)
+		&"remove":
+			remove_room(room_id)
+		&"set_start":
+			set_start_room(room_id, _default_spawn(room_id))
+		&"bake_selected":
+			_bake_selection()
+		&"validate_selected":
+			_validate_selection()
+		&"remove_selected":
+			delete_selected_rooms()
+		&"open_first":
+			open_source_room(selected_room_id)
+
+
+func _default_spawn(room_id: String) -> String:
+	var room: RoomData = null if world_data == null else world_data.get_room(room_id)
+	if room == null:
+		return ""
+	if is_instance_valid(inspector):
+		var picked := String(inspector.call("get_selected_spawn_id"))
+		if not picked.is_empty():
+			return picked
+	if not room.preview_spawn_id.is_empty():
+		return room.preview_spawn_id
+	return "" if room.spawn_ids.is_empty() else String(room.spawn_ids[0])
+
+
+# --- Multi-selection commands -------------------------------------------------
+
+func move_rooms_by(delta: Vector2i) -> bool:
+	if world_data == null or _undo_redo == null or delta == Vector2i.ZERO or selected_room_ids.is_empty():
+		return false
+	var targets: Array[String] = []
+	for id: String in selected_room_ids:
+		if world_data.has_room(id):
+			targets.append(id)
+	if targets.is_empty():
+		return false
+	_undo_redo.create_action("Move Rooms")
+	for id: String in targets:
+		var from := world_data.get_room_origin_chunk(id)
+		_undo_redo.add_do_method(self, "_apply_move", id, from + delta)
+		_undo_redo.add_undo_method(self, "_apply_move", id, from)
+	_undo_redo.commit_action()
+	return true
+
+
+func delete_selected_rooms() -> void:
+	if world_data == null or _undo_redo == null or selected_room_ids.is_empty():
+		return
+	var previous_state: Dictionary = _model.capture_world_state(world_data)
+	var targets: Array[String] = []
+	for id: String in selected_room_ids:
+		if world_data.has_room(id):
+			targets.append(id)
+	if targets.is_empty():
+		return
+	_undo_redo.create_action("Remove Room References")
+	for id: String in targets:
+		_undo_redo.add_do_method(self, "_apply_remove", id)
+	_undo_redo.add_undo_method(self, "_restore_world_state", previous_state)
+	_undo_redo.commit_action()
+	selected_room_ids.clear()
+	selected_room_id = ""
+	_refresh()
+
+
+func set_start_room(room_id: String, spawn_id: String) -> bool:
+	if world_data == null or _undo_redo == null or room_id.is_empty() or not world_data.has_room(room_id):
+		return false
+	var room := world_data.get_room(room_id)
+	if room == null:
+		return false
+	if spawn_id.is_empty():
+		spawn_id = _default_spawn(room_id)
+	if spawn_id.is_empty() and not room.spawn_ids.is_empty():
+		spawn_id = String(room.spawn_ids[0])
+	_undo_redo.create_action("Set Start Room")
+	_undo_redo.add_do_method(self, "_apply_start_room", room_id, spawn_id)
+	_undo_redo.add_undo_method(self, "_apply_start_room", world_data.start_room_id, world_data.start_spawn_id)
+	_undo_redo.commit_action()
+	return true
+
+
+func _apply_start_room(room_id: String, spawn_id: String) -> void:
+	if world_data == null:
+		return
+	world_data.start_room_id = room_id
+	world_data.start_spawn_id = spawn_id
+	world_data.emit_changed()
+	_refresh()
 
 
 func _show_result(result: Dictionary) -> void:
@@ -377,7 +768,11 @@ func _show_result(result: Dictionary) -> void:
 
 
 func _instantiate_selected_source() -> Node:
-	var room: Resource = null if world_data == null else world_data.get_room(selected_room_id)
+	return _instantiate_room_source(selected_room_id)
+
+
+func _instantiate_room_source(room_id: String) -> Node:
+	var room: Resource = null if world_data == null else world_data.get_room(room_id)
 	if room == null or room.source_scene_path.is_empty():
 		return null
 	var packed := load(room.source_scene_path) as PackedScene
@@ -426,6 +821,8 @@ func get_command_state() -> Dictionary:
 	elif _transaction_busy:
 		add_tooltip = "Another world transaction is already running"
 	return {
+		"has_selection": not selected_room_ids.is_empty(),
+		"selection_count": selected_room_ids.size(),
 		"add_existing_disabled": not has_saved_world or _transaction_busy,
 		"add_existing_tooltip": add_tooltip,
 		"save_world_disabled": not has_saved_world or _transaction_busy,
@@ -444,8 +841,12 @@ func _refresh_command_state() -> void:
 	%SaveWorld.disabled = bool(state["save_world_disabled"])
 	for button: Button in [%ValidateWorld, %BakeWorld]:
 		button.disabled = bool(state["world_command_disabled"])
-	for button: Button in [%RemoveReference, %OpenSource, %ValidateRoom, %BakeRoom, %Connect, %Disconnect]:
+	for button: Button in [%OpenSource, %ValidateRoom, %BakeRoom]:
 		button.disabled = bool(state["room_command_disabled"])
+	for button: Button in [%Connect, %Disconnect]:
+		button.disabled = not bool(state["has_selection"]) or bool(state["transaction_busy"])
+	for option: OptionButton in [source_entrance, target_room, target_spawn]:
+		option.disabled = not bool(state["has_selection"])
 	%NewRoom.disabled = bool(state["transaction_busy"])
 	%NewWorld.disabled = bool(state["transaction_busy"])
 

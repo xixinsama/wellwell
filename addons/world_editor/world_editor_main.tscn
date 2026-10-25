@@ -1,10 +1,14 @@
-[gd_scene format=3 uid="uid://dbo4nyyal652h"]
+[gd_scene load_steps=8 format=3]
 
-[ext_resource type="Script" uid="uid://ckex4285744r4" path="res://addons/world_editor/world_editor_main.gd" id="1"]
-[ext_resource type="Script" uid="uid://bxnqqpgd0g3dh" path="res://addons/world_editor/world_layout_canvas.gd" id="2"]
-[ext_resource type="Script" uid="uid://b655bsmftww3a" path="res://addons/world_editor/world_terrain_preview_layer.gd" id="3"]
+[ext_resource type="Script" uid="uid://ckex4285744r4" path="res://addons/world_editor/world_editor_main.gd" id="1_main"]
+[ext_resource type="Script" uid="uid://bxnqqpgd0g3dh" path="res://addons/world_editor/world_layout_canvas.gd" id="2_canvas"]
+[ext_resource type="Script" uid="uid://b655bsmftww3a" path="res://addons/world_editor/world_terrain_preview_layer.gd" id="3_terrain"]
+[ext_resource type="Script" path="res://addons/world_editor/world_room_list.gd" id="4_list"]
+[ext_resource type="Script" path="res://addons/world_editor/world_room_inspector.gd" id="5_inspector"]
+[ext_resource type="Script" path="res://addons/world_editor/world_problems_panel.gd" id="6_problems"]
+[ext_resource type="Script" path="res://addons/world_editor/world_marker_layer.gd" id="7_markers"]
 
-[node name="WorldEditorMain" type="VBoxContainer" unique_id=146319507]
+[node name="WorldEditorMain" type="VBoxContainer"]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -12,142 +16,170 @@ grow_horizontal = 2
 grow_vertical = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
-script = ExtResource("1")
+script = ExtResource("1_main")
 
-[node name="WorldToolbar" type="HBoxContainer" parent="." unique_id=261394393]
+[node name="WorldBar" type="HBoxContainer" parent="."]
 layout_mode = 2
 
-[node name="WorldPicker" type="EditorResourcePicker" parent="WorldToolbar" unique_id=1041867443]
+[node name="WorldPicker" type="EditorResourcePicker" parent="WorldBar"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(280, 0)
 layout_mode = 2
 size_flags_horizontal = 3
 base_type = "WorldData"
 
-[node name="NewWorld" type="Button" parent="WorldToolbar" unique_id=1322490585]
+[node name="NewWorld" type="Button" parent="WorldBar"]
 unique_name_in_owner = true
 layout_mode = 2
 tooltip_text = "Create a WorldData resource"
 text = "New World"
 
-[node name="SaveWorld" type="Button" parent="WorldToolbar" unique_id=1591208396]
+[node name="SaveWorld" type="Button" parent="WorldBar"]
 unique_name_in_owner = true
 layout_mode = 2
 tooltip_text = "Save the selected WorldData resource"
 disabled = true
 text = "Save World"
 
-[node name="Toolbar" type="HFlowContainer" parent="." unique_id=858070487]
+[node name="CommandBar" type="HBoxContainer" parent="."]
 layout_mode = 2
 
-[node name="NewRoom" type="Button" parent="Toolbar" unique_id=1445340987]
+[node name="NewRoom" type="Button" parent="CommandBar"]
 unique_name_in_owner = true
 layout_mode = 2
+tooltip_text = "Open the room template in a new scene"
 text = "New Room"
 
-[node name="AddExisting" type="Button" parent="Toolbar" unique_id=1204253206]
+[node name="AddExisting" type="Button" parent="CommandBar"]
 unique_name_in_owner = true
 layout_mode = 2
 tooltip_text = "Select or create a WorldData resource first"
 disabled = true
 text = "Add Existing"
 
-[node name="RemoveReference" type="Button" parent="Toolbar" unique_id=1273562028]
-unique_name_in_owner = true
+[node name="SeparatorA" type="VSeparator" parent="CommandBar"]
 layout_mode = 2
-disabled = true
-text = "Remove Reference"
 
-[node name="OpenSource" type="Button" parent="Toolbar" unique_id=702546046]
+[node name="OpenSource" type="Button" parent="CommandBar"]
 unique_name_in_owner = true
 layout_mode = 2
 disabled = true
+tooltip_text = "Open the selected room source scene"
 text = "Open Source"
 
-[node name="ValidateRoom" type="Button" parent="Toolbar" unique_id=304735761]
+[node name="BakeRoom" type="Button" parent="CommandBar"]
 unique_name_in_owner = true
 layout_mode = 2
 disabled = true
-text = "Validate Room"
+tooltip_text = "Bake the selected room"
+text = "Bake"
 
-[node name="BakeRoom" type="Button" parent="Toolbar" unique_id=95914030]
+[node name="ValidateRoom" type="Button" parent="CommandBar"]
 unique_name_in_owner = true
 layout_mode = 2
 disabled = true
-text = "Bake Room"
+tooltip_text = "Validate the selected room source"
+text = "Validate"
 
-[node name="ValidateWorld" type="Button" parent="Toolbar" unique_id=1405413118]
+[node name="SeparatorB" type="VSeparator" parent="CommandBar"]
+layout_mode = 2
+
+[node name="ValidateWorld" type="Button" parent="CommandBar"]
 unique_name_in_owner = true
 layout_mode = 2
 disabled = true
+tooltip_text = "Validate the world layout and connections"
 text = "Validate World"
 
-[node name="BakeWorld" type="Button" parent="Toolbar" unique_id=378981673]
+[node name="BakeWorld" type="Button" parent="CommandBar"]
 unique_name_in_owner = true
 layout_mode = 2
 disabled = true
+tooltip_text = "Validate and save the world"
 text = "Bake World"
 
-[node name="ConnectionBar" type="HFlowContainer" parent="." unique_id=1972590499]
+[node name="Spacer" type="Control" parent="CommandBar"]
 layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
 
-[node name="SourceEntrance" type="OptionButton" parent="ConnectionBar" unique_id=1832196668]
+[node name="RoomsToggle" type="CheckButton" parent="CommandBar"]
 unique_name_in_owner = true
 layout_mode = 2
-tooltip_text = "Source entrance"
+tooltip_text = "Show the room list"
+button_pressed = true
+text = "Rooms"
 
-[node name="TargetRoom" type="OptionButton" parent="ConnectionBar" unique_id=823494448]
+[node name="InspectorToggle" type="CheckButton" parent="CommandBar"]
 unique_name_in_owner = true
 layout_mode = 2
-tooltip_text = "Target room"
+tooltip_text = "Show the room inspector"
+button_pressed = true
+text = "Inspector"
 
-[node name="TargetSpawn" type="OptionButton" parent="ConnectionBar" unique_id=277410110]
+[node name="ProblemsToggle" type="CheckButton" parent="CommandBar"]
 unique_name_in_owner = true
 layout_mode = 2
-tooltip_text = "Target spawn"
+tooltip_text = "Show the problems panel"
+button_pressed = true
+text = "Problems"
 
-[node name="Connect" type="Button" parent="ConnectionBar" unique_id=628409516]
+[node name="Workspace" type="HSplitContainer" parent="."]
 unique_name_in_owner = true
-layout_mode = 2
-disabled = true
-text = "Connect"
-
-[node name="Disconnect" type="Button" parent="ConnectionBar" unique_id=2082597691]
-unique_name_in_owner = true
-layout_mode = 2
-disabled = true
-text = "Disconnect"
-
-[node name="ViewToolbar" type="HBoxContainer" parent="." unique_id=1863663986]
-layout_mode = 2
-
-[node name="FocusAll" type="Button" parent="ViewToolbar" unique_id=1007933093]
-unique_name_in_owner = true
-layout_mode = 2
-tooltip_text = "Fit all rooms in the canvas"
-text = "Focus All"
-
-[node name="ResetView" type="Button" parent="ViewToolbar" unique_id=266127256]
-unique_name_in_owner = true
-layout_mode = 2
-tooltip_text = "Reset canvas pan and zoom"
-text = "Reset View"
-
-[node name="ZoomLabel" type="Label" parent="ViewToolbar" unique_id=1431985036]
-unique_name_in_owner = true
-layout_mode = 2
-text = "100%"
-
-[node name="LayoutCanvas" type="Control" parent="." unique_id=1956539192]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(350, 330)
-clip_contents = true
 layout_mode = 2
 size_flags_vertical = 3
-focus_mode = 2
-script = ExtResource("2")
 
-[node name="TerrainPreviewLayer" type="Control" parent="LayoutCanvas" unique_id=560669142]
+[node name="RoomListPanel" type="VBoxContainer" parent="Workspace"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(280, 0)
+layout_mode = 2
+
+[node name="RoomSearch" type="LineEdit" parent="Workspace/RoomListPanel"]
+unique_name_in_owner = true
+layout_mode = 2
+placeholder_text = "Search rooms…"
+clear_button_enabled = true
+
+[node name="RoomList" type="Tree" parent="Workspace/RoomListPanel"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+allow_reselect = true
+script = ExtResource("4_list")
+
+[node name="RoomCount" type="Label" parent="Workspace/RoomListPanel"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "0 rooms"
+
+[node name="CanvasSplit" type="HSplitContainer" parent="Workspace"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="LayoutCanvas" type="Control" parent="Workspace/CanvasSplit"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(320, 200)
+clip_contents = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+focus_mode = 2
+script = ExtResource("2_canvas")
+
+[node name="TerrainPreviewLayer" type="Control" parent="Workspace/CanvasSplit/LayoutCanvas"]
+unique_name_in_owner = true
+show_behind_parent = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("3_terrain")
+
+[node name="MarkerLayer" type="Control" parent="Workspace/CanvasSplit/LayoutCanvas"]
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 15
@@ -156,21 +188,101 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-script = ExtResource("3")
+script = ExtResource("7_markers")
 
-[node name="Status" type="Label" parent="." unique_id=1475463622]
+[node name="InspectorPanel" type="VBoxContainer" parent="Workspace/CanvasSplit"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(300, 0)
+layout_mode = 2
+script = ExtResource("5_inspector")
+
+[node name="Connections" type="VBoxContainer" parent="Workspace/CanvasSplit/InspectorPanel"]
+layout_mode = 2
+
+[node name="ConnectionsTitle" type="Label" parent="Workspace/CanvasSplit/InspectorPanel/Connections"]
+layout_mode = 2
+text = "CONNECTIONS"
+
+[node name="SourceEntrance" type="OptionButton" parent="Workspace/CanvasSplit/InspectorPanel/Connections"]
 unique_name_in_owner = true
 layout_mode = 2
+disabled = true
+
+[node name="TargetRoom" type="OptionButton" parent="Workspace/CanvasSplit/InspectorPanel/Connections"]
+unique_name_in_owner = true
+layout_mode = 2
+disabled = true
+
+[node name="TargetSpawn" type="OptionButton" parent="Workspace/CanvasSplit/InspectorPanel/Connections"]
+unique_name_in_owner = true
+layout_mode = 2
+disabled = true
+
+[node name="ConnectionButtons" type="HBoxContainer" parent="Workspace/CanvasSplit/InspectorPanel/Connections"]
+layout_mode = 2
+
+[node name="Connect" type="Button" parent="Workspace/CanvasSplit/InspectorPanel/Connections/ConnectionButtons"]
+unique_name_in_owner = true
+layout_mode = 2
+disabled = true
+text = "Connect"
+
+[node name="Disconnect" type="Button" parent="Workspace/CanvasSplit/InspectorPanel/Connections/ConnectionButtons"]
+unique_name_in_owner = true
+layout_mode = 2
+disabled = true
+text = "Disconnect"
+
+[node name="ProblemsPanel" type="VBoxContainer" parent="."]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 110)
+layout_mode = 2
+script = ExtResource("6_problems")
+
+[node name="StatusBar" type="HBoxContainer" parent="."]
+layout_mode = 2
+
+[node name="Status" type="Label" parent="StatusBar"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
 text = "No world selected"
 
-[node name="AddExistingDialog" type="FileDialog" parent="." unique_id=736134005]
+[node name="SelectionLabel" type="Label" parent="StatusBar"]
 unique_name_in_owner = true
-title = "Open a File"
+layout_mode = 2
+
+[node name="ZoomLabel" type="Label" parent="StatusBar"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "100%"
+
+[node name="ProblemsBadge" type="Button" parent="StatusBar"]
+unique_name_in_owner = true
+layout_mode = 2
+flat = true
+text = "0 problems"
+
+[node name="FocusAll" type="Button" parent="StatusBar"]
+unique_name_in_owner = true
+layout_mode = 2
+tooltip_text = "Fit all rooms in the canvas"
+text = "Focus All"
+
+[node name="ResetView" type="Button" parent="StatusBar"]
+unique_name_in_owner = true
+layout_mode = 2
+tooltip_text = "Reset canvas pan and zoom"
+text = "Reset View"
+
+[node name="AddExistingDialog" type="FileDialog" parent="."]
+unique_name_in_owner = true
+title = "Add Existing Room"
 access = 0
 file_mode = 0
 filters = PackedStringArray("*.tscn ; Godot Scene")
 
-[node name="NewWorldDialog" type="FileDialog" parent="." unique_id=1183153561]
+[node name="NewWorldDialog" type="FileDialog" parent="."]
 unique_name_in_owner = true
 title = "Create World"
 access = 0

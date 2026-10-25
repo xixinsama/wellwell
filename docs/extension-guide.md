@@ -156,6 +156,38 @@ not consume the pickup.
   board is always solvable. History is cleared, the player is not moved, and
   the walk is pure data (`PuzzleScrambler`), so it can be tested headlessly.
 
+## World Editor Workbench
+
+The World main screen is a three-column workbench: room list, canvas, inspector,
+plus a collapsible problems panel and status bar.
+
+- **Room list** shows a status dot (fresh / stale / error / unknown), the display
+  name, chunk size and origin. Search filters by name/id; `Ctrl`/`Shift` selects
+  several rooms; right-click opens Open Source / Bake / Validate / Focus /
+  Set as Start / Remove. Double-click opens the source scene.
+- **Canvas**: terrain previews sit under room frames; room labels show
+  `id · W×H · (cx,cy)`, statuses tint the outline, the start room gets a star.
+  `RoomAnnotationService` instantiates each baked runtime scene off-tree and
+  draws spawns (`S`), entrances (`E`) and entity markers with hover tooltips.
+  Drag empty space to box-select (intersection), `Ctrl+click` toggles a room,
+  drag a selected room to move the whole group (one undo action), `Delete`
+  removes the selected references, `Esc` clears, `Ctrl+A` selects all.
+- **Inspector** is read-only: display name, id, size, origin, source/runtime/
+  terrain paths, spawn and entrance lists, plus actions. Metadata such as
+  `display_name` and `room_id` stays authorative in the source scene; rebaking
+  would overwrite edits made here. Connection editing lives at the bottom.
+- **Problems** aggregates room statuses, the session's last bake/validate
+  failures and `WorldLayoutModel.validate_world()`. Click a row to select and
+  focus its room; `Revalidate` reruns validation and status checks.
+- **Status** comes from `authoring/world/room_status_service.gd`: `fresh` when
+  `RoomData.source_fingerprint` matches the current source sha256 and both
+  artifacts exist, `stale` when the source changed after the last bake, `error`
+  for missing sources/artifacts or a failed bake this session, and `unknown`
+  when the room has no fingerprint yet. Hashes are cached by (path, mtime, size).
+- New entity types appear on the canvas by extending
+  `authoring/world/room_annotation_service.gd`; new room statuses plug into the
+  status service and the list/inspector color maps.
+
 Good first game-specific extensions:
 
 - Moving platforms.
