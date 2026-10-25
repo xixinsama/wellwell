@@ -795,3 +795,56 @@ func cell_to_world(cell: Vector2i) -> Vector2:
 
 func _local_to_cell(local: Vector2) -> Vector2i:
 	return Vector2i(floori(local.x / float(cell_size)), floori(local.y / float(cell_size)))
+
+
+# --- Scrambling ---------------------------------------------------------------
+
+## Adopt [param state] as the authored initial layout: every piece's initial
+## cell becomes its current cell, the move history is cleared and the view snaps
+## to the new layout. Used by the auto-shuffle component.
+func apply_initial_layout(state: BoardState) -> void:
+	if session == null or definition == null or state == null:
+		return
+	if state.pieces.size() != definition.pieces.size() or _pieces.size() != state.pieces.size():
+		return
+	for i in state.pieces.size():
+		definition.pieces[i].initial_cell = state.pieces[i].cell
+	session.clear_rider()
+	_deselect_piece(true)
+	_end_drag()
+	_hide_preview()
+	session.reset_initial()
+	_sync_pieces_from_state(false)
+
+
+## Random-walk the board with the sliding rules and make the result the new
+## initial layout. Returns false when the board cannot be scrambled (no legal
+## turn) or when the walk ends where it started.
+func scramble(
+	steps: int = PuzzleScrambler.DEFAULT_STEPS,
+	seed: int = 0,
+	void_only: bool = true,
+	avoid_reverse: bool = true
+) -> bool:
+	if session == null or definition == null or definition.pieces.is_empty():
+		return false
+	session.clear_rider()
+	var rng := RandomNumberGenerator.new()
+	if seed == 0:
+		rng.randomize()
+	else:
+		rng.seed = seed
+	var start_state := session.current_state
+	var scrambled := PuzzleScrambler.build_scrambled_state(
+		definition,
+		session.rules,
+		start_state,
+		maxi(1, steps),
+		rng,
+		void_only,
+		avoid_reverse
+	)
+	if scrambled == null or scrambled.get_hash_key() == start_state.get_hash_key():
+		return false
+	apply_initial_layout(scrambled)
+	return true

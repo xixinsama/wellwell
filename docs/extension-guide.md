@@ -124,6 +124,38 @@ not consume the pickup.
   a forced exit do not grant it. Extend the board rather than setting the motor
   flag directly so the carry bookkeeping stays authoritative.
 
+### Generated and shuffled boards
+
+- `PuzzleBoardAuto` replaces hand-authored `PuzzleTilePiece` children for
+  equal-size puzzles. Assign `source_layer_path` to a `TileMapLayer` holding the
+  whole picture and set `piece_size` / `puzzle_size`; the board splits the
+  painted area into chunks and writes one generated piece per chunk. An
+  optional `void_layer_path` layer marks void slider footprints (void wins over
+  solid cells in the same chunk).
+- Generation is editor-only (`@tool`). Generated pieces carry
+  `meta("puzzle_generated")` and are owned by the edited scene root, so they are
+  saved into the room source scene and baked with it. Regeneration only removes
+  generated nodes. The board regenerates automatically when the source layers
+  or export values change, and the inspector exposes a `重新生成` tool button for
+  forced rebuilds.
+- Put source layers outside `RoomContent` (for example under `PreviewOnly`) so
+  the bake never sees them, and place the board at the puzzle's top-left corner.
+  Source positions only provide cell contents.
+- `PuzzleBoardShuffler` walks random legal turns on load (default 120) and
+  adopts the result as the new initial layout, so `R` restores the scrambled
+  board instead of the authored one. `void_only = true` only walks turns that
+  move a void slider (primary or A+ induced); `seed = 0` randomizes per load,
+  any other value reproduces the same layout.
+- Place the shuffler after the board in the same parent
+  (`board_path = ^"../PuzzleBoard"`) for a synchronous ready-pass scramble, or
+  as a child of the board (`board_path = ^".."`, the default) and the shuffler
+  waits for the board's `ready` signal. `shuffle_now()` scrambles again at
+  runtime for debugging.
+- Scrambling goes through `rules.get_legal_moves()` and
+  `rules.resolve_turn()`, so every step is legal and reversible: a shuffled
+  board is always solvable. History is cleared, the player is not moved, and
+  the walk is pure data (`PuzzleScrambler`), so it can be tested headlessly.
+
 Good first game-specific extensions:
 
 - Moving platforms.
