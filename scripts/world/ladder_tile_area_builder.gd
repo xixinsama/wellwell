@@ -31,6 +31,6 @@ func rebuild() -> int:
 			zone.get_node("CollisionShape2D").shape = rectangle
 			zone.set_meta("source_cell", cell)
 			add_child(zone)
-			zone.global_position = global_transform.affine_inverse() * layer.to_global(layer.map_to_local(cell))
+			zone.global_position = layer.to_global(layer.map_to_local(cell))
 			built += 1
 	return built

@@ -12,6 +12,7 @@ func run() -> Array[String]:
 		return ["ladder tile area builder is missing"]
 	var terrain := Node2D.new()
 	add_child(terrain)
+	terrain.position = Vector2(320, 0)
 	var tiles := load(TILESET_PATH) as TileSet
 	var layer := TileMapLayer.new()
 	layer.tile_set = tiles
