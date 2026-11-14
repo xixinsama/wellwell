@@ -133,7 +133,14 @@ func _assert_player_composition(failures: Array[String]) -> void:
 		(motion.get_node("Detector") as Area2D).area_entered.emit(zone)
 		if not bool(player.call("is_on_ladder")):
 			failures.append("player did not delegate ladder overlap state")
-		player.call("respawn_at", Vector2.ZERO)
-		motion.get_node("Detector").area_exited.emit(zone)
+		player.call("respawn_at", Vector2(100, 100))
+		if bool(player.call("is_on_ladder")):
+			failures.append("respawn retained stale ladder overlap outside the ladder")
+		motion.call("refresh_overlaps", [])
+		if bool(player.call("is_on_ladder")):
+			failures.append("refresh did not clear out-of-ladder contacts")
+		motion.call("refresh_overlaps", [zone])
+		if not bool(player.call("is_on_ladder")):
+			failures.append("refresh did not reacquire an overlapping ladder")
 		zone.free()
 	player.free()

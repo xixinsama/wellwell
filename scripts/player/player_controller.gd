@@ -158,12 +158,12 @@ func _apply_ability_motion(intent: RefCounted) -> bool:
 func respawn_at(pos: Vector2) -> void:
     if _motion_effects != null:
         _motion_effects.call("clear_effects")
-    if _ladder_motion != null:
-        _ladder_motion.call("reset")
     if _hero_animation != null:
         _hero_animation.call("reset")
     _has_motion_sample = false
     global_position = pos
+    if _ladder_motion != null:
+        _ladder_motion.call("reset")
     spawn_position = pos
     velocity = Vector2.ZERO
     _world_velocity = Vector2.ZERO

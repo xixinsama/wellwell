@@ -11,6 +11,7 @@ var _drop_latched := false
 var _jump_active := false
 var _last_active := false
 var _last_direction := Vector2.ZERO
+var _refresh_required := false
 
 
 func _ready() -> void:
@@ -39,6 +40,8 @@ func is_on_ladder() -> bool:
 
 
 func step(context: RefCounted, intent: RefCounted, environment: RefCounted, profile: RefCounted, delta: float) -> bool:
+	if _refresh_required:
+		refresh_overlaps()
 	return apply_motion(context, intent, profile, delta, is_on_ladder(), bool(environment.get("grounded")))
 
 
@@ -85,9 +88,26 @@ func apply_motion(context: RefCounted, intent: RefCounted, profile: RefCounted, 
 	return true
 
 
+func refresh_overlaps(contact_areas: Variant = null) -> void:
+	var areas: Array[Area2D] = []
+	if contact_areas != null:
+		areas.assign(contact_areas)
+	elif _detector != null:
+		areas = _detector.get_overlapping_areas()
+	_overlaps.clear()
+	for area: Area2D in areas:
+		_on_area_entered(area)
+	_refresh_required = false
+
+
 func reset() -> void:
+	_overlaps.clear()
 	_drop_latched = false
 	_jump_active = false
+	_refresh_required = true
+	if _detector != null:
+		_detector.set_deferred("monitoring", false)
+		_detector.set_deferred("monitoring", true)
 	_emit_animation(false, Vector2.ZERO)
 
 
