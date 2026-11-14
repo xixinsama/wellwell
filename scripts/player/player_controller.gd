@@ -131,6 +131,12 @@ func _physics_process(delta: float) -> void:
     _has_motion_sample = true
     _capture_environment()
     was_on_floor = is_on_floor()
+    if _hero_animation != null:
+        _hero_animation.call("update_visual", delta, {
+            "grounded": is_on_floor(), "velocity": velocity,
+            "move_axis": intent.move_axis, "vertical_axis": intent.vertical_axis,
+            "facing": facing, "just_jumped": _movement_context.just_jumped,
+        })
 
 
 func _apply_ability_motion(intent: RefCounted) -> bool:
@@ -162,7 +168,7 @@ func respawn_at(pos: Vector2) -> void:
     velocity = Vector2.ZERO
     _world_velocity = Vector2.ZERO
     _movement_context.call("reset")
-    sprite_root.scale = Vector2(facing, 1.0)
+    sprite_root.scale = Vector2.ONE
 
 
 func play_hurt_effect() -> void:
@@ -196,14 +202,14 @@ func _update_facing(axis: float) -> void:
     if is_zero_approx(axis):
         return
     facing = -1 if axis < 0.0 else 1
-    sprite_root.scale.x = absf(sprite_root.scale.x) * float(facing)
+    sprite_root.scale.x = absf(sprite_root.scale.x)
 
 
 func _recover_visual(delta: float) -> void:
-    var target_scale: Vector2 = Vector2(float(facing), 1.0)
+    var target_scale: Vector2 = Vector2.ONE
     var weight: float = 1.0 - exp(-visual_recover_speed * delta)
     sprite_root.scale = sprite_root.scale.lerp(target_scale, weight)
 
 
 func _play_jump_intent_feedback() -> void:
-    sprite_root.scale = Vector2(float(facing) * 1.08, 0.92)
+    sprite_root.scale = Vector2(1.08, 0.92)
