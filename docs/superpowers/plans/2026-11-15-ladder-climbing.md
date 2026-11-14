@@ -1100,6 +1100,7 @@ Leave user-owned source tiles/maps/template modifications unstaged, and report t
 
 - Implemented vertical intent, climb tuning, ladder zones, free/repeated jumping, S climb, S+Jump latched fast drop, player composition, alternative-tile scanning, and the 20-frame Hero animation driver.
 - Source `room_01_00` and its baked terrain both generate ladder zones at runtime. A regression test uses a 320 px non-zero room origin to prove world alignment.
+- Respawn clears stale ladder contacts after moving the player, toggles Detector monitoring, and refreshes contacts before the next ladder-aware step. Tests cover outside respawn and reacquiring a ladder without manual exit signals.
 - RoomBaker preserves text UIDs in headless mode, commits UID mappings only after successful installation, and captures/restores output UID mappings during rollback. Tests cover repeated bakes, conflicts, validation failures, and injected installation failure.
 - Hero tests cover all atlas regions, animation priority, direction flips, climb idle, the 85 px/s run threshold, 2-second idle breathing, and repeated jump restart.
 - Input/profile/ladder/tile/Hero/RoomBaker/player-effects/Killzone/motor/movement-lab/template tests all exit 0. Source room and main scene also exit 0.
