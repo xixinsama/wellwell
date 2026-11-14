@@ -416,15 +416,12 @@ func _after_staged_resources_saved(staged_paths: Dictionary, staged: Dictionary)
 				return _failure("resource UID is registered to an unrelated path: %s" % registered_path)
 		if ResourceSaver.set_uid(staged_path, uid) != OK:
 			return _failure("could not preserve resource UID for staged output: %s" % staged_path)
-		if ResourceUID.has_id(uid):
-			ResourceUID.set_id(uid, staged_path)
-		else:
-			ResourceUID.add_id(uid, staged_path)
 	return _result(true, [], [])
 
 
 func _replace_transactionally(outputs: Dictionary, staged_paths: Dictionary, warnings: Array[String]) -> Dictionary:
 	var backup_paths := _backup_paths(outputs)
+	var output_uids := _capture_output_uids(outputs)
 	var errors: Array[String] = []
 	for backup_path: String in backup_paths.values():
 		if FileAccess.file_exists(backup_path):
@@ -447,7 +444,7 @@ func _replace_transactionally(outputs: Dictionary, staged_paths: Dictionary, war
 		var promote_error := _promote_staged_file(staged_paths[output_key], outputs[output_key])
 		if promote_error != OK:
 			errors.append("could not install generated output: %s" % outputs[output_key])
-			_rollback_replacement(installed_paths, backed_up, staged_paths, errors)
+			_rollback_replacement(installed_paths, backed_up, staged_paths, errors, output_uids, outputs)
 			return _result(false, errors, warnings)
 		installed_paths.append(outputs[output_key])
 	var committed_warnings := _copy_strings(warnings)
@@ -465,7 +462,30 @@ func _replace_transactionally(outputs: Dictionary, staged_paths: Dictionary, war
 	}
 
 
-func _rollback_replacement(installed_paths: Array[String], backed_up: Array[Dictionary], staged_paths: Dictionary, errors: Array[String]) -> void:
+func _capture_output_uids(outputs: Dictionary) -> Dictionary:
+	var result := {}
+	for output_key: String in outputs:
+		var path := String(outputs[output_key])
+		var uid := _read_text_resource_uid(path)
+		if uid == ResourceUID.INVALID_ID:
+			uid = _registered_uid_for_path(path)
+		result[output_key] = uid
+	return result
+
+
+func _restore_output_uids(output_uids: Dictionary, outputs: Dictionary) -> void:
+	for output_key: String in output_uids:
+		var uid := int(output_uids[output_key])
+		if uid == ResourceUID.INVALID_ID:
+			continue
+		var final_path := String(outputs[output_key])
+		if ResourceUID.has_id(uid):
+			ResourceUID.set_id(uid, final_path)
+		else:
+			ResourceUID.add_id(uid, final_path)
+
+
+func _rollback_replacement(installed_paths: Array[String], backed_up: Array[Dictionary], staged_paths: Dictionary, errors: Array[String], output_uids: Dictionary, outputs: Dictionary) -> void:
 	var installed_outputs_removed := true
 	for installed_path: String in installed_paths:
 		var removal_error := _remove_file(installed_path)
@@ -477,6 +497,7 @@ func _rollback_replacement(installed_paths: Array[String], backed_up: Array[Dict
 			errors.append("newly installed output still exists after removal: %s" % installed_path)
 	if installed_outputs_removed:
 		_restore_backups(backed_up, errors)
+		_restore_output_uids(output_uids, outputs)
 	else:
 		errors.append("generated output backups were retained because installed outputs remain")
 	_remove_paths(staged_paths, errors, "staged resource")
@@ -499,10 +520,15 @@ func _move_file(from_path: String, to_path: String) -> Error:
 
 
 func _promote_staged_file(staged_path: String, final_path: String) -> Error:
-	var uid := ResourceLoader.get_resource_uid(staged_path)
+	var uid := _read_text_resource_uid(staged_path)
+	if uid == ResourceUID.INVALID_ID:
+		uid = ResourceLoader.get_resource_uid(staged_path)
 	var move_error := _move_file(staged_path, final_path)
-	if move_error == OK and uid != ResourceUID.INVALID_ID and ResourceUID.has_id(uid):
-		ResourceUID.set_id(uid, final_path)
+	if move_error == OK and uid != ResourceUID.INVALID_ID:
+		if ResourceUID.has_id(uid):
+			ResourceUID.set_id(uid, final_path)
+		else:
+			ResourceUID.add_id(uid, final_path)
 	return move_error
 
 

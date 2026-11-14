@@ -159,6 +159,7 @@ func run() -> Array[String]:
 	var second_contract := _load_contract(paths, failures)
 	if first_contract != second_contract:
 		failures.append("unchanged source produced a different loaded bake contract")
+	_assert_uid_conflict_preserves_registration(baker, source, paths, failures)
 
 	source.room_id = ""
 	var invalid_bake: Dictionary = baker.bake(source, SOURCE_PATH)
@@ -179,6 +180,7 @@ func run() -> Array[String]:
 	var after_rollback_contract := _load_contract(paths, failures)
 	if second_contract != after_rollback_contract:
 		failures.append("forced replacement failure did not restore the previous complete outputs")
+	_assert_final_resource_uids_resolve(paths, failures)
 	_assert_no_temporary_outputs(paths, failures)
 	_assert_rollback_without_existing_outputs(source, paths, failures)
 	_assert_rollback_with_subset_outputs(source, baker, paths, failures)
@@ -210,6 +212,7 @@ func _assert_signature_property_barriers(baker: RefCounted, source: Node, paths:
 			failures.append("scene signature accepted %s" % test_case["label"])
 		if before_contract != _load_contract(paths, failures):
 			failures.append("scene signature failure changed finals: %s" % test_case["label"])
+		_assert_final_resource_uids_resolve(paths, failures)
 		_assert_no_temporary_outputs(paths, failures)
 
 
@@ -259,6 +262,40 @@ func _assert_textual_variant_key_identity(failures: Array[String]) -> void:
 		failures.append("canonicalization did not retain StringName dictionary key identity")
 	if canonical_keys.get({"variant_type": "NodePath", "value": "shared"}) != "NodePath":
 		failures.append("canonicalization did not retain String/StringName/NodePath dictionary key identity")
+
+
+func _assert_uid_conflict_preserves_registration(baker: RefCounted, source: Node, paths: Dictionary, failures: Array[String]) -> void:
+	var final_path := String(paths["room_resource_path"])
+	var uid := ResourceLoader.get_resource_uid(final_path)
+	if uid == ResourceUID.INVALID_ID:
+		failures.append("UID conflict fixture has no registered output UID")
+		return
+	var original_path := ResourceUID.get_id_path(uid)
+	var unrelated_path := "res://tests/authoring/unrelated_uid_resource.tres"
+	ResourceUID.set_id(uid, unrelated_path)
+	var staged: Dictionary = baker.stage(source, SOURCE_PATH)
+	var result: Dictionary = baker._after_staged_resources_saved({"room_resource_path": _marked_path(final_path, ".stage")}, staged)
+	if result.get("ok", false):
+		failures.append("UID conflict was not rejected")
+	if ResourceUID.get_id_path(uid) != unrelated_path:
+		failures.append("UID conflict changed the pre-existing registration")
+	ResourceUID.set_id(uid, original_path)
+
+
+func _assert_final_resource_uids_resolve(paths: Dictionary, failures: Array[String]) -> void:
+	for output_key: String in ["runtime_scene_path", "terrain_scene_path", "room_resource_path"]:
+		var final_path := String(paths[output_key])
+		var first_line := FileAccess.get_file_as_string(final_path).get_slice("\n", 0)
+		const MARKER := "uid=\""
+		var start := first_line.find(MARKER)
+		if start < 0:
+			failures.append("generated output lost its text UID: %s" % final_path)
+			continue
+		start += MARKER.length()
+		var end := first_line.find("\"", start)
+		var uid := ResourceUID.text_to_id(first_line.substr(start, end - start))
+		if not ResourceUID.has_id(uid) or ResourceUID.get_id_path(uid) != final_path:
+			failures.append("generated output UID no longer resolves after rollback: %s" % final_path)
 
 
 func _assert_promoted_resource_uids_resolve_to_final_paths(source: Node, paths: Dictionary, failures: Array[String]) -> void:
