@@ -1,6 +1,6 @@
 # Ladder Climbing and Hero Animation Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use subagent-driven-development (recommended) or executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use subagent-driven-development (recommended) or executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Turn tile `(0,7)` and all its alternatives into ladder areas, add free climbing/repeated jumping/S+Jump fast dropping, and drive the supplied 10×10 Hero sprite sheet with a testable animation controller.
 
@@ -44,7 +44,7 @@ Current full-suite baseline is exit 1 only for `SavePoint/VisualRoot` versus `Vi
 - Test: `tests/platformer_kit/character/test_input_source.gd`
 - Test: `tests/platformer_kit/character/test_movement_profile.gd`
 
-- [ ] **Step 1: Add failing input/profile assertions**
+- [x] **Step 1: Add failing input/profile assertions**
 
 Add `"climb_speed": 72.0` to `EXPECTED_VALUES` in `test_movement_profile.gd`.
 
@@ -69,7 +69,7 @@ In `test_input_source.gd`, press and release `move_up` in addition to the existi
 
 Run both focused tests. Expected RED: `vertical_axis` and `climb_speed` are missing.
 
-- [ ] **Step 2: Implement the minimal input/profile additions**
+- [x] **Step 2: Implement the minimal input/profile additions**
 
 Add to `character_intent.gd`:
 
@@ -96,7 +96,7 @@ Add to `movement_profile.gd`:
 @export var climb_speed := 72.0
 ```
 
-- [ ] **Step 3: Verify GREEN and commit**
+- [x] **Step 3: Verify GREEN and commit**
 
 Run `test_input_source.gd` and `test_movement_profile.gd`; both must exit 0.
 
@@ -114,7 +114,7 @@ git commit -m "feat: add vertical intent and climb tuning"
 - Create: `addons/platformer_kit/character/ladder/ladder_motion_component_2d.gd`
 - Test: `tests/platformer_kit/character/test_ladder_motion.gd`
 
-- [ ] **Step 1: Write the failing motion tests**
+- [x] **Step 1: Write the failing motion tests**
 
 Create `test_ladder_motion.gd` with helpers and assertions covering this exact public API:
 
@@ -238,7 +238,7 @@ func _assert_zone_and_detector(component: Node2D, failures: Array[String]) -> vo
 
 Expected RED: component and zone are missing. The tests are intentionally independent of frame timing; real Area signals are emitted directly through the composed detector.
 
-- [ ] **Step 2: Implement the marker zone**
+- [x] **Step 2: Implement the marker zone**
 
 `ladder_zone.gd`:
 
@@ -271,7 +271,7 @@ script = ExtResource("1_zone")
 shape = SubResource("RectangleShape2D_zone")
 ```
 
-- [ ] **Step 3: Implement the motion component**
+- [x] **Step 3: Implement the motion component**
 
 ```gdscript
 class_name LadderMotionComponent2D
@@ -399,7 +399,7 @@ func _on_area_exited(area: Area2D) -> void:
 	_overlaps.erase(area)
 ```
 
-- [ ] **Step 4: Verify GREEN and commit**
+- [x] **Step 4: Verify GREEN and commit**
 
 Run `test_ladder_motion.gd`; it must exit 0 with no parser/runtime error.
 
@@ -416,7 +416,7 @@ git commit -m "feat: add free ladder motion and fast drop"
 - Modify: `scenes/rooms/template/level_template.tscn`
 - Test: `tests/world/test_ladder_tiles.gd`
 
-- [ ] **Step 1: Write failing alternative-tile and bake tests**
+- [x] **Step 1: Write failing alternative-tile and bake tests**
 
 Create `test_ladder_tiles.gd`:
 
@@ -505,7 +505,7 @@ func _assert_template_and_room_bake(script: Script, failures: Array[String]) -> 
 
 Run the focused test. Expected RED: builder/template integration is missing.
 
-- [ ] **Step 2: Implement the runtime builder**
+- [x] **Step 2: Implement the runtime builder**
 
 ```gdscript
 class_name LadderTileAreaBuilder
@@ -546,7 +546,7 @@ func rebuild() -> int:
 	return built
 ```
 
-- [ ] **Step 3: Add the template node without replacing user edits**
+- [x] **Step 3: Add the template node without replacing user edits**
 
 Add one external script resource pointing to `res://scripts/world/ladder_tile_area_builder.gd`, using the next unused id (`9_ladder_builder` in the current template). Add after `MarkerTiles`:
 
@@ -557,7 +557,7 @@ script = ExtResource("9_ladder_builder")
 
 Run the focused test; source and staged alternatives must pass. Do not hand-edit generated scenes and do not stage the user-modified template wholesale.
 
-- [ ] **Step 4: Commit owned code/tests**
+- [x] **Step 4: Commit owned code/tests**
 
 ```powershell
 git add -- scripts/world/ladder_tile_area_builder.gd tests/world/test_ladder_tiles.gd
@@ -572,7 +572,7 @@ git commit -m "feat: generate ladder zones from tiles"
 - Modify: `scenes/player/player.tscn`
 - Test: `tests/platformer_kit/character/test_ladder_motion.gd`
 
-- [ ] **Step 1: Add failing player composition assertions**
+- [x] **Step 1: Add failing player composition assertions**
 
 Append to `test_ladder_motion.gd` and call it from `run()`:
 
@@ -601,7 +601,7 @@ func _assert_player_composition(failures: Array[String]) -> void:
 
 Expected RED: `LadderMotion`, `is_on_ladder`, and the public signal are missing.
 
-- [ ] **Step 2: Add scene composition**
+- [x] **Step 2: Add scene composition**
 
 Add the ladder component as an external script resource and append:
 
@@ -612,7 +612,7 @@ script = ExtResource("7_ladder_motion")
 
 Use the next free resource id and update `load_steps` without changing existing ability/effects nodes.
 
-- [ ] **Step 3: Route motion and signals through PlayerController**
+- [x] **Step 3: Route motion and signals through PlayerController**
 
 Add near the controller signals/exports:
 
@@ -659,7 +659,7 @@ func _on_climb_animation_requested(active: bool, direction: Vector2) -> void:
 
 In `set_control_locked(true)` and `respawn_at()` call `_ladder_motion.reset()` when present. Also reset `_hero_animation` when present; Task 5 defines that method.
 
-- [ ] **Step 4: Verify GREEN and commit**
+- [x] **Step 4: Verify GREEN and commit**
 
 Run the ladder and existing motor integration tests; both must exit 0.
 
@@ -680,7 +680,7 @@ git commit -m "feat: compose ladder motion into player"
 - Modify: `scripts/player/player_controller.gd`
 - Test: `tests/player/test_hero_animation.gd`
 
-- [ ] **Step 1: Write failing resource/state tests**
+- [x] **Step 1: Write failing resource/state tests**
 
 Create `test_hero_animation.gd` with this complete content:
 
@@ -831,7 +831,7 @@ func _assert_player_scene(failures: Array[String]) -> void:
 
 Expected RED: SpriteFrames, Hero driver, and Hero scene composition are missing.
 
-- [ ] **Step 2: Copy the supplied asset and add a repeatable frame generator**
+- [x] **Step 2: Copy the supplied asset and add a repeatable frame generator**
 
 Copy only if the destination does not exist:
 
@@ -889,7 +889,7 @@ First import the copied texture, then run the generator (the runtime loader need
 & $godot --headless --path . -s res://scripts/tools/build_hero_sprite_frames.gd
 ```
 
-- [ ] **Step 3: Implement HeroAnimationController**
+- [x] **Step 3: Implement HeroAnimationController**
 
 ```gdscript
 class_name HeroAnimationController
@@ -964,7 +964,7 @@ func _play(target: String, restart: bool) -> void:
 	_sprite.flip_h = _facing < 0 and not target.begins_with("look_")
 ```
 
-- [ ] **Step 4: Compose Hero and route visual state**
+- [x] **Step 4: Compose Hero and route visual state**
 
 In `player.tscn`, hide the three old visual nodes, add Hero controller and LadderMotion resources, and add:
 
@@ -993,7 +993,7 @@ After the existing physics state is updated, call:
 
 Keep positive X squash in `respawn_at`, `_recover_visual`, and `_play_jump_intent_feedback`: use `Vector2.ONE`, `Vector2.ONE`, and `Vector2(1.08,0.92)` respectively. `_update_facing()` must no longer flip `SpriteRoot`; HeroAnimationController handles generic flips and dedicated look rows.
 
-- [ ] **Step 5: Verify GREEN and commit**
+- [x] **Step 5: Verify GREEN and commit**
 
 Run Hero, ladder, player-effects, and motor integration tests; all must exit 0.
 
@@ -1011,7 +1011,7 @@ git commit -m "feat: animate hero movement and climbing"
 - Modify: `tests/runtime_suite.gd`
 - Generated by RoomBaker only: `scenes/rooms/generated/room_01_00/` and `resources/rooms/generated/room_01_00.tres`
 
-- [ ] **Step 1: Register the three new test scripts**
+- [x] **Step 1: Register the three new test scripts**
 
 Append to `TESTS`:
 
@@ -1021,7 +1021,7 @@ Append to `TESTS`:
 	preload("res://tests/player/test_hero_animation.gd"),
 ```
 
-- [ ] **Step 2: Add the targeted rebake runner**
+- [x] **Step 2: Add the targeted rebake runner**
 
 ```gdscript
 extends SceneTree
@@ -1058,11 +1058,12 @@ Run:
 
 ```powershell
 & $godot --headless --path . -s res://scripts/tools/rebake_room.gd -- res://scenes/levels/room_01_00.tscn
+& $godot --headless --path . --import
 ```
 
 Expected: exit 0. Reload the baked terrain in `test_ladder_tiles.gd` and assert it contains `Terrain/LadderAreaBuilder`. Review the generated diff; never replace the user's source tile layout.
 
-- [ ] **Step 3: Document authoring and Hero animation**
+- [x] **Step 3: Document authoring and Hero animation**
 
 Write `docs/ladders.md` with:
 
@@ -1073,7 +1074,7 @@ Write `docs/ladders.md` with:
 - Re-bake command from Task 6 Step 2; do not edit generated terrain manually.
 - Focused test commands for all three new test files.
 
-- [ ] **Step 4: Run runtime and regression verification**
+- [x] **Step 4: Run runtime and regression verification**
 
 Run all three new tests, existing input/profile/motor/player-effects/Killzone/movement-lab tests, the full suite, and:
 
@@ -1085,7 +1086,7 @@ git diff --check
 
 Expected: all focused tests and both scene runs exit 0; full suite has no new failure beyond the recorded SavePoint baseline. Request an independent code review, fix Critical/Important findings, and rerun the affected tests.
 
-- [ ] **Step 5: Commit owned integration files**
+- [x] **Step 5: Commit owned integration files**
 
 ```powershell
 git add -- scripts/tools/rebake_room.gd docs/ladders.md docs/superpowers/plans/2026-11-15-ladder-climbing.md tests/runtime_suite.gd
@@ -1094,3 +1095,13 @@ git commit -m "docs: add ladder authoring and animation guide"
 ```
 
 Leave user-owned source tiles/maps/template modifications unstaged, and report the intentional working-tree state rather than committing them wholesale.
+
+## Execution Result
+
+- Implemented vertical intent, climb tuning, ladder zones, free/repeated jumping, S climb, S+Jump latched fast drop, player composition, alternative-tile scanning, and the 20-frame Hero animation driver.
+- Source `room_01_00` and its baked terrain both generate ladder zones at runtime. A regression test uses a 320 px non-zero room origin to prove world alignment.
+- RoomBaker preserves text UIDs in headless mode, commits UID mappings only after successful installation, and captures/restores output UID mappings during rollback. Tests cover repeated bakes, conflicts, validation failures, and injected installation failure.
+- Hero tests cover all atlas regions, animation priority, direction flips, climb idle, the 85 px/s run threshold, 2-second idle breathing, and repeated jump restart.
+- Input/profile/ladder/tile/Hero/RoomBaker/player-effects/Killzone/motor/movement-lab/template tests all exit 0. Source room and main scene also exit 0.
+- The full suite still exits 1 only for the pre-existing `SavePoint/VisualRoot` versus `Visual` mismatch. UID cache warnings were eliminated by preserving UIDs and running the documented `--import` refresh after headless baking.
+- The user-owned source tiles, maps, template debug additions, and generated room outputs remain uncommitted in the working tree rather than being mixed wholesale into feature commits.

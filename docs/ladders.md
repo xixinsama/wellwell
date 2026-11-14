@@ -14,6 +14,7 @@
 
 ```powershell
 godot --headless --path . -s res://scripts/tools/rebake_room.gd -- res://scenes/levels/room_01_00.tscn
+godot --headless --path . --import
 ```
 
 该工具只处理命令行指定的一个源房间。
