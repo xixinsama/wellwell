@@ -26,16 +26,19 @@ func run() -> Array[String]:
 		instance.draw(frame)
 		if _visible_pixels(frame) == 0:
 			failures.append("effect has no visible key frame: %s" % path)
-		instance.update(float(meta.duration) + 0.1)
+		var end_instance: RefCounted = Px.createFx(script, {"x": float(meta.origin[0]), "y": float(meta.origin[1])})
+		end_instance.update(float(meta.duration))
 		frame.clear()
-		instance.draw(frame)
+		end_instance.draw(frame)
 		if _visible_pixels(frame) != 0:
-			failures.append("one-shot does not end empty: %s" % path)
+			failures.append("one-shot is not empty at exact duration: %s" % path)
+	_assert_jump_debris(Px, failures)
 	_assert_land_spread(Px, failures)
 	_assert_hurt_falls(Px, failures)
 	_assert_component_cadence_and_space(failures)
 	_assert_component_direction_and_completion(failures)
 	_assert_player_composition(failures)
+	_assert_real_landing_and_lock(failures)
 	_assert_controller_event_order(failures)
 	return failures
 
@@ -46,6 +49,35 @@ func _visible_pixels(frame: RefCounted) -> int:
 		if color != 0:
 			count += 1
 	return count
+
+
+func _assert_jump_debris(Px: RefCounted, failures: Array[String]) -> void:
+	var script := load(EFFECT_PATHS[0]) as Script
+	if script == null:
+		return
+	var meta: Dictionary = script.get("meta")
+	var instance: RefCounted = Px.createFx(script, {})
+	var particles: RefCounted = instance.impl.get("particles")
+	var debris_indices: Array[int] = []
+	var initial_y: Array[float] = []
+	for index: int in range(particles.list.size()):
+		var particle: Dictionary = particles.list[index]
+		if int(particle.k) == int(Px.P.FLAKE):
+			debris_indices.append(index)
+			initial_y.append(particle.y)
+	if debris_indices.size() != 3:
+		failures.append("jump must emit three fading downward flakes")
+		return
+	instance.update(0.16)
+	var bottom: float = float(meta.size[1]) - float(meta.origin[1])
+	for index: int in range(debris_indices.size()):
+		var particle: Dictionary = particles.list[debris_indices[index]]
+		if float(particle.y) <= initial_y[index]:
+			failures.append("jump flakes must move downward")
+		if float(particle.y) >= bottom - 0.5:
+			failures.append("jump flakes leave the canvas before mid-flight")
+		if float(particle.life) <= 0.0:
+			failures.append("jump flakes must remain alive at mid-flight")
 
 
 func _assert_land_spread(Px: RefCounted, failures: Array[String]) -> void:
@@ -130,6 +162,8 @@ func _assert_component_direction_and_completion(failures: Array[String]) -> void
 	for child: Node in effects.get_children():
 		if not bool(child.get("free_when_done")):
 			failures.append("one-shot does not free itself")
+		if int(child.get("z_index")) != 1:
+			failures.append("effect draw order must stay in front of the player")
 		child.call("_process", 2.0)
 		if not child.is_queued_for_deletion():
 			failures.append("finished one-shot was not queued for release")
@@ -139,6 +173,7 @@ func _assert_component_direction_and_completion(failures: Array[String]) -> void
 class EffectsRecorder:
 	extends Node
 	var events: Array[String] = []
+	var motion_samples: Array[Dictionary] = []
 
 	func play_jump() -> void:
 		events.append("jump")
@@ -150,7 +185,7 @@ class EffectsRecorder:
 		events.append("hurt:%s" % str((get_parent() as Node2D).global_position))
 
 	func update_motion(_delta: float, _grounded: bool, _speed: float, _facing: int) -> void:
-		pass
+		motion_samples.append({"grounded": _grounded, "speed": _speed})
 
 	func clear_effects() -> void:
 		events.append("clear")
@@ -205,6 +240,64 @@ func _assert_player_composition(failures: Array[String]) -> void:
 		if recorder.events.count("jump") != 1:
 			failures.append("actual motor jump did not emit exactly one jump effect")
 	player.free()
+
+
+func _assert_real_landing_and_lock(failures: Array[String]) -> void:
+	var packed := load("res://scenes/player/player.tscn") as PackedScene
+	if packed == null:
+		return
+	var floor_body := StaticBody2D.new()
+	floor_body.position = Vector2(0, 4)
+	var floor_shape := CollisionShape2D.new()
+	var rectangle := RectangleShape2D.new()
+	rectangle.size = Vector2(128, 8)
+	floor_shape.shape = rectangle
+	floor_body.add_child(floor_shape)
+	add_child(floor_body)
+	var player := packed.instantiate() as CharacterBody2D
+	var old_effects := player.get_node_or_null("MotionEffects")
+	if old_effects != null:
+		player.remove_child(old_effects)
+		old_effects.free()
+	var recorder := EffectsRecorder.new()
+	recorder.name = "MotionEffects"
+	player.add_child(recorder)
+	player.position = Vector2.ZERO
+	add_child(player)
+	player.set_physics_process(false)
+	player.call("set_input_source", StubInput.new(load("res://addons/platformer_kit/character/input/character_intent.gd").new()))
+	for index: int in range(2):
+		player.call("_physics_process", 1.0 / 60.0)
+	if recorder.events.count("land") != 0:
+		failures.append("initial or continuous grounding emitted a landing effect")
+	player.global_position = Vector2(0, -24)
+	player.velocity = Vector2.ZERO
+	recorder.events.clear()
+	for index: int in range(120):
+		player.call("_physics_process", 1.0 / 60.0)
+		if recorder.events.count("land") == 1:
+			break
+	if recorder.events.count("land") != 1:
+		failures.append("airborne to grounded did not emit exactly one landing effect")
+	for index: int in range(10):
+		player.call("_physics_process", 1.0 / 60.0)
+	if recorder.events.count("land") != 1:
+		failures.append("continuous grounding repeated the landing effect")
+	recorder.motion_samples.clear()
+	player.call("set_control_locked", true)
+	for index: int in range(5):
+		player.call("_physics_process", 1.0 / 60.0)
+	if not recorder.motion_samples.is_empty():
+		failures.append("control-locked player continued running-effect updates")
+	player.call("set_control_locked", false)
+	recorder.events.clear()
+	player.call("respawn_at", Vector2.ZERO)
+	recorder.events.clear()
+	player.call("_physics_process", 1.0 / 60.0)
+	if recorder.events.has("land"):
+		failures.append("respawn falsely emitted landing on its first motion sample")
+	player.free()
+	floor_body.free()
 
 
 func _assert_controller_event_order(failures: Array[String]) -> void:

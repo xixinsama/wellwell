@@ -13,6 +13,24 @@ class FakePlayer:
 		events.append("hurt:%s" % str(global_position))
 
 
+class RespawnOnlyPlayer:
+	extends Node2D
+	var respawn_count := 0
+
+	func respawn_at(_target: Vector2) -> void:
+		respawn_count += 1
+
+
+class RespawnWithoutHurtPlayer:
+	extends Node2D
+	var spawn_position := Vector2(32, 96)
+	var respawn_count := 0
+
+	func respawn_at(target: Vector2) -> void:
+		global_position = target
+		respawn_count += 1
+
+
 func run() -> Array[String]:
 	var failures: Array[String] = []
 	var packed := load("res://scenes/world/killzone.tscn") as PackedScene
@@ -34,7 +52,21 @@ func run() -> Array[String]:
 	zone.body_entered.emit(bystander)
 	if player.events.size() != 2:
 		failures.append("non-player contact retriggered Killzone")
+	var invalid_player := RespawnOnlyPlayer.new()
+	invalid_player.add_to_group("player")
+	add_child(invalid_player)
+	zone.body_entered.emit(invalid_player)
+	if invalid_player.respawn_count != 0:
+		failures.append("player without spawn_position should be ignored")
+	var player_without_hurt := RespawnWithoutHurtPlayer.new()
+	player_without_hurt.add_to_group("player")
+	add_child(player_without_hurt)
+	zone.body_entered.emit(player_without_hurt)
+	if player_without_hurt.respawn_count != 1 or player_without_hurt.global_position != player_without_hurt.spawn_position:
+		failures.append("missing hurt-effect interface must not block respawn")
 	zone.free()
 	player.free()
 	bystander.free()
+	invalid_player.free()
+	player_without_hurt.free()
 	return failures

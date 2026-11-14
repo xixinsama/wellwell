@@ -48,6 +48,7 @@ func clear_effects() -> void:
 func _spawn(effect_script: Script, flipped: bool = false, offset: Vector2 = Vector2.ZERO) -> Node2D:
 	var fx := PIXEL_FX.new() as Node2D
 	fx.top_level = true
+	fx.z_index = 1
 	fx.set("effect_script", effect_script)
 	fx.set("autoplay", false)
 	fx.set("free_when_done", true)
