@@ -33,6 +33,8 @@ func run() -> Array[String]:
 			failures.append("one-shot does not end empty: %s" % path)
 	_assert_land_spread(Px, failures)
 	_assert_hurt_falls(Px, failures)
+	_assert_component_cadence_and_space(failures)
+	_assert_component_direction_and_completion(failures)
 	return failures
 
 
@@ -73,3 +75,60 @@ func _assert_hurt_falls(Px: RefCounted, failures: Array[String]) -> void:
 		if float(particles.list[index].y) <= initial_y[index]:
 			failures.append("respawn hurt particles must fall downward")
 			return
+
+
+func _assert_component_cadence_and_space(failures: Array[String]) -> void:
+	var script := load("res://game/player/player_motion_effects.gd") as Script
+	if script == null:
+		failures.append("player motion effects component is missing")
+		return
+	var actor := Node2D.new()
+	add_child(actor)
+	actor.global_position = Vector2(12, 18)
+	var effects := script.new() as Node2D
+	actor.add_child(effects)
+	effects.call("update_motion", 0.14, true, 100.0, 1)
+	if effects.get_child_count() != 1:
+		failures.append("running did not emit one footstep")
+	var footstep := effects.get_child(0) as Node2D
+	var emitted_at := footstep.global_position
+	actor.global_position.x += 30.0
+	if footstep.global_position != emitted_at:
+		failures.append("footstep followed the actor instead of staying in world space")
+	effects.call("update_motion", 0.01, true, 100.0, 1)
+	if effects.get_child_count() != 1:
+		failures.append("running ignored its emission interval")
+	effects.call("play_land")
+	var count_after_land := effects.get_child_count()
+	effects.call("update_motion", 0.01, true, 100.0, 1)
+	if effects.get_child_count() != count_after_land:
+		failures.append("landing and running emitted overlapping dust")
+	effects.call("update_motion", 0.2, false, 100.0, 1)
+	effects.call("update_motion", 0.2, true, 0.0, 1)
+	if effects.get_child_count() != count_after_land:
+		failures.append("airborne or stationary movement emitted running dust")
+	effects.call("clear_effects")
+	for child: Node in effects.get_children():
+		if not child.is_queued_for_deletion():
+			failures.append("clear_effects did not release transient nodes")
+	actor.free()
+
+
+func _assert_component_direction_and_completion(failures: Array[String]) -> void:
+	var script := load("res://game/player/player_motion_effects.gd") as Script
+	if script == null:
+		return
+	var effects := script.new() as Node2D
+	add_child(effects)
+	effects.call("update_motion", 0.14, true, -100.0, -1)
+	if effects.get_child_count() != 1 or not bool(effects.get_child(0).get("flip")):
+		failures.append("left-running dust was not mirrored")
+	effects.call("play_jump")
+	effects.call("play_hurt")
+	for child: Node in effects.get_children():
+		if not bool(child.get("free_when_done")):
+			failures.append("one-shot does not free itself")
+		child.call("_process", 2.0)
+		if not child.is_queued_for_deletion():
+			failures.append("finished one-shot was not queued for release")
+	effects.free()
