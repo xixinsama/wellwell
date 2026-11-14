@@ -23,6 +23,7 @@ func run() -> Array[String]:
 
 func _assert_player_input_adapter(failures: Array[String]) -> void:
 	var source: RefCounted = FAKE_PLAYER_INPUT_SOURCE.new()
+	var neutral: RefCounted = (load(INPUT_SOURCE_PATH) as Script).new().call("get_intent")
 	var test_action := &"test_ability_action"
 	source.set("additional_actions", Array([test_action], TYPE_STRING_NAME, &"", null))
 	source.set("pressed_actions", Array([test_action], TYPE_STRING_NAME, &"", null))
@@ -41,3 +42,17 @@ func _assert_player_input_adapter(failures: Array[String]) -> void:
 		failures.append("PlayerInputSource did not translate held jump input")
 	if intent == null or not intent.has_method("is_action_pressed") or not intent.call("is_action_pressed", test_action):
 		failures.append("PlayerInputSource did not capture a configured named action")
+	Input.action_press("move_up")
+	var up_intent: RefCounted = source.call("get_intent")
+	Input.action_release("move_up")
+	if up_intent == null or not "vertical_axis" in up_intent or not is_equal_approx(float(up_intent.get("vertical_axis")), -1.0):
+		failures.append("PlayerInputSource did not translate move_up to negative vertical_axis")
+	Input.action_press("move_down")
+	var down_intent: RefCounted = source.call("get_intent")
+	Input.action_release("move_down")
+	if down_intent == null or not "vertical_axis" in down_intent or not is_equal_approx(float(down_intent.get("vertical_axis")), 1.0):
+		failures.append("PlayerInputSource did not translate move_down to positive vertical_axis")
+	if not "vertical_axis" in neutral:
+		failures.append("CharacterIntent is missing vertical_axis")
+	elif not is_zero_approx(float(neutral.get("vertical_axis"))):
+		failures.append("neutral CharacterIntent must have zero vertical_axis")

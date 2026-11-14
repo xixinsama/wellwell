@@ -14,4 +14,5 @@ extends Resource
 @export var max_fall_speed := 300.0
 @export var jump_buffer_time := 0.075
 @export var coyote_time := 0.085
+@export var climb_speed := 72.0
 

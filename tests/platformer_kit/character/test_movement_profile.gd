@@ -17,6 +17,7 @@ const EXPECTED_VALUES := {
 	"max_fall_speed": 300.0,
 	"jump_buffer_time": 0.075,
 	"coyote_time": 0.085,
+	"climb_speed": 72.0,
 }
 
 
@@ -30,6 +31,9 @@ func run() -> Array[String]:
 	if profile == null:
 		return ["default MovementProfile resource could not be loaded"]
 	for property_name: String in EXPECTED_VALUES:
+		if not property_name in profile:
+			failures.append("MovementProfile is missing expected value: %s" % property_name)
+			continue
 		if not is_equal_approx(float(profile.get(property_name)), float(EXPECTED_VALUES[property_name])):
 			failures.append("default MovementProfile changed current value: %s" % property_name)
 	return failures

@@ -2,6 +2,7 @@ class_name CharacterIntent
 extends RefCounted
 
 var move_axis := 0.0
+var vertical_axis := 0.0
 var jump_pressed := false
 var jump_released := false
 var jump_held := false
