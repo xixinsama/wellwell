@@ -35,6 +35,8 @@ func run() -> Array[String]:
 	_assert_hurt_falls(Px, failures)
 	_assert_component_cadence_and_space(failures)
 	_assert_component_direction_and_completion(failures)
+	_assert_player_composition(failures)
+	_assert_controller_event_order(failures)
 	return failures
 
 
@@ -132,3 +134,86 @@ func _assert_component_direction_and_completion(failures: Array[String]) -> void
 		if not child.is_queued_for_deletion():
 			failures.append("finished one-shot was not queued for release")
 	effects.free()
+
+
+class EffectsRecorder:
+	extends Node
+	var events: Array[String] = []
+
+	func play_jump() -> void:
+		events.append("jump")
+
+	func play_land() -> void:
+		events.append("land")
+
+	func play_hurt() -> void:
+		events.append("hurt:%s" % str((get_parent() as Node2D).global_position))
+
+	func update_motion(_delta: float, _grounded: bool, _speed: float, _facing: int) -> void:
+		pass
+
+	func clear_effects() -> void:
+		events.append("clear")
+
+
+class StubInput:
+	extends RefCounted
+	var intent: RefCounted
+
+	func _init(value: RefCounted) -> void:
+		intent = value
+
+	func get_intent() -> RefCounted:
+		return intent
+
+
+func _assert_player_composition(failures: Array[String]) -> void:
+	var packed := load("res://scenes/player/player.tscn") as PackedScene
+	if packed == null:
+		failures.append("player scene is missing")
+		return
+	var player := packed.instantiate() as CharacterBody2D
+	var old_effects := player.get_node_or_null("MotionEffects")
+	if old_effects != null:
+		player.remove_child(old_effects)
+		old_effects.free()
+	var recorder := EffectsRecorder.new()
+	recorder.name = "MotionEffects"
+	player.add_child(recorder)
+	add_child(player)
+	player.set_physics_process(false)
+	if not player.has_method("play_hurt_effect"):
+		failures.append("player has no explicit post-respawn hurt-effect entry")
+	else:
+		player.call("respawn_at", Vector2(68, 140))
+		if recorder.events != ["clear"]:
+			failures.append("ordinary respawn must clear old effects without hurt: %s" % str(recorder.events))
+		player.call("play_hurt_effect")
+		if recorder.events.back() != "hurt:%s" % str(Vector2(68, 140)):
+			failures.append("hurt effect did not use the post-respawn position: %s" % str(recorder.events))
+	if not "_motion_effects" in player:
+		failures.append("player controller does not compose MotionEffects")
+	else:
+		recorder.events.clear()
+		var context: RefCounted = player.call("get_movement_context")
+		context.set("coyote_remaining", 0.05)
+		var intent: RefCounted = load("res://addons/platformer_kit/character/input/character_intent.gd").new()
+		intent.set("jump_pressed", true)
+		intent.set("jump_held", true)
+		player.call("set_input_source", StubInput.new(intent))
+		player.call("_physics_process", 1.0 / 60.0)
+		if recorder.events.count("jump") != 1:
+			failures.append("actual motor jump did not emit exactly one jump effect")
+	player.free()
+
+
+func _assert_controller_event_order(failures: Array[String]) -> void:
+	var source := FileAccess.get_file_as_string("res://scripts/player/player_controller.gd")
+	var jump_hook := source.find("_movement_context.just_jumped")
+	var slide := source.find("move_and_slide()")
+	var land_hook := source.find("not was_on_floor and is_on_floor()")
+	var run_hook := source.find("\"update_motion\"", slide)
+	if jump_hook < 0:
+		failures.append("jump effect is not driven by actual just_jumped")
+	if slide < 0 or land_hook <= slide or run_hook <= slide:
+		failures.append("landing and running hooks must follow move_and_slide")

@@ -26,9 +26,11 @@ var _environment: RefCounted = ENVIRONMENT_SNAPSHOT.new()
 var _sensors: RefCounted = CHARACTER_SENSORS.new()
 var _input_source: RefCounted = PLAYER_INPUT_SOURCE.new()
 var _world_velocity := Vector2.ZERO
+var _has_motion_sample := false
 
 @onready var sprite_root: Node2D = $SpriteRoot
 @onready var _ability_loadout: Node = get_node_or_null("AbilityLoadout")
+@onready var _motion_effects: Node = get_node_or_null("MotionEffects")
 
 
 func _ready() -> void:
@@ -87,14 +89,22 @@ func _physics_process(delta: float) -> void:
     _capture_environment()
     _movement_context.velocity = velocity
     _motor.call("step", _movement_context, intent, _environment, profile, delta)
+    if _movement_context.just_jumped and _motion_effects != null:
+        _motion_effects.call("play_jump")
     velocity = _movement_context.velocity
     _update_facing(intent.move_axis)
     _apply_ability_motion(intent)
     _recover_visual(delta)
 
     move_and_slide()
+    var landed := _has_motion_sample and not was_on_floor and is_on_floor()
+    if landed and _motion_effects != null:
+        _motion_effects.call("play_land")
     _movement_context.velocity = velocity
     _world_velocity = get_real_velocity()
+    if _motion_effects != null:
+        _motion_effects.call("update_motion", delta, is_on_floor(), _world_velocity.x, facing)
+    _has_motion_sample = true
     _capture_environment()
     was_on_floor = is_on_floor()
 
@@ -116,12 +126,20 @@ func _apply_ability_motion(intent: RefCounted) -> bool:
 
 
 func respawn_at(pos: Vector2) -> void:
+    if _motion_effects != null:
+        _motion_effects.call("clear_effects")
+    _has_motion_sample = false
     global_position = pos
     spawn_position = pos
     velocity = Vector2.ZERO
     _world_velocity = Vector2.ZERO
     _movement_context.call("reset")
     sprite_root.scale = Vector2(facing, 1.0)
+
+
+func play_hurt_effect() -> void:
+    if _motion_effects != null:
+        _motion_effects.call("play_hurt")
 
 
 func get_debug_state() -> Dictionary:
