@@ -396,7 +396,30 @@ func _stable_canonical_key(value: Variant) -> String:
 	return "%d:%s" % [typeof(value), var_to_str(value)]
 
 
-func _after_staged_resources_saved(_staged_paths: Dictionary, _staged: Dictionary) -> Dictionary:
+func _after_staged_resources_saved(staged_paths: Dictionary, staged: Dictionary) -> Dictionary:
+	var outputs: Dictionary = staged.get("outputs", {})
+	for output_key: String in staged_paths:
+		var staged_path := String(staged_paths[output_key])
+		var final_path := String(outputs.get(output_key, ""))
+		if final_path.is_empty():
+			return _failure("could not preserve resource UID without a final output path")
+		var uid := _read_text_resource_uid(final_path)
+		if uid == ResourceUID.INVALID_ID:
+			uid = _registered_uid_for_path(final_path)
+		if uid == ResourceUID.INVALID_ID:
+			uid = ResourceLoader.get_resource_uid(final_path)
+		if uid == ResourceUID.INVALID_ID:
+			uid = ResourceUID.create_id()
+		if ResourceUID.has_id(uid):
+			var registered_path := ResourceUID.get_id_path(uid)
+			if registered_path != final_path and registered_path != staged_path:
+				return _failure("resource UID is registered to an unrelated path: %s" % registered_path)
+		if ResourceSaver.set_uid(staged_path, uid) != OK:
+			return _failure("could not preserve resource UID for staged output: %s" % staged_path)
+		if ResourceUID.has_id(uid):
+			ResourceUID.set_id(uid, staged_path)
+		else:
+			ResourceUID.add_id(uid, staged_path)
 	return _result(true, [], [])
 
 
@@ -512,6 +535,21 @@ func _remove_file(path: String) -> Error:
 func _forget_uid_path(uid: int, path: String) -> void:
 	if uid != ResourceUID.INVALID_ID and ResourceUID.has_id(uid) and ResourceUID.get_id_path(uid) == path:
 		ResourceUID.remove_id(uid)
+
+
+func _read_text_resource_uid(path: String) -> int:
+	if not FileAccess.file_exists(path):
+		return ResourceUID.INVALID_ID
+	var first_line := FileAccess.get_file_as_string(path).get_slice("\n", 0)
+	const MARKER := "uid=\""
+	var start := first_line.find(MARKER)
+	if start < 0:
+		return ResourceUID.INVALID_ID
+	start += MARKER.length()
+	var end := first_line.find("\"", start)
+	if end < 0:
+		return ResourceUID.INVALID_ID
+	return ResourceUID.text_to_id(first_line.substr(start, end - start))
 
 
 func _registered_uid_for_path(path: String) -> int:

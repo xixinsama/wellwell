@@ -91,4 +91,13 @@ func _assert_baked_output(failures: Array[String]) -> void:
 	var builder := terrain.get_node_or_null("Terrain/LadderAreaBuilder")
 	if builder == null or builder.get_child_count() == 0:
 		failures.append("saved baked terrain has no runtime ladder zones")
+	var expected_uids := {
+		"res://resources/rooms/generated/room_01_00.tres": "uid://cu73ap10eduij",
+		"res://scenes/rooms/generated/room_01_00/runtime.tscn": "uid://wxounvpgtvcs",
+		"res://scenes/rooms/generated/room_01_00/terrain.tscn": "uid://dfsicbqifkxqn",
+	}
+	for path: String in expected_uids:
+		var first_line := FileAccess.get_file_as_string(path).get_slice("\n", 0)
+		if not first_line.contains(expected_uids[path]):
+			failures.append("room bake did not preserve resource UID: %s" % path)
 	terrain.free()
