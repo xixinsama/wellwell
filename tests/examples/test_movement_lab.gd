@@ -29,6 +29,9 @@ func run() -> Array[String]:
 	var camera := lab.find_child("PixelCamera2D", true, false)
 	if camera == null or not camera.has_method("set_room_bounds"):
 		failures.append("movement_lab is missing the framework camera")
+	var killzone := lab.find_child("Killzone", true, false)
+	if killzone == null or not killzone.has_method("_on_body_entered"):
+		failures.append("movement_lab is missing the reusable Killzone preview")
 	var one_way := lab.find_child("OneWayPlatform", true, false)
 	var one_way_shape := one_way.find_child("CollisionShape2D", true, false) as CollisionShape2D if one_way != null else null
 	if one_way_shape == null or not one_way_shape.one_way_collision:
