@@ -37,6 +37,7 @@ func run() -> Array[String]:
 		failures.append("rebuild duplicated or lost ladder zones")
 	terrain.free()
 	_assert_template_and_room_bake(script, failures)
+	_assert_baked_output(failures)
 	return failures
 
 
@@ -78,3 +79,16 @@ func _assert_template_and_room_bake(script: Script, failures: Array[String]) -> 
 			failures.append("baked terrain did not generate zones at runtime")
 		terrain.free()
 	source.free()
+
+
+func _assert_baked_output(failures: Array[String]) -> void:
+	var packed := load("res://scenes/rooms/generated/room_01_00/terrain.tscn") as PackedScene
+	if packed == null:
+		failures.append("baked room_01_00 terrain is missing")
+		return
+	var terrain := packed.instantiate()
+	add_child(terrain)
+	var builder := terrain.get_node_or_null("Terrain/LadderAreaBuilder")
+	if builder == null or builder.get_child_count() == 0:
+		failures.append("saved baked terrain has no runtime ladder zones")
+	terrain.free()
