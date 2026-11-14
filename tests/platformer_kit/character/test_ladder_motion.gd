@@ -85,6 +85,7 @@ func run() -> Array[String]:
 	if bool(component.call("apply_motion", context, intent, profile, 0.1, false, false)):
 		failures.append("leaving the ladder must return control to ordinary Motor")
 	_assert_zone_and_detector(component, failures)
+	_assert_player_composition(failures)
 	body.free()
 	return failures
 
@@ -114,3 +115,25 @@ func _assert_zone_and_detector(component: Node2D, failures: Array[String]) -> vo
 		failures.append("leaving the ladder zone was not tracked")
 	zone.free()
 	ordinary.free()
+
+
+func _assert_player_composition(failures: Array[String]) -> void:
+	var packed := load("res://scenes/player/player.tscn") as PackedScene
+	var player := packed.instantiate() as CharacterBody2D
+	add_child(player)
+	player.set_physics_process(false)
+	if player.get_node_or_null("LadderMotion") == null:
+		failures.append("player scene is missing LadderMotion")
+	if not player.has_method("is_on_ladder") or not player.has_signal("climb_animation_requested"):
+		failures.append("player climb animation interface is missing")
+	var motion := player.get_node_or_null("LadderMotion")
+	if motion != null:
+		var zone := (load(ZONE_SCENE_PATH) as PackedScene).instantiate() as Area2D
+		add_child(zone)
+		(motion.get_node("Detector") as Area2D).area_entered.emit(zone)
+		if not bool(player.call("is_on_ladder")):
+			failures.append("player did not delegate ladder overlap state")
+		player.call("respawn_at", Vector2.ZERO)
+		motion.get_node("Detector").area_exited.emit(zone)
+		zone.free()
+	player.free()

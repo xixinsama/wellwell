@@ -1,6 +1,8 @@
 extends CharacterBody2D
 class_name PlayerController
 
+signal climb_animation_requested(active: bool, direction: Vector2)
+
 const PLAYER_TUNING_SCRIPT: Script = preload("res://scripts/player/player_tuning.gd")
 const MOVEMENT_PROFILE := preload("res://addons/platformer_kit/character/resources/movement_profile.gd")
 const CHARACTER_MOTOR := preload("res://addons/platformer_kit/character/motor/character_motor_2d.gd")
@@ -31,6 +33,8 @@ var _has_motion_sample := false
 @onready var sprite_root: Node2D = $SpriteRoot
 @onready var _ability_loadout: Node = get_node_or_null("AbilityLoadout")
 @onready var _motion_effects: Node = get_node_or_null("MotionEffects")
+@onready var _ladder_motion: Node = get_node_or_null("LadderMotion")
+@onready var _hero_animation: Node = get_node_or_null("SpriteRoot/HeroAnimation")
 
 
 func _ready() -> void:
@@ -40,6 +44,8 @@ func _ready() -> void:
     if spawn_position == Vector2.ZERO:
         spawn_position = global_position
     _input_source.set("additional_actions", Array([&"dash"], TYPE_STRING_NAME, &"", null))
+    if _ladder_motion != null and _ladder_motion.has_signal("climb_animation_requested"):
+        _ladder_motion.connect("climb_animation_requested", _on_climb_animation_requested)
 
 
 func set_input_source(value: RefCounted) -> bool:
@@ -65,12 +71,26 @@ func grant_ability_definition(definition: Resource) -> bool:
     return _ability_loadout != null and bool(_ability_loadout.call("grant_ability_definition", definition))
 
 
+func is_on_ladder() -> bool:
+    return _ladder_motion != null and bool(_ladder_motion.call("is_on_ladder"))
+
+
+func _on_climb_animation_requested(active: bool, direction: Vector2) -> void:
+    climb_animation_requested.emit(active, direction)
+    if _hero_animation != null:
+        _hero_animation.call("set_climb_state", active, direction)
+
+
 func set_control_locked(value: bool) -> void:
     control_locked = value
     if value:
         velocity = Vector2.ZERO
         _movement_context.velocity = Vector2.ZERO
         _world_velocity = Vector2.ZERO
+        if _ladder_motion != null:
+            _ladder_motion.call("reset")
+        if _hero_animation != null:
+            _hero_animation.call("reset")
 
 
 func _physics_process(delta: float) -> void:
@@ -88,7 +108,11 @@ func _physics_process(delta: float) -> void:
         _play_jump_intent_feedback()
     _capture_environment()
     _movement_context.velocity = velocity
-    _motor.call("step", _movement_context, intent, _environment, profile, delta)
+    var ladder_handled := false
+    if _ladder_motion != null:
+        ladder_handled = bool(_ladder_motion.call("step", _movement_context, intent, _environment, profile, delta))
+    if not ladder_handled:
+        _motor.call("step", _movement_context, intent, _environment, profile, delta)
     if _movement_context.just_jumped and _motion_effects != null:
         _motion_effects.call("play_jump")
     velocity = _movement_context.velocity
@@ -128,6 +152,10 @@ func _apply_ability_motion(intent: RefCounted) -> bool:
 func respawn_at(pos: Vector2) -> void:
     if _motion_effects != null:
         _motion_effects.call("clear_effects")
+    if _ladder_motion != null:
+        _ladder_motion.call("reset")
+    if _hero_animation != null:
+        _hero_animation.call("reset")
     _has_motion_sample = false
     global_position = pos
     spawn_position = pos

@@ -1,4 +1,4 @@
-[gd_scene load_steps=8 format=3 uid="uid://cejq022r3hjrd"]
+[gd_scene load_steps=9 format=3 uid="uid://cejq022r3hjrd"]
 
 [ext_resource type="Script" uid="uid://cbx1gcy30d8d2" path="res://scripts/player/player_controller.gd" id="1_player"]
 [ext_resource type="Resource" uid="uid://bo4x5hdpx5xu4" path="res://resources/player/default_player_tuning.tres" id="2_tuning"]
@@ -6,6 +6,7 @@
 [ext_resource type="Script" path="res://addons/platformer_abilities/runtime/ability_controller.gd" id="4_controller"]
 [ext_resource type="Resource" path="res://addons/platformer_abilities/abilities/dash/default_dash.tres" id="5_dash"]
 [ext_resource type="Script" path="res://game/player/player_motion_effects.gd" id="6_motion_effects"]
+[ext_resource type="Script" path="res://addons/platformer_kit/character/ladder/ladder_motion_component_2d.gd" id="7_ladder_motion"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_gmlin"]
 size = Vector2(6, 6)
@@ -49,3 +50,6 @@ script = ExtResource("4_controller")
 
 [node name="MotionEffects" type="Node2D" parent="."]
 script = ExtResource("6_motion_effects")
+
+[node name="LadderMotion" type="Node2D" parent="."]
+script = ExtResource("7_ladder_motion")
