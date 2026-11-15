@@ -1,5 +1,8 @@
 # Project Structure
 
+See `docs/architecture.md` for the template / mechanics / worlds dependency
+rules and the branch/worktree policy.
+
 ## Runtime
 
 - `scenes/app/main.tscn`: application entry scene.
@@ -17,11 +20,12 @@
 - `scenes/rooms/source/`: editable room source scenes. Do not hand-edit generated files.
 - `scenes/rooms/generated/<room_id>/`: baked runtime and terrain scenes.
 - `resources/rooms/generated/<room_id>.tres`: baked local `RoomData`.
-- `addons/world_editor/`: optional main-screen editor plugin and its authoring helpers.
+- `addons/world_editor/`: optional main-screen World Editor and its authoring helpers.
+- `addons/world_editor/world_editor_main.tscn`: three-column world workbench (room list, canvas, inspector, status bar).
+- `addons/world_editor/authoring/world/room_status_service.gd`: fresh / stale / error / unknown room status.
 - `scenes/ui/world_select.tscn`: map selection screen shown after a save slot.
 - `resources/worlds/world_catalog.tres`: ordered list of worlds offered by the map screen; edit its `WorldData` entries in the inspector.
 - `resources/worlds/main_world.tres`: shipped `WorldData`, including room placements and connections.
-- `addons/world_editor/`: Godot main-screen World Editor.
 
 ## Conventions
 

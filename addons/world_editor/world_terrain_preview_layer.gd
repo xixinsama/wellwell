@@ -23,7 +23,7 @@ func _ready() -> void:
 
 
 func _draw() -> void:
-    draw_rect(Rect2(Vector2.ZERO, size), Color(0.106, 0.114, 0.129, 0.0), true)
+    draw_rect(Rect2(Vector2.ZERO, size), Color(0.106, 0.114, 0.129, 1.0), true)
 
 
 func set_view_transform(center_world: Vector2, zoom: float, viewport_size: Vector2) -> void:
@@ -99,11 +99,11 @@ func _refresh_room_internal(room_id: String) -> void:
     var room: Resource = _world.get_room(room_id)
     var scene := _load_terrain_scene(room)
     if scene == null:
-        preview_errors[room_id] = "terrain scene could not be loaded: %s" % room.terrain_scene_path
+        preview_errors[room_id] = WorldEditorLocalization.t("WE_PREVIEW_TERRAIN_LOAD_FAILED", [room.terrain_scene_path])
         return
     var instance := scene.instantiate() as Node2D
     if instance == null:
-        preview_errors[room_id] = "terrain scene root must be Node2D"
+        preview_errors[room_id] = WorldEditorLocalization.t("WE_PREVIEW_TERRAIN_ROOT_INVALID")
         return
     _configure_preview_tree(instance)
     var container := Control.new()

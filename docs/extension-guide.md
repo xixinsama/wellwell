@@ -150,6 +150,85 @@ does not create one collision shape per cell.
   a forced exit do not grant it. Extend the board rather than setting the motor
   flag directly so the carry bookkeeping stays authoritative.
 
+### Generated and shuffled boards
+
+- `PuzzleBoardAuto` replaces hand-authored `PuzzleTilePiece` children for
+  equal-size puzzles. Assign `source_layer_path` to a `TileMapLayer` holding the
+  whole picture and set `piece_size` / `puzzle_size`; the board splits the
+  painted area into chunks and writes one generated piece per chunk. An
+  optional `void_layer_path` layer marks void slider footprints (void wins over
+  solid cells in the same chunk).
+- Generation is editor-only (`@tool`). Generated pieces carry
+  `meta("puzzle_generated")` and are owned by the edited scene root, so they are
+  saved into the room source scene and baked with it. Regeneration only removes
+  generated nodes. The board regenerates automatically when the source layers
+  or export values change, and the inspector exposes a `重新生成` tool button for
+  forced rebuilds.
+- Put source layers outside `RoomContent` (for example under `PreviewOnly`) so
+  the bake never sees them, and place the board at the puzzle's top-left corner.
+  Source positions only provide cell contents.
+- `PuzzleBoardShuffler` walks random legal turns on load (default 120) and
+  adopts the result as the new initial layout, so `R` restores the scrambled
+  board instead of the authored one. `void_only = true` only walks turns that
+  move a void slider (primary or A+ induced); `seed = 0` randomizes per load,
+  any other value reproduces the same layout.
+- Place the shuffler after the board in the same parent
+  (`board_path = ^"../PuzzleBoard"`) for a synchronous ready-pass scramble, or
+  as a child of the board (`board_path = ^".."`, the default) and the shuffler
+  waits for the board's `ready` signal. `shuffle_now()` scrambles again at
+  runtime for debugging.
+- Scrambling goes through `rules.get_legal_moves()` and
+  `rules.resolve_turn()`, so every step is legal and reversible: a shuffled
+  board is always solvable. History is cleared, the player is not moved, and
+  the walk is pure data (`PuzzleScrambler`), so it can be tested headlessly.
+
+## World Editor Workbench
+
+The World main screen is a three-column workbench: room list, canvas, inspector
+and a status bar. Diagnostics are printed to the editor Output panel.
+
+- **Room list** shows a status dot (fresh / stale / error / unknown), the display
+  name, chunk size and origin. Search filters by name/id; `Ctrl`/`Shift` selects
+  several rooms; right-click opens Open Source / Bake / Validate / Focus /
+  Set as Start / Remove. Double-click opens the source scene.
+- **Canvas**: terrain previews sit under room frames; room labels show
+  `id · W×H · (cx,cy)`, statuses tint the outline, the start room gets a star.
+  `RoomAnnotationService` instantiates each baked runtime scene off-tree and
+  draws spawns (`S`), entrances (`E`) and entity markers with hover tooltips.
+  Drag empty space to box-select (intersection), `Ctrl+click` toggles a room,
+  drag a selected room to move the whole group (one undo action), `Delete`
+  removes the selected references, `Esc` clears, `Ctrl+A` selects all.
+- **Inspector** is read-only: display name, id, size, origin, source/runtime/
+  terrain paths, spawn and entrance lists, plus the Start row. Metadata such as
+  `display_name` and `room_id` stays authorative in the source scene; rebaking
+  would overwrite edits made here. Room actions live in the command bar (they
+  apply to the whole selection) and the context menus, not in the inspector.
+  Connection editing lives at the bottom.
+- **New Room** opens a small wizard (room id, display name, source path).
+  It writes the room as an inherited scene of `world_editor/room_template_scene`
+  (so the template's player/camera/debug children stay instanced), imports and
+  bakes it into the saved world, then opens the source scene for editing.
+- **Bake Stale (N)** bakes every room whose source changed since the last bake.
+  The count comes from the same fingerprint comparison as the list status.
+- **Diagnostics** go to the editor Output panel, not a separate problems panel:
+  room statuses, the session's last bake/validate failures and
+  `WorldLayoutModel.validate_world()` are printed as
+  `[World Editor][ERROR] ...` / `[World Editor][WARNING] ...`. The list and
+  inspector still show the per-room status label, and repeating the same
+  diagnostics is suppressed until the set changes.
+- **Status** comes from `authoring/world/room_status_service.gd`: `fresh` when
+  `RoomData.source_fingerprint` matches the current source sha256 and both
+  artifacts exist, `stale` when the source changed after the last bake, `error`
+  for missing sources/artifacts or a failed bake this session, and `unknown`
+  when the room has no fingerprint yet. Hashes are cached by (path, mtime, size).
+- New entity types appear on the canvas by extending
+  `authoring/world/room_annotation_service.gd`; new room statuses plug into the
+  status service and the list/inspector color maps.
+- The workbench follows the **editor language** (Editor Settings → Interface → Editor Language, `zh*` uses the `zh_CN` table,
+  everything else uses English (`world_editor_localization.gd`, `t(key, args)`).
+  Room status messages carry a `message_key` so the list, inspector and problems
+  panel show the same translated text. Add new UI strings to both tables.
+
 Good first game-specific extensions:
 
 - Moving platforms.
