@@ -22,6 +22,15 @@ SLOT_DELETE_MESSAGE,Delete Slot {slot}? This cannot be undone.,确定删除栏�
 SLOT_COPY_FAILED,Could not copy this save.,无法复制该存档。
 SLOT_DELETE_FAILED,Could not delete this save.,无法删除该存档。
 SETTINGS_TITLE,Settings,设置
+SETTINGS_NAV_HINT,LB / RB switches category,LB / RB 切换分类
+SETTINGS_SECTION_GENERAL,General,常规
+SETTINGS_SECTION_GENERAL_DESC,Language and display,语言与显示
+SETTINGS_SECTION_AUDIO,Audio,音频
+SETTINGS_SECTION_AUDIO_DESC,Volume for every audio bus,各音频总线音量
+SETTINGS_SECTION_GAMEPLAY,Gameplay,玩法
+SETTINGS_SECTION_GAMEPLAY_DESC,Comfort and visibility options,表现与可读性选项
+SETTINGS_SECTION_CONTROLS,Controls,操作
+SETTINGS_SECTION_CONTROLS_DESC,"Keyboard, gamepad, and bindings",键盘、手柄与按键配置
 SETTINGS_LANGUAGE,Language,语言
 SETTINGS_LANGUAGE_ENGLISH,English,English
 SETTINGS_LANGUAGE_CHINESE,Chinese,中文

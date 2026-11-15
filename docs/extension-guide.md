@@ -229,6 +229,29 @@ and a status bar. Diagnostics are printed to the editor Output panel.
   Room status messages carry a `message_key` so the list, inspector and problems
   panel show the same translated text. Add new UI strings to both tables.
 
+## Settings Pages
+
+The settings window is a small navigation shell (`scripts/ui/settings_menu.gd`)
+around category pages. It knows nothing about individual settings: rows are
+built from definitions in `scripts/save/settings_catalog.gd` by
+`SettingsRow`, and each category is a `SettingsPage` instance in
+`scenes/ui/settings.tscn` with its `section` export set.
+
+- To add a setting, append a `toggle`, `option`, `slider`, or `action`
+  definition to the catalog and add its label (and option labels) to
+  `localization/menu.csv`. Do not edit the menu script.
+- `GlobalSettings.get_value(key)` / `set_value(key, value)` is the UI contract.
+  Typed accessors such as `is_fog_enabled()` remain for gameplay code and
+  delegate to the same store, so existing `user://settings.json` keys keep
+  working.
+- Category metadata lives in `SettingsCatalog.SECTIONS`; the tab buttons carry
+  `metadata/section` and the page instances use the same `section` value.
+  `Page Up` / `Page Down` and the controller shoulders switch categories.
+- The Controls page opens the input mapping addon as a full-page overlay; its
+  Back button returns to the Controls page.
+- `reset_defaults()` restores every catalog default and still resets the input
+  mapping service from the same button.
+
 Good first game-specific extensions:
 
 - Moving platforms.

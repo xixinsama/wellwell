@@ -88,6 +88,7 @@ const TESTS: Array[Script] = [
 	preload("res://tests/tools/test_framework_documentation_contract.gd"),
 	preload("res://tests/ui/test_menu_contract.gd"),
 	preload("res://tests/ui/test_menu_features.gd"),
+	preload("res://tests/ui/test_settings_pages.gd"),
 	preload("res://tests/ui/test_world_select.gd"),
 	preload("res://tests/player/test_player_motion_effects.gd"),
 	preload("res://tests/world/test_killzone.gd"),

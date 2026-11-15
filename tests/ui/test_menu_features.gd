@@ -20,6 +20,15 @@ const REQUIRED_TRANSLATION_KEYS: Array[String] = [
 	"WORLD_SELECT_ENTER",
 	"WORLD_SELECT_EMPTY",
 	"SETTINGS_TITLE",
+	"SETTINGS_NAV_HINT",
+	"SETTINGS_SECTION_GENERAL",
+	"SETTINGS_SECTION_GENERAL_DESC",
+	"SETTINGS_SECTION_AUDIO",
+	"SETTINGS_SECTION_AUDIO_DESC",
+	"SETTINGS_SECTION_GAMEPLAY",
+	"SETTINGS_SECTION_GAMEPLAY_DESC",
+	"SETTINGS_SECTION_CONTROLS",
+	"SETTINGS_SECTION_CONTROLS_DESC",
 	"SETTINGS_LANGUAGE",
 	"SETTINGS_DISPLAY_MODE",
 	"SETTINGS_MASTER_VOLUME",
@@ -108,23 +117,21 @@ class FakeWorldSelect extends Control:
 
 
 class FakeSettings extends Node:
+	var values := {
+		"locale": "en",
+		"display_mode": "windowed",
+		"master_volume": 0.7,
+		"music_volume": 0.7,
+		"sfx_volume": 0.8,
+		"fog_enabled": true,
+		"camera_shake_enabled": true,
+		"one_way_drop_enabled": true,
+	}
 	var reset_count := 0
-	func get_locale() -> String:
-		return "en"
-	func get_display_mode() -> String:
-		return "windowed"
-	func get_master_volume() -> float:
-		return 0.7
-	func get_music_volume() -> float:
-		return 0.7
-	func get_sfx_volume() -> float:
-		return 0.8
-	func is_fog_enabled() -> bool:
-		return true
-	func is_camera_shake_enabled() -> bool:
-		return true
-	func is_one_way_drop_enabled() -> bool:
-		return true
+	func get_value(key: StringName) -> Variant:
+		return values.get(key)
+	func set_value(key: StringName, value: Variant) -> void:
+		values[key] = value
 	func reset_defaults() -> void:
 		reset_count += 1
 
@@ -165,11 +172,18 @@ func _assert_save_slots_contract(failures: Array[String]) -> void:
 	], failures)
 
 func _assert_settings_contract(failures: Array[String]) -> void:
-	_assert_scene_nodes("res://scenes/ui/settings.tscn", [
+	var packed := load("res://scenes/ui/settings.tscn") as PackedScene
+	var settings := packed.instantiate() as Control
+	add_child(settings)
+	for node_name: String in [
+		"GeneralTab", "AudioTab", "GameplayTab", "ControlsTab", "PageHost",
 		"LanguageOption", "DisplayModeOption", "MasterSlider", "MusicSlider",
 		"SfxSlider", "FogToggle", "CameraShakeToggle", "OneWayDropToggle",
 		"InputMappingButton", "InputMappingMenu", "BackButton"
-	], failures)
+	]:
+		if settings.find_child(node_name, true, false) == null:
+			failures.append("res://scenes/ui/settings.tscn is missing node %s" % node_name)
+	settings.free()
 
 func _assert_settings_api(failures: Array[String]) -> void:
 	var manager: Node = SETTINGS_MANAGER.new()
