@@ -1,19 +1,28 @@
 class_name SettingsRow
-extends HBoxContainer
+extends VBoxContainer
 
 signal value_changed(key: StringName, value: Variant)
 signal action_pressed(key: StringName)
 
 const DEFINITION: Script = preload("res://scripts/save/settings_definition.gd")
+const TOGGLE_ON := preload("res://resources/ui/toggle_on.png")
+const TOGGLE_OFF := preload("res://resources/ui/toggle_off.png")
 
 @onready var label: Label = %RowLabel
+@onready var description_label: Label = %RowDescription
 @onready var control_host: HBoxContainer = %ControlHost
+@onready var separator: HSeparator = %Separator
 
 var _definition: SettingsDefinition
 var _service: Node
 var _control: Control
 var _value_label: Label
 var _syncing := false
+
+
+func _ready() -> void:
+	add_theme_constant_override("separation", 0)
+	separator.modulate = Color(1.0, 1.0, 1.0, 0.28)
 
 
 func configure(definition: SettingsDefinition, service: Node) -> void:
@@ -41,6 +50,8 @@ func refresh() -> void:
 
 func _refresh_text() -> void:
 	label.text = tr(_definition.label_key)
+	description_label.text = tr(_definition.description_key)
+	description_label.visible = not _definition.description_key.is_empty()
 	match _definition.kind:
 		DEFINITION.KIND_OPTION:
 			_rebuild_options()
@@ -71,7 +82,7 @@ func _build_control() -> void:
 func _build_option() -> void:
 	var option := OptionButton.new()
 	option.name = _definition.node_name
-	option.custom_minimum_size = Vector2(220.0, 40.0)
+	option.custom_minimum_size = Vector2(232.0, 40.0)
 	option.item_selected.connect(_on_option_selected)
 	option.mouse_entered.connect(option.grab_focus)
 	control_host.add_child(option)
@@ -82,7 +93,7 @@ func _build_option() -> void:
 func _build_slider() -> void:
 	var slider := HSlider.new()
 	slider.name = _definition.node_name
-	slider.custom_minimum_size = Vector2(220.0, 36.0)
+	slider.custom_minimum_size = Vector2(300.0, 36.0)
 	slider.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	slider.min_value = _definition.min_value
 	slider.max_value = _definition.max_value
@@ -94,7 +105,7 @@ func _build_slider() -> void:
 
 	var value_label := Label.new()
 	value_label.name = _definition.node_name.trim_suffix("Slider") + "Value"
-	value_label.custom_minimum_size = Vector2(56.0, 0.0)
+	value_label.custom_minimum_size = Vector2(60.0, 0.0)
 	value_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	value_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	control_host.add_child(value_label)
@@ -104,7 +115,10 @@ func _build_slider() -> void:
 func _build_toggle() -> void:
 	var toggle := CheckButton.new()
 	toggle.name = _definition.node_name
-	toggle.custom_minimum_size = Vector2(120.0, 40.0)
+	toggle.custom_minimum_size = Vector2(44.0, 24.0)
+	toggle.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	toggle.add_theme_icon_override("checked", TOGGLE_ON)
+	toggle.add_theme_icon_override("unchecked", TOGGLE_OFF)
 	toggle.toggled.connect(_on_toggle_toggled)
 	toggle.mouse_entered.connect(toggle.grab_focus)
 	control_host.add_child(toggle)
@@ -115,7 +129,7 @@ func _build_toggle() -> void:
 func _build_action() -> void:
 	var button := Button.new()
 	button.name = _definition.node_name
-	button.custom_minimum_size = Vector2(220.0, 40.0)
+	button.custom_minimum_size = Vector2(232.0, 40.0)
 	button.pressed.connect(_on_action_pressed)
 	button.mouse_entered.connect(button.grab_focus)
 	button.text = tr(_definition.action_label_key)
@@ -144,6 +158,8 @@ func _sync_value() -> void:
 	var value: Variant = _definition.default_value
 	if _service != null and _service.has_method("get_value"):
 		value = _service.get_value(_definition.key)
+	if value == null:
+		value = _definition.default_value
 	_syncing = true
 	match _definition.kind:
 		DEFINITION.KIND_OPTION:
@@ -177,8 +193,7 @@ func _refresh_toggle_text() -> void:
 	if _control == null:
 		return
 	var toggle := _control as CheckButton
-	toggle.text = tr("COMMON_ON") if toggle.button_pressed else tr("COMMON_OFF")
-	toggle.alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	toggle.text = ""
 
 
 func _update_value_label() -> void:

@@ -1,36 +1,15 @@
-[gd_scene format=3 uid="uid://bqts0wbyvwmb0"]
+[gd_scene load_steps=2 format=3 uid="uid://bqts0wbyvwmb0"]
 
 [ext_resource type="Script" uid="uid://cge4empgdygjl" path="res://scripts/ui/settings/settings_page.gd" id="1_page"]
 
-[node name="SettingsPage" type="VBoxContainer" unique_id=77674241]
-theme_override_constants/separation = 18
+[node name="SettingsPage" type="ScrollContainer"]
+horizontal_scroll_mode = 0
+vertical_scroll_mode = 1
+scroll_deadzone = 4
+follow_focus = true
 script = ExtResource("1_page")
 
-[node name="Header" type="VBoxContainer" parent="." unique_id=609228007]
-layout_mode = 2
-theme_override_constants/separation = 4
-
-[node name="PageTitle" type="Label" parent="Header" unique_id=980518673]
+[node name="Rows" type="VBoxContainer" parent="."]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_colors/font_color = Color(0.92, 0.98, 0.98, 1)
-theme_override_font_sizes/font_size = 24
-
-[node name="PageDescription" type="Label" parent="Header" unique_id=733146869]
-unique_name_in_owner = true
-layout_mode = 2
-theme_override_colors/font_color = Color(0.48, 0.62, 0.66, 1)
-theme_override_font_sizes/font_size = 15
-autowrap_mode = 2
-
-[node name="Divider" type="HSeparator" parent="." unique_id=1540629280]
-layout_mode = 2
-
-[node name="Rows" type="VBoxContainer" parent="." unique_id=929547290]
-unique_name_in_owner = true
-layout_mode = 2
-theme_override_constants/separation = 10
-
-[node name="Spacer" type="Control" parent="." unique_id=1402114291]
-layout_mode = 2
-size_flags_vertical = 3
+size_flags_horizontal = 3

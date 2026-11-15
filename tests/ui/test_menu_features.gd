@@ -21,19 +21,24 @@ const REQUIRED_TRANSLATION_KEYS: Array[String] = [
 	"WORLD_SELECT_EMPTY",
 	"SETTINGS_TITLE",
 	"SETTINGS_NAV_HINT",
-	"SETTINGS_SECTION_GENERAL",
-	"SETTINGS_SECTION_GENERAL_DESC",
+	"SETTINGS_SECTION_GAME",
 	"SETTINGS_SECTION_AUDIO",
-	"SETTINGS_SECTION_AUDIO_DESC",
-	"SETTINGS_SECTION_GAMEPLAY",
-	"SETTINGS_SECTION_GAMEPLAY_DESC",
+	"SETTINGS_SECTION_VIDEO",
 	"SETTINGS_SECTION_CONTROLS",
-	"SETTINGS_SECTION_CONTROLS_DESC",
 	"SETTINGS_LANGUAGE",
 	"SETTINGS_DISPLAY_MODE",
+	"SETTINGS_BORDERLESS",
+	"SETTINGS_RESOLUTION",
+	"SETTINGS_RESOLUTION_2X",
+	"SETTINGS_RESOLUTION_16X",
+	"SETTINGS_VSYNC",
+	"SETTINGS_FPS_LIMIT",
+	"SETTINGS_FPS_30",
+	"SETTINGS_FPS_144",
 	"SETTINGS_MASTER_VOLUME",
 	"SETTINGS_MUSIC_VOLUME",
 	"SETTINGS_SFX_VOLUME",
+	"SETTINGS_MUTE_ON_FOCUS",
 	"SETTINGS_FOG",
 	"SETTINGS_CAMERA_SHAKE",
 	"SETTINGS_ONE_WAY_DROP",
@@ -120,9 +125,13 @@ class FakeSettings extends Node:
 	var values := {
 		"locale": "en",
 		"display_mode": "windowed",
+		"resolution_scale": "4",
+		"vsync_enabled": true,
+		"fps_limit": "120",
 		"master_volume": 0.7,
 		"music_volume": 0.7,
 		"sfx_volume": 0.8,
+		"mute_on_focus_loss": true,
 		"fog_enabled": true,
 		"camera_shake_enabled": true,
 		"one_way_drop_enabled": true,
@@ -176,9 +185,11 @@ func _assert_settings_contract(failures: Array[String]) -> void:
 	var settings := packed.instantiate() as Control
 	add_child(settings)
 	for node_name: String in [
-		"GeneralTab", "AudioTab", "GameplayTab", "ControlsTab", "PageHost",
-		"LanguageOption", "DisplayModeOption", "MasterSlider", "MusicSlider",
-		"SfxSlider", "FogToggle", "CameraShakeToggle", "OneWayDropToggle",
+		"GameTab", "AudioTab", "VideoTab", "ControlsTab", "PageHost",
+		"LanguageOption", "DisplayModeOption", "ResolutionOption",
+		"VsyncToggle", "FpsLimitOption", "MuteOnFocusToggle",
+		"MasterSlider", "MusicSlider", "SfxSlider",
+		"FogToggle", "CameraShakeToggle", "OneWayDropToggle",
 		"InputMappingButton", "InputMappingMenu", "BackButton"
 	]:
 		if settings.find_child(node_name, true, false) == null:
@@ -189,7 +200,10 @@ func _assert_settings_api(failures: Array[String]) -> void:
 	var manager: Node = SETTINGS_MANAGER.new()
 	for method_name: String in [
 		"get_locale", "set_locale", "set_display_mode", "is_camera_shake_enabled",
-		"set_camera_shake_enabled", "is_one_way_drop_enabled", "set_one_way_drop_enabled"
+		"set_camera_shake_enabled", "is_one_way_drop_enabled", "set_one_way_drop_enabled",
+		"get_resolution_scale", "set_resolution_scale", "is_vsync_enabled",
+		"set_vsync_enabled", "get_fps_limit", "set_fps_limit",
+		"is_mute_on_focus_loss_enabled", "set_mute_on_focus_loss_enabled"
 	]:
 		if not manager.has_method(method_name):
 			failures.append("settings API is missing: %s" % method_name)

@@ -1,31 +1,27 @@
 class_name SettingsCatalog
 extends RefCounted
 
-const GENERAL: StringName = &"general"
+const GAME: StringName = &"game"
 const AUDIO: StringName = &"audio"
-const GAMEPLAY: StringName = &"gameplay"
+const VIDEO: StringName = &"video"
 const CONTROLS: StringName = &"controls"
 
 const SECTIONS: Array[Dictionary] = [
 	{
-		"id": GENERAL,
-		"label_key": "SETTINGS_SECTION_GENERAL",
-		"description_key": "SETTINGS_SECTION_GENERAL_DESC",
+		"id": GAME,
+		"label_key": "SETTINGS_SECTION_GAME",
 	},
 	{
 		"id": AUDIO,
 		"label_key": "SETTINGS_SECTION_AUDIO",
-		"description_key": "SETTINGS_SECTION_AUDIO_DESC",
 	},
 	{
-		"id": GAMEPLAY,
-		"label_key": "SETTINGS_SECTION_GAMEPLAY",
-		"description_key": "SETTINGS_SECTION_GAMEPLAY_DESC",
+		"id": VIDEO,
+		"label_key": "SETTINGS_SECTION_VIDEO",
 	},
 	{
 		"id": CONTROLS,
 		"label_key": "SETTINGS_SECTION_CONTROLS",
-		"description_key": "SETTINGS_SECTION_CONTROLS_DESC",
 	},
 ]
 
@@ -76,25 +72,39 @@ static func _build_definitions() -> void:
 	_definitions = [
 		SettingsDefinition.option(
 			&"locale",
-			GENERAL,
+			GAME,
 			"SETTINGS_LANGUAGE",
 			"zh_CN",
 			"LanguageOption",
 			[
 				{"value": "en", "label_key": "SETTINGS_LANGUAGE_ENGLISH"},
 				{"value": "zh_CN", "label_key": "SETTINGS_LANGUAGE_CHINESE"},
-			]
+			],
+			"SETTINGS_DESC_LANGUAGE"
 		),
-		SettingsDefinition.option(
-			&"display_mode",
-			GENERAL,
-			"SETTINGS_DISPLAY_MODE",
-			"windowed",
-			"DisplayModeOption",
-			[
-				{"value": "windowed", "label_key": "SETTINGS_WINDOWED"},
-				{"value": "fullscreen", "label_key": "SETTINGS_FULLSCREEN"},
-			]
+		SettingsDefinition.toggle(
+			&"fog_enabled",
+			GAME,
+			"SETTINGS_FOG",
+			true,
+			"FogToggle",
+			"SETTINGS_DESC_FOG"
+		),
+		SettingsDefinition.toggle(
+			&"camera_shake_enabled",
+			GAME,
+			"SETTINGS_CAMERA_SHAKE",
+			true,
+			"CameraShakeToggle",
+			"SETTINGS_DESC_CAMERA_SHAKE"
+		),
+		SettingsDefinition.toggle(
+			&"one_way_drop_enabled",
+			GAME,
+			"SETTINGS_ONE_WAY_DROP",
+			true,
+			"OneWayDropToggle",
+			"SETTINGS_DESC_ONE_WAY_DROP"
 		),
 		SettingsDefinition.slider(
 			&"master_volume",
@@ -130,31 +140,66 @@ static func _build_definitions() -> void:
 			"percent"
 		),
 		SettingsDefinition.toggle(
-			&"fog_enabled",
-			GAMEPLAY,
-			"SETTINGS_FOG",
+			&"mute_on_focus_loss",
+			AUDIO,
+			"SETTINGS_MUTE_ON_FOCUS",
 			true,
-			"FogToggle"
+			"MuteOnFocusToggle",
+			"SETTINGS_DESC_MUTE_ON_FOCUS"
+		),
+		SettingsDefinition.option(
+			&"display_mode",
+			VIDEO,
+			"SETTINGS_DISPLAY_MODE",
+			"windowed",
+			"DisplayModeOption",
+			[
+				{"value": "windowed", "label_key": "SETTINGS_WINDOWED"},
+				{"value": "fullscreen", "label_key": "SETTINGS_FULLSCREEN"},
+				{"value": "borderless", "label_key": "SETTINGS_BORDERLESS"},
+			]
+		),
+		SettingsDefinition.option(
+			&"resolution_scale",
+			VIDEO,
+			"SETTINGS_RESOLUTION",
+			"4",
+			"ResolutionOption",
+			[
+				{"value": "2", "label_key": "SETTINGS_RESOLUTION_2X"},
+				{"value": "4", "label_key": "SETTINGS_RESOLUTION_4X"},
+				{"value": "8", "label_key": "SETTINGS_RESOLUTION_8X"},
+				{"value": "16", "label_key": "SETTINGS_RESOLUTION_16X"},
+			],
+			"SETTINGS_DESC_RESOLUTION"
 		),
 		SettingsDefinition.toggle(
-			&"camera_shake_enabled",
-			GAMEPLAY,
-			"SETTINGS_CAMERA_SHAKE",
+			&"vsync_enabled",
+			VIDEO,
+			"SETTINGS_VSYNC",
 			true,
-			"CameraShakeToggle"
+			"VsyncToggle"
 		),
-		SettingsDefinition.toggle(
-			&"one_way_drop_enabled",
-			GAMEPLAY,
-			"SETTINGS_ONE_WAY_DROP",
-			true,
-			"OneWayDropToggle"
+		SettingsDefinition.option(
+			&"fps_limit",
+			VIDEO,
+			"SETTINGS_FPS_LIMIT",
+			"120",
+			"FpsLimitOption",
+			[
+				{"value": "30", "label_key": "SETTINGS_FPS_30"},
+				{"value": "60", "label_key": "SETTINGS_FPS_60"},
+				{"value": "120", "label_key": "SETTINGS_FPS_120"},
+				{"value": "144", "label_key": "SETTINGS_FPS_144"},
+			],
+			"SETTINGS_DESC_FPS"
 		),
 		SettingsDefinition.action(
 			&"input_mapping",
 			CONTROLS,
 			"SETTINGS_INPUT_MAPPING",
 			"InputMappingButton",
-			"SETTINGS_INPUT_MAPPING_OPEN"
+			"SETTINGS_INPUT_MAPPING_OPEN",
+			"SETTINGS_DESC_INPUT_MAPPING"
 		),
 	]

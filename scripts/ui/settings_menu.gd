@@ -6,7 +6,7 @@ signal back_requested
 const CATALOG := preload("res://scripts/save/settings_catalog.gd")
 
 @onready var panel: PanelContainer = $Panel
-@onready var tabs: VBoxContainer = %Tabs
+@onready var tabs: HBoxContainer = %Tabs
 @onready var page_host: MarginContainer = %PageHost
 @onready var reset_button: Button = %ResetButton
 @onready var back_button: Button = %BackButton
@@ -16,7 +16,7 @@ var _settings: Node
 var _input_mapping: Node
 var _pages: Dictionary = {}
 var _tabs: Dictionary = {}
-var _active_section: StringName = CATALOG.GENERAL
+var _active_section: StringName = CATALOG.GAME
 var _syncing_tabs := false
 
 
@@ -142,9 +142,8 @@ func _wire_focus(section: StringName) -> void:
 	var first := page.focus_control()
 	if first == null:
 		return
-	first.focus_neighbor_left = first.get_path_to(tab)
 	first.focus_neighbor_top = first.get_path_to(tab)
-	tab.focus_neighbor_right = tab.get_path_to(first)
+	tab.focus_neighbor_bottom = tab.get_path_to(first)
 
 
 func _focus_page(section: StringName) -> void:
@@ -153,7 +152,7 @@ func _focus_page(section: StringName) -> void:
 		first.grab_focus.call_deferred()
 
 
-func _cycle_section(delta: int) -> void:
+func _cycle_section(delta: int, focus_content := true) -> void:
 	var ids: Array[StringName] = []
 	for metadata: Dictionary in CATALOG.sections():
 		ids.append(metadata["id"])
@@ -162,7 +161,9 @@ func _cycle_section(delta: int) -> void:
 		index = 0
 	else:
 		index = wrapi(index + delta, 0, ids.size())
-	_select_section(ids[index], true)
+	_select_section(ids[index], focus_content)
+	if not focus_content:
+		(_tabs[ids[index]] as Button).grab_focus.call_deferred()
 
 
 func _on_tab_toggled(enabled: bool, section: StringName) -> void:
@@ -175,11 +176,14 @@ func _on_tab_toggled(enabled: bool, section: StringName) -> void:
 
 
 func _on_tab_gui_input(event: InputEvent, _section: StringName) -> void:
-	if event.is_action_pressed("ui_up"):
-		_cycle_section(-1)
+	if event.is_action_pressed("ui_left"):
+		_cycle_section(-1, false)
+		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("ui_right"):
+		_cycle_section(1, false)
 		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("ui_down"):
-		_cycle_section(1)
+		_focus_page(_active_section)
 		get_viewport().set_input_as_handled()
 
 

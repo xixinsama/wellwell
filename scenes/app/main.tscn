@@ -7,6 +7,7 @@
 [ext_resource type="PackedScene" uid="uid://xdpcjsmnvhkj" path="res://addons/platformer_debug/runtime/debug_hud.tscn" id="7_debug_hud"]
 [ext_resource type="PackedScene" uid="uid://drj26wtbpstxe" path="res://scenes/ui/main_menu.tscn" id="8_main_menu"]
 [ext_resource type="PackedScene" uid="uid://dcpnuqlqrftuv" path="res://scenes/ui/settings.tscn" id="9_settings"]
+[ext_resource type="Texture2D" uid="uid://djeckuq805j2l" path="res://resources/ui/window_background.png" id="10_background"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_sugp2"]
 shader = ExtResource("2_jyhfs")
@@ -21,6 +22,18 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("1_main")
+
+[node name="WindowBackground" type="TextureRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("10_background")
+expand_mode = 1
+stretch_mode = 6
 
 [node name="SubViewportContainer" type="SubViewportContainer" parent="." unique_id=8119685]
 texture_filter = 1

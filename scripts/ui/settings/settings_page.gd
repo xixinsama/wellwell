@@ -1,5 +1,5 @@
 class_name SettingsPage
-extends VBoxContainer
+extends ScrollContainer
 
 signal action_requested(key: StringName)
 
@@ -8,40 +8,41 @@ const CATALOG := preload("res://scripts/save/settings_catalog.gd")
 
 @export var section: StringName = &""
 
-@onready var title_label: Label = %PageTitle
-@onready var description_label: Label = %PageDescription
 @onready var rows: VBoxContainer = %Rows
 
 var _service: Node
-var _rows: Array[SettingsRow] = []
+var _entries: Array[SettingsRow] = []
 var _rows_by_key: Dictionary = {}
 var _built := false
 
 
 func _ready() -> void:
+	horizontal_scroll_mode = SCROLL_MODE_DISABLED
+	vertical_scroll_mode = SCROLL_MODE_AUTO
 	_build()
 
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_TRANSLATION_CHANGED and is_node_ready():
-		_refresh_text()
+		refresh()
 
 
 func bind_service(service: Node) -> void:
 	_service = service
-	for row: SettingsRow in _rows:
+	for row: SettingsRow in _entries:
 		row.bind_service(service)
 
 
 func refresh() -> void:
 	_build()
-	_refresh_text()
+	for row: SettingsRow in _entries:
+		row.refresh()
 
 
 func focus_control() -> Control:
-	if _rows.is_empty():
+	if _entries.is_empty():
 		return null
-	return _rows[0].focus_control()
+	return _entries[0].focus_control()
 
 
 func focus_control_for(key: StringName) -> Control:
@@ -54,24 +55,16 @@ func _build() -> void:
 	if _built:
 		return
 	_built = true
-	_refresh_text()
+	rows.add_theme_constant_override("separation", 0)
 	for definition: SettingsDefinition in CATALOG.definitions_for(section):
 		var row := ROW_SCENE.instantiate() as SettingsRow
 		row.name = "%sRow" % definition.node_name
+		row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		rows.add_child(row)
 		row.configure(definition, _service)
 		row.action_pressed.connect(_on_action_pressed)
-		_rows.append(row)
+		_entries.append(row)
 		_rows_by_key[definition.key] = row
-
-
-func _refresh_text() -> void:
-	var metadata: Dictionary = CATALOG.section_metadata(section)
-	if not metadata.is_empty():
-		title_label.text = tr(String(metadata["label_key"]))
-		description_label.text = tr(String(metadata["description_key"]))
-	for row: SettingsRow in _rows:
-		row.refresh()
 
 
 func _on_action_pressed(key: StringName) -> void:

@@ -78,3 +78,4 @@ func setup_viewport_scale() -> void:
     viewport_container.size = display_size
     viewport_container.position = ((window_size - display_size) * 0.5).round()
     viewport_container.stretch = true
+    viewport_container.stretch_shrink = integer_scale

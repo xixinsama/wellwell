@@ -231,24 +231,32 @@ and a status bar. Diagnostics are printed to the editor Output panel.
 
 ## Settings Pages
 
-The settings window is a small navigation shell (`scripts/ui/settings_menu.gd`)
-around category pages. It knows nothing about individual settings: rows are
-built from definitions in `scripts/save/settings_catalog.gd` by
-`SettingsRow`, and each category is a `SettingsPage` instance in
-`scenes/ui/settings.tscn` with its `section` export set.
+The settings window is a full-screen scene (`scenes/ui/settings.tscn`) loaded
+next to the main menu in `scenes/app/main.tscn`. It is a small navigation shell
+(`scripts/ui/settings_menu.gd`) around four top tabs: Game, Audio, Video and
+Controls. Rows are built from definitions in
+`scripts/save/settings_catalog.gd` by `SettingsRow`; categories are
+`SettingsPage` instances in the settings scene with their `section` export set.
+There are no sub-headings inside a category: every setting is one row, and the
+page scrolls when the rows overflow.
 
 - To add a setting, append a `toggle`, `option`, `slider`, or `action`
-  definition to the catalog and add its label (and option labels) to
+  definition to the catalog and add its label, description and option labels to
   `localization/menu.csv`. Do not edit the menu script.
 - `GlobalSettings.get_value(key)` / `set_value(key, value)` is the UI contract.
   Typed accessors such as `is_fog_enabled()` remain for gameplay code and
   delegate to the same store, so existing `user://settings.json` keys keep
   working.
-- Category metadata lives in `SettingsCatalog.SECTIONS`; the tab buttons carry
-  `metadata/section` and the page instances use the same `section` value.
-  `Page Up` / `Page Down` and the controller shoulders switch categories.
-- The Controls page opens the input mapping addon as a full-page overlay; its
-  Back button returns to the Controls page.
+- Video settings apply immediately: `resolution_scale` is the integer pixel
+  scale (2X/4X/8X/16X of 320×180), `display_mode` supports windowed, exclusive
+  fullscreen and borderless fullscreen, `vsync_enabled` toggles VSync, and
+  `fps_limit` sets both `Engine.max_fps` and
+  `Engine.physics_ticks_per_second` to the same value.
+- The game view is centered at the largest integer scale that fits the window;
+  `resources/ui/window_background.png` fills the remaining area, so a non-16:9
+  window does not show black bars. The background is a replaceable `Texture2D`.
+- `mute_on_focus_loss` mutes the Master bus when the application loses focus and
+  restores it on return; it does not pause the game or change the volume slider.
 - `reset_defaults()` restores every catalog default and still resets the input
   mapping service from the same button.
 
