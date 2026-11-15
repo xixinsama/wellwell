@@ -8,6 +8,8 @@ extends Node2D
 
 var _climb_active := false
 var _climb_direction := Vector2.ZERO
+var _swim_active := false
+var _swim_direction := Vector2.ZERO
 var _idle_elapsed := 0.0
 var _current := ""
 var _facing := 1
@@ -19,9 +21,17 @@ func set_climb_state(active: bool, direction: Vector2) -> void:
 	_idle_elapsed = 0.0
 
 
+func set_swim_state(active: bool, direction: Vector2) -> void:
+	_swim_active = active
+	_swim_direction = direction
+	_idle_elapsed = 0.0
+
+
 func reset() -> void:
 	_climb_active = false
 	_climb_direction = Vector2.ZERO
+	_swim_active = false
+	_swim_direction = Vector2.ZERO
 	_idle_elapsed = 0.0
 	_current = ""
 	_facing = 1
@@ -43,12 +53,14 @@ func update_visual(delta: float, state: Dictionary) -> void:
 	var horizontal_speed := absf(velocity.x)
 	var has_input := absf(move_axis) > 0.01 or absf(vertical_axis) > 0.01
 	var has_motion := horizontal_speed >= 1.0 or (_climb_active and not _climb_direction.is_zero_approx())
-	if has_input or has_motion or just_jumped or (not grounded and not _climb_active):
+	if has_input or has_motion or just_jumped or _swim_active or (not grounded and not _climb_active):
 		_idle_elapsed = 0.0
 	else:
 		_idle_elapsed += maxf(delta, 0.0)
 	var target := ""
-	if _climb_active and absf(_climb_direction.y) > 0.01:
+	if _swim_active:
+		target = "swim" if _sprite.sprite_frames.has_animation(&"swim") else "climb"
+	elif _climb_active and absf(_climb_direction.y) > 0.01:
 		target = "climb"
 	elif not grounded and not _climb_active:
 		target = "jump" if velocity.y < 0.0 else "fall"

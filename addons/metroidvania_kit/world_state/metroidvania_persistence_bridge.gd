@@ -16,6 +16,7 @@ var _fog: Node
 var _adapter: RefCounted = SAVE_ADAPTER.new()
 var _explored_cells: Dictionary[String, bool] = {}
 var _explored_chunks: Dictionary[String, bool] = {}
+var _revealed_zones: Dictionary[String, bool] = {}
 
 
 func _exit_tree() -> void:
@@ -88,12 +89,28 @@ func get_explored_chunks() -> Array[String]:
 	return result
 
 
+func mark_zone_revealed(zone_id: String) -> bool:
+	if zone_id.is_empty() or _revealed_zones.has(zone_id):
+		return false
+	_revealed_zones[zone_id] = true
+	_queue_commit()
+	return true
+
+
+func get_revealed_zones() -> Array[String]:
+	var result: Array[String] = []
+	result.assign(_revealed_zones.keys())
+	result.sort()
+	return result
+
+
 func _on_snapshot_committing(snapshot: RefCounted) -> void:
 	_adapter.call("capture", snapshot, _progression, _discovery, _markers, _world_state, _fast_travel)
 	var state: Dictionary = snapshot.call("get_module_state", MODULE_ID)
 	state["fog"] = {
 		"cells": get_explored_cells(),
 		"chunks": get_explored_chunks(),
+		"zones": get_revealed_zones(),
 	}
 	snapshot.call("set_module_state", MODULE_ID, state)
 
@@ -109,6 +126,7 @@ func _restore(snapshot: RefCounted) -> bool:
 			return false
 		_explored_cells.clear()
 		_explored_chunks.clear()
+		_revealed_zones.clear()
 		_sync_fog()
 		state_restored.emit()
 		return true
@@ -119,6 +137,7 @@ func _restore(snapshot: RefCounted) -> bool:
 		return false
 	_explored_cells = parsed_fog["cells"]
 	_explored_chunks = parsed_fog["chunks"]
+	_revealed_zones = parsed_fog["zones"]
 	_sync_fog()
 	state_restored.emit()
 	return true
@@ -129,10 +148,12 @@ func _parse_fog_state(fog_state: Variant) -> Variant:
 		return null
 	var cells: Variant = fog_state.get("cells", [])
 	var chunks: Variant = fog_state.get("chunks", [])
-	if not cells is Array or not chunks is Array:
+	var zones: Variant = fog_state.get("zones", [])
+	if not cells is Array or not chunks is Array or not zones is Array:
 		return null
 	var parsed_cells: Dictionary[String, bool] = {}
 	var parsed_chunks: Dictionary[String, bool] = {}
+	var parsed_zones: Dictionary[String, bool] = {}
 	for value: Variant in cells:
 		if not value is String or String(value).is_empty():
 			return null
@@ -141,12 +162,18 @@ func _parse_fog_state(fog_state: Variant) -> Variant:
 		if not value is String or String(value).is_empty():
 			return null
 		parsed_chunks[String(value)] = true
-	return {"cells": parsed_cells, "chunks": parsed_chunks}
+	for value: Variant in zones:
+		if not value is String or String(value).is_empty():
+			return null
+		parsed_zones[String(value)] = true
+	return {"cells": parsed_cells, "chunks": parsed_chunks, "zones": parsed_zones}
 
 
 func _sync_fog() -> void:
 	if _fog != null and _fog.has_method("replace_explored_cells"):
 		_fog.call("replace_explored_cells", get_explored_cells())
+	if _fog != null and _fog.has_method("replace_revealed_zones"):
+		_fog.call("replace_revealed_zones", get_revealed_zones())
 
 
 func _queue_commit() -> void:

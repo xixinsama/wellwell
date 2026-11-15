@@ -37,6 +37,8 @@ SETTINGS_CAMERA_SHAKE,Camera Shake,镜头抖动
 SETTINGS_DESC_CAMERA_SHAKE,Feedback for hits and landings,受击、落地与冲刺反馈
 SETTINGS_ONE_WAY_DROP,Drop Through Platforms,下穿单向平台
 SETTINGS_DESC_ONE_WAY_DROP,Press down to fall through one-way platforms,按下方向键穿过单向平台
+SETTINGS_ONE_WAY_SIGHT,One-way Platforms Block Sight,单向平台遮挡视线
+SETTINGS_DESC_ONE_WAY_SIGHT,"A one-way platform hides the space below it when you stand on top",站在单向平台上方时，下方空间视为封闭并变黑
 SETTINGS_MASTER_VOLUME,Master Volume,主音量
 SETTINGS_MUSIC_VOLUME,Music Volume,音乐音量
 SETTINGS_SFX_VOLUME,Sound Volume,音效音量
@@ -91,3 +93,5 @@ WORLD_SELECT_TITLE,Select Map,选择地图
 WORLD_SELECT_SUBTITLE,Choose a world to enter,选择要进入的世界
 WORLD_SELECT_ENTER,Enter,进入
 WORLD_SELECT_EMPTY,No worlds configured,没有配置世界
+SETTINGS_ATMOSPHERE,Gas Simulation,气体模拟
+SETTINGS_DESC_ATMOSPHERE,Toggle the three drifting gas layers in the air,开关空气中三层不同密度的流动气体

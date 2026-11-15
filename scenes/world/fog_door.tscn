@@ -1,0 +1,32 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/world/fog_door.gd" id="1_door"]
+
+[sub_resource type="RectangleShape2D" id="Shape_body"]
+resource_local_to_scene = true
+size = Vector2(8, 16)
+
+[sub_resource type="RectangleShape2D" id="Shape_sense"]
+resource_local_to_scene = true
+size = Vector2(16, 24)
+
+[node name="FogDoor" type="Node2D"]
+z_index = 2
+script = ExtResource("1_door")
+
+[node name="Body" type="StaticBody2D" parent="."]
+collision_layer = 1
+collision_mask = 0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Body"]
+position = Vector2(4, 8)
+shape = SubResource("Shape_body")
+
+[node name="Sense" type="Area2D" parent="."]
+collision_layer = 0
+collision_mask = 2
+monitorable = false
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Sense"]
+position = Vector2(4, 8)
+shape = SubResource("Shape_sense")

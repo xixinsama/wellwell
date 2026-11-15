@@ -5,7 +5,11 @@ const REQUIRED_LAYERS: Array[String] = [
 	"BackTiles", "SolidTiles", "DetailTiles"
 ]
 
-const OPTIONAL_LAYERS: Array[String] = ["GlassTiles", "VisionBlockTiles", "MarkerTiles"]
+## Legacy layers from the old eight-layer template. They are still accepted and
+## rendered, but new rooms put every interactive tile into SolidTiles.
+const OPTIONAL_LAYERS: Array[String] = [
+	"GlassTiles", "VisionBlockTiles", "MarkerTiles", "CrumbleTiles", "CrumbleOneWayTiles"
+]
 
 static func validate_scene(scene_path: String) -> Array[String]:
 	var errors: Array[String] = []

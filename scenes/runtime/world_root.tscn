@@ -9,6 +9,9 @@
 [ext_resource type="Script" uid="uid://cjhh5xepsfcws" path="res://addons/platformer_kit/world/runtime/world_runtime.gd" id="6_runtime"]
 [ext_resource type="Script" uid="uid://cqy5sup1ibipw" path="res://addons/metroidvania_kit/world_state/metroidvania_persistence_bridge.gd" id="7_persistence_bridge"]
 [ext_resource type="PackedScene" uid="uid://d6sqanrtcnmo" path="res://addons/platformer_debug/runtime/debug_overlay_2d.tscn" id="8_debug_overlay"]
+[ext_resource type="Script" uid="uid://bcvhavis06bpg" path="res://scripts/world/crumble_runtime.gd" id="9_crumble"]
+[ext_resource type="Script" uid="uid://dleqflojm4oba" path="res://scripts/world/water/water_field.gd" id="10_water"]
+[ext_resource type="Script" uid="uid://fqwahtimacjq" path="res://scripts/world/atmosphere/atmosphere.gd" id="11_atmosphere"]
 
 [node name="WorldRoot" type="Node2D" unique_id=1531965248]
 script = ExtResource("1_session")
@@ -29,6 +32,19 @@ script = ExtResource("3_camera")
 target_path = NodePath("../Player")
 camera_mode = 1
 
+[node name="CrumbleRuntime" type="Node2D" parent="." unique_id=1144923018]
+script = ExtResource("9_crumble")
+player_path = NodePath("../Player")
+
+[node name="WaterField" type="Node2D" parent="." unique_id=430640974]
+script = ExtResource("10_water")
+
+[node name="Atmosphere" type="Node2D" parent="." unique_id=1286727046]
+script = ExtResource("11_atmosphere")
+sim_hz = 60.0
+gas_refill = 1.0
+push_strength = 2.2
+
 [node name="FogOfWar" type="Node2D" parent="." unique_id=896215342]
 z_index = 10
 z_as_relative = false
@@ -39,5 +55,4 @@ player_path = NodePath("../Player")
 script = ExtResource("7_persistence_bridge")
 
 [node name="DebugOverlay" parent="." unique_id=801280615 instance=ExtResource("8_debug_overlay")]
-subject_path = NodePath("../Player")
 hud_path = NodePath("../../../../HUD/DebugHud")

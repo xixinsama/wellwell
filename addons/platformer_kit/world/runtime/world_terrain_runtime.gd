@@ -4,7 +4,11 @@ extends Node2D
 const WORLD_DATA_SCRIPT: Script = preload("res://addons/platformer_kit/world/data/world_data.gd")
 const ROOM_DATA_SCRIPT: Script = preload("res://addons/platformer_kit/world/data/room_data.gd")
 const TERRAIN_LAYER_NAMES: Array[String] = [
-	"BackTiles", "SolidTiles", "GlassTiles", "VisionBlockTiles", "DetailTiles", "MarkerTiles"
+	"BackTiles", "SolidTiles", "DetailTiles",
+	"GlassTiles", "VisionBlockTiles", "MarkerTiles", "CrumbleTiles", "CrumbleOneWayTiles"
+]
+const REQUIRED_TERRAIN_LAYER_NAMES: Array[String] = [
+	"BackTiles", "SolidTiles", "DetailTiles"
 ]
 
 var _world_data: Resource
@@ -83,7 +87,7 @@ func _is_valid_terrain_root(root: Node2D) -> bool:
 	var terrain := root.get_node_or_null("Terrain")
 	if terrain == null:
 		return false
-	for layer_name: String in TERRAIN_LAYER_NAMES:
+	for layer_name: String in REQUIRED_TERRAIN_LAYER_NAMES:
 		if not terrain.get_node_or_null(layer_name) is TileMapLayer:
 			return false
 	return true

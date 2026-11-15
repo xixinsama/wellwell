@@ -5,7 +5,7 @@ extends RefCounted
 const ROOM_AUTHORING_ROOT_SCRIPT: Script = preload("res://addons/world_editor/authoring/room/room_authoring_root.gd")
 const REQUIRED_CONTENT_NODES: Array[String] = ["Background", "Terrain", "Entities", "Foreground"]
 const REQUIRED_TERRAIN_LAYERS: Array[String] = [
-	"BackTiles", "SolidTiles", "GlassTiles", "VisionBlockTiles", "DetailTiles", "MarkerTiles"
+	"BackTiles", "SolidTiles", "DetailTiles"
 ]
 
 

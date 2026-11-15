@@ -2,13 +2,24 @@ extends Node
 
 const FOG_VISIBILITY: Script = preload("res://addons/metroidvania_kit/map/discovery/fog_visibility.gd")
 const FOG_OF_WAR: Script = preload("res://addons/metroidvania_kit/map/discovery/fog_of_war.gd")
+const FOG_ZONE: Script = preload("res://scripts/world/fog_zone.gd")
 const ROOM_DATA: Script = preload("res://addons/platformer_kit/world/data/room_data.gd")
+
+const SOLID_TILE := Vector2i(0, 0)
+const ONE_WAY_TILE := Vector2i(1, 0)
+const PLAIN_TILE := Vector2i(2, 0)
+const GLASS_TILE := Vector2i(0, 3)
+const CRUMBLE_SOLID_TILE := Vector2i(3, 0)
+const CRUMBLE_ONE_WAY_TILE := Vector2i(3, 4)
+const DARK_MODE := 0
+const LIGHT_MODE := 1
+const LAYER_NAMES: Array[String] = ["BackTiles", "SolidTiles", "DetailTiles"]
 
 
 class PersistenceSource extends Node:
 	var explored_cells: Array[String] = []
 	var explored_chunks: Array[String] = []
-	var read_count := 0
+	var revealed_zones: Array[String] = []
 
 	func mark_cell_explored(cell_id: String) -> bool:
 		if explored_cells.has(cell_id):
@@ -22,52 +33,72 @@ class PersistenceSource extends Node:
 		explored_chunks.append(chunk_id)
 		return true
 
+	func mark_zone_revealed(zone_id: String) -> bool:
+		if revealed_zones.has(zone_id):
+			return false
+		revealed_zones.append(zone_id)
+		return true
+
 	func get_explored_cells() -> Array[String]:
-		read_count += 1
 		return explored_cells.duplicate()
+
+	func get_revealed_zones() -> Array[String]:
+		return revealed_zones.duplicate()
+
+
+class SettingsSource extends Node:
+	var one_way_occludes := true
+
+	func is_fog_enabled() -> bool:
+		return true
+
+	func is_one_way_occlusion_enabled() -> bool:
+		return one_way_occludes
+
+
+class FakeOccluder extends Node2D:
+	var occluding := true
+	var size_cells := Vector2i(1, 1)
+
+	func _ready() -> void:
+		add_to_group(&"fog_occluder")
+
+	func is_occluding() -> bool:
+		return occluding
+
+	func get_world_rect() -> Rect2:
+		return Rect2(global_position, Vector2(size_cells) * 8)
 
 
 func run() -> Array[String]:
 	var failures: Array[String] = []
-	_assert_fog_uses_only_vision_block_tiles(failures)
 	_assert_blocker_is_visible_but_stops_spread(failures)
-	_assert_room_spread_crosses_chunk_boundary(failures)
-	_assert_room_bounds_stop_spread(failures)
+	_assert_diagonal_gap_is_see_through(failures)
+	_assert_one_way_blocks_downward_sight(failures)
+	_assert_one_way_setting_can_disable(failures)
 	_assert_room_chunks_configure_cell_bounds(failures)
-	_assert_bound_room_uses_exact_pixel_origin_and_mask_size(failures)
-	_assert_mask_image_matches_current_visibility(failures)
 	_assert_cell_ids_are_stable(failures)
 	_assert_persistence_requires_explicit_binding(failures)
-	_assert_real_tilemap_blockers_use_world_coordinates(failures)
-	_assert_only_vision_layer_blocks_spread(failures)
-	_assert_room_switch_clears_old_state_and_mask(failures)
-	_assert_process_refreshes_mask_texture(failures)
+	_assert_blocker_classification(failures)
+	_assert_erased_crumble_opens_sight(failures)
+	_assert_light_zone_lights_sealed_cells(failures)
+	_assert_dark_zone_stays_black_until_entered(failures)
+	_assert_restore_and_focus(failures)
+	_assert_partial_overlap_lights_both_sides(failures)
+	_assert_sub_cell_zone_edge_refreshes(failures)
+	_assert_door_occludes_sight(failures)
+	_assert_room_switch_clears_state(failures)
+	_assert_mask_matches_lit_cells(failures)
 	_assert_saved_exploration_updates_mask(failures)
-	_assert_minimal_terrain_contract(failures)
 	return failures
-
-
-func _assert_fog_uses_only_vision_block_tiles(failures: Array[String]) -> void:
-	var fog: Node2D = FOG_OF_WAR.new() as Node2D
-	var properties: Array[Dictionary] = []
-	properties.assign(fog.get_property_list())
-	var names: Array[String] = []
-	for property: Dictionary in properties:
-		names.append(String(property.get("name", "")))
-	if names.has("solid_tiles_path") or names.has("glass_tiles_path"):
-		failures.append("FogOfWar must not expose SolidTiles or GlassTiles blocker paths")
-	if not names.has("vision_block_tiles_path"):
-		failures.append("FogOfWar must expose the VisionBlockTiles blocker path")
-	fog.free()
 
 
 func _assert_blocker_is_visible_but_stops_spread(failures: Array[String]) -> void:
 	var blockers: Dictionary[Vector2i, bool] = {Vector2i(1, 0): true}
 	var visibility: RefCounted = FOG_VISIBILITY.new()
-	var visible: Dictionary[Vector2i, bool] = visibility.compute_room_visible_cells(
+	var visible: Dictionary[Vector2i, bool] = visibility.compute_visible_cells(
 		Vector2i(0, 0),
-		Vector2i(0, 0),
-		Vector2i(4, 1),
+		Rect2i(0, 0, 4, 1),
 		blockers
 	)
 	if not visible.has(Vector2i(1, 0)):
@@ -76,28 +107,76 @@ func _assert_blocker_is_visible_but_stops_spread(failures: Array[String]) -> voi
 		failures.append("fog spread propagated through a blocking cell")
 
 
-func _assert_room_spread_crosses_chunk_boundary(failures: Array[String]) -> void:
+func _assert_diagonal_gap_is_see_through(failures: Array[String]) -> void:
+	var blockers: Dictionary[Vector2i, bool] = {
+		Vector2i(2, 1): true,
+		Vector2i(1, 2): true,
+	}
 	var visibility: RefCounted = FOG_VISIBILITY.new()
-	var visible: Dictionary[Vector2i, bool] = visibility.compute_room_visible_cells(
-		Vector2i(39, 11),
+	var visible: Dictionary[Vector2i, bool] = visibility.compute_visible_cells(
 		Vector2i(0, 0),
-		Vector2i(80, 23),
-		{}
+		Rect2i(0, 0, 5, 5),
+		blockers
 	)
-	if not visible.has(Vector2i(0, 11)) or not visible.has(Vector2i(79, 11)):
-		failures.append("room fog did not spread across a two-chunk room")
+	if not visible.has(Vector2i(2, 2)):
+		failures.append("sight did not pass through a one-cell diagonal crack")
 
 
-func _assert_room_bounds_stop_spread(failures: Array[String]) -> void:
+func _assert_one_way_blocks_downward_sight(failures: Array[String]) -> void:
+	var one_way: Dictionary[Vector2i, bool] = {}
+	for x in range(3):
+		one_way[Vector2i(x, 2)] = true
 	var visibility: RefCounted = FOG_VISIBILITY.new()
-	var visible: Dictionary[Vector2i, bool] = visibility.compute_room_visible_cells(
-		Vector2i(0, 0),
-		Vector2i(0, 0),
-		Vector2i(2, 2),
+	var visible: Dictionary[Vector2i, bool] = visibility.compute_visible_cells(
+		Vector2i(1, 0),
+		Rect2i(0, 0, 3, 6),
+		{},
+		one_way
+	)
+	if not visible.has(Vector2i(1, 2)):
+		failures.append("one-way platform cell itself was not visible")
+	if visible.has(Vector2i(1, 3)):
+		failures.append("sight passed downwards through a one-way platform")
+	var without: Dictionary[Vector2i, bool] = visibility.compute_visible_cells(
+		Vector2i(1, 0),
+		Rect2i(0, 0, 3, 6),
+		{},
 		{}
 	)
-	if visible.has(Vector2i(-1, 0)) or visible.has(Vector2i(2, 0)):
-		failures.append("room fog spread outside the active room")
+	if not without.has(Vector2i(1, 3)):
+		failures.append("one-way platform blocked sight when the feature is disabled")
+
+
+func _assert_one_way_setting_can_disable(failures: Array[String]) -> void:
+	var root := Node2D.new()
+	var player := Node2D.new()
+	player.position = Vector2(164.0, 4.0)
+	root.add_child(player)
+	var cells: Dictionary[Vector2i, Vector2i] = {}
+	for x in range(40):
+		cells[Vector2i(x, 2)] = ONE_WAY_TILE
+	var terrain := _make_terrain(cells)
+	root.add_child(terrain)
+	var settings := SettingsSource.new()
+	settings.one_way_occludes = true
+	root.add_child(settings)
+	var fog: Node2D = FOG_OF_WAR.new() as Node2D
+	fog.cell_size = Vector2i(8, 8)
+	fog.chunk_size_pixels = Vector2i(320, 180)
+	fog.call("bind_player", player)
+	fog.call("bind_settings_source", settings)
+	root.add_child(fog)
+	add_child(root)
+	var room: Resource = _make_room("one_way_setting", Vector2i.ZERO)
+	fog.call("bind_room", room, terrain, Vector2i.ZERO)
+	if fog.currently_visible.has(Vector2i(20, 3)):
+		failures.append("fog ignored the one-way occlusion setting")
+	settings.one_way_occludes = false
+	fog.call("request_refresh")
+	fog.call("reveal_from_player")
+	if not fog.currently_visible.has(Vector2i(20, 3)):
+		failures.append("disabling one-way occlusion did not open sight")
+	root.free()
 
 
 func _assert_room_chunks_configure_cell_bounds(failures: Array[String]) -> void:
@@ -109,50 +188,6 @@ func _assert_room_chunks_configure_cell_bounds(failures: Array[String]) -> void:
 		failures.append("room chunk origin did not convert to fog cells")
 	if fog.map_size_cells != Vector2i(120, 45):
 		failures.append("room chunk size did not use the exact total pixel extent")
-	fog.free()
-
-
-func _assert_bound_room_uses_exact_pixel_origin_and_mask_size(failures: Array[String]) -> void:
-	var fog: Node2D = FOG_OF_WAR.new() as Node2D
-	fog.cell_size = Vector2i(8, 8)
-	fog.chunk_size_pixels = Vector2i(320, 180)
-	var room: Resource = _make_room("offset_room", Vector2i(0, 1))
-	var terrain := _make_terrain_root()
-	if fog.call("bind_room", room, terrain, Vector2i(0, 1)) != true:
-		failures.append("fog rejected exact-origin room fixture")
-	else:
-		if fog.world_to_cell(Vector2(4.0, 180.0)) != Vector2i(0, 23):
-			failures.append("room pixel origin did not map to its first local fog row")
-		var first_rect: Rect2 = fog.call("_cell_rect", Vector2i(0, 23))
-		if first_rect.position != Vector2(0.0, 180.0):
-			failures.append("first room fog row was not drawn at exact pixel y=180")
-		fog.reveal_from_cell(Vector2i(0, 23), {})
-		if fog.get_mask_image() == null or fog.get_mask_image().get_size() != Vector2i(320, 180):
-			failures.append("bound room fog mask did not use exact 320x180 pixel size")
-	terrain.free()
-	fog.free()
-
-
-func _assert_mask_image_matches_current_visibility(failures: Array[String]) -> void:
-	var fog: Node2D = FOG_OF_WAR.new() as Node2D
-	fog.map_origin_cell = Vector2i(0, 0)
-	fog.map_size_cells = Vector2i(4, 1)
-	fog.cell_size = Vector2i(8, 8)
-	fog.reveal_from_cell(Vector2i(0, 0), {Vector2i(1, 0): true})
-
-	var mask: Image = fog.get_mask_image()
-	if mask == null:
-		failures.append("fog mask image was not created")
-	elif mask.get_size() != Vector2i(32, 8):
-		failures.append("fog mask image did not match room pixel size")
-	elif mask.get_pixel(4, 4).a != 0.0:
-		failures.append("visible fog mask pixel was not transparent")
-	elif mask.get_pixel(12, 4).a != 0.0:
-		failures.append("blocking fog mask pixel was not transparent")
-	elif mask.get_pixel(20, 4).a <= 0.9:
-		failures.append("unreached fog mask pixel was not opaque")
-	if fog.get_mask_texture() == null:
-		failures.append("fog mask texture was not created")
 	fog.free()
 
 
@@ -171,169 +206,335 @@ func _assert_cell_ids_are_stable(failures: Array[String]) -> void:
 
 
 func _assert_persistence_requires_explicit_binding(failures: Array[String]) -> void:
-	var fog: Node2D = FOG_OF_WAR.new()
-	fog.level_id = "preview"
-	fog.map_origin_cell = Vector2i.ZERO
-	fog.map_size_cells = Vector2i(2, 1)
-	var explicit := PersistenceSource.new()
-	fog.bind_persistence_source(explicit)
-	explicit.explored_cells.append("preview:0,0")
-	fog.call("_load_saved_progress")
-	if explicit.read_count != 1:
-		failures.append("bound fog persistence source was not read")
-	fog.reveal_from_cell(Vector2i.ZERO, {})
-	if explicit.explored_cells.is_empty():
-		failures.append("bound fog persistence source did not receive exploration")
-
-	fog.bind_persistence_source(null)
-	fog.reveal_from_cell(Vector2i.ZERO, {})
-	fog.free()
-	explicit.free()
-
-
-func _assert_real_tilemap_blockers_use_world_coordinates(failures: Array[String]) -> void:
 	var root := Node2D.new()
-	root.position = Vector2(8.0, 0.0)
-	var terrain := Node2D.new()
-	terrain.name = "Terrain"
-	terrain.position = Vector2(8.0, 0.0)
-	root.add_child(terrain)
-	var layers: Dictionary[String, TileMapLayer] = {}
-	for layer_name: String in ["SolidTiles", "VisionBlockTiles", "GlassTiles"]:
-		var layer := TileMapLayer.new()
-		layer.name = layer_name
-		layer.tile_set = _make_minimal_tileset()
-		terrain.add_child(layer)
-		layers[layer_name] = layer
-	(layers["SolidTiles"] as TileMapLayer).set_cell(Vector2i(1, 0), 0, Vector2i.ZERO)
-	(layers["VisionBlockTiles"] as TileMapLayer).set_cell(Vector2i(2, 0), 0, Vector2i.ZERO)
-	(layers["GlassTiles"] as TileMapLayer).set_cell(Vector2i(3, 0), 0, Vector2i.ZERO)
-
-	var fog: Node2D = FOG_OF_WAR.new() as Node2D
-	fog.map_origin_cell = Vector2i.ZERO
-	fog.map_size_cells = Vector2i(16, 4)
-	fog.cell_size = Vector2i(8, 8)
-	fog.set("_vision_block_tiles", layers["VisionBlockTiles"])
 	var player := Node2D.new()
+	player.position = Vector2(6.0, 10.0)
 	root.add_child(player)
+	var terrain := _make_terrain({Vector2i(0, 0): SOLID_TILE})
+	root.add_child(terrain)
+	var fog: Node2D = FOG_OF_WAR.new() as Node2D
+	fog.cell_size = Vector2i(8, 8)
+	fog.chunk_size_pixels = Vector2i(320, 180)
+	fog.player_path = NodePath()
 	fog.call("bind_player", player)
 	root.add_child(fog)
 	add_child(root)
-
-	var blockers: Dictionary = fog.call("_collect_blockers")
-	for layer_name: String in ["SolidTiles", "VisionBlockTiles", "GlassTiles"]:
-		var layer: TileMapLayer = layers[layer_name]
-		var expected_cell: Vector2i = fog.call("world_to_cell", layer.to_global(layer.map_to_local(layer.get_used_cells()[0])))
-		if layer_name == "VisionBlockTiles" and not blockers.has(expected_cell):
-			failures.append("FogOfWar did not transform VisionBlockTiles into world coordinates")
-		if layer_name != "VisionBlockTiles" and blockers.has(expected_cell):
-			failures.append("FogOfWar incorrectly treated %s as a vision blocker" % layer_name)
-		if not fog.currently_visible.has(expected_cell):
-			fog.call("reveal_from_cell", expected_cell, {expected_cell: true})
-		if not fog.currently_visible.has(expected_cell):
-			failures.append("%s blocker cell was not visible itself" % layer_name)
-
+	var source := PersistenceSource.new()
+	root.add_child(source)
+	fog.bind_persistence_source(source)
+	var room: Resource = _make_room("preview", Vector2i.ZERO, Vector2i(1, 1))
+	fog.call("bind_room", room, terrain, Vector2i.ZERO)
+	if source.explored_cells.is_empty():
+		failures.append("bound fog persistence source did not receive exploration")
+	fog.bind_persistence_source(null)
+	fog.call("reveal_from_player")
 	root.free()
 
 
-func _assert_only_vision_layer_blocks_spread(failures: Array[String]) -> void:
+func _assert_blocker_classification(failures: Array[String]) -> void:
+	var terrain := _make_terrain({
+		Vector2i(1, 0): SOLID_TILE,
+		Vector2i(2, 0): ONE_WAY_TILE,
+		Vector2i(3, 0): GLASS_TILE,
+		Vector2i(4, 0): CRUMBLE_SOLID_TILE,
+		Vector2i(5, 0): CRUMBLE_ONE_WAY_TILE,
+		Vector2i(6, 0): PLAIN_TILE,
+	})
 	var fog: Node2D = FOG_OF_WAR.new() as Node2D
-	fog.map_origin_cell = Vector2i.ZERO
-	fog.map_size_cells = Vector2i(4, 1)
 	fog.cell_size = Vector2i(8, 8)
-	fog.set("_vision_block_tiles", null)
-	fog.reveal_from_cell(Vector2i.ZERO, {Vector2i(1, 0): true})
-	if fog.currently_visible.has(Vector2i(2, 0)):
-		failures.append("vision propagation crossed a VisionBlockTiles cell")
+	fog.chunk_size_pixels = Vector2i(320, 180)
+	var room: Resource = _make_room("classification", Vector2i.ZERO, Vector2i(1, 1))
+	fog.call("bind_room", room, terrain, Vector2i.ZERO)
+	var blockers: Dictionary = fog.call("_collect_sight")
+	var one_way: Dictionary = fog.get("_one_way_cells")
+	for cell: Vector2i in [Vector2i(1, 0), Vector2i(4, 0)]:
+		if not blockers.has(cell):
+			failures.append("expected sight blocker missing at %s" % cell)
+	for cell: Vector2i in [Vector2i(2, 0), Vector2i(5, 0)]:
+		if not one_way.has(cell):
+			failures.append("one-way cell %s was not classified" % cell)
+	for cell: Vector2i in [Vector2i(3, 0), Vector2i(6, 0)]:
+		if blockers.has(cell) or one_way.has(cell):
+			failures.append("transparent cell %s was treated as an occluder" % cell)
 	fog.free()
+	terrain.free()
 
 
-func _assert_room_switch_clears_old_state_and_mask(failures: Array[String]) -> void:
+func _assert_erased_crumble_opens_sight(failures: Array[String]) -> void:
+	var terrain := _make_terrain({Vector2i(2, 0): CRUMBLE_SOLID_TILE})
+	var fog: Node2D = FOG_OF_WAR.new() as Node2D
+	fog.cell_size = Vector2i(8, 8)
+	fog.chunk_size_pixels = Vector2i(320, 180)
+	var room: Resource = _make_room("crumble_sight", Vector2i.ZERO, Vector2i(1, 1))
+	fog.call("bind_room", room, terrain, Vector2i.ZERO)
+	var crumble := terrain.get_node("Terrain/SolidTiles") as TileMapLayer
+	var before: Dictionary = fog.call("_collect_sight")
+	if not before.has(Vector2i(2, 0)):
+		failures.append("crumble tile did not block sight before collapsing")
+	crumble.erase_cell(Vector2i(2, 0))
+	fog.call("request_refresh")
+	var after: Dictionary = fog.call("_collect_sight")
+	if after.has(Vector2i(2, 0)):
+		failures.append("collapsed crumble tile kept blocking sight")
+	fog.free()
+	terrain.free()
+
+
+func _assert_light_zone_lights_sealed_cells(failures: Array[String]) -> void:
+	var root := Node2D.new()
+	var player := Node2D.new()
+	player.position = Vector2(4.0, 12.0)
+	root.add_child(player)
+	var solid_cells: Dictionary[Vector2i, Vector2i] = {}
+	for x in range(2, 6):
+		solid_cells[Vector2i(x, 0)] = SOLID_TILE
+		solid_cells[Vector2i(x, 3)] = SOLID_TILE
+	for y in range(1, 3):
+		solid_cells[Vector2i(2, y)] = SOLID_TILE
+		solid_cells[Vector2i(5, y)] = SOLID_TILE
+	var terrain := _make_terrain(solid_cells)
+	root.add_child(terrain)
+	var zone := _make_zone(root, LIGHT_MODE, Vector2i(3, 1), Vector2i(1, 1), "light_pocket")
+	var fog: Node2D = FOG_OF_WAR.new() as Node2D
+	fog.cell_size = Vector2i(8, 8)
+	fog.chunk_size_pixels = Vector2i(320, 180)
+	fog.call("bind_player", player)
+	root.add_child(fog)
+	add_child(root)
+	var room: Resource = _make_room("light_room", Vector2i.ZERO, Vector2i(1, 1))
+	fog.call("bind_room", room, terrain, Vector2i.ZERO)
+	if not fog.is_cell_lit(Vector2i(3, 1)):
+		failures.append("light zone did not light a sealed cell")
+	if not fog.is_cell_explored(Vector2i(3, 1)):
+		failures.append("light zone cell was not recorded as explored")
+	zone.free()
+	root.free()
+
+
+func _assert_dark_zone_stays_black_until_entered(failures: Array[String]) -> void:
+	var root := Node2D.new()
+	var player := Node2D.new()
+	player.position = Vector2(52.0, 12.0)
+	root.add_child(player)
+	var terrain := _make_terrain({})
+	root.add_child(terrain)
+	var zone := _make_zone(root, DARK_MODE, Vector2i(1, 1), Vector2i(2, 1), "dark_room")
+	var fog: Node2D = FOG_OF_WAR.new() as Node2D
+	fog.cell_size = Vector2i(8, 8)
+	fog.chunk_size_pixels = Vector2i(320, 180)
+	fog.call("bind_player", player)
+	var source := PersistenceSource.new()
+	root.add_child(source)
+	fog.bind_persistence_source(source)
+	root.add_child(fog)
+	add_child(root)
+	var room: Resource = _make_room("dark_room", Vector2i.ZERO, Vector2i(1, 1))
+	fog.call("bind_room", room, terrain, Vector2i.ZERO)
+	if fog.is_cell_lit(Vector2i(1, 1)):
+		failures.append("dark zone cell was lit before the player entered")
+	if source.revealed_zones.size() != 0:
+		failures.append("dark zone was revealed without the player entering")
+	player.position = Vector2(12.0, 12.0)
+	fog.call("bind_player", player)
+	fog.call("reveal_from_player")
+	if not fog.is_cell_lit(Vector2i(1, 1)):
+		failures.append("dark zone did not light after the player entered")
+	if not source.revealed_zones.has("dark_room:dark_room"):
+		failures.append("revealed dark zone was not persisted")
+	zone.free()
+	root.free()
+
+
+func _assert_restore_and_focus(failures: Array[String]) -> void:
+	var root := Node2D.new()
+	var player := Node2D.new()
+	player.position = Vector2(52.0, 12.0)
+	root.add_child(player)
+	var terrain := _make_terrain({})
+	root.add_child(terrain)
+	var zone := _make_zone(root, DARK_MODE, Vector2i(1, 1), Vector2i(4, 4), "restore_zone")
+	zone.set("restore_on_exit", true)
+	zone.set("focus_room", true)
+	zone.set("focus_seconds", 0.05)
+	var fog: Node2D = FOG_OF_WAR.new() as Node2D
+	fog.cell_size = Vector2i(8, 8)
+	fog.chunk_size_pixels = Vector2i(320, 180)
+	fog.call("bind_player", player)
+	root.add_child(fog)
+	add_child(root)
+	var room: Resource = _make_room("restore_room", Vector2i.ZERO, Vector2i(1, 1))
+	fog.call("bind_room", room, terrain, Vector2i.ZERO)
+	if fog.is_focus_active():
+		failures.append("focus started before the player entered the zone")
+	player.position = Vector2(24.0, 24.0)
+	fog.call("bind_player", player)
+	fog.call("reveal_from_player")
+	if not fog.is_cell_lit(Vector2i(2, 2)):
+		failures.append("restore zone did not light while the player was inside")
+	if not fog.is_focus_active():
+		failures.append("focus did not start inside the focus zone")
+	if not bool(zone.get("seen")):
+		failures.append("focus zone was not marked as seen")
+	player.position = Vector2(52.0, 12.0)
+	fog.call("bind_player", player)
+	fog.call("reveal_from_player")
+	if fog.is_focus_active():
+		failures.append("focus did not end after leaving the zone")
+	if fog.is_cell_lit(Vector2i(2, 2)):
+		failures.append("restore zone stayed lit after the player left")
+	if not fog.is_cell_explored(Vector2i(2, 2)):
+		failures.append("restore zone lost its explored state")
+	zone.free()
+	root.free()
+
+
+func _assert_partial_overlap_lights_both_sides(failures: Array[String]) -> void:
+	var root := Node2D.new()
+	var player := Node2D.new()
+	player.position = Vector2(52.0, 12.0)
+	root.add_child(player)
+	var terrain := _make_terrain({})
+	root.add_child(terrain)
+	var zone := _make_zone(root, DARK_MODE, Vector2i(1, 1), Vector2i(2, 1), "partial_zone")
+	zone.set("restore_on_exit", true)
+	zone.set("focus_room", true)
+	var fog: Node2D = FOG_OF_WAR.new() as Node2D
+	fog.cell_size = Vector2i(8, 8)
+	fog.chunk_size_pixels = Vector2i(320, 180)
+	fog.call("bind_player", player)
+	root.add_child(fog)
+	add_child(root)
+	var room: Resource = _make_room("partial_room", Vector2i.ZERO, Vector2i(1, 1))
+	fog.call("bind_room", room, terrain, Vector2i.ZERO)
+	# Feet at y=10: the hero overlaps the zone's lower edge but its head is above
+	# the zone, so it is only partially inside.
+	player.position = Vector2(16.0, 10.0)
+	fog.call("bind_player", player)
+	fog.call("reveal_from_player")
+	if not fog.is_cell_lit(Vector2i(1, 1)):
+		failures.append("partially overlapping dark zone stayed black")
+	if fog.is_focus_active():
+		failures.append("focus started while the hero was only partially inside")
+	player.position = Vector2(52.0, 12.0)
+	fog.call("bind_player", player)
+	fog.call("reveal_from_player")
+	if fog.is_cell_lit(Vector2i(1, 1)):
+		failures.append("partially overlapping zone did not darken after a full exit")
+	zone.free()
+	root.free()
+
+
+func _assert_sub_cell_zone_edge_refreshes(failures: Array[String]) -> void:
+	var root := Node2D.new()
+	var player := Node2D.new()
+	player.position = Vector2(2.0, 10.0)
+	root.add_child(player)
+	var terrain := _make_terrain({})
+	root.add_child(terrain)
+	var zone := _make_zone(root, DARK_MODE, Vector2i(1, 1), Vector2i(1, 1), "edge_zone")
+	var fog: Node2D = FOG_OF_WAR.new() as Node2D
+	fog.cell_size = Vector2i(8, 8)
+	fog.chunk_size_pixels = Vector2i(320, 180)
+	fog.call("bind_player", player)
+	root.add_child(fog)
+	add_child(root)
+	var room: Resource = _make_room("edge_room", Vector2i.ZERO, Vector2i(1, 1))
+	fog.call("bind_room", room, terrain, Vector2i.ZERO)
+	if fog.is_cell_lit(Vector2i(1, 1)):
+		failures.append("zone lit before the hero touched it")
+	# Same fog cell (0), but the body now reaches across the zone edge.
+	player.position = Vector2(6.0, 10.0)
+	fog.call("_process", 0.0)
+	if not fog.is_cell_lit(Vector2i(1, 1)):
+		failures.append("sub-cell movement across a zone edge did not refresh the fog")
+	zone.free()
+	root.free()
+
+
+func _assert_door_occludes_sight(failures: Array[String]) -> void:
+	var root := Node2D.new()
+	var terrain := _make_terrain({})
+	root.add_child(terrain)
+	var door := FakeOccluder.new()
+	door.position = Vector2(24, 8)
+	root.add_child(door)
+	var fog: Node2D = FOG_OF_WAR.new() as Node2D
+	fog.cell_size = Vector2i(8, 8)
+	fog.chunk_size_pixels = Vector2i(320, 180)
+	root.add_child(fog)
+	add_child(root)
+	var room: Resource = _make_room("door_room", Vector2i.ZERO, Vector2i(1, 1))
+	fog.call("bind_room", room, terrain, Vector2i.ZERO)
+	var blockers: Dictionary = fog.call("_collect_sight")
+	if not blockers.has(Vector2i(3, 1)):
+		failures.append("closed door did not block sight")
+	door.occluding = false
+	fog.call("request_refresh")
+	var opened: Dictionary = fog.call("_collect_sight")
+	if opened.has(Vector2i(3, 1)):
+		failures.append("open door kept blocking sight")
+	door.free()
+	root.free()
+
+
+func _assert_room_switch_clears_state(failures: Array[String]) -> void:
 	var fog: Node2D = FOG_OF_WAR.new() as Node2D
 	fog.cell_size = Vector2i(8, 8)
 	fog.chunk_size_pixels = Vector2i(320, 180)
 	var source := PersistenceSource.new()
-	source.explored_cells = ["room_b:40,0"]
 	fog.bind_persistence_source(source)
-	var room_a: Resource = _make_room("room_a", Vector2i.ZERO)
-	var room_b: Resource = _make_room("room_b", Vector2i(1, 0))
-	var terrain_a := _make_terrain_root()
-	var terrain_b := _make_terrain_root()
-	if not fog.has_method("bind_room"):
-		failures.append("missing production API: FogOfWar.bind_room")
+	source.explored_cells = ["room_b:40,0"]
+	var room_a: Resource = _make_room("room_a", Vector2i.ZERO, Vector2i(1, 1))
+	var room_b: Resource = _make_room("room_b", Vector2i(1, 0), Vector2i(1, 1))
+	var terrain_a := _make_terrain({})
+	var terrain_b := _make_terrain({})
+	if fog.call("bind_room", room_a, terrain_a, Vector2i.ZERO) != true:
+		failures.append("FogOfWar rejected the first room binding")
+	fog.call("reveal_from_cell", Vector2i.ZERO, {})
+	if fog.currently_visible.is_empty() or fog.get_mask_image() == null:
+		failures.append("FogOfWar first room did not produce visible state and mask")
+	if fog.call("bind_room", room_b, terrain_b, Vector2i(1, 0)) != true:
+		failures.append("FogOfWar rejected the second room binding")
 	else:
-		if fog.call("bind_room", room_a, terrain_a, Vector2i.ZERO) != true:
-			failures.append("FogOfWar rejected the first room binding")
-		fog.call("reveal_from_cell", Vector2i.ZERO, {})
-		if fog.currently_visible.is_empty() or fog.get_mask_image() == null:
-			failures.append("FogOfWar first room did not produce visible state and mask")
-		if fog.call("bind_room", room_b, terrain_b, Vector2i(1, 0)) != true:
-			failures.append("FogOfWar rejected the second room binding")
-		else:
-			if not fog.currently_visible.is_empty():
-				failures.append("room switch retained currently visible cells from the old room")
-			if fog.is_cell_explored(Vector2i.ZERO):
-				failures.append("room switch retained explored cells from the old room")
-			if not fog.is_cell_explored(Vector2i(40, 0)):
-				failures.append("room switch did not load persisted exploration for the new room")
-			if fog.get_mask_image() != null or fog.get_mask_texture() != null:
-				failures.append("room switch retained the old fog mask")
-		var previous_vision: TileMapLayer = fog.get("_vision_block_tiles")
-		var invalid_terrain := _make_terrain_root()
-		invalid_terrain.get_node("Terrain/VisionBlockTiles").free()
-		if fog.call("bind_room", room_a, invalid_terrain, Vector2i.ZERO) == true:
-			failures.append("FogOfWar accepted an invalid room terrain binding")
-		if fog.get("_vision_block_tiles") != previous_vision or fog.get("level_id") != "room_b":
-			failures.append("invalid room binding replaced the previous valid room")
-		invalid_terrain.free()
-		fog.call("clear_room")
-		fog.call("_process", 0.0)
-		if fog.get_mask_image() != null or not fog.currently_visible.is_empty():
-			failures.append("clear_room did not remain cleared after a process frame")
-
+		if fog.is_cell_explored(Vector2i.ZERO):
+			failures.append("room switch retained explored cells from the old room")
+		if not fog.is_cell_explored(Vector2i(40, 0)):
+			failures.append("room switch did not load persisted exploration for the new room")
+		if fog.get_mask_image() != null or fog.get_mask_texture() != null:
+			failures.append("room switch retained the old fog mask")
+	fog.call("clear_room")
+	if fog.get_mask_image() != null or not fog.currently_visible.is_empty():
+		failures.append("clear_room did not clear visible state")
 	terrain_a.free()
 	terrain_b.free()
 	fog.free()
 	source.free()
 
 
-func _assert_process_refreshes_mask_texture(failures: Array[String]) -> void:
-	var root := Node2D.new()
-	var player := Node2D.new()
-	player.name = "Player"
-	player.position = Vector2(4.0, 4.0)
-	root.add_child(player)
+func _assert_mask_matches_lit_cells(failures: Array[String]) -> void:
 	var fog: Node2D = FOG_OF_WAR.new() as Node2D
-	fog.map_origin_cell = Vector2i.ZERO
-	fog.map_size_cells = Vector2i(4, 2)
+	fog.map_origin_cell = Vector2i(0, 0)
+	fog.map_size_cells = Vector2i(4, 1)
 	fog.cell_size = Vector2i(8, 8)
-	fog.player_path = NodePath()
-	fog.call("bind_player", player)
-	root.add_child(fog)
-	add_child(root)
-	if not fog.has_method("bind_player"):
-		failures.append("missing production API: FogOfWar.bind_player")
-	else:
-		fog.call("bind_player", player)
-		fog.call("_process", 0.0)
-		var mask: Image = fog.get_mask_image()
-		if mask == null or mask.get_size() != Vector2i(32, 16):
-			failures.append("FogOfWar process did not refresh a room-sized mask image")
-		if fog.get_mask_texture() == null:
-			failures.append("FogOfWar process did not refresh the mask texture")
-		player.position = Vector2(20.0, 12.0)
-		var before: Image = fog.get_mask_image()
-		fog.call("_process", 0.0)
-		if fog.get_mask_image() == null or fog.get_mask_texture() == null:
-			failures.append("FogOfWar reveal update discarded the mask image or texture")
-		elif fog.get_mask_image().get_size() != before.get_size():
-			failures.append("FogOfWar reveal update changed mask dimensions")
-
-	root.free()
+	fog.reveal_from_cell(Vector2i(0, 0), {Vector2i(1, 0): true})
+	var mask: Image = fog.get_mask_image()
+	if mask == null:
+		failures.append("fog mask image was not created")
+	elif mask.get_size() != Vector2i(32, 8):
+		failures.append("fog mask image did not match room pixel size")
+	elif mask.get_pixel(4, 4).a != 0.0:
+		failures.append("visible fog mask pixel was not transparent")
+	elif mask.get_pixel(12, 4).a != 0.0:
+		failures.append("blocking fog mask pixel was not transparent")
+	elif mask.get_pixel(20, 4).a <= 0.9:
+		failures.append("unreached fog mask pixel was not opaque")
+	if fog.get_mask_texture() == null:
+		failures.append("fog mask texture was not created")
+	fog.free()
 
 
 func _assert_saved_exploration_updates_mask(failures: Array[String]) -> void:
-	var fog: Node2D = FOG_OF_WAR.new()
+	var fog: Node2D = FOG_OF_WAR.new() as Node2D
 	fog.level_id = "saved_room"
 	fog.map_origin_cell = Vector2i.ZERO
 	fog.map_size_cells = Vector2i(4, 1)
@@ -347,30 +548,14 @@ func _assert_saved_exploration_updates_mask(failures: Array[String]) -> void:
 	fog.free()
 
 
-func _assert_minimal_terrain_contract(failures: Array[String]) -> void:
-	var fog: Node2D = FOG_OF_WAR.new()
-	var room: Resource = _make_room("minimal", Vector2i.ZERO)
-	var root := Node2D.new()
-	var terrain := Node2D.new()
-	terrain.name = "Terrain"
-	root.add_child(terrain)
-	var vision := TileMapLayer.new()
-	vision.name = "VisionBlockTiles"
-	terrain.add_child(vision)
-	if not fog.bind_room(room, root, Vector2i.ZERO):
-		failures.append("fog rejected a terrain containing only VisionBlockTiles")
-	root.free()
-	fog.free()
-
-
-func _make_room(room_id: String, _origin_chunk: Vector2i) -> Resource:
+func _make_room(room_id: String, _origin_chunk: Vector2i, size: Vector2i = Vector2i.ONE) -> Resource:
 	var room: Resource = ROOM_DATA.new()
 	room.room_id = room_id
-	room.room_size_chunks = Vector2i.ONE
+	room.room_size_chunks = size
 	return room
 
 
-func _make_terrain_root() -> Node2D:
+func _make_terrain(cells: Dictionary) -> Node2D:
 	var root := Node2D.new()
 	var background := Node2D.new()
 	background.name = "Background"
@@ -378,21 +563,63 @@ func _make_terrain_root() -> Node2D:
 	var terrain := Node2D.new()
 	terrain.name = "Terrain"
 	root.add_child(terrain)
-	for layer_name: String in ["BackTiles", "SolidTiles", "GlassTiles", "VisionBlockTiles", "DetailTiles", "MarkerTiles"]:
+	var tile_set := _make_tileset()
+	for layer_name: String in LAYER_NAMES:
 		var layer := TileMapLayer.new()
 		layer.name = layer_name
+		layer.tile_set = tile_set
+		layer.collision_enabled = layer_name == "SolidTiles"
 		terrain.add_child(layer)
+	var solid := terrain.get_node("SolidTiles") as TileMapLayer
+	for cell: Vector2i in cells:
+		solid.set_cell(cell, 0, cells[cell])
 	return root
 
 
-func _make_minimal_tileset() -> TileSet:
+func _make_zone(root: Node2D, mode: int, cell: Vector2i, size: Vector2i, zone_id: String) -> Node2D:
+	var zone: Node2D = FOG_ZONE.new() as Node2D
+	zone.mode = mode
+	zone.size_cells = size
+	zone.zone_id = zone_id
+	zone.position = Vector2(cell * 8)
+	root.add_child(zone)
+	return zone
+
+
+func _make_tileset() -> TileSet:
 	var tile_set := TileSet.new()
 	tile_set.tile_size = Vector2i(8, 8)
+	tile_set.add_physics_layer()
+	tile_set.set_physics_layer_collision_layer(0, 1)
+	tile_set.set_physics_layer_collision_mask(0, 2)
 	var source := TileSetAtlasSource.new()
-	var image := Image.create(8, 8, false, Image.FORMAT_RGBA8)
+	var image := Image.create(32, 64, false, Image.FORMAT_RGBA8)
 	image.fill(Color.WHITE)
 	source.texture = ImageTexture.create_from_image(image)
 	source.texture_region_size = Vector2i(8, 8)
-	source.create_tile(Vector2i.ZERO)
+	for coords: Vector2i in [SOLID_TILE, ONE_WAY_TILE, PLAIN_TILE, GLASS_TILE, CRUMBLE_SOLID_TILE, CRUMBLE_ONE_WAY_TILE]:
+		source.create_tile(coords)
 	tile_set.add_source(source, 0)
+	_add_full_polygon(source, SOLID_TILE)
+	_add_full_polygon(source, GLASS_TILE)
+	_add_full_polygon(source, CRUMBLE_SOLID_TILE)
+	_add_one_way_polygon(source, ONE_WAY_TILE)
+	_add_one_way_polygon(source, CRUMBLE_ONE_WAY_TILE)
 	return tile_set
+
+
+func _add_full_polygon(source: TileSetAtlasSource, coords: Vector2i) -> void:
+	var data := source.get_tile_data(coords, 0)
+	data.add_collision_polygon(0)
+	data.set_collision_polygon_points(0, 0, PackedVector2Array([
+		Vector2(-4, -4), Vector2(4, -4), Vector2(4, 4), Vector2(-4, 4)
+	]))
+
+
+func _add_one_way_polygon(source: TileSetAtlasSource, coords: Vector2i) -> void:
+	var data := source.get_tile_data(coords, 0)
+	data.add_collision_polygon(0)
+	data.set_collision_polygon_points(0, 0, PackedVector2Array([
+		Vector2(-4, -1), Vector2(4, -1), Vector2(4, -4), Vector2(-4, -4)
+	]))
+	data.set_collision_polygon_one_way(0, 0, true)

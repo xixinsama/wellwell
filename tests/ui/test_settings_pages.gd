@@ -49,6 +49,7 @@ func _assert_catalog(failures: Array[String]) -> void:
 		failures.append("controls section should contain the input mapping action")
 	for expected_key: StringName in [
 		&"locale", &"fog_enabled", &"camera_shake_enabled", &"one_way_drop_enabled",
+		&"atmosphere_enabled",
 		&"master_volume", &"music_volume", &"sfx_volume", &"mute_on_focus_loss",
 		&"display_mode", &"resolution_scale", &"vsync_enabled", &"fps_limit",
 		&"input_mapping",

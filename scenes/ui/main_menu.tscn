@@ -2,8 +2,8 @@
 
 [ext_resource type="Script" uid="uid://dqmtoic5euy6x" path="res://scripts/ui/main_menu.gd" id="1"]
 [ext_resource type="PackedScene" uid="uid://bjkhq4tv4edmo" path="res://scenes/ui/save_slots.tscn" id="2"]
-[ext_resource type="PackedScene" path="res://scenes/ui/world_select.tscn" id="4_world_select"]
 [ext_resource type="Theme" uid="uid://dl2h74k2356hx" path="res://resources/ui/menu_theme.tres" id="3"]
+[ext_resource type="PackedScene" path="res://scenes/ui/world_select.tscn" id="4_world_select"]
 
 [node name="MainMenu" type="Control" unique_id=1507952010]
 process_mode = 3

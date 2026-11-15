@@ -8,7 +8,7 @@ const TERRAIN_B_PATH := "user://task7_terrain_b.tscn"
 const BROKEN_TERRAIN_PATH := "user://task7_broken_terrain.tscn"
 const MISSING_TERRAIN_PATH := "user://task7_missing_terrain.tscn"
 const TERRAIN_LAYER_NAMES: Array[String] = [
-	"BackTiles", "SolidTiles", "GlassTiles", "VisionBlockTiles", "DetailTiles", "MarkerTiles"
+	"BackTiles", "SolidTiles", "DetailTiles"
 ]
 
 

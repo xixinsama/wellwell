@@ -4,7 +4,8 @@ extends Control
 
 const CHUNK_PIXELS := Vector2(320, 180)
 const VISIBLE_TILE_LAYERS: Array[String] = [
-    "BackTiles", "SolidTiles", "GlassTiles", "VisionBlockTiles", "DetailTiles"
+    "BackTiles", "SolidTiles", "GlassTiles", "VisionBlockTiles", "DetailTiles",
+    "CrumbleTiles", "CrumbleOneWayTiles"
 ]
 
 var preview_errors: Dictionary = {}

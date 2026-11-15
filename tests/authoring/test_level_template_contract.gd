@@ -8,10 +8,7 @@ const LEVEL_ZERO_PATH := "res://scenes/levels/room_00_00.tscn"
 const LAYER_NAMES: Array[String] = [
 	"BackTiles",
 	"SolidTiles",
-	"GlassTiles",
-	"VisionBlockTiles",
 	"DetailTiles",
-	"MarkerTiles",
 ]
 
 
@@ -73,11 +70,8 @@ func _assert_level_metadata_and_content(root: Node, failures: Array[String]) -> 
 	elif String(start_spawn.get("spawn_id")) != String(root.get("preview_spawn_id")):
 		failures.append("room_00_00 StartSpawn id must match preview_spawn_id")
 	var solid := root.get_node("RoomContent/Terrain/SolidTiles") as TileMapLayer
-	var glass := root.get_node("RoomContent/Terrain/GlassTiles") as TileMapLayer
 	if solid.get_used_cells().is_empty():
 		failures.append("room_00_00 validation room has no solid tiles")
-	if glass.get_used_cells().is_empty():
-		failures.append("room_00_00 validation room has no glass tiles")
 
 
 func _assert_preview_and_stage(root: Node, failures: Array[String]) -> void:

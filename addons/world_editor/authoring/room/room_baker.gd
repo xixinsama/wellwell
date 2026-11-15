@@ -11,7 +11,7 @@ const DUPLICATE_FLAGS := Node.DUPLICATE_SIGNALS | Node.DUPLICATE_GROUPS | Node.D
 const TERRAIN_CHILD_NAMES: Array[String] = ["Background", "Terrain"]
 const RUNTIME_EXCLUDED_CHILD_NAMES: Array[String] = ["Background", "Terrain"]
 const REQUIRED_RUNTIME_CHILD_NAMES: Array[String] = ["Entities", "Foreground"]
-const REQUIRED_TERRAIN_LAYER_NAMES: Array[String] = ["BackTiles", "SolidTiles", "GlassTiles", "VisionBlockTiles", "DetailTiles", "MarkerTiles"]
+const REQUIRED_TERRAIN_LAYER_NAMES: Array[String] = ["BackTiles", "SolidTiles", "DetailTiles"]
 const RESOURCE_PRESENTATION_PROPERTIES: Array[String] = ["resource_path", "resource_scene_unique_id"]
 
 

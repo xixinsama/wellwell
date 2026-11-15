@@ -1,7 +1,9 @@
 # 水与雾气：设计
 
 日期：2026-11-15
-状态：已确认，进入实现
+状态：已实现（使用说明见 `docs/water-and-mist.md`）
+后续修订：气体改为 GPU 三层密度模拟（`GasSim` ping-pong SubViewport），CPU 的 `FogGrid`
+只作为 headless 兜底；`Atmosphere` 增加"气体模拟"设置开关。水与房间部分与本设计一致。
 
 ## 1. 目标
 

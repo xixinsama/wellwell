@@ -38,6 +38,7 @@ var _has_motion_sample := false
 @onready var _ability_loadout: Node = get_node_or_null("AbilityLoadout")
 @onready var _motion_effects: Node = get_node_or_null("MotionEffects")
 @onready var _ladder_motion: Node = get_node_or_null("LadderMotion")
+@onready var _water_motion: Node = get_node_or_null("WaterMotion")
 @onready var _hero_animation: Node = get_node_or_null("SpriteRoot/HeroAnimation")
 
 
@@ -51,6 +52,8 @@ func _ready() -> void:
     _input_source.set("additional_actions", Array([&"dash"], TYPE_STRING_NAME, &"", null))
     if _ladder_motion != null and _ladder_motion.has_signal("climb_animation_requested"):
         _ladder_motion.connect("climb_animation_requested", _on_climb_animation_requested)
+    if _water_motion != null and _water_motion.has_signal("swim_animation_requested"):
+        _water_motion.connect("swim_animation_requested", _on_swim_animation_requested)
 
 
 func set_input_source(value: RefCounted) -> bool:
@@ -86,6 +89,11 @@ func _on_climb_animation_requested(active: bool, direction: Vector2) -> void:
         _hero_animation.call("set_climb_state", active, direction)
 
 
+func _on_swim_animation_requested(active: bool, direction: Vector2) -> void:
+    if _hero_animation != null:
+        _hero_animation.call("set_swim_state", active, direction)
+
+
 func set_control_locked(value: bool) -> void:
     control_locked = value
     set_void_collision_enabled(not value)
@@ -95,6 +103,8 @@ func set_control_locked(value: bool) -> void:
         _world_velocity = Vector2.ZERO
         if _ladder_motion != null:
             _ladder_motion.call("reset")
+        if _water_motion != null:
+            _water_motion.call("reset")
         if _hero_animation != null:
             _hero_animation.call("reset")
 
@@ -131,12 +141,15 @@ func _physics_process(delta: float) -> void:
         _play_jump_intent_feedback()
     _capture_environment()
     _movement_context.velocity = velocity
+    var water_handled := false
+    if _water_motion != null:
+        water_handled = bool(_water_motion.call("step", _movement_context, intent, _environment, profile, delta))
     var ladder_handled := false
-    if _ladder_motion != null:
+    if not water_handled and _ladder_motion != null:
         ladder_handled = bool(_ladder_motion.call("step", _movement_context, intent, _environment, profile, delta))
-    if not ladder_handled:
+    if not water_handled and not ladder_handled:
         _motor.call("step", _movement_context, intent, _environment, profile, delta)
-    if _movement_context.just_jumped and _motion_effects != null:
+    if _movement_context.just_jumped and not water_handled and _motion_effects != null:
         _motion_effects.call("play_jump")
     velocity = _movement_context.velocity
     _update_facing(intent.move_axis)
@@ -187,6 +200,8 @@ func respawn_at(pos: Vector2) -> void:
     global_position = pos
     if _ladder_motion != null:
         _ladder_motion.call("reset")
+    if _water_motion != null:
+        _water_motion.call("reset")
     spawn_position = pos
     velocity = Vector2.ZERO
     _world_velocity = Vector2.ZERO

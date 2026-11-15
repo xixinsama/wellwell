@@ -101,7 +101,7 @@ func run() -> Array[String]:
 			failures.append("missing content node was not rejected: %s" % child_name)
 		missing_content.free()
 
-	for layer_name: String in ["BackTiles", "SolidTiles", "GlassTiles", "VisionBlockTiles", "DetailTiles", "MarkerTiles"]:
+	for layer_name: String in ["BackTiles", "SolidTiles", "DetailTiles"]:
 		var missing_layer = _make_root()
 		missing_layer.get_node("RoomContent/Terrain/" + layer_name).name = "Renamed" + layer_name
 		var missing_layer_result: Dictionary = RoomAuthoringContractScript.validate(missing_layer)
@@ -194,7 +194,7 @@ func _make_root():
 		child.name = child_name
 		room_content.add_child(child)
 		if child_name == "Terrain":
-			for layer_name: String in ["BackTiles", "SolidTiles", "GlassTiles", "VisionBlockTiles", "DetailTiles", "MarkerTiles"]:
+			for layer_name: String in ["BackTiles", "SolidTiles", "DetailTiles"]:
 				var layer := TileMapLayer.new()
 				layer.name = layer_name
 				child.add_child(layer)

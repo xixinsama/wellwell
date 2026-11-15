@@ -112,12 +112,28 @@ func set_camera_shake_enabled(enabled: bool) -> void:
     set_value(&"camera_shake_enabled", enabled)
 
 
+func is_atmosphere_enabled() -> bool:
+    return bool(get_value(&"atmosphere_enabled"))
+
+
+func set_atmosphere_enabled(enabled: bool) -> void:
+    set_value(&"atmosphere_enabled", enabled)
+
+
 func is_one_way_drop_enabled() -> bool:
     return bool(get_value(&"one_way_drop_enabled"))
 
 
 func set_one_way_drop_enabled(enabled: bool) -> void:
     set_value(&"one_way_drop_enabled", enabled)
+
+
+func is_one_way_occlusion_enabled() -> bool:
+    return bool(get_value(&"one_way_occludes_sight"))
+
+
+func set_one_way_occlusion_enabled(enabled: bool) -> void:
+    set_value(&"one_way_occludes_sight", enabled)
 
 
 func is_mute_on_focus_loss_enabled() -> bool:

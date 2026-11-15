@@ -34,6 +34,8 @@ class PreviewSnapshot extends RefCounted:
 @export var camera_path := NodePath("../PreviewOnly/PixelCamera2D")
 @export var fog_path := NodePath("../PreviewOnly/FogOfWar")
 @export var debug_hud_path := NodePath("../PreviewOnly/DebugHud")
+@export var water_path := NodePath("../PreviewOnly/WaterField")
+@export var atmosphere_path := NodePath("../PreviewOnly/Atmosphere")
 
 var _preview_snapshot: RefCounted
 var _preview_explored_cells: Dictionary[String, bool] = {}
@@ -75,6 +77,8 @@ func setup_preview(authoring_root: Node = null) -> bool:
 		fog.call("set_room_chunks", Vector2i.ZERO, root.get("room_size_chunks"))
 	if _has_property(fog, "level_id"):
 		fog.set("level_id", String(root.get("room_id")))
+	_bind_room_extension(get_node_or_null(water_path), root, room_content, player)
+	_bind_room_extension(get_node_or_null(atmosphere_path), root, room_content, player)
 	_connect_entrances(room_content)
 	preview_ready.emit()
 	return true
@@ -200,6 +204,16 @@ func _bind_player(target_owner: Node, player: Node2D) -> void:
 		target_owner.set("player", player)
 	elif _has_property(target_owner, "_player"):
 		target_owner.set("_player", player)
+
+
+## Water and mist room extensions are optional in the preview: a room without
+## basins simply keeps its water field empty.
+func _bind_room_extension(extension: Node, root: Node, room_content: Node, player: Node2D) -> void:
+	if extension == null:
+		return
+	_bind_player(extension, player)
+	if extension.has_method("bind_room_with_origin"):
+		extension.call("bind_room_with_origin", root, room_content, Vector2i.ZERO)
 
 
 func _has_property(target: Object, property_name: String) -> bool:

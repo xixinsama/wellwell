@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="RoomData" format=3 uid="uid://dl46x6juumdw2"]
+
+[ext_resource type="Script" path="res://addons/platformer_kit/world/data/room_data.gd" id="1_ki688"]
+
+[resource]
+script = ExtResource("1_ki688")
+room_id = "test_fog_wide"
+display_name = "Test Room: two screens"
+scene_path = "res://scenes/rooms/generated/test_fog_wide/runtime.tscn"
+source_scene_path = "res://scenes/levels/test/test_fog_wide.tscn"
+source_fingerprint = "a4206b9b43a21dea0cdace04b3535ddfe55db7a39fc3bc0726eeef18f05d9faf"
+terrain_scene_path = "res://scenes/rooms/generated/test_fog_wide/terrain.tscn"
+entrance_ids = PackedStringArray("to_west")
+spawn_ids = PackedStringArray("from_west")
+entity_ids = PackedStringArray()
+tags = PackedStringArray()
+room_size_chunks = Vector2i(2, 1)

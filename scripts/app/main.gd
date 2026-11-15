@@ -26,9 +26,18 @@ func _ready() -> void:
     var world_root := sub_viewport.get_node_or_null("WorldRoot")
     if world_root != null:
         var fog := world_root.get_node_or_null("FogOfWar")
+        var crumble := world_root.get_node_or_null("CrumbleRuntime")
+        var water := world_root.get_node_or_null("WaterField")
+        var atmosphere := world_root.get_node_or_null("Atmosphere")
         var persistence_bridge := world_root.get_node_or_null("MetroidvaniaPersistenceBridge")
         if fog != null and world_root.has_method("register_room_extension"):
             world_root.call("register_room_extension", fog)
+        if crumble != null and world_root.has_method("register_room_extension"):
+            world_root.call("register_room_extension", crumble)
+        if water != null and world_root.has_method("register_room_extension"):
+            world_root.call("register_room_extension", water)
+        if atmosphere != null and world_root.has_method("register_room_extension"):
+            world_root.call("register_room_extension", atmosphere)
         if persistence_bridge != null:
             _configure_metroidvania_runtime(world_root, persistence_bridge, fog)
             persistence_bridge.call("bind_save_manager", SaveManager)

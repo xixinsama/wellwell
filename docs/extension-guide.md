@@ -182,6 +182,56 @@ does not create one collision shape per cell.
   board is always solvable. History is cleared, the player is not moved, and
   the walk is pure data (`PuzzleScrambler`), so it can be tested headlessly.
 
+## Exploration: Fog Zones, Crumble Tiles, Doors
+
+See `docs/fog-zones-and-crumble.md` for the full rules and the test world.
+
+- The room template has three tile layers: `BackTiles` (background),
+  `SolidTiles` (playfield) and `DetailTiles` (front). Glass, one-way platforms,
+  crumble tiles and ladders are all painted in `SolidTiles`; the tile decides the
+  behaviour (glass atlas `0,3`, crumble `3,0`/`3,4`, ladder `0,7`).
+- Fog is per room and uses the current camera view, so a 1x1 room reveals as one
+  screen and a 2x1 room reveals screen by screen. Solid wall cells block sight
+  automatically; glass is see-through. Sight spreads in eight directions, so a
+  one-cell diagonal crack is see-through by design.
+- One-way platforms block downward sight when the Game setting
+  **One-way Platforms Block Sight** is on (default). Standing on top makes the
+  space underneath a sealed pocket.
+- `scenes/world/fog_zone.tscn` is an authored rectangle under
+  `RoomContent/Entities`: `Dark` hides its cells, `Light` always lights them.
+  `reveal_on_enter` lights it on entry, `restore_on_exit` re-darkens it on exit
+  (explored cells stay on the map), and `focus_room` darkens the rest of the
+  room towards the player while inside.
+- `scenes/world/fog_door.tscn` blocks movement and sight while closed; interact
+  toggles it. Occluders join the `fog_occluder` group and expose
+  `is_occluding()` and `get_world_rect()`.
+- `CrumbleRuntime` shakes a crumble cell for 0.25 s, erases it, and writes it
+  back after 1.5 s; leaving the room restores everything.
+- `scenes/levels/test/test_world_runner.tscn` starts the test world directly;
+  edit `scenes/levels/test/*.tscn`, bake, then run the runner.
+
+## Water and Mist
+
+See `docs/water-and-mist.md` for the full rules, tuning tables and limits. In short:
+
+- Water is a room extension (`WaterField`, group `water_field`) fed by `WaterBasin`
+  markers; `WaterGate` holds the water until the room is entered. Column floors are
+  scanned from `SolidTiles` bottom-up, so painting terrain is enough.
+- The player composes `PlayerWaterMotion` (buoyancy, swimming, entry depth) the
+  same way as `LadderMotionComponent2D`; keep water feel in that component, not in
+  the controller.
+- Gas is `Atmosphere`: three densities (heavy sinks, neutral drifts, light rises)
+  simulated on the GPU by `GasSim`, two ping-ponged SubViewports running
+  `gas_sim.gdshader`; the CPU `FogGrid` is only the headless fallback. `FogLight`
+  markers light it, an 8 px solid+water mask keeps it out of walls and pools, and
+  the Game setting **Gas Simulation** (`atmosphere_enabled`) toggles it live. Add a
+  `LIGHT` `FogZone` covering any room with water, otherwise the exploration fog
+  clips the pools and the gas into a black band.
+- Regenerate `scenes/levels/test/water_hall.tscn` with
+  `godot --headless --path . -s res://tools/build_water_room.gd`. The room is
+  generated rather than inherited from the template, so change the generator for
+  layout edits.
+
 ## World Editor Workbench
 
 The World main screen is a three-column workbench: room list, canvas, inspector

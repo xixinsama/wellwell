@@ -1,0 +1,29 @@
+[gd_scene format=3 uid="uid://b6pvfpoyyyaoo"]
+
+[ext_resource type="Script" uid="uid://bo5asnakkt3ao" path="res://addons/platformer_kit/world/entities/spawn_point.gd" id="1_0b08w"]
+[ext_resource type="Script" uid="uid://dtxrrjgropat6" path="res://scripts/world/fog_zone.gd" id="2_8g4kh"]
+
+[node name="RoomRuntimeContent" type="Node2D" unique_id=144836171]
+
+[node name="Entities" type="Node2D" parent="." unique_id=1196931026]
+
+[node name="StartSpawn" type="Marker2D" parent="Entities" unique_id=1927660751]
+position = Vector2(72, 112)
+script = ExtResource("1_0b08w")
+
+[node name="FogZone" type="Node2D" parent="Entities" unique_id=414068291]
+position = Vector2(184, 128)
+script = ExtResource("2_8g4kh")
+size_cells = Vector2i(4, 3)
+zone_id = "FogZone"
+metadata/_custom_type_script = "uid://dtxrrjgropat6"
+
+[node name="FogZone2" type="Node2D" parent="Entities" unique_id=1198006750]
+position = Vector2(152, 56)
+script = ExtResource("2_8g4kh")
+mode = 1
+size_cells = Vector2i(3, 3)
+zone_id = "FogZone2"
+metadata/_custom_type_script = "uid://dtxrrjgropat6"
+
+[node name="Foreground" type="Node2D" parent="." unique_id=1206664880]

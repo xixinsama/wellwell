@@ -1,4 +1,4 @@
-[gd_scene load_steps=11 format=3 uid="uid://cejq022r3hjrd"]
+[gd_scene load_steps=12 format=3 uid="uid://cejq022r3hjrd"]
 
 [ext_resource type="Script" uid="uid://cbx1gcy30d8d2" path="res://scripts/player/player_controller.gd" id="1_player"]
 [ext_resource type="Resource" uid="uid://bo4x5hdpx5xu4" path="res://resources/player/default_player_tuning.tres" id="2_tuning"]
@@ -9,6 +9,8 @@
 [ext_resource type="Script" path="res://addons/platformer_kit/character/ladder/ladder_motion_component_2d.gd" id="7_ladder_motion"]
 [ext_resource type="Script" path="res://game/player/hero_animation_controller.gd" id="8_hero_animation"]
 [ext_resource type="Resource" path="res://resources/player/hero_sprite_frames.tres" id="9_hero_frames"]
+
+[ext_resource type="Script" path="res://game/player/player_water_motion.gd" id="10_water_motion"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_gmlin"]
 size = Vector2(6, 6)
@@ -68,3 +70,6 @@ script = ExtResource("6_motion_effects")
 
 [node name="LadderMotion" type="Node2D" parent="."]
 script = ExtResource("7_ladder_motion")
+
+[node name="WaterMotion" type="Node2D" parent="."]
+script = ExtResource("10_water_motion")

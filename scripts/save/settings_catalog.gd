@@ -91,6 +91,14 @@ static func _build_definitions() -> void:
 			"SETTINGS_DESC_FOG"
 		),
 		SettingsDefinition.toggle(
+			&"atmosphere_enabled",
+			GAME,
+			"SETTINGS_ATMOSPHERE",
+			true,
+			"AtmosphereToggle",
+			"SETTINGS_DESC_ATMOSPHERE"
+		),
+		SettingsDefinition.toggle(
 			&"camera_shake_enabled",
 			GAME,
 			"SETTINGS_CAMERA_SHAKE",
@@ -105,6 +113,14 @@ static func _build_definitions() -> void:
 			true,
 			"OneWayDropToggle",
 			"SETTINGS_DESC_ONE_WAY_DROP"
+		),
+		SettingsDefinition.toggle(
+			&"one_way_occludes_sight",
+			GAME,
+			"SETTINGS_ONE_WAY_SIGHT",
+			true,
+			"OneWaySightToggle",
+			"SETTINGS_DESC_ONE_WAY_SIGHT"
 		),
 		SettingsDefinition.slider(
 			&"master_volume",
