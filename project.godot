@@ -10,7 +10,7 @@ config_version=5
 
 [application]
 
-config/name="华容道平台跳跃"
+config/name="wellwell"
 config/description="A compact pixel-precise 2D platformer template."
 config/version="0.1.0"
 config/tags=PackedStringArray("2d", "multiplayer")
@@ -35,7 +35,7 @@ window/per_pixel_transparency/allowed=true
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/input_mapping/plugin.cfg", "res://addons/metroidvania_kit/plugin.cfg", "res://addons/platformer_abilities/plugin.cfg", "res://addons/platformer_combat/plugin.cfg", "res://addons/platformer_debug/plugin.cfg", "res://addons/platformer_kit/plugin.cfg", "res://addons/world_editor/plugin.cfg")
+enabled=PackedStringArray("res://addons/input_mapping/plugin.cfg", "res://addons/metroidvania_kit/plugin.cfg", "res://addons/pixelfx/plugin.cfg", "res://addons/platformer_abilities/plugin.cfg", "res://addons/platformer_combat/plugin.cfg", "res://addons/platformer_debug/plugin.cfg", "res://addons/platformer_kit/plugin.cfg", "res://addons/world_editor/plugin.cfg")
 
 [input]
 

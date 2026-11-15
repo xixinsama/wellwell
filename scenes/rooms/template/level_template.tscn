@@ -9,6 +9,8 @@
 [ext_resource type="PackedScene" uid="uid://dpkyymy3fnwb4" path="res://addons/platformer_debug/runtime/grid_overlay.tscn" id="5_wyn2e"]
 [ext_resource type="PackedScene" uid="uid://xdpcjsmnvhkj" path="res://addons/platformer_debug/runtime/debug_hud.tscn" id="6_qmbol"]
 [ext_resource type="Script" uid="uid://jvu53oscg1ib" path="res://addons/metroidvania_kit/map/discovery/fog_of_war.gd" id="7_qmbol"]
+[ext_resource type="PackedScene" uid="uid://d6sqanrtcnmo" path="res://addons/platformer_debug/runtime/debug_overlay_2d.tscn" id="8_debug_overlay"]
+[ext_resource type="Script" path="res://scripts/world/ladder_tile_area_builder.gd" id="9_ladder_builder"]
 
 [node name="RoomAuthoringRoot" type="Node2D" unique_id=1018949667]
 script = ExtResource("1_f53rw")
@@ -51,6 +53,9 @@ collision_enabled = false
 tile_set = ExtResource("3_t1ns4")
 collision_enabled = false
 
+[node name="LadderAreaBuilder" type="Node2D" parent="RoomContent/Terrain"]
+script = ExtResource("9_ladder_builder")
+
 [node name="Entities" type="Node2D" parent="RoomContent" unique_id=190854283]
 
 [node name="StartSpawn" type="Marker2D" parent="RoomContent/Entities" unique_id=1039911569]
@@ -78,6 +83,9 @@ player_path = NodePath("../Player")
 vision_block_tiles_path = NodePath("../../RoomContent/Terrain/VisionBlockTiles")
 
 [node name="GridOverlay" parent="PreviewOnly" unique_id=778597302 instance=ExtResource("5_wyn2e")]
+
+[node name="DebugOverlay" parent="PreviewOnly" unique_id=801280615 instance=ExtResource("8_debug_overlay")]
+hud_path = NodePath("../../UI/DebugHud")
 
 [node name="UI" type="CanvasLayer" parent="." unique_id=1435291588]
 

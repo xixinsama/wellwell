@@ -37,6 +37,19 @@ If you change the viewport size, preserve the same idea:
 - Integer-scale the larger viewport.
 - Round the final camera position to source pixels.
 
+## Runtime Debug Overlay
+
+`addons/platformer_debug/runtime/debug_overlay_2d.tscn` adds the read-only
+velocity, collision, and sensor overlay to a scene. It is already instanced in
+`scenes/runtime/world_root.tscn` (gameplay) and
+`scenes/rooms/template/level_template.tscn` (room preview). Press **F3** to
+toggle the vectors, the sensor lines, and the debug HUD together.
+
+Point `subject_path` at the debug subject and `hud_path` at a `DebugHud` when
+reusing the overlay elsewhere. Set `toggle_keycode` to change the key, or
+`start_enabled` to control the initial state. The overlay only reads
+`get_debug_state()`; it never mutates gameplay state.
+
 ## Adding Mechanics
 
 Platform behavior is composed under `PlatformBody2D`: use

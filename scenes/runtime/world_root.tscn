@@ -1,13 +1,14 @@
 [gd_scene format=3 uid="uid://hbo4lyjj1f0x"]
 
 [ext_resource type="Script" uid="uid://c6fmh8qedc74g" path="res://addons/platformer_kit/world/runtime/world_session.gd" id="1_session"]
-[ext_resource type="Resource" uid="uid://d4fkx8roxohgg" path="res://resources/worlds/the_world.tres" id="2_o5np0"]
+[ext_resource type="Resource" uid="uid://qwahurn8urga" path="res://resources/worlds/the_world.tres" id="2_o5np0"]
 [ext_resource type="PackedScene" uid="uid://cejq022r3hjrd" path="res://scenes/player/player.tscn" id="2_player"]
 [ext_resource type="Script" uid="uid://mx2n1010061e" path="res://addons/platformer_kit/camera/pixel_camera_2d.gd" id="3_camera"]
 [ext_resource type="Script" uid="uid://jvu53oscg1ib" path="res://addons/metroidvania_kit/map/discovery/fog_of_war.gd" id="4_fog"]
 [ext_resource type="Script" uid="uid://bn442i1dqwl3f" path="res://addons/platformer_kit/world/runtime/world_terrain_runtime.gd" id="5_terrain"]
 [ext_resource type="Script" uid="uid://cjhh5xepsfcws" path="res://addons/platformer_kit/world/runtime/world_runtime.gd" id="6_runtime"]
 [ext_resource type="Script" uid="uid://cqy5sup1ibipw" path="res://addons/metroidvania_kit/world_state/metroidvania_persistence_bridge.gd" id="7_persistence_bridge"]
+[ext_resource type="PackedScene" uid="uid://d6sqanrtcnmo" path="res://addons/platformer_debug/runtime/debug_overlay_2d.tscn" id="8_debug_overlay"]
 
 [node name="WorldRoot" type="Node2D" unique_id=1531965248]
 script = ExtResource("1_session")
@@ -36,3 +37,7 @@ player_path = NodePath("../Player")
 
 [node name="MetroidvaniaPersistenceBridge" type="Node" parent="." unique_id=2072378855]
 script = ExtResource("7_persistence_bridge")
+
+[node name="DebugOverlay" parent="." unique_id=801280615 instance=ExtResource("8_debug_overlay")]
+subject_path = NodePath("../Player")
+hud_path = NodePath("../../../../HUD/DebugHud")

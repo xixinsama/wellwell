@@ -13,6 +13,10 @@ const GRID_OVERLAY_SCENE_PATH := "res://addons/platformer_debug/runtime/grid_ove
 const OVERLAY_PATH := "res://examples/movement_lab/debug_overlay.tscn"
 const DEBUG_LAB_PATH := "res://examples/movement_lab/movement_lab_debug.tscn"
 const MOVEMENT_LAB_PATH := "res://examples/movement_lab/movement_lab.tscn"
+const OVERLAY_SCRIPT_PATH := "res://addons/platformer_debug/runtime/debug_overlay_2d.gd"
+const OVERLAY_SCENE_PATH := "res://addons/platformer_debug/runtime/debug_overlay_2d.tscn"
+const WORLD_ROOT_PATH := "res://scenes/runtime/world_root.tscn"
+const LEVEL_TEMPLATE_PATH := "res://scenes/rooms/template/level_template.tscn"
 
 
 class DebugSubject extends Node:
@@ -41,6 +45,8 @@ func run() -> Array[String]:
 	var failures: Array[String] = []
 	_assert_addon_contract(failures)
 	_assert_read_only_debug_binding(failures)
+	_assert_game_overlay_binding(failures)
+	_assert_game_scene_wiring(failures)
 	_assert_optional_example_boundary(failures)
 	return failures
 
@@ -55,6 +61,7 @@ func _assert_addon_contract(failures: Array[String]) -> void:
 		PLUGIN_PATH,
 		HUD_PATH,
 		VISUALIZER_PATH,
+		OVERLAY_SCRIPT_PATH,
 		DEBUG_MAP_PATH,
 		GRID_OVERLAY_PATH,
 		TUNING_HOTKEYS_PATH,
@@ -62,7 +69,7 @@ func _assert_addon_contract(failures: Array[String]) -> void:
 		var script := load(path) as Script
 		if script == null or not script.can_instantiate():
 			failures.append("platformer_debug script could not be loaded: %s" % path)
-	for path: String in [HUD_SCENE_PATH, DEBUG_MAP_SCENE_PATH, GRID_OVERLAY_SCENE_PATH]:
+	for path: String in [HUD_SCENE_PATH, DEBUG_MAP_SCENE_PATH, GRID_OVERLAY_SCENE_PATH, OVERLAY_SCENE_PATH]:
 		if load(path) as PackedScene == null:
 			failures.append("platformer_debug scene could not be loaded: %s" % path)
 	var hud_scene := load(HUD_SCENE_PATH) as PackedScene
@@ -114,6 +121,68 @@ func _assert_read_only_debug_binding(failures: Array[String]) -> void:
 	visualizer.free()
 	hud.free()
 	subject.free()
+
+
+func _assert_game_overlay_binding(failures: Array[String]) -> void:
+	var overlay_scene := load(OVERLAY_SCENE_PATH) as PackedScene
+	if overlay_scene == null:
+		failures.append("debug overlay scene could not be loaded")
+		return
+	var host := Node.new()
+	host.name = "OverlayHost"
+	var subject := DebugSubject.new()
+	subject.name = "Player"
+	host.add_child(subject)
+	var hud := (load(HUD_PATH) as Script).new() as Control
+	hud.name = "Hud"
+	var label := Label.new()
+	label.name = "Label"
+	hud.add_child(label)
+	host.add_child(hud)
+	var overlay := overlay_scene.instantiate()
+	overlay.name = "DebugOverlay"
+	overlay.set("hud_path", NodePath("../Hud"))
+	host.add_child(overlay)
+	add_child(host)
+	var visualizer := overlay.get_node_or_null("Visualizer") as Node2D
+	if visualizer == null:
+		failures.append("debug overlay scene has no Visualizer child")
+	elif not bool(overlay.call("is_enabled")):
+		failures.append("debug overlay must start enabled")
+	elif hud.get("player") != subject:
+		failures.append("debug overlay did not bind the configured HUD")
+	elif not visualizer.visible or not hud.visible:
+		failures.append("debug overlay must start with its layers visible")
+	else:
+		overlay.call("set_enabled", false)
+		if overlay.visible or visualizer.visible or hud.visible:
+			failures.append("debug overlay did not hide the visualizer and HUD")
+		overlay.call("set_enabled", true)
+		if not overlay.visible or not visualizer.visible or not hud.visible:
+			failures.append("debug overlay did not restore the visualizer and HUD")
+	remove_child(host)
+	host.free()
+
+
+func _assert_game_scene_wiring(failures: Array[String]) -> void:
+	_assert_overlay_wiring(WORLD_ROOT_PATH, "world_root", failures)
+	_assert_overlay_wiring(LEVEL_TEMPLATE_PATH, "level_template", failures)
+
+
+func _assert_overlay_wiring(scene_path: String, label: String, failures: Array[String]) -> void:
+	var packed := load(scene_path) as PackedScene
+	if packed == null:
+		failures.append("%s scene could not be loaded" % label)
+		return
+	var root := packed.instantiate()
+	var overlay := root.find_child("DebugOverlay", true, false)
+	if overlay == null:
+		failures.append("%s has no DebugOverlay instance" % label)
+	elif String(overlay.get("subject_path")) != "../Player":
+		failures.append("%s debug overlay does not follow the player" % label)
+	elif String(overlay.get("hud_path")).is_empty():
+		failures.append("%s debug overlay has no HUD binding" % label)
+	root.free()
 
 
 func _assert_optional_example_boundary(failures: Array[String]) -> void:
