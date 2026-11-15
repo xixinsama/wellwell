@@ -108,3 +108,73 @@ C: position = (27*8, 19*8) size = (12, 1)   # 同上，空的
 3. 给新池放一个贴底的 `WaterBasin`（`size = (宽, 1)`），保证模拟范围覆盖它。
 4. 如果希望它把水**送给**左边的池子（向左流），把左边池子的堰口画成"左边低、右边高"，水柱会自动贴左侧低池的右边缘。
 5. 重新烘焙 + 跑 `water_demo`，按第 5 节把水量调够。
+
+---
+
+# 二：2D 栅格流体（`WaterGrid` + `FluidRegion`）
+
+上面那套是**一维水柱**：每个 x 只有一个水面，适合池塘、级联、瀑布。如果你想要 Noita 那种"每个格子都有水、水会在墙与墙之间流动、会从洞里漏下去"的效果，用这一套。
+
+只需要摆两种东西：
+
+1. **一堵墙** —— 就是普通的 `SolidTiles` 瓦片（和画地形完全一样）。
+2. **一块流体** —— 放一个 `FluidRegion`（`RoomContent/Entities` 下），矩形区域就是初始水体的体积。
+
+没有别的标记，也不用画水面线：运行时 `WaterGrid` 会自动接管，整间房按 8px 一格模拟。
+
+## 1. 规则
+
+- `FluidRegion` 的矩形**被水填满**：区域内每个空格子初始都是满的。
+- 区域里的瓦片墙**不占水**：那块体积直接被扣掉（"保留墙之外的体积"）。
+- 水会自己往下掉、往低处摊平、从边缘漫出去；**不会向上流**，所以不会爬上墙。
+- 水位高过堰口就会漫过去，形成瀑布；地面有洞就漏下去。
+- 体积严格守恒：水只是从一格搬到另一格，不会凭空消失或产生。
+
+## 2. 房间示例（`water_grid`）
+
+`scenes/levels/test/water_grid.tscn`（生成器 `tools/build_water_grid.gd`，**手改过瓦片就不要重跑它**）：
+
+```
+左侧水池：cols 1..18 一直实心到 row 22，池底 row 14
+堰口/dam：col 19，从 row 9 实心到底
+右侧地面：cols 20..38，地面 row 19
+排水洞：  cols 30..31，rows 19..21 空着（掉到 row 22 的坑里）
+岩石柱：  cols 8..9，rows 8..13 —— 故意立在流体区域里
+FluidRegion：position (2*8, 5*8)，size (17, 9)
+```
+
+岩石柱就是"墙在流体里"的例子：区域表面积是 17×9，实际体积少了 2×6 格。
+
+## 3. 参数（`WaterGrid` 节点）
+
+| 参数 | 默认 | 作用 |
+| :--- | :--- | :--- |
+| `cell_pixels` | 8 | 模拟格子大小。8 和瓦片对齐、最省；4 更细腻但格子数 ×4 |
+| `sim_hz` | 60 | 模拟频率 |
+| `lateral_rate` / `fall_rate` | 24 / 1 | 横向摊平速度 / 每步下落速度 |
+| `splash_depth` | 1.6 | 角色入水时推开的深度 |
+| `shallow_color` / `deep_color` | 见节点 | 浅水/深水颜色 |
+
+放在 `scenes/runtime/world_root.tscn` 的 `WaterGrid` 节点上；房间里没有 `FluidRegion` 时它完全不启动。
+
+## 4. 和玩家/代码交互
+
+`WaterGrid` 实现了和 `WaterField` 相同的查询，玩家游泳组件不用改：
+
+```gdscript
+water_grid.is_ready()
+water_grid.get_surface_y_at_point(player.global_position)   # 优先用这个（2D 精确）
+water_grid.get_surface_y_at(x)                             # 兼容旧接口
+water_grid.get_flow_velocity_at_point(point)
+water_grid.add_water(point, radius, volume)                # 加水（水源）
+water_grid.remove_water(point, radius, volume)             # 抽水
+water_grid.request_splash(x, impact_speed)                 # 入水水花
+```
+
+## 5. 注意事项
+
+- 一片很宽的水池要**摊平需要几秒**：模型是守恒的格子流，不是无粘流体。
+- 房间太大（多个 chunk）时把 `cell_pixels` 调成 8 或 16，格子数按面积平方增长。
+- 静止后模拟会自己睡眠，`step` 不再花时间；只有水在动时才占用 CPU。
+- 全部房间跑满水的最坏情况约 0.8ms / 步（320×180、8px 格）；普通水池只占其中一小块。
+

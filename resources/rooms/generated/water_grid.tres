@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="RoomData" format=3 uid="uid://bmvcgy1lwimkp"]
+
+[ext_resource type="Script" path="res://addons/platformer_kit/world/data/room_data.gd" id="1_t7y7n"]
+
+[resource]
+script = ExtResource("1_t7y7n")
+room_id = "water_grid"
+display_name = "栅格流体"
+scene_path = "res://scenes/rooms/generated/water_grid/runtime.tscn"
+source_scene_path = "res://scenes/levels/test/water_grid.tscn"
+source_fingerprint = "7b93e82618ac832c1fbda32b162e4c833c4fc63187553ea5bc2d9c162d11cb8b"
+terrain_scene_path = "res://scenes/rooms/generated/water_grid/terrain.tscn"
+entrance_ids = PackedStringArray()
+spawn_ids = PackedStringArray("start")
+entity_ids = PackedStringArray()
+tags = PackedStringArray()
+map_color = Color(0.24, 0.62, 0.95, 1)

@@ -35,6 +35,7 @@ class PreviewSnapshot extends RefCounted:
 @export var fog_path := NodePath("../PreviewOnly/FogOfWar")
 @export var debug_hud_path := NodePath("../PreviewOnly/DebugHud")
 @export var water_path := NodePath("../PreviewOnly/WaterField")
+@export var grid_path := NodePath("../PreviewOnly/WaterGrid")
 @export var atmosphere_path := NodePath("../PreviewOnly/Atmosphere")
 
 var _preview_snapshot: RefCounted
@@ -78,6 +79,7 @@ func setup_preview(authoring_root: Node = null) -> bool:
 	if _has_property(fog, "level_id"):
 		fog.set("level_id", String(root.get("room_id")))
 	_bind_room_extension(get_node_or_null(water_path), root, room_content, player)
+	_bind_room_extension(get_node_or_null(grid_path), root, room_content, player)
 	_bind_room_extension(get_node_or_null(atmosphere_path), root, room_content, player)
 	_connect_entrances(room_content)
 	preview_ready.emit()

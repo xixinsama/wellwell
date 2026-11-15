@@ -28,6 +28,7 @@ func _ready() -> void:
         var fog := world_root.get_node_or_null("FogOfWar")
         var crumble := world_root.get_node_or_null("CrumbleRuntime")
         var water := world_root.get_node_or_null("WaterField")
+        var water_grid := world_root.get_node_or_null("WaterGrid")
         var atmosphere := world_root.get_node_or_null("Atmosphere")
         var persistence_bridge := world_root.get_node_or_null("MetroidvaniaPersistenceBridge")
         if fog != null and world_root.has_method("register_room_extension"):
@@ -36,6 +37,8 @@ func _ready() -> void:
             world_root.call("register_room_extension", crumble)
         if water != null and world_root.has_method("register_room_extension"):
             world_root.call("register_room_extension", water)
+        if water_grid != null and world_root.has_method("register_room_extension"):
+            world_root.call("register_room_extension", water_grid)
         if atmosphere != null and world_root.has_method("register_room_extension"):
             world_root.call("register_room_extension", atmosphere)
         if persistence_bridge != null:

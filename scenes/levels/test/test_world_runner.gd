@@ -17,6 +17,7 @@ func _ready() -> void:
 	var fog := world_root.get_node_or_null("FogOfWar")
 	var crumble := world_root.get_node_or_null("CrumbleRuntime")
 	var water := world_root.get_node_or_null("WaterField")
+	var water_grid := world_root.get_node_or_null("WaterGrid")
 	var atmosphere := world_root.get_node_or_null("Atmosphere")
 	var overlay := world_root.get_node_or_null("DebugOverlay")
 	if overlay != null and overlay.has_method("set_enabled"):
@@ -27,6 +28,8 @@ func _ready() -> void:
 		world_root.call("register_room_extension", crumble)
 	if water != null:
 		world_root.call("register_room_extension", water)
+	if water_grid != null:
+		world_root.call("register_room_extension", water_grid)
 	if atmosphere != null:
 		world_root.call("register_room_extension", atmosphere)
 	if world_root.has_method("bind_settings_source"):

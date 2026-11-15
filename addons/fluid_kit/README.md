@@ -1,11 +1,14 @@
 # Fluid Kit
 
 Water and gas for 2D pixel games, as a self-contained Godot 4 addon: a 1D
-shallow-water solver, a GPU 2D Navier-Stokes gas field with three densities, and
-the scene nodes to author, emit, disturb and light both.
+shallow-water solver, a conservative 2D cell fluid, a GPU 2D Navier-Stokes gas
+field with three densities, and the scene nodes to author, emit, disturb and
+light both.
 
 - **Water** `WaterField` — conservative column water, spill gates, waterfalls,
   splashes, buoyancy/swimming hooks.
+- **Grid water** `WaterGrid` — 2D cell fluid: fill a region, let tile walls hold
+  it, watch it fall, level, spill and drain. Same query surface as `WaterField`.
 - **Gas** `Atmosphere` — incompressible Navier-Stokes (semi-Lagrangian advection,
   buoyancy forces, Jacobi pressure projection), three gas channels (heavy,
   neutral, light), viscosity, decay, vents, trail emitters, one-shot blasts,
@@ -30,6 +33,8 @@ that anything can implement, or you can drive the fields manually.
 | Node | Role |
 | :--- | :--- |
 | `WaterField` | Owns the pools of one room, the water quad, the simulated falling streams and splash requests. |
+| `WaterGrid` | Owns the 2D cell fluid of one room: the cell texture, the surface quad, the room scan. |
+| `FluidRegion` | Room marker: rectangle that starts filled with water; walls inside it remove volume. |
 | `Atmosphere` | Owns the gas field of one room, the gas quad, vents, lights and the GPU pipeline. |
 | `WaterBasin` | Room marker: pool rectangle; its top edge is the initial surface. |
 | `WaterGate` | Room marker: holds water back until opened. |
@@ -104,6 +109,70 @@ mist only: side-view games must not show round ripples, those read as top-down.
 The simulation runs at 120 Hz over 8 px columns; the surface texture is uploaded
 at most 60 times a second because the upload forces a GPU sync. Still pools sleep
 and cost nothing.
+
+## Water: the 2D grid (`WaterGrid`)
+
+`WaterField` is a 1D height field: one surface per column, which is perfect for
+pools, dams and waterfalls but cannot describe water flowing around a rock inside
+a pool, or a second pool above another one. `WaterGrid` is the full 2D variant:
+the room becomes a grid of `cell_pixels` (8 px by default) tanks, each holding up
+to one cell of water, and the water flows between them.
+
+Authoring is two things only:
+
+1. tile walls in `SolidTiles`, exactly like any other terrain;
+2. a `FluidRegion` marker per body of water. Its rectangle is *filled*: every
+   open cell inside it starts full, and a wall inside the rectangle keeps its
+   own volume out of the fluid.
+
+The grid simulates the whole room from there: water falls, levels out, spills
+over ledges and drains through holes. Nothing is authored per frame.
+
+```gdscript
+# WaterGrid implements the same queries as WaterField, so the swimming
+# component works unchanged; the 2D variants are exact.
+water_grid.is_ready()
+water_grid.get_surface_y_at_point(player.global_position)
+water_grid.get_flow_velocity_at_point(player.global_position)
+water_grid.add_water(point, radius, volume)      # a spring, leaked pipe, ...
+water_grid.remove_water(point, radius, volume)   # a drain
+water_grid.request_splash(world_x, impact_speed)
+```
+
+How a step works (fixed `sim_hz`, 60 by default):
+
+1. **gravity**: every cell pours at most one cell of water into the cell below
+   while that one has room, so a fall is a visible falling column;
+2. **leveling**: neighbouring column surfaces trade water from the higher one to
+   the lower one, swept four times, which keeps a wide basin flat while it
+   drains;
+3. **lateral flow**: standing cells in the same row exchange water by surface
+   height, with an extra overflow rate for a full cell backed up on a ledge so it
+   pours over the edge instead of seeping.
+
+Water never moves upward, only down or sideways: that is what keeps a pool in
+its basin and a waterfall a column instead of a sheet. Every transfer goes
+through a scratch array and is limited by the donor's water and the receiver's
+free space, so total volume is conserved exactly and no cell ever leaves
+`[0, cell_pixels]`.
+
+| WaterGrid parameter | Default | Meaning |
+| :--- | :--- | :--- |
+| `cell_pixels` | 8 | Cell size. 8 matches the tile grid; 4 is finer at 4x the cells. |
+| `sim_hz` | 60 | Steps per second. |
+| `lateral_rate` | 24 | Row-to-row transfer coefficient (1/s). |
+| `fall_rate` | 1 | Cells a falling cell may dump per step. |
+| `overflow_rate` | 30 | Extra spill rate for a full, backed-up cell. |
+| `level_rate` | 96 | Column leveling coefficient (1/s), swept 4x per step. |
+| `splash_depth` | 1.6 | Depth the player pushes aside on entry. |
+| `shallow_color` / `deep_color` / `crest_color` / `foam_color` | water palette | Render colours. |
+
+The renderer uploads an RGBA cell texture at 30 Hz: fill, depth above the cell,
+motion, and a cell kind (water / wall / empty). The surface is ramped
+horizontally between cells and a falling cell is drawn at full height, so a thin
+stream reads as a continuous column. `demos/grid_water_demo.tscn` is the runnable
+demo; `docs/water-authoring.md` has the authoring rules.
+
 
 ## Gas: the solver
 
@@ -191,6 +260,7 @@ the Atmosphere API directly (`set_gas_mover`, `set_gas_emitter`,
 | Scene | Shows |
 | :--- | :--- |
 | `demos/water_demo.tscn` | Pools, gate, waterfall, splashes, floating, lit gas. |
+| `demos/grid_water_demo.tscn` | 2D grid fluid: a filled region, a dam, a waterfall, a drain hole. |
 | `demos/gas_plumes_demo.tscn` | Three vents, three densities, platform rows. |
 | `demos/gas_effects_demo.tscn` | Jets, explosion, moving pillar (cycles). |
 | `demos/gas_trail_demo.tscn` | Empty room, square walker, dissolving trail. |
@@ -202,6 +272,8 @@ template's tiles and player); the runtime itself does not.
 
 ```powershell
 godot --headless --path . -s res://tests/run_test_script.gd -- res://tests/world/test_water_simulation.gd
+godot --headless --path . -s res://tests/run_test_script.gd -- res://tests/world/test_water_grid.gd
+godot --headless --path . -s res://tests/run_test_script.gd -- res://tests/world/test_water_grid_room.gd
 godot --headless --path . -s res://tests/run_test_script.gd -- res://tests/world/test_water_buoyancy.gd
 godot --headless --path . -s res://tests/run_test_script.gd -- res://tests/world/test_atmosphere_fog.gd
 godot --headless --path . -s res://tests/run_test_script.gd -- res://tests/world/test_atmosphere_settings.gd
@@ -216,6 +288,9 @@ so the gas falls back to the CPU `FogGrid` and the same tests cover that path.
 - Gas: ~0.06 ms of CPU per step for 20 GPU passes on an 80x45 grid; the 120 fps
   frame budget (8.3 ms) makes it drop ~1% of frames, 60 fps is flat. Water: a
   sleeping pool costs nothing; the surface upload is capped at 60 Hz.
+- Grid water: 0.8 ms per 60 Hz step for a 320x180 room fully in motion at 8 px
+  cells (920 cells); a normal basin is a fraction of that and a settled pool
+  sleeps. `cell_pixels = 4` quadruples the cell count.
 - The pressure solve is Jacobi: it removes ~93% of the divergence in open cells
   and leaves a small residual next to walls (no-flux boundary). More
   `pressure_iterations` tightens it; a multigrid V-cycle would be the next step.

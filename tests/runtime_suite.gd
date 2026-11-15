@@ -99,6 +99,8 @@ const TESTS: Array[Script] = [
 	preload("res://tests/world/test_cell_rect_merger.gd"),
 	preload("res://tests/player/test_hero_animation.gd"),
 	preload("res://tests/world/test_water_simulation.gd"),
+	preload("res://tests/world/test_water_grid.gd"),
+	preload("res://tests/world/test_water_grid_room.gd"),
 	preload("res://tests/world/test_atmosphere_fog.gd"),
 	preload("res://tests/world/test_atmosphere_settings.gd"),
 	preload("res://tests/world/test_water_buoyancy.gd"),

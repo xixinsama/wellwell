@@ -49,12 +49,27 @@ func _ready() -> void:
 		var rectangle := _body_shape.shape as RectangleShape2D
 		if rectangle != null:
 			_body_half_size = rectangle.size * 0.5
-	_field = get_tree().get_first_node_in_group(&"water_field")
+	_field = _resolve_field()
 
 
 func bind_field(field: Node) -> void:
 	_field = field
 	reset()
+
+
+## A room can hold two water systems: the 1D column field and the 2D grid. Only
+## one of them is bound at a time, so the component prefers a ready field and
+## falls back to any field in the group.
+func _resolve_field() -> Node:
+	var fallback: Node = null
+	for node: Node in get_tree().get_nodes_in_group(&"water_field"):
+		if not is_instance_valid(node):
+			continue
+		if fallback == null:
+			fallback = node
+		if bool(node.call("is_ready")):
+			return node
+	return fallback
 
 
 func reset() -> void:
@@ -79,7 +94,7 @@ func step(context: RefCounted, intent: RefCounted, environment: RefCounted, prof
 		_emit_animation(false, Vector2.ZERO)
 		return false
 	if _field == null or not is_instance_valid(_field):
-		_field = get_tree().get_first_node_in_group(&"water_field")
+		_field = _resolve_field()
 	_splash_timer = maxf(_splash_timer - maxf(delta, 0.0), 0.0)
 	if _field == null or not bool(_field.call("is_ready")):
 		_submerged = 0.0
@@ -89,7 +104,7 @@ func step(context: RefCounted, intent: RefCounted, environment: RefCounted, prof
 	var body := get_parent() as Node2D
 	if body == null:
 		return false
-	var surface := float(_field.call("get_surface_y_at", body.global_position.x))
+	var surface := _surface_at(body.global_position)
 	if surface == INF:
 		_submerged = 0.0
 		_was_in_water = false
@@ -124,7 +139,7 @@ func step(context: RefCounted, intent: RefCounted, environment: RefCounted, prof
 	var drag_weight := 1.0 - exp(-water_drag * maxf(delta, 0.0))
 	velocity *= 1.0 - drag_weight
 
-	var flow := float(_field.call("get_flow_velocity_at", body.global_position.x))
+	var flow := _flow_at(body.global_position)
 	if absf(flow) > 0.01:
 		velocity.x += flow * maxf(delta, 0.0) * 1.4
 
@@ -160,6 +175,18 @@ func get_debug_state() -> Dictionary:
 		"in_water": is_in_water(),
 		"has_field": _field != null and is_instance_valid(_field),
 	}
+
+
+func _surface_at(point: Vector2) -> float:
+	if _field.has_method("get_surface_y_at_point"):
+		return float(_field.call("get_surface_y_at_point", point))
+	return float(_field.call("get_surface_y_at", point.x))
+
+
+func _flow_at(point: Vector2) -> float:
+	if _field.has_method("get_flow_velocity_at_point"):
+		return float(_field.call("get_flow_velocity_at_point", point))
+	return float(_field.call("get_flow_velocity_at", point.x))
 
 
 func _surface_hop(world_x: float) -> void:
