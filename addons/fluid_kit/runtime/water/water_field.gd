@@ -19,7 +19,6 @@ extends Node2D
 signal splash_requested(world_position: Vector2, power: float)
 
 const SURFACE_SHADER := preload("res://addons/fluid_kit/runtime/water/water_surface.gdshader")
-const WATERFALL_SHADER := preload("res://addons/fluid_kit/runtime/water/waterfall.gdshader")
 
 const CHUNK_PIXELS := Vector2(320.0, 180.0)
 const TILE_PIXELS := 8.0
@@ -63,8 +62,7 @@ var _quad: MeshInstance2D
 var _material: ShaderMaterial
 var _image: Image
 var _texture: ImageTexture
-var _waterfall: MeshInstance2D
-var _waterfall_material: ShaderMaterial
+var _waterfall: CPUParticles2D
 var _waterfall_timer := 0.0
 var _accumulator := 0.0
 var _needs_texture := true
@@ -163,7 +161,6 @@ func clear_room() -> void:
 		_waterfall.queue_free()
 		_waterfall = null
 	_material = null
-	_waterfall_material = null
 	_image = null
 	_texture = null
 
@@ -330,18 +327,19 @@ func _update_waterfall(delta: float) -> void:
 			best_drop = drop
 			best_index = index
 	if best_index < 0 or best_drop < waterfall_min_drop:
-		_waterfall.visible = false
+		_waterfall.emitting = false
 		return
 	var top := _sim.get_surface_y(best_index)
 	var bottom := _sim.get_surface_y(best_index + 1)
 	var height := bottom - top
 	var width := 12.0
 	var left := _origin_x + float(best_index + 1) * COLUMN_WIDTH - width * 0.5
-	_waterfall.visible = true
-	_waterfall.global_position = Vector2(left + width * 0.5, top + height * 0.5)
-	_waterfall.scale = Vector2(width, maxf(height, 1.0))
-	if _waterfall_material != null:
-		_waterfall_material.set_shader_parameter("flow_speed", clampf(0.55 + height / 40.0, 0.55, 2.2))
+	_waterfall.emitting = true
+	_waterfall.global_position = Vector2(left + width * 0.5, top)
+	_waterfall.emission_rect_extents = Vector2(width * 0.5, 1.0)
+	_waterfall.lifetime = clampf(0.18 + height / 240.0, 0.2, 0.9)
+	_waterfall.initial_velocity_min = 24.0
+	_waterfall.initial_velocity_max = 60.0 + height * 0.6
 	_waterfall_timer = maxf(_waterfall_timer - maxf(delta, 0.0), 0.0)
 	if _waterfall_timer <= 0.0:
 		_waterfall_timer = 0.42
@@ -463,17 +461,34 @@ func _build_render() -> void:
 	_texture = ImageTexture.create_from_image(_image)
 	_material.set_shader_parameter("column_texture", _texture)
 
-	_waterfall_material = ShaderMaterial.new()
-	_waterfall_material.shader = WATERFALL_SHADER
-	_waterfall = MeshInstance2D.new()
-	_waterfall.name = "Waterfall"
-	var mesh := QuadMesh.new()
-	mesh.size = Vector2.ONE
-	_waterfall.mesh = mesh
-	_waterfall.material = _waterfall_material
+	# The fall is drawn as falling droplets, not as a textured quad: a side view
+	# reads better with particles than with a flat waterfall texture.
+	_waterfall = CPUParticles2D.new()
+	_waterfall.name = "WaterfallDrops"
+	_waterfall.emitting = false
+	_waterfall.amount = 56
+	_waterfall.lifetime = 0.45
+	_waterfall.preprocess = 0.2
+	_waterfall.local_coords = false
+	_waterfall.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
+	_waterfall.emission_rect_extents = Vector2(6.0, 1.0)
+	_waterfall.direction = Vector2(0.0, 1.0)
+	_waterfall.spread = 7.0
+	_waterfall.initial_velocity_min = 26.0
+	_waterfall.initial_velocity_max = 76.0
+	_waterfall.gravity = Vector2(0.0, 760.0)
+	_waterfall.scale_amount_min = 1.0
+	_waterfall.scale_amount_max = 2.0
+	_waterfall.color = Color(0.72, 0.88, 1.0, 0.9)
+	_waterfall.texture = _droplet_texture()
 	_waterfall.z_index = 2
-	_waterfall.visible = false
 	add_child(_waterfall)
+
+
+func _droplet_texture() -> ImageTexture:
+	var image := Image.create(2, 3, false, Image.FORMAT_RGBA8)
+	image.fill(Color.WHITE)
+	return ImageTexture.create_from_image(image)
 
 
 func _spawn_splash(world_x: float, surface_y: float, energy: float) -> void:

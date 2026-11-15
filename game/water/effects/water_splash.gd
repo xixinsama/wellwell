@@ -3,9 +3,9 @@ extends "res://addons/pixelfx/core/effect.gd"
 ## Pixel water splash for the hero entering (or hopping out of) a pool.
 ##
 ## One effect covers the whole speed range: `power` (0.15 .. 2.5) scales the
-## droplet count, spray speed, crown width and mist. The simulation raises the
-## local water surface separately (WaterField.request_splash), so the splash
-## height and the surface bulge both follow the impact speed.
+## droplet count, spray speed, crown width and mist. Droplets are random per
+## impact; there are deliberately no round ring ripples, because the game is a
+## side view and rings only read from above.
 
 const Px := preload("res://addons/pixelfx/core/px.gd")
 const Water := preload("res://addons/pixelfx/fx/water/_lib.gd")
@@ -25,7 +25,6 @@ var o: Dictionary
 var C: Array
 var R: Px.Rng
 var drops: Water.Drops
-var rings: Water.Ripples
 var mist: Water.Mist
 var lights: Px.Lights
 var power := 1.0
@@ -39,10 +38,7 @@ func create(o_: Dictionary) -> void:
 	power = clampf(float(o.get("power", 1.0)), 0.15, 2.5)
 	C = Px.fit(o.palette, 8)
 	R = Px.Rng.new(o.seed)
-	rings = Water.Ripples.new({"sy": 0.3})
-	var on_land := func(drop: Dictionary) -> void:
-		rings.add(drop.x, drop.z, 1.0, 2.0 + float(drop.s), 0.26, {"n": 1.0, "k": 0.8, "hot": 0.04})
-	drops = Water.Drops.new({"sy": 0.55, "g": 760.0, "onLand": on_land})
+	drops = Water.Drops.new({"sy": 0.55, "g": 760.0})
 	mist = Water.Mist.new()
 	lights = Px.Lights.new()
 	t = 0.0
@@ -59,13 +55,11 @@ func update(dt: float) -> void:
 		_foamed = true
 		_foam()
 	drops.update(dt)
-	rings.update(dt)
 	mist.update(dt)
 	lights.update(dt)
 
 
 func drawBack(p: Px.Painter) -> void:
-	rings.draw(p, C, -1.0)
 	drops.draw(p, C, "back")
 
 
@@ -76,7 +70,6 @@ func draw(p: Px.Painter) -> void:
 			return WHITE if d < 0.55 else null)
 		Px.sparkle(p, 0.0, -2.0, 3.0 + 3.0 * power * flash, C[6], WHITE, 0.35)
 	Water.lace(p, 0.0, 0.0, 6.0 + 12.0 * power, 2.2 + 2.0 * power, clampf(1.0 - t * 0.7, 0.0, 1.0), C, t, float(o.seed))
-	rings.draw(p, C, 0.0)
 	drops.draw(p, C, "front")
 	mist.draw(p, C[5])
 	lights.draw(p)
@@ -84,11 +77,8 @@ func draw(p: Px.Painter) -> void:
 
 
 func _spray() -> void:
-	rings.add(0.0, 0.0, 3.0, 10.0 + 20.0 * power, 0.55, {
-		"n": 2.0, "gap": 2.4, "k": 1.15, "hot": 0.1, "glint": 0.8,
-	})
 	lights.add(0.0, -2.0, 26.0 + 22.0 * power, C[5], 0.34 * power, 0.3)
-	var count := int(round(7.0 + 11.0 * power))
+	var count := int(round(9.0 + 14.0 * power))
 	for index: int in count:
 		var rng := Px.rng(o.seed, index, 31)
 		var spread := rng.range(-1.0, 1.0)
@@ -108,7 +98,6 @@ func _spray() -> void:
 
 
 func _foam() -> void:
-	rings.add(0.0, 0.0, 2.0, 6.0 + 10.0 * power, 0.7, {"n": 1.0, "gap": 2.0, "k": 0.7})
 	for index: int in int(3.0 + 4.0 * power):
 		var rng := Px.rng(o.seed, index, 77)
 		mist.add(

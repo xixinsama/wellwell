@@ -29,7 +29,7 @@ that anything can implement, or you can drive the fields manually.
 
 | Node | Role |
 | :--- | :--- |
-| `WaterField` | Owns the pools of one room, the water quad, the waterfall and splash requests. |
+| `WaterField` | Owns the pools of one room, the water quad, the falling droplet stream and splash requests. |
 | `Atmosphere` | Owns the gas field of one room, the gas quad, vents, lights and the GPU pipeline. |
 | `WaterBasin` | Room marker: pool rectangle; its top edge is the initial surface. |
 | `WaterGate` | Room marker: holds water back until opened. |
@@ -86,8 +86,12 @@ water_field.is_ready()
 | `max_depth` | 64 | Maximum depth per column (px), the capacity. |
 | `flow_rate` | 54 | Column-to-column transfer; stability limit is `SIM_HZ / 2`. |
 | `splash_radius_base` / `splash_radius_scale` | 8 / 10 | Impact disturbance radius. |
-| `waterfall_min_drop` | 5 | Minimum drop (px) that draws a waterfall quad. |
+| `waterfall_min_drop` | 5 | Minimum drop (px) that starts the falling droplet stream. |
 | `splash_scene` | null | Optional effect scene spawned on every splash; the field also emits `splash_requested(world_position, power)`. |
+
+The falling water at a spill lip is a `CPUParticles2D` droplet stream (no waterfall
+texture). Splashes are random droplets and mist only: side-view games must not
+show round ripples, those read as top-down.
 
 The simulation runs at 120 Hz over 8 px columns; the surface texture is uploaded
 at most 60 times a second because the upload forces a GPU sync. Still pools sleep
