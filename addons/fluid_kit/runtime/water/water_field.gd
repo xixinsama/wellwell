@@ -29,6 +29,8 @@ const TILE_PIXELS := 8.0
 const COLUMN_WIDTH := 8.0
 ## One waterfall column quad per spill lip.
 const MAX_FALLS := 4
+## A falling column can widen to this many 8 px columns with a big flow.
+const MAX_FALL_COLUMNS := 3
 ## Two simulation substeps per 60 Hz tick keep a wide pool level while the
 ## discrete column diffusion stays stable (flow_rate / SIM_HZ <= 0.5).
 const SIM_HZ := 120.0
@@ -325,24 +327,43 @@ func _update_falls(delta: float) -> void:
 	for index in maxi(_columns - 1, 0):
 		if _sim.is_blocked(index) or _sim.is_blocked(index + 1):
 			continue
-		if _sim.get_depth(index) <= 0.05:
-			continue
-		var drop := _sim.get_surface_y(index + 1) - _sim.get_surface_y(index)
+		var surface_left := _sim.get_surface_y(index)
+		var surface_right := _sim.get_surface_y(index + 1)
+		var drop := 0.0
+		var direction := 0
+		# The higher side must hold water; both directions are supported.
+		if _sim.get_depth(index) > 0.05 and surface_right - surface_left > waterfall_min_drop:
+			drop = surface_right - surface_left
+			direction = 1
+		elif _sim.get_depth(index + 1) > 0.05 and surface_left - surface_right > waterfall_min_drop:
+			drop = surface_left - surface_right
+			direction = -1
 		if drop < waterfall_min_drop:
 			continue
-		# The falling column hugs the lip and only covers open cells: it starts at
-		# the first open column after the lip and is at most two columns wide, so
-		# it never paints over a solid tile.
+		# Hug the lower pool's edge and grow away from the lip: a rightward spill
+		# starts at the lower pool's left edge, a leftward spill ends at its right
+		# edge. Bigger flow widens the column, but it never leaves the open cells.
+		var lower_column := index + 1 if direction > 0 else index
+		var lower_left := _origin_x + float(lower_column) * COLUMN_WIDTH
 		var open_columns := 1
-		while index + open_columns + 1 < _columns and not _sim.is_blocked(index + open_columns + 1):
-			open_columns += 1
-			if open_columns >= 2:
+		while open_columns < MAX_FALL_COLUMNS:
+			var next_column := lower_column + open_columns if direction > 0 else lower_column - open_columns
+			if next_column < 0 or next_column >= _columns or _sim.is_blocked(next_column):
 				break
+			open_columns += 1
+		var speed := absf(float(_sim.call("get_flow_velocity_at", lower_left + COLUMN_WIDTH * 0.5)))
+		var columns := clampi(int(round(1.0 + speed / 80.0)), 1, open_columns)
+		var width := float(columns) * COLUMN_WIDTH
+		var left := lower_left
+		if direction < 0:
+			left = lower_left + COLUMN_WIDTH - width
+		var top := surface_left if direction > 0 else surface_right
+		var bottom := surface_right if direction > 0 else surface_left
 		lips.append({
-			"left": _origin_x + float(index + 1) * COLUMN_WIDTH,
-			"width": float(open_columns) * COLUMN_WIDTH,
-			"top": _sim.get_surface_y(index),
-			"bottom": _sim.get_surface_y(index + 1),
+			"left": left,
+			"width": width,
+			"top": top,
+			"bottom": bottom,
 			"drop": drop,
 		})
 	lips.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:

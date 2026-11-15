@@ -21,7 +21,7 @@ const ATLAS_SOLID := Vector2i(1, 0)
 
 ## Pool A: high, left. Floor row 7, initial surface row 4.
 const A_FLOOR_ROW := 7
-const A_SURFACE_ROW := 4
+const A_SURFACE_ROW := 2
 const A_LEFT := 2
 const A_RIGHT := 12
 ## Pool B: middle, floor row 12.
@@ -34,7 +34,7 @@ const C_LEFT := 27
 const C_RIGHT := 38
 ## Solid lips between the pools (crest = top row of the wall).
 const LIP_A_ROW := 5
-const LIP_B_ROW := 9
+const LIP_B_ROW := 11
 
 
 func _init() -> void:

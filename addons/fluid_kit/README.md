@@ -74,6 +74,10 @@ stage.
 
 ## Water
 
+See `docs/water-authoring.md` for a step-by-step guide to drawing a water room
+(terrain rules, `WaterBasin` markers, initial water, and how the falling columns
+hug the lower pool and widen with the flow).
+
 ```gdscript
 # in a room with WaterBasin / WaterGate markers
 water_field.request_splash(world_x, impact_speed)   # hero entered the pool
