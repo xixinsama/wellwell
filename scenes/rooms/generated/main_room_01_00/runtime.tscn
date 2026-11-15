@@ -1,0 +1,30 @@
+[gd_scene format=3 uid="uid://bjoewc38nq6t6"]
+
+[ext_resource type="Script" path="res://addons/platformer_kit/world/entities/spawn_point.gd" id="1_l68oc"]
+[ext_resource type="Script" path="res://addons/platformer_kit/world/entities/reset_zone.gd" id="2_u6ah2"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_mrvaw"]
+size = Vector2(148, 16)
+
+[node name="RoomRuntimeContent" type="Node2D" unique_id=865418139]
+
+[node name="Entities" type="Node2D" parent="." unique_id=349882645]
+
+[node name="StartSpawn" type="Marker2D" parent="Entities" unique_id=2078233262]
+position = Vector2(52, 152)
+script = ExtResource("1_l68oc")
+
+[node name="ResetZone" type="Area2D" parent="Entities" unique_id=433392530]
+position = Vector2(88, 184)
+collision_layer = 4
+collision_mask = 2
+monitorable = false
+script = ExtResource("2_u6ah2")
+spawn_point_path = NodePath("../StartSpawn")
+metadata/_custom_type_script = "uid://502ixw2kyit1"
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Entities/ResetZone" unique_id=1868317907]
+position = Vector2(66, 4)
+shape = SubResource("RectangleShape2D_mrvaw")
+
+[node name="Foreground" type="Node2D" parent="." unique_id=1358633884]

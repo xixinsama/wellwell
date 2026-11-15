@@ -55,16 +55,30 @@ func run() -> Array[String]:
 		failures.append("relative velocity does not match CharacterBody2D velocity")
 	if player.has_method("get_movement_context"):
 		var context: RefCounted = player.call("get_movement_context")
-		if context != null:
+		if context == null:
+			pass
+		elif not player.has_method("grant_air_jump"):
+			failures.append("PlayerController does not expose the rider air-jump grant")
+		else:
+			context.set("air_jump_available", false)
 			context.set("jump_buffer_remaining", 0.05)
 			context.set("coyote_remaining", 0.05)
+			player.call("grant_air_jump")
+			if not bool(context.get("air_jump_available")):
+				failures.append("PlayerController.grant_air_jump did not arm an air jump")
+			if float(context.get("jump_buffer_remaining")) > 0.0 or float(context.get("coyote_remaining")) > 0.0:
+				failures.append("PlayerController.grant_air_jump left stale jump windows")
 	player.velocity = Vector2(20.0, 30.0)
 	player.call("respawn_at", Vector2(12.0, 18.0))
 	if player.global_position != Vector2(12.0, 18.0) or player.velocity != Vector2.ZERO:
 		failures.append("PlayerController respawn behavior changed during motor composition")
 	if player.has_method("get_movement_context"):
 		var context: RefCounted = player.call("get_movement_context")
-		if context != null and (float(context.get("jump_buffer_remaining")) > 0.0 or float(context.get("coyote_remaining")) > 0.0):
+		if context != null and (
+			float(context.get("jump_buffer_remaining")) > 0.0
+			or float(context.get("coyote_remaining")) > 0.0
+			or bool(context.get("air_jump_available"))
+		):
 			failures.append("PlayerController respawn did not reset motor timers")
 	player.queue_free()
 	return failures

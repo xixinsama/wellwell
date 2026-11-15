@@ -23,6 +23,3 @@ tile_map_data = PackedByteArray("AAAQAA0AAAABAAUAAAAQAA4AAAABAAUAAAAQAA8AAAABAAU
 
 [node name="StartSpawn" parent="RoomContent/Entities" parent_id_path=PackedInt32Array(190854283) index="0" unique_id=1039911569]
 position = Vector2(68, 140)
-
-[node name="DebugHud" parent="UI" parent_id_path=PackedInt32Array(1435291588) index="0" unique_id=586873470]
-visible = false

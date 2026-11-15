@@ -22,11 +22,22 @@ func step(
 	_apply_horizontal(context, intent, environment, profile, step_delta)
 	if environment.ceiling and context.velocity.y < 0.0:
 		context.velocity.y = 0.0
-	if context.jump_buffer_remaining > 0.0 and context.coyote_remaining > 0.0:
+	var can_ground_jump := (
+		context.jump_buffer_remaining > 0.0
+		and context.coyote_remaining > 0.0
+	)
+	var can_air_jump := (
+		context.jump_buffer_remaining > 0.0
+		and context.air_jump_available
+		and not environment.grounded
+	)
+	if can_ground_jump or can_air_jump:
 		context.velocity.y = profile.jump_speed
 		context.jump_buffer_remaining = 0.0
 		context.coyote_remaining = 0.0
 		context.just_jumped = true
+		if can_air_jump and not can_ground_jump:
+			context.air_jump_available = false
 	_apply_vertical(context, intent, environment, profile, step_delta)
 
 
@@ -47,6 +58,8 @@ func _update_timers(
 		if environment.grounded
 		else maxf(context.coyote_remaining - delta, 0.0)
 	)
+	if environment.grounded:
+		context.air_jump_available = false
 
 
 func _apply_horizontal(

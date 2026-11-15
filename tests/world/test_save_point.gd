@@ -2,6 +2,8 @@ extends Node
 
 const SAVE_POINT_SCENE := "res://addons/platformer_kit/world/entities/save_point.tscn"
 const SAVE_SNAPSHOT := preload("res://addons/platformer_kit/save/save_snapshot.gd")
+const ROOM_RUNTIME := preload("res://addons/platformer_kit/world/runtime/room_runtime.gd")
+const ROOM_03_DATA := "res://resources/rooms/generated/room_03_00.tres"
 
 
 func run() -> Array[String]:
@@ -11,6 +13,7 @@ func run() -> Array[String]:
 	_assert_scene_contract_and_activation(failures)
 	_assert_activation_modes(failures)
 	_assert_restored_state_is_visual_and_reusable(failures)
+	_assert_room_03_contact_saves(failures)
 	return failures
 
 
@@ -104,3 +107,37 @@ func _make_checkpoint(mode: int) -> Node:
 	})
 	add_child(checkpoint)
 	return checkpoint
+
+
+func _assert_room_03_contact_saves(failures: Array[String]) -> void:
+	var room_data: Resource = load(ROOM_03_DATA)
+	if room_data == null:
+		failures.append("room_03_00 RoomData is missing")
+		return
+	var runtime: Node2D = ROOM_RUNTIME.new() as Node2D
+	add_child(runtime)
+	var snapshot: RefCounted = SAVE_SNAPSHOT.new()
+	snapshot.world_id = "the_world"
+	if not runtime.call("setup_room", room_data, "the_world", snapshot, Vector2i(3, 0)):
+		failures.append("room_03_00 runtime content did not load")
+		runtime.free()
+		return
+	var save_point: Node = runtime.call("get_entity", "checkpoint")
+	if save_point == null:
+		failures.append("room_03_00 runtime has no checkpoint entity")
+		runtime.free()
+		return
+	if save_point.get_node_or_null("VisualRoot") == null:
+		failures.append("room_03_00 SavePoint lacks its VisualRoot")
+	if int(save_point.get("activation_mode")) != 0:
+		failures.append("room_03_00 SavePoint is not in contact mode")
+	var actor := Node2D.new()
+	save_point.get_node("ActivationArea").emit_signal("body_entered", actor)
+	actor.free()
+	if not bool(save_point.get("activated")):
+		failures.append("room_03_00 SavePoint did not activate on contact")
+	if snapshot.respawn_room_id != "room_03_00" or snapshot.respawn_spawn_id != "checkpoint":
+		failures.append("room_03_00 SavePoint did not write the respawn identity")
+	if not bool(snapshot.get_entity_state("checkpoint").get("activated", false)):
+		failures.append("room_03_00 SavePoint did not persist its activated state")
+	runtime.free()

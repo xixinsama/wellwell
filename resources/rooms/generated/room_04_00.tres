@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="RoomData" format=3]
+[gd_resource type="Resource" script_class="RoomData" format=3 uid="uid://c0gtcs4hwuy77"]
 
 [ext_resource type="Script" path="res://addons/platformer_kit/world/data/room_data.gd" id="1_pijej"]
 
@@ -8,7 +8,7 @@ room_id = "room_04_00"
 display_name = "Klotski Puzzle Room"
 scene_path = "res://scenes/rooms/generated/room_04_00/runtime.tscn"
 source_scene_path = "res://scenes/levels/room_04_00.tscn"
-source_fingerprint = "5765201ebb6c0e2bf6430ab5f95067dc07ea9f8c372c2d6ff36ca471163116bf"
+source_fingerprint = "0d1053aff8bc62546277a2025c606075fa915f29cc4edce259edec7939a0a9f0"
 terrain_scene_path = "res://scenes/rooms/generated/room_04_00/terrain.tscn"
 entrance_ids = PackedStringArray()
 spawn_ids = PackedStringArray("start")

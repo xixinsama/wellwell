@@ -19,6 +19,14 @@ extends Polygon2D
 ## warning and yields no shape.
 
 @export var movement_mode: PieceDefinition.MovementMode = PieceDefinition.MovementMode.FREE
+## Whether interactive input may move this piece. Disabled pieces still occupy
+## their cells and block other pieces. A disabled void piece can still be moved
+## passively by an A+ induced turn.
+@export var enable: bool = true
+## Cells travelled per horizontal input step.
+@export var x_move_distance: int = 1
+## Cells travelled per vertical input step.
+@export var y_move_distance: int = 1
 @export var cell_size: int = 8:
     set(value):
         cell_size = maxi(1, value)
@@ -28,6 +36,12 @@ var piece_index: int = -1
 var logical_cell: Vector2i = Vector2i.ZERO
 ## Derived cell offsets this piece occupies, relative to the anchor cell (0, 0).
 var shape: Array[Vector2i] = []
+## Cells that block from every direction. Legacy polygon faces are all walls.
+var wall_shape: Array[Vector2i] = []
+## Upward-facing one-way platform cells. The base polygon face never fills this.
+var one_way_shape: Array[Vector2i] = []
+## True for a moving void region. Tile pieces set this from a VoidTiles layer.
+var is_void: bool = false
 
 var _base_color: Color = Color.WHITE
 var _cached_polygon: PackedVector2Array = PackedVector2Array()
@@ -55,9 +69,9 @@ func _draw() -> void:
     draw_colored_polygon(polygon, color)
     # Per-cell grid lines make the unit cells ("格子") visible.
     var grid_color := Color(0.0, 0.0, 0.0, 0.28)
-    for offset: Vector2i in shape:
+    for cell_offset: Vector2i in shape:
         draw_rect(
-            Rect2(Vector2(offset) * float(cell_size), Vector2(cell_size, cell_size)),
+            Rect2(Vector2(cell_offset) * float(cell_size), Vector2(cell_size, cell_size)),
             grid_color,
             false,
             1.0
@@ -71,38 +85,41 @@ func _draw() -> void:
 # --- Shape derivation ---------------------------------------------------------
 
 func _refresh_from_polygon() -> void:
-    var snapped := _snapped_polygon()
-    if snapped != polygon:
-        polygon = snapped
-    _cached_polygon = snapped
+    var grid_polygon := _snapped_polygon()
+    if grid_polygon != polygon:
+        polygon = grid_polygon
+    _cached_polygon = grid_polygon
     _cached_cell_size = cell_size
-    shape = _derive_shape(snapped)
+    shape = _derive_shape(grid_polygon)
+    wall_shape.clear()
+    wall_shape.append_array(shape)
+    one_way_shape.clear()
     queue_redraw()
 
 
 func _snapped_polygon() -> PackedVector2Array:
     ## Snaps every vertex to the nearest cell-grid corner so a slightly drifted
     ## point cannot silently break shape generation.
-    var snapped := PackedVector2Array()
+    var result := PackedVector2Array()
     for point: Vector2 in polygon:
-        snapped.append(Vector2(
+        result.append(Vector2(
             roundf(point.x / float(cell_size)) * float(cell_size),
             roundf(point.y / float(cell_size)) * float(cell_size)
         ))
-    return snapped
+    return result
 
 
-func _derive_shape(snapped: PackedVector2Array) -> Array[Vector2i]:
-    if snapped.is_empty():
+func _derive_shape(grid_polygon: PackedVector2Array) -> Array[Vector2i]:
+    if grid_polygon.is_empty():
         return []
-    var validation_error := _polygon_validation_error(snapped)
+    var validation_error := _polygon_validation_error(grid_polygon)
     if not validation_error.is_empty():
         push_warning("PuzzlePiece %s: %s" % [name, validation_error])
         return []
 
     var min_cell := Vector2i(1 << 30, 1 << 30)
     var max_cell := Vector2i(-(1 << 30), -(1 << 30))
-    for point: Vector2 in snapped:
+    for point: Vector2 in grid_polygon:
         var cell := _point_to_cell(point)
         min_cell.x = mini(min_cell.x, cell.x)
         min_cell.y = mini(min_cell.y, cell.y)
@@ -114,17 +131,17 @@ func _derive_shape(snapped: PackedVector2Array) -> Array[Vector2i]:
         for cx in range(min_cell.x, max_cell.x + 1):
             var cell := Vector2i(cx, cy)
             var center := Vector2(cell) * float(cell_size) + Vector2(0.5, 0.5) * float(cell_size)
-            if Geometry2D.is_point_in_polygon(center, snapped):
+            if Geometry2D.is_point_in_polygon(center, grid_polygon):
                 result.append(cell)
     return result
 
 
-func _polygon_validation_error(snapped: PackedVector2Array) -> String:
-    if snapped.size() < 3:
+func _polygon_validation_error(grid_polygon: PackedVector2Array) -> String:
+    if grid_polygon.size() < 3:
         return "polygon needs at least 3 vertices."
-    for i in snapped.size():
-        var a: Vector2 = snapped[i]
-        var b: Vector2 = snapped[(i + 1) % snapped.size()]
+    for i in grid_polygon.size():
+        var a: Vector2 = grid_polygon[i]
+        var b: Vector2 = grid_polygon[(i + 1) % grid_polygon.size()]
         var delta := b - a
         if delta.length_squared() < 0.01:
             return "edge %d has zero length." % i
@@ -152,13 +169,13 @@ func _build_collision() -> void:
     body.collision_mask = 0
     add_child(body)
 
-    for offset: Vector2i in shape:
+    for cell_offset: Vector2i in shape:
         var collision_shape := CollisionShape2D.new()
         collision_shape.name = "CollisionShape2D"
         var rect := RectangleShape2D.new()
         rect.size = Vector2(cell_size, cell_size)
         collision_shape.shape = rect
-        collision_shape.position = (Vector2(offset) + Vector2(0.5, 0.5)) * float(cell_size)
+        collision_shape.position = (Vector2(cell_offset) + Vector2(0.5, 0.5)) * float(cell_size)
         body.add_child(collision_shape)
 
 
@@ -183,11 +200,11 @@ func get_bounds() -> Rect2i:
         return Rect2i(Vector2i.ZERO, Vector2i.ONE)
     var min_cell := shape[0]
     var max_cell := shape[0]
-    for offset: Vector2i in shape:
-        min_cell.x = mini(min_cell.x, offset.x)
-        min_cell.y = mini(min_cell.y, offset.y)
-        max_cell.x = maxi(max_cell.x, offset.x)
-        max_cell.y = maxi(max_cell.y, offset.y)
+    for cell_offset: Vector2i in shape:
+        min_cell.x = mini(min_cell.x, cell_offset.x)
+        min_cell.y = mini(min_cell.y, cell_offset.y)
+        max_cell.x = maxi(max_cell.x, cell_offset.x)
+        max_cell.y = maxi(max_cell.y, cell_offset.y)
     return Rect2i(min_cell, max_cell - min_cell + Vector2i.ONE)
 
 
