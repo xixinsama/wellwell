@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="RoomData" format=3 uid="uid://b77laye1337sb"]
+
+[ext_resource type="Script" path="res://addons/platformer_kit/world/data/room_data.gd" id="1_ltem6"]
+
+[resource]
+script = ExtResource("1_ltem6")
+room_id = "water_cascade"
+display_name = "三池级联"
+scene_path = "res://scenes/rooms/generated/water_cascade/runtime.tscn"
+source_scene_path = "res://scenes/levels/test/water_cascade.tscn"
+source_fingerprint = "1b77c15983cd37bcd302401f5d6630f35dd3759aa33784e804f193095a2bd896"
+terrain_scene_path = "res://scenes/rooms/generated/water_cascade/terrain.tscn"
+entrance_ids = PackedStringArray()
+spawn_ids = PackedStringArray("start")
+entity_ids = PackedStringArray()
+tags = PackedStringArray()
+map_color = Color(0.3, 0.7, 1, 1)

@@ -19,7 +19,7 @@ extends Node2D
 signal splash_requested(world_position: Vector2, power: float)
 
 const SURFACE_SHADER := preload("res://addons/fluid_kit/runtime/water/water_surface.gdshader")
-const STREAM_SHADER := preload("res://addons/fluid_kit/runtime/water/water_stream.gdshader")
+const FALL_SHADER := preload("res://addons/fluid_kit/runtime/water/water_fall.gdshader")
 
 const CHUNK_PIXELS := Vector2(320.0, 180.0)
 const TILE_PIXELS := 8.0
@@ -27,12 +27,14 @@ const TILE_PIXELS := 8.0
 ## faster than a 4 px column at the same stability, so wide tanks stay level
 ## while the water drains.
 const COLUMN_WIDTH := 8.0
+## One waterfall column quad per spill lip.
+const MAX_FALLS := 4
 ## Two simulation substeps per 60 Hz tick keep a wide pool level while the
 ## discrete column diffusion stays stable (flow_rate / SIM_HZ <= 0.5).
 const SIM_HZ := 120.0
 const SIM_STEP := 1.0 / SIM_HZ
 ## Water surface texture upload rate (the simulation still runs at SIM_HZ).
-const UPLOAD_INTERVAL := 1.0 / 60.0
+const UPLOAD_INTERVAL := 1.0 / 30.0
 const BASIN_GROUP := &"water_basin"
 const GATE_GROUP := &"water_gate"
 const WATER_GROUP := &"water_field"
@@ -44,17 +46,7 @@ const WATER_GROUP := &"water_field"
 @export_range(1.0, 59.0, 0.5) var flow_rate := 54.0
 @export_range(2.0, 24.0, 0.5) var splash_radius_base := 8.0
 @export_range(0.0, 32.0, 0.5) var splash_radius_scale := 10.0
-## Surface drop (px) that counts as a lip: water leaving the height field and
-## falling as simulated streams. 0 (the default) keeps plain shallow-water
-## transfer, so a field without waterfalls behaves exactly like before.
-@export_range(0.0, 48.0, 1.0) var lip_threshold := 0.0
-## Water that spills over a lip leaves the height field and falls as simulated
-## streams; this much volume (px^2) makes one visible stream.
-@export_range(4.0, 200.0, 1.0) var stream_chunk := 40.0
-## Minimum time between two stream spawns (s), so the fall reads as a series.
-@export_range(0.02, 0.5, 0.01) var stream_interval := 0.05
-## Gravity applied to the falling streams (px/s^2).
-@export_range(200.0, 2000.0, 10.0) var stream_gravity := 900.0
+@export_range(0.0, 20.0, 0.5) var waterfall_min_drop := 5.0
 ## Optional splash effect scene spawned on every impact. The plugin only emits
 ## `splash_requested`; the game assigns its own effect scene here.
 @export var splash_scene: PackedScene
@@ -73,11 +65,8 @@ var _quad: MeshInstance2D
 var _material: ShaderMaterial
 var _image: Image
 var _texture: ImageTexture
-var _stream_material: ShaderMaterial
-var _streams: Array[Dictionary] = []
-var _pending_streams := PackedFloat64Array()
-var _stream_timer := 0.0
-var _stream_splash_timer := 0.0
+var _falls: Array[Dictionary] = []
+var _fall_splash_timer := 0.0
 var _accumulator := 0.0
 var _needs_texture := true
 var _step_ms := 0.0
@@ -140,7 +129,6 @@ func bind_room_with_origin(room_data: Variant, terrain_root: Node, origin_chunk:
 	simulation.column_width = COLUMN_WIDTH
 	simulation.max_depth = max_depth
 	simulation.flow_rate = flow_rate
-	simulation.lip_threshold = lip_threshold
 	simulation.setup(Vector2(_origin_x, _field_top), floors, blocked)
 	_sim = simulation
 
@@ -172,14 +160,12 @@ func clear_room() -> void:
 	if _quad != null:
 		_quad.queue_free()
 		_quad = null
-	for stream: Dictionary in _streams:
-		var stream_quad := stream.get("quad") as Node
-		if stream_quad != null and is_instance_valid(stream_quad):
-			stream_quad.queue_free()
-	_streams.clear()
-	_pending_streams = PackedFloat64Array()
-	_stream_timer = 0.0
-	_stream_material = null
+	for fall: Dictionary in _falls:
+		var fall_quad := fall.get("quad") as Node
+		if fall_quad != null and is_instance_valid(fall_quad):
+			fall_quad.queue_free()
+	_falls.clear()
+	_fall_splash_timer = 0.0
 	_material = null
 	_image = null
 	_texture = null
@@ -300,7 +286,7 @@ func _physics_process(delta: float) -> void:
 		_upload_accumulator = 0.0
 		_update_texture()
 		_texture_updates += 1
-	_update_streams(delta)
+	_update_falls(delta)
 
 
 func _update_gates() -> void:
@@ -332,100 +318,66 @@ func _update_texture() -> void:
 	_texture.update(_image)
 
 
-func _update_streams(delta: float) -> void:
-	if _sim == null:
+func _update_falls(delta: float) -> void:
+	if _sim == null or _falls.is_empty():
 		return
-	var safe_delta := maxf(delta, 0.0)
-	var overflow: PackedFloat64Array = _sim.call("take_stream_overflow")
-	if _pending_streams.size() != _columns:
-		_pending_streams.resize(_columns)
-		_pending_streams.fill(0.0)
-	for index in overflow.size():
-		var volume := overflow[index]
-		if volume > 0.0:
-			_pending_streams[index] += volume
-	_stream_timer = maxf(_stream_timer - safe_delta, 0.0)
-	_stream_splash_timer = maxf(_stream_splash_timer - safe_delta, 0.0)
-	if _stream_timer <= 0.0:
-		for index in _pending_streams.size():
-			var pending := _pending_streams[index]
-			if pending < stream_chunk:
-				continue
-			_pending_streams[index] = 0.0
-			_spawn_stream(index + 1, pending)
-			_stream_timer = stream_interval
-			break
-	for index in range(_streams.size() - 1, -1, -1):
-		var stream: Dictionary = _streams[index]
-		stream["vy"] = float(stream["vy"]) + stream_gravity * safe_delta
-		stream["y"] = float(stream["y"]) + float(stream["vy"]) * safe_delta
-		var column := int(stream["column"])
-		var surface := float(_sim.call("get_surface_y", column))
-		if not is_finite(surface):
-			surface = _field_top + _field_height
-		if float(stream["y"]) >= surface:
-			_sim.call("add_mass", column, float(stream["volume"]))
-			if _stream_splash_timer <= 0.0:
-				_stream_splash_timer = 0.14
-				_spawn_splash(
-					float(stream["x"]),
-					surface,
-					clampf(0.1 + float(stream["volume"]) * 0.002, 0.1, 0.3)
-				)
-			_destroy_stream(index)
+	var lips: Array[Dictionary] = []
+	for index in maxi(_columns - 1, 0):
+		if _sim.is_blocked(index) or _sim.is_blocked(index + 1):
 			continue
-		var height := clampf(6.0 + float(stream["vy"]) * 0.022, 6.0, 26.0)
-		stream["height"] = height
-		var quad := stream.get("quad") as MeshInstance2D
-		if quad != null and is_instance_valid(quad):
-			quad.scale = Vector2(float(stream["width"]), height)
-			quad.global_position = Vector2(float(stream["x"]), float(stream["y"]))
-
-
-## Spawns one stream of `volume` (px^2) in the open column right after the lip.
-## The stream stays inside that column, so it never covers a solid tile.
-func _spawn_stream(column: int, volume: float) -> void:
-	if _stream_material == null or column <= 0 or column >= _columns:
-		return
-	var top := float(_sim.call("get_surface_y", column - 1))
-	if not is_finite(top):
-		top = _field_top
-	var width := 5.0
-	var height := clampf(8.0 + sqrt(maxf(volume, 1.0)) * 1.0, 8.0, 22.0)
-	var column_left := _origin_x + float(column) * COLUMN_WIDTH
-	var x := clampf(
-		column_left + COLUMN_WIDTH * 0.5,
-		column_left + width * 0.5,
-		column_left + COLUMN_WIDTH - width * 0.5
+		if _sim.get_depth(index) <= 0.05:
+			continue
+		var drop := _sim.get_surface_y(index + 1) - _sim.get_surface_y(index)
+		if drop < waterfall_min_drop:
+			continue
+		# The falling column hugs the lip and only covers open cells: it starts at
+		# the first open column after the lip and is at most two columns wide, so
+		# it never paints over a solid tile.
+		var open_columns := 1
+		while index + open_columns + 1 < _columns and not _sim.is_blocked(index + open_columns + 1):
+			open_columns += 1
+			if open_columns >= 2:
+				break
+		lips.append({
+			"left": _origin_x + float(index + 1) * COLUMN_WIDTH,
+			"width": float(open_columns) * COLUMN_WIDTH,
+			"top": _sim.get_surface_y(index),
+			"bottom": _sim.get_surface_y(index + 1),
+			"drop": drop,
+		})
+	lips.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		return float(a["drop"]) > float(b["drop"])
 	)
-	var quad := MeshInstance2D.new()
-	quad.name = "WaterStream"
-	var mesh := QuadMesh.new()
-	mesh.size = Vector2.ONE
-	quad.mesh = mesh
-	quad.material = _stream_material
-	quad.z_index = 2
-	add_child(quad)
-	quad.scale = Vector2(width, height)
-	quad.global_position = Vector2(x, top + height * 0.5)
-	_streams.append({
-		"x": x,
-		"y": top + height * 0.5,
-		"vy": 40.0,
-		"volume": volume,
-		"column": column,
-		"width": width,
-		"height": height,
-		"quad": quad,
-	})
-
-
-func _destroy_stream(index: int) -> void:
-	var stream: Dictionary = _streams[index]
-	var quad := stream.get("quad") as Node
-	if quad != null and is_instance_valid(quad):
-		quad.queue_free()
-	_streams.remove_at(index)
+	for index in _falls.size():
+		var fall: Dictionary = _falls[index]
+		var quad := fall.get("quad") as MeshInstance2D
+		var material := fall.get("material") as ShaderMaterial
+		if quad == null or material == null:
+			continue
+		if index >= lips.size():
+			quad.visible = false
+			continue
+		var lip: Dictionary = lips[index]
+		var height := maxf(float(lip["bottom"]) - float(lip["top"]), 1.0)
+		quad.visible = true
+		quad.global_position = Vector2(
+			float(lip["left"]) + float(lip["width"]) * 0.5,
+			float(lip["top"]) + height * 0.5
+		)
+		quad.scale = Vector2(float(lip["width"]), height)
+		material.set_shader_parameter("flow_speed", clampf(0.6 + height / 44.0, 0.6, 2.4))
+		material.set_shader_parameter("foot_foam", clampf(0.35 + height / 90.0, 0.35, 0.8))
+	# A small splash at the foot of the biggest fall, on a fixed cadence so the
+	# baked effect is reused instead of rebaking per frame.
+	_fall_splash_timer = maxf(_fall_splash_timer - maxf(delta, 0.0), 0.0)
+	if _fall_splash_timer <= 0.0 and not lips.is_empty():
+		_fall_splash_timer = 0.42
+		var main_lip: Dictionary = lips[0]
+		_spawn_splash(
+			float(main_lip["left"]) + float(main_lip["width"]) * 0.5,
+			float(main_lip["bottom"]),
+			0.18
+		)
 
 
 # ---------------------------------------------------------------------------- construction
@@ -543,13 +495,25 @@ func _build_render() -> void:
 	_texture = ImageTexture.create_from_image(_image)
 	_material.set_shader_parameter("column_texture", _texture)
 
-	# Falling water is a series of simulated stream quads (see _update_streams).
-	_stream_material = ShaderMaterial.new()
-	_stream_material.shader = STREAM_SHADER
-	_stream_material.set_shader_parameter("shallow_color", Color(0.26, 0.66, 0.94, 0.62))
-	_stream_material.set_shader_parameter("deep_color", Color(0.05, 0.18, 0.42, 0.9))
-	_stream_material.set_shader_parameter("crest_color", Color(0.85, 0.97, 1.0, 0.95))
-	_stream_material.set_shader_parameter("foam_color", Color(0.96, 1.0, 1.0, 0.9))
+	# The fall is the same water: a continuous column quad in the pool palette.
+	# Up to MAX_FALLS waterfall columns, one quad per spill lip.
+	for index in MAX_FALLS:
+		var material := ShaderMaterial.new()
+		material.shader = FALL_SHADER
+		material.set_shader_parameter("shallow_color", Color(0.26, 0.66, 0.94, 0.62))
+		material.set_shader_parameter("deep_color", Color(0.05, 0.18, 0.42, 0.9))
+		material.set_shader_parameter("crest_color", Color(0.85, 0.97, 1.0, 0.95))
+		material.set_shader_parameter("foam_color", Color(0.96, 1.0, 1.0, 0.9))
+		var quad := MeshInstance2D.new()
+		quad.name = "Waterfall%d" % index
+		var mesh := QuadMesh.new()
+		mesh.size = Vector2.ONE
+		quad.mesh = mesh
+		quad.material = material
+		quad.z_index = 2
+		quad.visible = false
+		add_child(quad)
+		_falls.append({"quad": quad, "material": material})
 
 
 func _spawn_splash(world_x: float, surface_y: float, energy: float) -> void:

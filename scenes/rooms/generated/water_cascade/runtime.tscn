@@ -1,0 +1,56 @@
+[gd_scene format=3 uid="uid://b86cq06nb3qt1"]
+
+[ext_resource type="Script" path="res://addons/platformer_kit/world/entities/spawn_point.gd" id="1_uq67k"]
+[ext_resource type="Script" path="res://addons/fluid_kit/runtime/water/water_basin.gd" id="2_47lp6"]
+[ext_resource type="Script" path="res://addons/fluid_kit/runtime/gas/fog_light.gd" id="3_g8scf"]
+[ext_resource type="Script" path="res://scripts/world/fog_zone.gd" id="4_3bewr"]
+
+[node name="RoomRuntimeContent" type="Node2D" unique_id=1517957797]
+
+[node name="Entities" type="Node2D" parent="." unique_id=62194956]
+
+[node name="StartSpawn" type="Marker2D" parent="Entities" unique_id=871844750]
+position = Vector2(232, 144)
+script = ExtResource("1_uq67k")
+
+[node name="WaterBasinA" type="Node2D" parent="Entities" unique_id=2107467859]
+position = Vector2(16, 32)
+script = ExtResource("2_47lp6")
+size_cells = Vector2i(11, 3)
+basin_id = "cascade_a"
+
+[node name="WaterBasinB" type="Node2D" parent="Entities" unique_id=1695366035]
+position = Vector2(112, 96)
+script = ExtResource("2_47lp6")
+size_cells = Vector2i(12, 1)
+basin_id = "cascade_b"
+
+[node name="WaterBasinC" type="Node2D" parent="Entities" unique_id=350626367]
+position = Vector2(216, 152)
+script = ExtResource("2_47lp6")
+size_cells = Vector2i(12, 1)
+basin_id = "cascade_c"
+
+[node name="CascadeLightTop" type="Node2D" parent="Entities" unique_id=750618569]
+position = Vector2(40, 8)
+script = ExtResource("3_g8scf")
+light_id = "cascade_top"
+radius = 96.0
+energy = 0.9
+color = Color(1, 0.9, 0.72, 1)
+
+[node name="CascadeLightBottom" type="Node2D" parent="Entities" unique_id=483104608]
+position = Vector2(256, 120)
+script = ExtResource("3_g8scf")
+light_id = "cascade_bottom"
+radius = 110.0
+energy = 0.8
+color = Color(0.6, 0.82, 1, 1)
+
+[node name="CascadeRoomLight" type="Node2D" parent="Entities" unique_id=1874829029]
+script = ExtResource("4_3bewr")
+mode = 1
+size_cells = Vector2i(40, 23)
+zone_id = "water_cascade_lit"
+
+[node name="Foreground" type="Node2D" parent="." unique_id=1592579565]

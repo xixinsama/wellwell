@@ -1,12 +1,12 @@
 extends Node
 
-## Demo: the water hall focused on fluid simulation (gas disabled).
+## Demo: the three-pool cascade focused on fluid simulation (gas disabled).
 ##
-## Two pools, the gate opening, the overflow falling as simulated water streams,
-## the hero floating/swimming and the entry splashes that scale with impact
-## speed. The Atmosphere node is switched off so only water is shown.
+## Pool A (high, left) spills into pool B (middle), which spills into pool C
+## (low, right): two waterfalls, three basins. The Atmosphere is switched off so
+## only water is shown.
 
-const RUNNER := preload("res://scenes/levels/test/test_world_runner.tscn")
+const RUNNER := preload("res://scenes/levels/test/water_cascade_runner.tscn")
 
 
 func _ready() -> void:
