@@ -40,6 +40,7 @@ player_path = NodePath("../Player")
 [node name="WaterField" type="Node2D" parent="." unique_id=430640974]
 script = ExtResource("10_water")
 splash_scene = ExtResource("12_splash")
+lip_threshold = 14.0
 
 [node name="Atmosphere" type="Node2D" parent="." unique_id=1286727046]
 script = ExtResource("11_atmosphere")

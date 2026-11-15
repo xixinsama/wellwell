@@ -29,7 +29,7 @@ that anything can implement, or you can drive the fields manually.
 
 | Node | Role |
 | :--- | :--- |
-| `WaterField` | Owns the pools of one room, the water quad, the falling water column and splash requests. |
+| `WaterField` | Owns the pools of one room, the water quad, the simulated falling streams and splash requests. |
 | `Atmosphere` | Owns the gas field of one room, the gas quad, vents, lights and the GPU pipeline. |
 | `WaterBasin` | Room marker: pool rectangle; its top edge is the initial surface. |
 | `WaterGate` | Room marker: holds water back until opened. |
@@ -86,13 +86,20 @@ water_field.is_ready()
 | `max_depth` | 64 | Maximum depth per column (px), the capacity. |
 | `flow_rate` | 54 | Column-to-column transfer; stability limit is `SIM_HZ / 2`. |
 | `splash_radius_base` / `splash_radius_scale` | 8 / 10 | Impact disturbance radius. |
-| `waterfall_min_drop` | 5 | Minimum drop (px) that starts the falling water column. |
+| `lip_threshold` | 0 | Surface drop (px) that turns the transfer into simulated falling streams; 0 keeps classic shallow water. The water hall sets 14. |
+| `stream_chunk` | 40 | Volume (px^2) that makes one visible stream. |
+| `stream_interval` | 0.05 | Minimum time between two stream spawns (s). |
+| `stream_gravity` | 900 | Gravity applied to the falling streams (px/s^2). |
 | `splash_scene` | null | Optional effect scene spawned on every splash; the field also emits `splash_requested(world_position, power)`. |
 
-The falling water at a spill lip is a continuous water column quad shaded in the
-same palette as the pools (`water_fall.gdshader`): no waterfall texture, no
-particles. Splashes are random droplets and mist only: side-view games must not
-show round ripples, those read as top-down.
+The falling water at a spill lip is simulated, not painted: the solver diverts the
+overflow of a lip (`lip_threshold`) out of the height field as falling streams
+(`take_stream_overflow`), each stream carries its volume down and gives it back
+to the lower pool on landing (`add_mass`). So the fall is water mass in the same
+palette (no waterfall texture, no particles), a series of narrow streams that
+stays inside the open column and never covers a solid tile. Splashes are random
+droplets and mist only: side-view games must not show round ripples, those read
+as top-down.
 
 The simulation runs at 120 Hz over 8 px columns; the surface texture is uploaded
 at most 60 times a second because the upload forces a GPU sync. Still pools sleep

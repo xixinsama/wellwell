@@ -41,6 +41,13 @@ var _offset_velocity := PackedFloat64Array()
 var _transfer := PackedFloat64Array()       # pair i -> i + 1, px^2
 var _pair_velocity := PackedFloat64Array()  # pair i -> i + 1, px/s
 var _flux := PackedFloat64Array()           # per column, px/s
+## Water that went over a lip and is currently falling (px^2), per pair.
+## The field drains it, simulates the fall and adds it back on landing.
+var _stream_overflow := PackedFloat64Array()
+## A surface drop bigger than this (px) is treated as a waterfall lip and its
+## transfer is diverted to the falling streams. 0 disables the diversion (the
+## classic shallow-water behaviour used by the unit tests).
+var lip_threshold := 0.0
 var _delta := PackedFloat64Array()
 var _dirty := false
 var _active := false
@@ -63,6 +70,8 @@ func setup(origin: Vector2, floors: PackedFloat32Array, blocked: PackedByteArray
 	_offset_velocity.fill(0.0)
 	_flux.resize(count)
 	_flux.fill(0.0)
+	_stream_overflow.resize(count)
+	_stream_overflow.fill(0.0)
 	_delta.resize(count)
 	_delta.fill(0.0)
 	var pair_count := maxi(count - 1, 0)
@@ -221,6 +230,26 @@ func get_debug_state() -> Dictionary:
 
 ## Advances the model. Early-outs when nothing is dirty and nothing is active,
 ## which is the steady-state fast path.
+
+## Returns (and clears) the water that just went over a lip per pair, in px^2.
+## WaterField simulates that water as falling streams and gives it back to the
+## lower column with add_mass() when it lands, so the fall is part of the
+## simulation instead of a purely visual effect.
+func take_stream_overflow() -> PackedFloat64Array:
+	var result := _stream_overflow.duplicate()
+	_stream_overflow.fill(0.0)
+	return result
+
+
+## Adds water to a column, clamped to its capacity.
+func add_mass(index: int, volume: float) -> void:
+	if index < 0 or index >= _mass.size() or volume <= 0.0:
+		return
+	set_mass(index, _mass[index] + volume)
+	_dirty = true
+	_active = true
+
+
 func step(delta: float) -> void:
 	if not _dirty and not _active:
 		return
@@ -232,6 +261,7 @@ func step(delta: float) -> void:
 	var step_delta := maxf(delta, 0.0)
 	_solve_fluxes(step_delta)
 	_relax_receiving_capacity()
+	_divert_lip_transfers()
 	_apply_transfers(step_delta)
 	_clamp_masses()
 	_step_waves(step_delta)
@@ -295,6 +325,32 @@ func _relax_receiving_capacity() -> void:
 		if not scaled:
 			return
 
+
+
+## Transfers over a waterfall lip are not applied to the receiving column
+## immediately: the water leaves the donor here and is handed to the field as a
+## falling stream (see take_stream_overflow / add_mass).
+func _divert_lip_transfers() -> void:
+	if lip_threshold <= 0.0:
+		return
+	for index in _transfer.size():
+		var transfer := _transfer[index]
+		if transfer <= 0.0:
+			continue
+		if head_is_lip(index):
+			_stream_overflow[index] += transfer
+			_mass[index] = maxf(_mass[index] - transfer, 0.0)
+			_transfer[index] = 0.0
+
+
+## True when the pair index -> index + 1 spills over a big drop (a lip).
+func head_is_lip(index: int) -> bool:
+	if index < 0 or index + 1 >= _mass.size():
+		return false
+	if _blocked[index] != 0 or _blocked[index + 1] != 0:
+		return false
+	var drop := _surface_of(index + 1) - _surface_of(index)
+	return drop > lip_threshold
 
 func _compute_deltas() -> void:
 	for index in _delta.size():
