@@ -80,10 +80,12 @@ const TESTS: Array[Script] = [
 	preload("res://tests/tools/test_framework_documentation_contract.gd"),
 	preload("res://tests/ui/test_menu_contract.gd"),
 	preload("res://tests/ui/test_menu_features.gd"),
+	preload("res://tests/ui/test_world_select.gd"),
 	preload("res://tests/player/test_player_motion_effects.gd"),
 	preload("res://tests/world/test_killzone.gd"),
 	preload("res://tests/platformer_kit/character/test_ladder_motion.gd"),
 	preload("res://tests/world/test_ladder_tiles.gd"),
+	preload("res://tests/world/test_cell_rect_merger.gd"),
 	preload("res://tests/player/test_hero_animation.gd"),
 ]
 

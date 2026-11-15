@@ -23,6 +23,8 @@ room_id = "template_room"
 [resource]
 script = ExtResource("4_4sf1x")
 world_id = "main_world"
+display_name = "滑块回廊"
+description = "滑块解谜、虚空推动与手柄选块"
 start_room_id = "template_room"
 start_spawn_id = "start"
 rooms = Array[Resource]([ExtResource("2_5y7l6"), ExtResource("2_53asa"), ExtResource("3_5y7l6")])

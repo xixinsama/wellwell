@@ -116,8 +116,12 @@ func _assert_void_layer_builds_player_body(failures: Array[String]) -> void:
 		failures.append("void piece did not build a player-only body")
 	elif body.collision_layer != 8 or body.collision_mask != 0:
 		failures.append("void body used the wrong collision layer or mask")
-	elif body.get_child_count() != 2:
-		failures.append("void body did not create one shape per void cell")
+	elif body.get_child_count() != 1:
+		failures.append("adjacent void cells must merge into one collision shape")
+	else:
+		var shape := (body.get_child(0) as CollisionShape2D).shape as RectangleShape2D
+		if shape.size != Vector2(16, 8):
+			failures.append("merged void collision shape has wrong rectangle size")
 	piece.queue_free()
 
 

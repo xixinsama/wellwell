@@ -8,6 +8,8 @@ extends Node2D
 ## body only in jump mode (PlayerController removes the void layer while its
 ## control is locked for slider riding).
 
+const CELL_RECT_MERGER := preload("res://scripts/util/cell_rect_merger.gd")
+
 @export var cell_size: int = 8
 ## Physics layer bit used by the generated body. Layer 4 in project.godot.
 @export var collision_layer: int = 1 << 3
@@ -63,12 +65,14 @@ func _rebuild_body() -> void:
 	_body.collision_layer = collision_layer
 	_body.collision_mask = 0
 	add_child(_body)
-	for cell: Vector2i in _cells:
+	for rect: Rect2i in CELL_RECT_MERGER.merge(get_used_cells()):
 		var shape := CollisionShape2D.new()
-		var rect := RectangleShape2D.new()
-		rect.size = Vector2(cell_size, cell_size)
-		shape.shape = rect
-		shape.position = (Vector2(cell) + Vector2(0.5, 0.5)) * float(cell_size)
+		var box := RectangleShape2D.new()
+		box.size = Vector2(rect.size) * float(cell_size)
+		shape.shape = box
+		shape.position = (
+			Vector2(rect.position) + Vector2(rect.size) * 0.5
+		) * float(cell_size)
 		_body.add_child(shape)
 
 

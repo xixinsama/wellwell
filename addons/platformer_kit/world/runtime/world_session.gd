@@ -82,8 +82,8 @@ func start(world: WorldData = null, snapshot: RefCounted = null) -> bool:
 	return true
 
 
-func start_selected_snapshot(snapshot: RefCounted) -> bool:
-	return start(world_data, snapshot)
+func start_selected_snapshot(snapshot: RefCounted, world: WorldData = null) -> bool:
+	return start(world if world != null else world_data, snapshot)
 
 
 func bind_persistence_source(source: Object) -> void:

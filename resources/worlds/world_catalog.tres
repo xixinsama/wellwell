@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="WorldCatalog" format=3]
+
+[ext_resource type="Script" path="res://addons/platformer_kit/world/data/world_catalog.gd" id="1_catalog"]
+[ext_resource type="Resource" uid="uid://qwahurn8urga" path="res://resources/worlds/the_world.tres" id="2_the_world"]
+[ext_resource type="Resource" uid="uid://chjbbce5mh3kv" path="res://resources/worlds/main_world.tres" id="3_main_world"]
+
+[resource]
+script = ExtResource("1_catalog")
+worlds = Array[WorldData]([ExtResource("2_the_world"), ExtResource("3_main_world")])

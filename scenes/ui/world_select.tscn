@@ -1,0 +1,78 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/world_select.gd" id="1_world_select"]
+[ext_resource type="Theme" uid="uid://dl2h74k2356hx" path="res://resources/ui/menu_theme.tres" id="2_theme"]
+[ext_resource type="Resource" path="res://resources/worlds/world_catalog.tres" id="3_catalog"]
+
+[node name="WorldSelect" type="Control"]
+process_mode = 3
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("2_theme")
+script = ExtResource("1_world_select")
+catalog = ExtResource("3_catalog")
+
+[node name="Panel" type="PanelContainer" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -370.0
+offset_top = -230.0
+offset_right = 370.0
+offset_bottom = 230.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Content" type="VBoxContainer" parent="Panel"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Title" type="Label" parent="Panel/Content"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.92, 0.98, 0.98, 1)
+theme_override_font_sizes/font_size = 30
+text = "WORLD_SELECT_TITLE"
+horizontal_alignment = 1
+
+[node name="Subtitle" type="Label" parent="Panel/Content"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.42, 0.8, 0.82, 1)
+theme_override_font_sizes/font_size = 15
+text = "WORLD_SELECT_SUBTITLE"
+horizontal_alignment = 1
+
+[node name="Divider" type="HSeparator" parent="Panel/Content"]
+layout_mode = 2
+
+[node name="WorldScroll" type="ScrollContainer" parent="Panel/Content"]
+custom_minimum_size = Vector2(680, 220)
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="WorldList" type="VBoxContainer" parent="Panel/Content/WorldScroll"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="StatusLabel" type="Label" parent="Panel/Content"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 26)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.65, 0.36, 1)
+horizontal_alignment = 1
+
+[node name="ReturnButton" type="Button" parent="Panel/Content"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(180, 44)
+layout_mode = 2
+size_flags_horizontal = 4
+text = "COMMON_BACK"

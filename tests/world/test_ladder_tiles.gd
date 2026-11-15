@@ -22,20 +22,20 @@ func run() -> Array[String]:
 	layer.set_cell(Vector2i(2, 0), 0, Vector2i(0, 6), 0)
 	var builder := script.new() as Node2D
 	terrain.add_child(builder)
-	if builder.get_child_count() != 2:
-		failures.append("both ladder alternatives, and only those cells, must create zones")
+	if builder.get_child_count() != 1:
+		failures.append("adjacent ladder cells must merge into one zone")
 	for zone: Node in builder.get_children():
 		if not zone.is_in_group("ladder_zone") or (zone as Area2D).collision_layer != 4:
 			failures.append("generated zone has wrong group or trigger layer")
 		var shape := zone.get_node("CollisionShape2D").shape as RectangleShape2D
-		if shape.size != Vector2(8, 8):
-			failures.append("generated ladder zone has wrong tile size")
+		if shape.size != Vector2(16, 8):
+			failures.append("merged ladder zone has wrong rectangle size")
 	var first := builder.get_child(0) as Node2D
-	if first.global_position != layer.to_global(layer.map_to_local(Vector2i.ZERO)):
-		failures.append("generated ladder zone position does not match map_to_local")
+	if first.global_position != layer.to_global(layer.map_to_local(Vector2i.ZERO) + Vector2(4, 0)):
+		failures.append("merged ladder zone position does not match its rectangle center")
 	builder.call("rebuild")
-	if builder.get_child_count() != 2:
-		failures.append("rebuild duplicated or lost ladder zones")
+	if builder.get_child_count() != 1:
+		failures.append("rebuild duplicated or lost merged ladder zones")
 	terrain.free()
 	_assert_template_and_room_bake(script, failures)
 	_assert_baked_output(failures)

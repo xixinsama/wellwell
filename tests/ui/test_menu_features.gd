@@ -1,6 +1,7 @@
 extends Node
 
 const SETTINGS_MANAGER := preload("res://scripts/save/global_settings_manager.gd")
+const SAVE_SNAPSHOT := preload("res://addons/platformer_kit/save/save_snapshot.gd")
 
 const MENU_TRANSLATION_PATH := "res://localization/menu.csv"
 const REQUIRED_TRANSLATION_KEYS: Array[String] = [
@@ -14,6 +15,10 @@ const REQUIRED_TRANSLATION_KEYS: Array[String] = [
 	"SLOT_COPY",
 	"SLOT_DELETE",
 	"SLOT_START_FAILED",
+	"WORLD_SELECT_TITLE",
+	"WORLD_SELECT_SUBTITLE",
+	"WORLD_SELECT_ENTER",
+	"WORLD_SELECT_EMPTY",
 	"SETTINGS_TITLE",
 	"SETTINGS_LANGUAGE",
 	"SETTINGS_DISPLAY_MODE",
@@ -45,19 +50,21 @@ func run() -> Array[String]:
 	_assert_settings_api(failures)
 	_assert_input_mapping_navigation_and_reset(failures)
 	_assert_transactional_start_flow(failures)
+	_assert_world_selection_flow(failures)
 	return failures
 
 
 class FakeStartManager extends Node:
 	var selected_slot := 0
 	var activate_count := 0
-	var snapshot := RefCounted.new()
+	var snapshot: RefCounted = SAVE_SNAPSHOT.new()
 	func prepare_slot(slot: int) -> RefCounted:
-		snapshot.set_meta("slot", slot)
+		snapshot.slot = slot
+		snapshot.world_id = "the_world"
 		return snapshot
 	func activate_snapshot(value: RefCounted) -> bool:
 		activate_count += 1
-		selected_slot = int(value.get_meta("slot"))
+		selected_slot = int(value.get("slot"))
 		return true
 
 
@@ -65,10 +72,12 @@ class FakeGameRoot extends Node:
 	var succeeds := false
 	var start_count := 0
 	var persistence_source: Node
+	var started_world: WorldData
 	func bind_persistence_source(value: Node) -> void:
 		persistence_source = value
-	func start_selected_snapshot(_snapshot: RefCounted) -> bool:
+	func start_selected_snapshot(_snapshot: RefCounted, world: WorldData = null) -> bool:
 		start_count += 1
+		started_world = world
 		return succeeds
 	func get_last_start_errors() -> Array[String]:
 		return ["fixture startup failure"]
@@ -76,8 +85,26 @@ class FakeGameRoot extends Node:
 
 class FakeSlots extends Control:
 	var error_text := ""
+	var show_count := 0
+	func show_slots() -> void:
+		show_count += 1
+		show()
 	func show_start_error(value: String) -> void:
 		error_text = value
+		show()
+
+
+class FakeWorldSelect extends Control:
+	var opened := false
+	var saved_world_id := ""
+	var error_text := ""
+	func open_select(value: String = "") -> void:
+		opened = true
+		saved_world_id = value
+		show()
+	func show_start_error(value: String = "") -> void:
+		error_text = value
+		show()
 
 
 class FakeSettings extends Node:
@@ -129,7 +156,7 @@ func _assert_translation_catalog(failures: Array[String]) -> void:
 
 func _assert_main_menu_contract(failures: Array[String]) -> void:
 	_assert_scene_nodes("res://scenes/ui/main_menu.tscn", [
-		"Title", "StartButton", "SettingsButton", "QuitButton", "SaveSlots"
+		"Title", "StartButton", "SettingsButton", "QuitButton", "SaveSlots", "WorldSelect"
 	], failures)
 
 func _assert_save_slots_contract(failures: Array[String]) -> void:
@@ -219,6 +246,46 @@ func _assert_transactional_start_flow(failures: Array[String]) -> void:
 	if game_root.persistence_source != manager:
 		failures.append("main menu did not inject persistence into the world session")
 	menu.free()
+
+func _assert_world_selection_flow(failures: Array[String]) -> void:
+	var menu_script := load("res://scripts/ui/main_menu.gd") as Script
+	var menu := menu_script.new() as Control
+	var slots := FakeSlots.new()
+	var world_select := FakeWorldSelect.new()
+	var manager := FakeStartManager.new()
+	var game_root := FakeGameRoot.new()
+	menu.add_child(slots)
+	menu.add_child(world_select)
+	menu.add_child(manager)
+	menu.add_child(game_root)
+	menu.set("save_slots", slots)
+	menu.set("world_select", world_select)
+	menu.call("bind_start_dependencies", manager, game_root)
+	menu.show()
+
+	menu.call("_open_world_select", 2)
+	if not world_select.opened or world_select.saved_world_id != "the_world":
+		failures.append("save slot did not open map selection with its saved world")
+	if slots.visible:
+		failures.append("save slots stayed visible behind map selection")
+
+	var world := load("res://resources/worlds/main_world.tres") as WorldData
+	game_root.succeeds = true
+	menu.call("_on_world_chosen", world)
+	if game_root.started_world != world:
+		failures.append("selected map was not passed to the world session")
+	if menu.visible:
+		failures.append("successful map start did not hide the menu")
+
+	game_root.succeeds = false
+	world_select.error_text = ""
+	menu.show()
+	world_select.show()
+	menu.call("_start_game", 2, world)
+	if world_select.error_text.is_empty():
+		failures.append("failed map start did not surface an error in map selection")
+	menu.free()
+
 
 func _assert_scene_nodes(path: String, names: Array[String], failures: Array[String]) -> void:
 	var packed: PackedScene = load(path) as PackedScene

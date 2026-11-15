@@ -35,6 +35,8 @@ origin_chunk = Vector2i(4, 0)
 [resource]
 script = ExtResource("7_iqxs7")
 world_id = "the_world"
+display_name = "梯子试炼"
+description = "经典平台跳跃与梯子攀爬"
 start_room_id = "room_00_00"
 start_spawn_id = "start"
 rooms = Array[Resource]([ExtResource("2_lks8w"), ExtResource("3_13oic"), ExtResource("4_0i5gd"), ExtResource("5_xwv7a"), ExtResource("6_642bf")])

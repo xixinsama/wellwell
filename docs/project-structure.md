@@ -18,6 +18,8 @@
 - `scenes/rooms/generated/<room_id>/`: baked runtime and terrain scenes.
 - `resources/rooms/generated/<room_id>.tres`: baked local `RoomData`.
 - `addons/world_editor/`: optional main-screen editor plugin and its authoring helpers.
+- `scenes/ui/world_select.tscn`: map selection screen shown after a save slot.
+- `resources/worlds/world_catalog.tres`: ordered list of worlds offered by the map screen; edit its `WorldData` entries in the inspector.
 - `resources/worlds/main_world.tres`: shipped `WorldData`, including room placements and connections.
 - `addons/world_editor/`: Godot main-screen World Editor.
 

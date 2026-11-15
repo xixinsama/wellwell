@@ -83,6 +83,19 @@ Dash. Player-like receivers opt in with
 `grant_ability_definition(definition: Resource) -> bool`. A rejected grant does
 not consume the pickup.
 
+## World Selection
+
+The start flow is `save slot -> world selection -> game`. The map list is the
+`WorldCatalog` resource at `resources/worlds/world_catalog.tres`: add or remove
+`WorldData` entries in the inspector and the menu builds the rows automatically.
+Set each world's `display_name` and `description` for the card text. A save from
+one world starts the selected world at its own start room; selecting the saved
+world resumes its saved room.
+
+Ladder zones and puzzle void collision bodies merge adjacent cells with
+`CellRectMerger`. Author tiles or void footprints as before; painting more cells
+does not create one collision shape per cell.
+
 ## Puzzle Sliding Regions
 
 - A sliding piece uses `x_move_distance` / `y_move_distance` (cells per axis).

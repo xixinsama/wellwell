@@ -260,12 +260,14 @@ func _rebuild_void_body() -> void:
     body.collision_layer = 1 << 3
     body.collision_mask = 0
     add_child(body)
-    for cell: Vector2i in shape:
+    for rect: Rect2i in CELL_RECT_MERGER.merge(shape):
         var collision := CollisionShape2D.new()
-        var rect := RectangleShape2D.new()
-        rect.size = Vector2(cell_size, cell_size)
-        collision.shape = rect
-        collision.position = (Vector2(cell) + Vector2(0.5, 0.5)) * float(cell_size)
+        var box := RectangleShape2D.new()
+        box.size = Vector2(rect.size) * float(cell_size)
+        collision.shape = box
+        collision.position = (
+            Vector2(rect.position) + Vector2(rect.size) * 0.5
+        ) * float(cell_size)
         body.add_child(collision)
 
 

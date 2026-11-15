@@ -12,6 +12,8 @@ const DEFAULT_CHUNK_SIZE_PIXELS := Vector2i(320, 180)
 const DEFAULT_CELL_SIZE := Vector2i(8, 8)
 
 @export var world_id := ""
+@export var display_name := ""
+@export_multiline var description := ""
 @export var start_room_id := ""
 @export var start_spawn_id := ""
 @export var rooms: Array[Resource] = []

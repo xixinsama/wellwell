@@ -18,6 +18,8 @@ extends Polygon2D
 ## non-empty polygon that still breaks the rules (e.g. a diagonal edge) prints a
 ## warning and yields no shape.
 
+const CELL_RECT_MERGER := preload("res://scripts/util/cell_rect_merger.gd")
+
 @export var movement_mode: PieceDefinition.MovementMode = PieceDefinition.MovementMode.FREE
 ## Whether interactive input may move this piece. Disabled pieces still occupy
 ## their cells and block other pieces. A disabled void piece can still be moved
@@ -169,13 +171,15 @@ func _build_collision() -> void:
     body.collision_mask = 0
     add_child(body)
 
-    for cell_offset: Vector2i in shape:
+    for rect: Rect2i in CELL_RECT_MERGER.merge(shape):
         var collision_shape := CollisionShape2D.new()
         collision_shape.name = "CollisionShape2D"
-        var rect := RectangleShape2D.new()
-        rect.size = Vector2(cell_size, cell_size)
-        collision_shape.shape = rect
-        collision_shape.position = (Vector2(cell_offset) + Vector2(0.5, 0.5)) * float(cell_size)
+        var box := RectangleShape2D.new()
+        box.size = Vector2(rect.size) * float(cell_size)
+        collision_shape.shape = box
+        collision_shape.position = (
+            Vector2(rect.position) + Vector2(rect.size) * 0.5
+        ) * float(cell_size)
         body.add_child(collision_shape)
 
 

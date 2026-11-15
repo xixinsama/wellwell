@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" uid="uid://dqmtoic5euy6x" path="res://scripts/ui/main_menu.gd" id="1"]
 [ext_resource type="PackedScene" uid="uid://bjkhq4tv4edmo" path="res://scenes/ui/save_slots.tscn" id="2"]
+[ext_resource type="PackedScene" path="res://scenes/ui/world_select.tscn" id="4_world_select"]
 [ext_resource type="Theme" uid="uid://dl2h74k2356hx" path="res://resources/ui/menu_theme.tres" id="3"]
 
 [node name="MainMenu" type="Control" unique_id=1507952010]
@@ -87,6 +88,11 @@ layout_mode = 2
 text = "MENU_QUIT"
 
 [node name="SaveSlots" parent="." unique_id=652458922 instance=ExtResource("2")]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+
+[node name="WorldSelect" parent="." unique_id=1422557851 instance=ExtResource("4_world_select")]
 unique_name_in_owner = true
 visible = false
 layout_mode = 1
