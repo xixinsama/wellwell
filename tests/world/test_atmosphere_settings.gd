@@ -2,7 +2,7 @@ extends Node
 
 ## The gas layer follows the Game setting, live.
 
-const ATMOSPHERE := preload("res://scripts/world/atmosphere/atmosphere.gd")
+const ATMOSPHERE := preload("res://addons/fluid_kit/runtime/gas/atmosphere.gd")
 
 
 class FakeSettings extends RefCounted:

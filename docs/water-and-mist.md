@@ -7,9 +7,9 @@
 
 水与气体都是**房间扩展**（`WorldSession.register_room_extension`），和 `FogOfWar`、`CrumbleRuntime` 同构：进房 `bind_room_with_origin()`，换房 `clear_room()`。
 
-- 水：`scripts/world/water/`
-- 气体：`scripts/world/atmosphere/`（`gas_sim.gd` 调度，`gas_psi.gdshader` + `gas_sim.gdshader` 两步模拟，`fog_layer.gdshader` 渲染）
-- 气体喷口：`scripts/world/atmosphere/gas_vent.gd`
+- 水：`addons/fluid_kit/runtime/water/`
+- 气体：`addons/fluid_kit/runtime/gas/`（`gas_sim.gd` 调度 Navier-Stokes 管线，4 个 shader：`gas_velocity` / `gas_pressure` / `gas_project` / `gas_density`，渲染在 `fog_layer.gdshader`）
+- 气体喷口：`addons/fluid_kit/runtime/gas/gas_vent.gd`
 - 气体（CPU 兜底）：`fog_grid.gd`，无 `RenderingDevice` 时使用
 - 玩家：`game/player/player_water_motion.gd`
 - 水花：`game/water/effects/water_splash.gd`
@@ -27,7 +27,7 @@
 ## 气体实验室
 
 - 左墙（`x=10`）三个 `GasVent`：上黄（轻气体）、中青（中性）、下红（重气体），都朝 +X 喷。
-- 三排平台自左下向右上排布（tile 行 18 / 15 / 12，跨 3..12、15..24、27..36），层间 24px，hero 站在上面就能看到红气下沉、青气横流、黄气上升。
+- 三排平台自左下向右上排布（tile 行 18 / 15 / 12，跨 3..12、15..24、27..36），层间 24px。
 - 房间用 `FogZone(Light)` 覆盖，探索雾不会压暗气体。
 
 | GasVent 参数 | 默认 | 作用 |
@@ -36,7 +36,59 @@
 | `direction` | (1, 0) | 喷口朝向（指向房间内） |
 | `radius` | 22 | 作用半径（px） |
 | `rate` | 3.2 | 每秒注入的密度 |
-| `jet_speed` | 460 | 喷流初速（px/s），会推动周围气体 |
+| `jet_speed` | 460 | 喷流加速度（px/s²），会推动周围气体 |
+
+## 气体效果演示（三个场景）
+
+`addons/fluid_kit/demos/gas_effects_demo.tscn`：窗口运行，循环播放三个场景。
+
+| 场景 | 怎么做的 | 演示场景 |
+| :--- | :--- | :--- |
+| 气体快速喷出 | `refresh_vents()` 把三个喷口的 `rate`×4、`jet_speed`×3 后重新收集 | 同上 |
+| 某点爆炸 | `trigger_explosion()`：一次性径向冲量 + 密度闪光，0.18s 内淡出 | 同上 |
+| 柱子扫动湍流 | `set_gas_mover()`：8×32px（1×4 格）竖柱左右扫过羽流，拖动并排开气体 | 同上 |
+
+三个效果也可以直接放进游戏：给任意实体挂一个 `GasInteractor`（Push / Emit / Blast 三种模式），或调用 `Atmosphere` 的运行时 API。
+
+运行时的 `Atmosphere` API：
+
+```gdscript
+# 以世界坐标触发一次爆炸
+atmosphere.trigger_explosion(world_position, 34.0, 190.0, 1.1)
+# 一个移动障碍物（中心、半尺寸、速度，都是世界坐标 / px/s）
+atmosphere.set_gas_mover(world_center, Vector2(4.0, 16.0), world_velocity)
+atmosphere.clear_gas_mover()
+# 改了 GasVent 的 rate / jet_speed 之后让模拟重新读取
+atmosphere.refresh_vents()
+```
+
+爆炸的冲量进入速度场后由压力投影变成无散的向外冲击 + 涡环；柱子的 `mover` 是**气体里的力区域**（拖动 + 排开 + 在它内部把气体挖空），不是 mask 里的实心障碍，所以它不会和 hero 碰撞。要真正的实心移动障碍，需要每步重建 mask 再上传，成本更高。
+
+## 气体尾迹实验室（消散）
+
+`gas_trail` 房间：**初始没有任何气体**，一个 1×1 格（8×8 px）的实体沿 150×78 的正方形路径循环行走，每帧在自身位置注入气体、并给这股气体一个**向后**的初速度，于是拖出一条尾迹；尾迹随时间逐渐消散。
+
+- **消散**：密度 shader 里的 `decay` 项 `density *= max(0, 1 - decay * delta)`，按秒指数衰减；房间用 `refill = 0` 不再补气，所以只剩"旧气变淡"。
+- **无初始气体**：房间里的 `GasField` 标记（`ambient = 0`）在 `Atmosphere` 绑定时覆盖全局 `gas_ambient`。
+- **尾迹**：`GasTrailWalker` 每帧调用 `atmosphere.set_gas_emitter(位置, 半径, 速率, -方向 * 后退速度, 通道)`；速度 shader 在发射半径内把气体速度混合到那个向后速度，所以尾迹落在实体身后而不是跟着它走。
+
+| GasField 参数 | 默认 | 作用 |
+| :--- | :--- | :--- |
+| `ambient` | (0,0,0) | 房间初始气体密度；全 0 就是空房间 |
+| `decay` | 0.5 | 每秒指数衰减（0.5 ≈ 1.4s 半衰期） |
+| `diffusion` | 0.25 | 扩散 |
+| `refill` | 0.0 | 回填速度（0 = 不补气） |
+
+| GasTrailWalker 参数 | 默认 | 作用 |
+| :--- | :--- | :--- |
+| `square_size` | (150, 78) | 正方形路径边长（px） |
+| `speed` | 70 | 行走速度（px/s） |
+| `emit_radius` | 13 | 注气半径（px） |
+| `emit_rate` | 6.0 | 每秒注入密度 |
+| `backward_speed` | 105 | 尾迹初速度（px/s，方向与行走相反） |
+| `channel` | Neutral | 尾迹用哪种气体 |
+
+运行：`addons/fluid_kit/demos/gas_trail_demo.tscn`。
 
 ## 房间作者指南
 
@@ -81,20 +133,26 @@
 - 入水瞬间按竖直速度追加下沉冲量并请求水花；速度越大沉得越深、水花越大。
 - 水流会横向推动 hero；重生/锁定控制时复位。
 
-## 气体模型：不可压流体（GPU）
+## 气体模型：完整 2D Navier-Stokes（GPU）
 
-**速度场不可压**：气体不是按"密度堆积"模拟的，而是用一个标量流函数 ψ 定义速度：
+按 Stam 的 *Stable Fluids* / GPU Gems 38 实现，每个固定步依次执行：
 
 ```
-v = curl(ψ) = (∂ψ/∂y, -∂ψ/∂x)
+u*  = advect(u) + f·dt        半拉格朗日自平流 + 外力（浮力/喷流/hero 推力）
+u*  = mix(u*, avg(4邻域))     粘滞扩散（gas_viscosity，显式、带稳定钳制）
+div = ∇·u*                     散度（后向差分）
+p   = solve(∇²p = div)         压力泊松，Jacobi 迭代（默认 16 次，热启动）
+u   = u* - ∇p                  投影，得到无散速度（不可压）
+d   = advect(d, u) + 源/汇     三层密度作为被动标量
 ```
 
-这样速度的散度恒为 0（二维下混合偏导相消），也就是真正的**非压缩流体**：气体不能被"压"进角落或堆成层，只能绕着流。密度只是被这个无散速度搬运的被动标量。
+每个 pass 独占一个 HDR `SubViewport`，只采样别的 viewport（Vulkan 不允许同一张纹理既当附件又当 uniform）。整条链在场景树里按 pass 顺序创建，渲染器按依赖顺序执行。
 
-每个固定步只跑 **2 个 GPU pass**（没有"迭代次数"）：
+**离散一致性**：散度用**后向差分**、投影用**前向差分**——两者复合正好等于 Jacobi 求解的紧凑五点拉普拉斯算子，所以投影后的离散散度严格为 0（中心差分对会留下 O(1) 残差，实测只能消掉约 1/3）。solid 格速度置 0（不可穿透），压力在墙边取中心值（零梯度），壁面邻近格会保留少量残差，这是无通量边界的正常表现。
 
-1. `gas_psi.gdshader`：用 `curl(ψ)+wind` 平流 ψ，并按三层密度的水平梯度扭转 ψ——重气让 ψ 产生一侧向下的涡、轻气反向，于是红气下沉、黄气上升、青气横流，形成卷曲的羽流。
-2. `gas_sim.gdshader`：用 `curl(ψ_new)+wind+喷流+hero 推力` 平流三个密度通道，再做扩散、回填、喷口注入与 hero 抽稀。
+**压力求解**：默认 16 次 Jacobi + 上一帧收敛压力作为初始猜测（`gas_copy.gdshader` 保存）。实测 16 次与 200 次的压力场几乎相同，说明已收敛，再增加迭代没有收益；`pressure_iterations` 仍可调。
+
+**验证**：在气体实验室采样投影后的速度场（排除墙壁/平台邻近格），散度从 `mean|div(u*)| = 0.049` 降到 `mean|div(u)| = 0.0036`（**消除 92.7%**），相对速度尺度（mean|v| ≈ 4.3 cells/s）约 0.1%。
 
 | 通道 | 气体 | 行为 | 颜色 |
 | :--- | :--- | :--- | :--- |
@@ -102,9 +160,9 @@ v = curl(ψ) = (∂ψ/∂y, -∂ψ/∂x)
 | G | 中性气体 | 随风横流 | 亮青 |
 | B | 轻气体 | 上升，聚在天花板 | 亮黄 |
 
-两个字段各用一对 HDR `SubViewport` 做 ping-pong（Vulkan 禁止同一张纹理既当 framebuffer 又当 uniform）。`Atmosphere` 负责收集房间里的 `GasVent`、组织 8px 固体 + 水体掩码（气体不会沉进水池），并把 hero 位置换算成**房间局部坐标**后送进 shader。
+浮力作为**力**进入速度场（`gas_buoyancy`，单位 px/s²），再由投影转成无散的旋转/羽流，所以红气不是"掉下去堆起来"，而是下沉后沿地面铺开、被卷回。密度只被速度搬运，扩散/回填只是低速的源汇，不参与压力求解。
 
-渲染仍由 `fog_layer.gdshader`：按三层密度加权混色、每层不同尺度的噪声、4×4 Bayer 抖动、最多 4 个点光按 `energy * pow(1 - d/r, 1.6)` 照亮。世界坐标来自 quad 的 UV，**不要改回 `VERTEX + 偏移`**（片元里 `VERTEX` 不保证在局部空间）。
+渲染由 `fog_layer.gdshader` 完成：按三层密度加权混色、每层不同尺度的噪声、4×4 Bayer 抖动、最多 4 个点光按 `energy * pow(1 - d/r, 1.6)` 照亮。世界坐标来自 quad 的 UV，**不要改回 `VERTEX + 偏移`**。
 
 无 `RenderingDevice` 时退回 CPU `FogGrid`（仅 headless/预览用）。
 
@@ -114,15 +172,18 @@ v = curl(ψ) = (∂ψ/∂y, -∂ψ/∂x)
 
 | 参数 | 默认 | 作用 |
 | :--- | :--- | :--- |
-| `sim_hz` | 30 | **每秒步进次数（整体流速总开关）**，10–60 |
-| `gas_wind` | (7, -1.5) | **水平风速，单位 px/s** |
-| `gas_buoyancy` | (1.1, 0, 1.0) | 重/轻气体通过 ψ 产生的沉浮强度 |
-| `gas_dissipation` | 0.6 | ψ 的衰减（越大涡旋越快消失） |
-| `gas_diffusion` | 0.12 | 密度扩散 |
-| `gas_refill` | 0.25 | 回填速度（越小尾迹留得越久） |
+| `sim_hz` | 30 | **每秒步进次数（整体速度总开关）**，10–60 |
+| `pressure_iterations` | 16 | 每步压力 Jacobi 迭代次数（4–64） |
+| `gas_wind` | (7, -1.5) | **水平风速，单位 px/s**（叠加在无散速度上，仍是不可压的） |
+| `gas_buoyancy` | (240, 0, 300) | 重/轻气体的浮力加速度（px/s²） |
+| `gas_dissipation` | 0.4 | 速度耗散（1/s），越大羽流越快平息 |
+| `gas_viscosity` | 0.0 | **粘滞系数**（1/s）：气体越"稠"，羽流越缓、越圆滑；显式扩散，超过 ~10 会像糖浆 |
+| `gas_decay` | 0.0 | **指数消散**（1/s），0.5 ≈ 1.4s 半衰期；配合 `GasField.ambient = 0` 做出逐渐消失的尾迹 |
+| `gas_diffusion` | 0.25 | 密度扩散 |
+| `gas_refill` | 0.35 | 回填速度（越小尾迹留得越久） |
 | `gas_ambient` | (0.28, 0.22, 0.32) | 三层气体的环境密度，越低越"通透" |
 | `push_radius` | 34 | **hero 推开气体的半径，单位 px**（房间局部像素） |
-| `push_strength` | 1.4 | hero 推开/抽稀气体的强度 |
+| `push_strength` | 1.4 | hero 推力强度 |
 | `heavy_color` / `neutral_color` / `light_color` | 锈红 / 亮青 / 亮黄 | 三层气体颜色 |
 | `gas_alpha` | (0.5, 0.32, 0.4) | 每层的浓淡 |
 | `base_alpha` / `light_alpha` | 0.6 / 0.9 | 未受光/受光时的整体透明度 |
@@ -134,40 +195,43 @@ v = curl(ψ) = (∂ψ/∂y, -∂ψ/∂x)
 ### 让气体流得更快
 
 - **横向更快**：`gas_wind` 从 `(7, -1.5)` 调到 `(24, -4)`，约 3 倍速（px/s，线性）。
-- **整体更快**：`sim_hz` 30 → 45/60；每步仍是 2 个 pass，代价很小。
+- **整体更快**：`sim_hz` 30 → 45/60；每步仍是 20 个 pass（16 次压力 + 4 个场 pass）。
 - **羽流更有力**：调大 `gas_buoyancy`（红气下沉/黄气上升），或调大喷口的 `jet_speed` / `rate`。
 - **hero 尾迹更明显**：`push_strength` 1.4 → 2.2；`push_radius` 34 → 44。
-- **更通透、少雾蒙蒙**：降低 `gas_ambient` 与 `base_alpha`，同时调大喷口 `rate`，让颜色来自羽流而不是环境底雾。
-- **稳定性**：单步位移要小于一格（4px），即 `gas_wind / sim_hz <= 4`；30Hz 上限约 120px/s，60Hz 下 240px/s。
+- **更通透、少雾蒙蒙**：降低 `gas_ambient` 与 `base_alpha`，同时调大喷口 `rate`。
+- **稳定性**：单步平流位移要小于一格（4px），即 `gas_wind / sim_hz <= 4`；30Hz 上限约 120px/s，60Hz 下 240px/s。
 
 ## 性能
 
-实测（GTX 1650，320×180 房间，window 1280×720，120fps 上限）：
+实测（GTX 1650，320×180 房间，window 1280×720，120fps 上限，80×45 网格，20 pass/步）：
 
-| 项目 | 旧（CPU 密度雾） | 新（GPU 不可压气体） |
+| 项目 | 旧（CPU 密度雾） | 新（GPU Navier-Stokes） |
 | :--- | :--- | :--- |
-| 气体单步 CPU 时间 | 1.8–1.9 ms | **0.044 ms**（2 个 pass 的提交） |
-| 每秒步进 | 30 | 30–60（`sim_hz`） |
-| 帧时间 p95 / p99 / max（气体开） | 8.73 / 17.39 / 18.56 ms | 8.52 / 16.40 / 16.81 ms |
-| 帧时间 p95 / p99 / max（气体关） | 8.51 / 8.63 / 8.81 ms | 8.46 / 8.95 / 9.23 ms |
+| 气体单步 CPU 时间 | 1.8–1.9 ms | **0.062 ms**（20 个 pass 的提交） |
+| 每步 GPU pass | — | 16 压力 + 平流/投影/密度/拷贝 = 20 |
+| 帧时间 p95 / p99 / max（气体开） | 8.73 / 17.39 / 18.56 ms | 8.75 / 15.74 / 16.19 ms |
+| 帧时间 p95 / p99 / max（气体关） | 8.51 / 8.63 / 8.81 ms | 8.42 / 8.46 / 8.54 ms |
 
-CPU 侧开销基本消失。120fps（8.33ms 预算）下仍有约 1% 的帧因为气体渲染/步进掉一帧；把视频设置的帧率上限设为 60（预算翻倍）就没有可见抖动。
+CPU 侧开销基本消失；120fps 下约 1% 的帧掉一帧，把帧率上限设 60 就没有可见抖动。
 
-## 重新生成房间与截图
+## 重新生成房间与演示
 
 ```powershell
 godot --headless --path . -s res://tools/build_water_room.gd
 godot --headless --path . -s res://tools/build_gas_lab.gd
+godot --headless --path . -s res://tools/build_gas_trail.gd
 ```
 
-两个房间都是生成器铺出来的独立场景（不继承模板），重跑会覆盖编辑器里对源场景的改动；改布局请改生成器。
+三个房间都是生成器铺出来的独立场景（不继承模板），重跑会覆盖编辑器里对源场景的改动；改布局请改生成器。
 
-截图（会打开窗口，自动保存到 `docs/design/`）：
+演示场景（可直接 F6 运行，不再往项目里保存图片）：
 
-```powershell
-godot --path . --quit-after 700 res://tools/gas_capture.tscn
-godot --path . --quit-after 600 res://tools/water_capture.tscn
-```
+- `addons/fluid_kit/demos/water_demo.tscn`
+- `addons/fluid_kit/demos/gas_plumes_demo.tscn`
+- `addons/fluid_kit/demos/gas_effects_demo.tscn`
+- `addons/fluid_kit/demos/gas_trail_demo.tscn`
+
+插件说明（参数、交互实体、生成方式）：`addons/fluid_kit/README.md`。
 
 ## 测试
 
@@ -186,6 +250,7 @@ godot --headless --path . -s res://tests/run_test_script.gd -- res://tests/world
 - 一维水模型不模拟密闭管道；水面被水花顶过池沿不会继续外溢。
 - 池底按 `SolidTiles` 自下而上扫描，顶部悬空平台不影响结果，但"悬空的水"无法表达。
 - 瀑布是按水面落差生成的视觉层，不参与流体计算。
-- 气体的"不可压"来自 `curl(ψ)`：喷流和 hero 推力是局部的散度源，只在喷口/身体附近破坏严格不可压；这不是完整的 Navier–Stokes（没有压力投影与涡量方程），但视觉上不会出现密度堆积。
+- 气体压力求解器是 Jacobi（16 次 + 热启动）。开放区域散度消除 92.7%，但**壁面邻近格保留残差**（无通量边界的正常结果）；要更严格的不可压可以加多重网格，代价是更多 pass。
+- 密度不是守恒量：环境回填、喷口注入、hero 抽稀都是源汇，这是为了游戏可读性（房间不会把气抽空），不是严格的质量守恒。
 - 水体掩码按 8px 瓦片刷新（每 0.25s），水面变化的那几帧最多有 8px 的气体/水交界面误差。
 - 无 `RenderingDevice` 时退回 CPU 气体（仅 headless/预览用），外观是单色雾。

@@ -1,0 +1,496 @@
+class_name WaterField
+extends Node2D
+
+## Runtime water for the active room.
+##
+## Bound through WorldSession.register_room_extension, like FogOfWar: the field
+## scans the room's SolidTiles to build a one-dimensional column height field
+## (one column per 4 px), fills the authored WaterBasin markers and blocks the
+## columns covered by WaterGate markers until those gates open. The simulation
+## runs at a fixed 60 Hz and sleeps when nothing moves; the surface is drawn by a
+## single quad reading a one-row column texture.
+##
+## Splashes are requested by the player component: they displace the simulation
+## locally (the surface bulges and settles) and spawn one PixelFX water splash
+## whose size follows the impact speed.
+
+## Emitted on every impact, so the game can spawn its own splash effect. The
+## plugin itself has no art dependency.
+signal splash_requested(world_position: Vector2, power: float)
+
+const SURFACE_SHADER := preload("res://addons/fluid_kit/runtime/water/water_surface.gdshader")
+const WATERFALL_SHADER := preload("res://addons/fluid_kit/runtime/water/waterfall.gdshader")
+
+const CHUNK_PIXELS := Vector2(320.0, 180.0)
+const TILE_PIXELS := 8.0
+## One column per tile: the wider column diffuses across a pool about four times
+## faster than a 4 px column at the same stability, so wide tanks stay level
+## while the water drains.
+const COLUMN_WIDTH := 8.0
+## Two simulation substeps per 60 Hz tick keep a wide pool level while the
+## discrete column diffusion stays stable (flow_rate / SIM_HZ <= 0.5).
+const SIM_HZ := 120.0
+const SIM_STEP := 1.0 / SIM_HZ
+## Water surface texture upload rate (the simulation still runs at SIM_HZ).
+const UPLOAD_INTERVAL := 1.0 / 60.0
+const BASIN_GROUP := &"water_basin"
+const GATE_GROUP := &"water_gate"
+const WATER_GROUP := &"water_field"
+
+@export_range(16.0, 160.0, 1.0) var max_depth := 64.0
+## Column-to-column transfer coefficient (1/s). The discrete diffusion is stable
+## while flow_rate / SIM_HZ stays below 0.5; 54 at 120 Hz levels a 30-column tank
+## in about two seconds.
+@export_range(1.0, 59.0, 0.5) var flow_rate := 54.0
+@export_range(2.0, 24.0, 0.5) var splash_radius_base := 8.0
+@export_range(0.0, 32.0, 0.5) var splash_radius_scale := 10.0
+@export_range(0.0, 20.0, 0.5) var waterfall_min_drop := 5.0
+## Optional splash effect scene spawned on every impact. The plugin only emits
+## `splash_requested`; the game assigns its own effect scene here.
+@export var splash_scene: PackedScene
+
+var _sim: WaterSimulation
+var _columns := 0
+var _origin_x := 0.0
+var _field_top := 0.0
+var _field_height := 184.0
+var _room_rect := Rect2()
+var _terrain: Node
+var _solid_tiles: TileMapLayer
+var _gates: Array[Dictionary] = []
+var _player: Node2D
+var _quad: MeshInstance2D
+var _material: ShaderMaterial
+var _image: Image
+var _texture: ImageTexture
+var _waterfall: MeshInstance2D
+var _waterfall_material: ShaderMaterial
+var _waterfall_timer := 0.0
+var _accumulator := 0.0
+var _needs_texture := true
+var _step_ms := 0.0
+var _steps := 0
+var _texture_updates := 0
+var _upload_accumulator := 0.0
+
+
+func _ready() -> void:
+	add_to_group(WATER_GROUP)
+
+
+func _exit_tree() -> void:
+	remove_from_group(WATER_GROUP)
+
+
+# ---------------------------------------------------------------------------- binding
+
+func bind_room_with_origin(room_data: Variant, terrain_root: Node, origin_chunk: Vector2i) -> bool:
+	clear_room()
+	if room_data == null or terrain_root == null:
+		return false
+	var sizes: Variant = room_data.get("room_size_chunks")
+	var room_chunks := Vector2i.ONE if sizes == null else Vector2i(sizes)
+	_terrain = _resolve_terrain(terrain_root)
+	if _terrain == null:
+		return true
+	_solid_tiles = _terrain.get_node_or_null("SolidTiles") as TileMapLayer
+	if _solid_tiles == null:
+		return true
+	_room_rect = Rect2(Vector2(origin_chunk) * CHUNK_PIXELS, Vector2(room_chunks) * CHUNK_PIXELS)
+	var basins := _collect_nodes(BASIN_GROUP, _room_rect)
+	if basins.is_empty():
+		return true
+	var span := _basin_span(basins)
+	if span.size.x < COLUMN_WIDTH:
+		return false
+	_origin_x = floorf(span.position.x / COLUMN_WIDTH) * COLUMN_WIDTH
+	var right := ceilf(span.end.x / COLUMN_WIDTH) * COLUMN_WIDTH
+	_columns = int(round((right - _origin_x) / COLUMN_WIDTH))
+	if _columns <= 0 or _columns > 1024:
+		return false
+	_field_top = _room_rect.position.y
+	_field_height = _room_rect.size.y
+
+	var floors := PackedFloat32Array()
+	floors.resize(_columns)
+	var blocked := PackedByteArray()
+	blocked.resize(_columns)
+	for index: int in _columns:
+		var column_x := _origin_x + (index + 0.5) * COLUMN_WIDTH
+		var floor_y := _sample_floor(column_x, _room_rect.end.y)
+		if floor_y <= 0.0:
+			blocked[index] = 1
+			floors[index] = _room_rect.end.y
+		else:
+			floors[index] = floor_y
+
+	var simulation := WaterSimulation.new()
+	simulation.column_width = COLUMN_WIDTH
+	simulation.max_depth = max_depth
+	simulation.flow_rate = flow_rate
+	simulation.setup(Vector2(_origin_x, _field_top), floors, blocked)
+	_sim = simulation
+
+	for basin: Node in basins:
+		_fill_basin(basin, floors, blocked)
+	for gate: Node in _collect_nodes(GATE_GROUP, _room_rect):
+		_block_gate(gate)
+	for entry: Dictionary in _gates:
+		var gate: Node = entry.get("node")
+		if is_instance_valid(gate):
+			entry["open"] = bool(gate.call("is_open"))
+
+	_build_render()
+	_needs_texture = true
+	_accumulator = 0.0
+	return true
+
+
+func clear_room() -> void:
+	_sim = null
+	_columns = 0
+	_origin_x = 0.0
+	_gates.clear()
+	_solid_tiles = null
+	_terrain = null
+	_room_rect = Rect2()
+	_accumulator = 0.0
+	_needs_texture = true
+	if _quad != null:
+		_quad.queue_free()
+		_quad = null
+	if _waterfall != null:
+		_waterfall.queue_free()
+		_waterfall = null
+	_material = null
+	_waterfall_material = null
+	_image = null
+	_texture = null
+
+
+func bind_player(player: Node2D) -> void:
+	_player = player
+
+
+# ---------------------------------------------------------------------------- queries
+
+func is_ready() -> bool:
+	return _sim != null
+
+
+func has_water_at(world_x: float) -> bool:
+	var index := _column_index(world_x)
+	if index < 0:
+		return false
+	return _sim.get_depth(index) > 0.02
+
+
+func get_surface_y_at(world_x: float) -> float:
+	var index := _column_index(world_x)
+	if index < 0 or _sim.is_blocked(index) or _sim.get_depth(index) <= 0.02:
+		return INF
+	return _sim.get_surface_y(index)
+
+
+func get_depth_at(world_x: float) -> float:
+	var index := _column_index(world_x)
+	if index < 0:
+		return 0.0
+	return _sim.get_depth(index)
+
+
+func get_flow_velocity_at(world_x: float) -> float:
+	var index := _column_index(world_x)
+	if index < 0:
+		return 0.0
+	return _sim.get_flow_velocity_at(world_x)
+
+
+func get_debug_state() -> Dictionary:
+	if _sim == null:
+		return {"ready": false, "columns": 0, "volume": 0.0, "active": false, "step_ms": 0.0}
+	return {
+		"ready": true,
+		"columns": _columns,
+		"volume": _sim.total_volume(),
+		"active": _sim.is_active(),
+		"step_ms": _step_ms,
+		"steps": _steps,
+		"uploads": _texture_updates,
+	}
+
+
+## One column as the simulation and the renderer see it. Handy for tests and for
+## checking that the surface texture lines up with the terrain.
+func get_column_debug(index: int) -> Dictionary:
+	if _sim == null or index < 0 or index >= _columns:
+		return {}
+	return {
+		"index": index,
+		"x": _origin_x + float(index) * COLUMN_WIDTH,
+		"blocked": _sim.is_blocked(index),
+		"depth": _sim.get_depth(index),
+		"surface": _sim.get_surface_y(index),
+		"floor": _sim.get_floor_y(index),
+	}
+
+
+# ---------------------------------------------------------------------------- splash
+
+## Called by the player component on water entry and on a surface hop.
+func request_splash(world_x: float, impact_speed: float) -> void:
+	if _sim == null:
+		return
+	var index := _column_index(world_x)
+	if index < 0 or _sim.is_blocked(index):
+		return
+	var surface_y := _sim.get_surface_y(index)
+	var energy := clampf(impact_speed / 300.0, 0.0, 1.4)
+	_sim.add_splash(
+		world_x,
+		splash_radius_base + splash_radius_scale * energy,
+		4.0 + 26.0 * energy,
+		30.0 + 110.0 * energy
+	)
+	_needs_texture = true
+	_spawn_splash(world_x, surface_y, energy)
+	if energy >= 0.35:
+		var camera := get_viewport().get_camera_2d() if is_inside_tree() else null
+		if camera != null and camera.has_method("add_shake"):
+			camera.call("add_shake", 1 + int(round(energy * 6.0)), 1.0 if energy < 0.6 else 2.0)
+
+
+# ---------------------------------------------------------------------------- simulation
+
+func _physics_process(delta: float) -> void:
+	if _sim == null:
+		return
+	_update_gates()
+	_accumulator = minf(_accumulator + maxf(delta, 0.0), SIM_STEP * 4.0)
+	if _accumulator < SIM_STEP:
+		return
+	var started := Time.get_ticks_usec()
+	while _accumulator >= SIM_STEP:
+		_accumulator -= SIM_STEP
+		_sim.step(SIM_STEP)
+	_step_ms = float(Time.get_ticks_usec() - started) / 1000.0
+	_steps += 1
+	# Upload at most 60 times a second: a 1 px texture upload is cheap, but it
+	# forces a GPU sync, so doing it on every 120 Hz physics tick is wasted work.
+	_upload_accumulator += maxf(delta, 0.0)
+	if _needs_texture or (_sim.is_active() and _upload_accumulator >= UPLOAD_INTERVAL):
+		_needs_texture = false
+		_upload_accumulator = 0.0
+		_update_texture()
+		_texture_updates += 1
+	_update_waterfall(delta)
+
+
+func _update_gates() -> void:
+	for entry: Dictionary in _gates:
+		var gate: Node = entry.get("node")
+		if not is_instance_valid(gate):
+			continue
+		var open := bool(gate.call("is_open"))
+		if open == bool(entry.get("open", false)):
+			continue
+		entry["open"] = open
+		var columns: Array = entry.get("columns", [])
+		for index: int in columns:
+			_sim.set_blocked(index, not open)
+		_needs_texture = true
+
+
+func _update_texture() -> void:
+	if _image == null or _texture == null or _sim == null:
+		return
+	var surface_span := maxf(_field_height, 1.0)
+	for index: int in _columns:
+		if _sim.is_blocked(index) or _sim.get_depth(index) <= 0.02:
+			_image.set_pixel(index, 0, Color(0.0, 0.0, 0.0, 0.0))
+			continue
+		var surface_norm := clampf((_sim.get_surface_y(index) - _field_top) / surface_span, 0.0, 1.0)
+		var floor_norm := clampf((_sim.get_floor_y(index) - _field_top) / surface_span, 0.0, 1.0)
+		_image.set_pixel(index, 0, Color(surface_norm, floor_norm, 0.0, 1.0))
+	_texture.update(_image)
+
+
+func _update_waterfall(delta: float) -> void:
+	if _waterfall == null or _sim == null:
+		return
+	var best_index := -1
+	var best_drop := 0.0
+	for index: int in maxi(_columns - 1, 0):
+		if _sim.is_blocked(index) or _sim.is_blocked(index + 1):
+			continue
+		if _sim.get_depth(index) <= 0.05:
+			continue
+		var drop := _sim.get_surface_y(index + 1) - _sim.get_surface_y(index)
+		if drop > best_drop:
+			best_drop = drop
+			best_index = index
+	if best_index < 0 or best_drop < waterfall_min_drop:
+		_waterfall.visible = false
+		return
+	var top := _sim.get_surface_y(best_index)
+	var bottom := _sim.get_surface_y(best_index + 1)
+	var height := bottom - top
+	var width := 12.0
+	var left := _origin_x + float(best_index + 1) * COLUMN_WIDTH - width * 0.5
+	_waterfall.visible = true
+	_waterfall.global_position = Vector2(left + width * 0.5, top + height * 0.5)
+	_waterfall.scale = Vector2(width, maxf(height, 1.0))
+	if _waterfall_material != null:
+		_waterfall_material.set_shader_parameter("flow_speed", clampf(0.55 + height / 40.0, 0.55, 2.2))
+	_waterfall_timer = maxf(_waterfall_timer - maxf(delta, 0.0), 0.0)
+	if _waterfall_timer <= 0.0:
+		_waterfall_timer = 0.42
+		_spawn_splash(left + width * 0.5, bottom, 0.18)
+
+
+# ---------------------------------------------------------------------------- construction
+
+func _resolve_terrain(terrain_root: Node) -> Node:
+	var terrain := terrain_root.get_node_or_null("Terrain")
+	if terrain != null:
+		return terrain
+	if terrain_root.name == "Terrain":
+		return terrain_root
+	return null
+
+
+func _collect_nodes(group: StringName, room_rect: Rect2) -> Array[Node]:
+	var result: Array[Node] = []
+	if not is_inside_tree():
+		return result
+	for node: Node in get_tree().get_nodes_in_group(group):
+		if not is_instance_valid(node) or not node.has_method("get_world_rect"):
+			continue
+		var rect: Rect2 = node.call("get_world_rect")
+		if rect.size.x <= 0.0 or not rect.intersects(room_rect):
+			continue
+		result.append(node)
+	return result
+
+
+func _basin_span(basins: Array[Node]) -> Rect2:
+	var span := Rect2(basins[0].call("get_world_rect"))
+	for index: int in range(1, basins.size()):
+		span = span.merge(basins[index].call("get_world_rect"))
+	return span
+
+
+func _fill_basin(basin: Node, floors: PackedFloat32Array, blocked: PackedByteArray) -> void:
+	var rect: Rect2 = basin.call("get_world_rect")
+	var surface_y := float(basin.call("get_initial_surface_y"))
+	var from := int(floor((rect.position.x - _origin_x) / COLUMN_WIDTH))
+	var to := int(ceil((rect.end.x - _origin_x) / COLUMN_WIDTH))
+	for index: int in range(maxi(from, 0), mini(to, _columns)):
+		if blocked[index] == 1:
+			continue
+		var floor_y := floors[index]
+		var depth := clampf(minf(floor_y, rect.end.y) - surface_y, 0.0, max_depth)
+		if depth <= 0.0:
+			continue
+		_sim.set_mass(index, depth * COLUMN_WIDTH)
+
+
+func _block_gate(gate: Node) -> void:
+	var rect: Rect2 = gate.call("get_world_rect")
+	var columns: Array[int] = []
+	var from := int(floor((rect.position.x - _origin_x) / COLUMN_WIDTH))
+	var to := int(ceil((rect.end.x - _origin_x) / COLUMN_WIDTH))
+	for index: int in range(maxi(from, 0), mini(to, _columns)):
+		columns.append(index)
+		_sim.set_blocked(index, true)
+	if columns.is_empty():
+		return
+	_gates.append({"node": gate, "columns": columns, "open": false})
+
+
+## First open row above the floor of `world_x`: everything solid from the bottom
+## up, so a raised spill lip or a tank floor is found without any authored data.
+## Returns 0 for a column that is solid all the way (a wall).
+func _sample_floor(world_x: float, bottom_y: float) -> float:
+	if _solid_tiles == null:
+		return bottom_y
+	# Work in the layer's own cell space: a room placed on an odd pixel origin
+	# (a chunk is 180 px tall) does not line up with world-space 8 px rows.
+	var local := _solid_tiles.to_local(Vector2(world_x, bottom_y))
+	var column := _solid_tiles.local_to_map(local).x
+	var row := int(floor((local.y - 0.5) / TILE_PIXELS)) - 1
+	while row >= 0:
+		if _solid_tiles.get_cell_source_id(Vector2i(column, row)) == -1:
+			return _solid_tiles.to_global(Vector2(0.0, float((row + 1) * int(TILE_PIXELS)))).y
+		row -= 1
+	return 0.0
+
+
+func _column_index(world_x: float) -> int:
+	if _sim == null or _columns <= 0:
+		return -1
+	if world_x < _origin_x or world_x >= _origin_x + float(_columns) * COLUMN_WIDTH:
+		return -1
+	return mini(int((world_x - _origin_x) / COLUMN_WIDTH), _columns - 1)
+
+
+func _build_render() -> void:
+	var width := float(_columns) * COLUMN_WIDTH
+	_material = ShaderMaterial.new()
+	_material.shader = SURFACE_SHADER
+	_material.set_shader_parameter("column_count", float(_columns))
+	_material.set_shader_parameter("field_origin", Vector2(_origin_x, _field_top))
+	_material.set_shader_parameter("field_size", Vector2(width, _field_height))
+	_material.set_shader_parameter("field_top", _field_top)
+	_material.set_shader_parameter("field_height", _field_height)
+	_material.set_shader_parameter("shallow_color", Color(0.26, 0.66, 0.94, 0.62))
+	_material.set_shader_parameter("deep_color", Color(0.05, 0.18, 0.42, 0.9))
+	_material.set_shader_parameter("crest_color", Color(0.85, 0.97, 1.0, 0.95))
+	_material.set_shader_parameter("foam_color", Color(0.96, 1.0, 1.0, 0.9))
+	_quad = MeshInstance2D.new()
+	_quad.name = "WaterSurface"
+	var surface_mesh := QuadMesh.new()
+	surface_mesh.size = Vector2(1.0, 1.0)
+	_quad.mesh = surface_mesh
+	_quad.scale = Vector2(width, _field_height)
+	_quad.position = Vector2(_origin_x + width * 0.5, _field_top + _field_height * 0.5)
+	_quad.z_index = 1
+	_quad.material = _material
+	add_child(_quad)
+
+	_image = Image.create(_columns, 1, false, Image.FORMAT_RGBA8)
+	_image.fill(Color(0.0, 0.0, 0.0, 0.0))
+	_texture = ImageTexture.create_from_image(_image)
+	_material.set_shader_parameter("column_texture", _texture)
+
+	_waterfall_material = ShaderMaterial.new()
+	_waterfall_material.shader = WATERFALL_SHADER
+	_waterfall = MeshInstance2D.new()
+	_waterfall.name = "Waterfall"
+	var mesh := QuadMesh.new()
+	mesh.size = Vector2.ONE
+	_waterfall.mesh = mesh
+	_waterfall.material = _waterfall_material
+	_waterfall.z_index = 2
+	_waterfall.visible = false
+	add_child(_waterfall)
+
+
+func _spawn_splash(world_x: float, surface_y: float, energy: float) -> void:
+	var power := 0.35 + energy * 1.2
+	splash_requested.emit(Vector2(world_x, surface_y), power)
+	if splash_scene == null:
+		return
+	var fx := splash_scene.instantiate() as Node2D
+	if fx == null:
+		return
+	fx.top_level = true
+	fx.z_as_relative = false
+	fx.z_index = 3
+	fx.set("autoplay", false)
+	fx.set("free_when_done", true)
+	fx.set("options", {"power": power})
+	add_child(fx)
+	fx.global_position = Vector2(world_x, surface_y)
+	if fx.has_method("play"):
+		fx.call("play")

@@ -17,17 +17,20 @@ rules and the branch/worktree policy.
   movement and sight while closed.
 - `scripts/world/crumble_runtime.gd`: drives the crumble tiles painted in
   `SolidTiles` for the active room.
-- `scripts/world/water/`: `WaterField` room extension, the `WaterSimulation`
+- `addons/fluid_kit/runtime/water/`: `WaterField` room extension, the `WaterSimulation`
   column fluid, authored `WaterBasin` / `WaterGate` markers and the surface /
   waterfall shaders.
-- `scripts/world/atmosphere/`: `Atmosphere` room extension and `FogGrid` mist
-  field, authored `FogLight` markers and the mist shader.
+- `addons/fluid_kit/runtime/gas/`: `Atmosphere` room extension (2D Navier-Stokes
+  gas), the GPU pass shaders, `GasVent` / `GasField` / `GasInteractor` /
+  `GasTrailWalker` / `FogLight` nodes and the CPU `FogGrid` fallback.
+- `addons/fluid_kit/demos/`: runnable fluid demos (water hall, gas plumes, gas
+  effects, gas trail).
 - `game/player/player_water_motion.gd` + `game/water/effects/water_splash.gd`:
   buoyancy/swimming composition and the PixelFX splash.
 - `game/`: project-specific composition and authored map data.
 - `resources/worlds/test_world.tres`: exploration test world (water hall with two
-  pools and drifting mist, fog zones, glass, crumble platforms, two-screen room)
-  selectable from the world menu; it starts in `water_hall`.
+  pools, gas lab, gas trail room, fog zones, glass, crumble platforms, two-screen
+  room) selectable from the world menu; it starts in `water_hall`.
 
 ## Authoring
 

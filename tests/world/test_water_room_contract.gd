@@ -9,7 +9,7 @@ extends Node
 const ROOM_DATA := preload("res://resources/rooms/generated/water_hall.tres")
 const RUNTIME_SCENE := preload("res://scenes/rooms/generated/water_hall/runtime.tscn")
 const TERRAIN_SCENE := preload("res://scenes/rooms/generated/water_hall/terrain.tscn")
-const WATER_FIELD := preload("res://scripts/world/water/water_field.gd")
+const WATER_FIELD := preload("res://addons/fluid_kit/runtime/water/water_field.gd")
 const WORLD := preload("res://resources/worlds/test_world.tres")
 const WORLD_VALIDATION := preload("res://addons/platformer_kit/world/data/world_validation.gd")
 

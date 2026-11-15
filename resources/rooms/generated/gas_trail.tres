@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="RoomData" format=3 uid="uid://djsx3oyv0rdwf"]
+
+[ext_resource type="Script" path="res://addons/platformer_kit/world/data/room_data.gd" id="1_p8x3c"]
+
+[resource]
+script = ExtResource("1_p8x3c")
+room_id = "gas_trail"
+display_name = "气体尾迹实验室"
+scene_path = "res://scenes/rooms/generated/gas_trail/runtime.tscn"
+source_scene_path = "res://scenes/levels/test/gas_trail.tscn"
+source_fingerprint = "df99e77a870582288fe25fe0d219404809cfd89024a3faa012931e9f30ff2a01"
+terrain_scene_path = "res://scenes/rooms/generated/gas_trail/terrain.tscn"
+entrance_ids = PackedStringArray()
+spawn_ids = PackedStringArray("start")
+entity_ids = PackedStringArray()
+tags = PackedStringArray()
+map_color = Color(0.4, 0.8, 0.95, 1)

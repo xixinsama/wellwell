@@ -25,22 +25,5 @@ Gameplay captures of the implemented test world:
 - `test-world-wide.png` — two-screen room at the divider; only the camera view
   is lit, the far screen stays black.
 
-Gameplay captures of the water hall (`water_hall`, the test world start room):
-
-- `water-hall.png` — the two pools just after the sluice gate opens: the high
-  tank drains over the spill lip into the low basin, the hero waits on the
-  starting ledge, and the mist is lit warm by the harbor lamp and cool by the
-  basin light.
-- `water-hall-splash.png` — the hero entering the tank: the crown of droplets,
-  the ring ripples and the locally raised surface.
-- `water-hall-float.png` — the hero floating at the surface after the splash,
-  with the gas pushed aside around the body.
-- `water-hall-wake.png` — the hero running off the ledge: the gas wake behind
-  the body, the three gas layers and the splash.
-- `gas-lab.png` — the gas lab: three wall vents (yellow light gas rises, cyan
-  neutral gas drifts, red heavy gas sinks) and three platform rows for the hero.
-- `gas-lab-walk.png` — the hero walking along the gas lab floor, pushing a
-  visible wake through the plumes.
-
-See `docs/fog-zones-and-crumble.md` for the exploration rules and
-`docs/water-and-mist.md` for the water and mist systems.
+See `docs/fog-zones-and-crumble.md` for the exploration rules. The fluid
+showcase lives in `addons/fluid_kit/demos/` (runnable scenes, no images kept).

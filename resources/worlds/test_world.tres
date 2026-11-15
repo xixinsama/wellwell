@@ -7,7 +7,8 @@
 [ext_resource type="Resource" uid="uid://dl46x6juumdw2" path="res://resources/rooms/generated/test_fog_wide.tres" id="5_u30kj"]
 [ext_resource type="Resource" uid="uid://rpagshdo2nno" path="res://resources/rooms/generated/water_hall.tres" id="6_water"]
 [ext_resource type="Resource" uid="uid://buy06gtby72b7" path="res://resources/rooms/generated/gas_lab.tres" id="7_gas"]
-[ext_resource type="Script" uid="uid://dkcwb87qn5n2c" path="res://addons/platformer_kit/world/data/world_data.gd" id="8_world"]
+[ext_resource type="Resource" uid="uid://djsx3oyv0rdwf" path="res://resources/rooms/generated/gas_trail.tres" id="8_trail"]
+[ext_resource type="Script" uid="uid://dkcwb87qn5n2c" path="res://addons/platformer_kit/world/data/world_data.gd" id="9_world"]
 
 [sub_resource type="Resource" id="Resource_458bd"]
 script = ExtResource("1_lq7ps")
@@ -44,22 +45,27 @@ script = ExtResource("2_tlcfc")
 room_id = "gas_lab"
 origin_chunk = Vector2i(1, 1)
 
+[sub_resource type="Resource" id="Resource_trail"]
+script = ExtResource("2_tlcfc")
+room_id = "gas_trail"
+origin_chunk = Vector2i(2, 1)
+
 [sub_resource type="Resource" id="Resource_62e5p"]
 script = ExtResource("3_pbuvv")
 region_id = &"test"
 display_name = "Test Area"
-room_ids = PackedStringArray("test_fog_start", "test_fog_wide", "water_hall", "gas_lab")
+room_ids = PackedStringArray("test_fog_start", "test_fog_wide", "water_hall", "gas_lab", "gas_trail")
 tags = PackedStringArray()
 
 [resource]
-script = ExtResource("8_world")
+script = ExtResource("9_world")
 world_id = "test_world"
 display_name = "Exploration Test World"
-description = "Water hall with two pools, a gas lab with three vented gas layers, plus fog, dark/light zones, crumbling platforms and a two-screen room."
+description = "Water hall with two pools, a gas lab with three vented gas layers, a gas trail room, plus fog, dark/light zones, crumbling platforms and a two-screen room."
 start_room_id = "water_hall"
 start_spawn_id = "start"
-rooms = Array[Resource]([ExtResource("4_jrtf8"), ExtResource("5_u30kj"), ExtResource("6_water"), ExtResource("7_gas")])
-placements = Array[Resource]([SubResource("Resource_qcdcs"), SubResource("Resource_mpmem"), SubResource("Resource_water"), SubResource("Resource_gas")])
+rooms = Array[Resource]([ExtResource("4_jrtf8"), ExtResource("5_u30kj"), ExtResource("6_water"), ExtResource("7_gas"), ExtResource("8_trail")])
+placements = Array[Resource]([SubResource("Resource_qcdcs"), SubResource("Resource_mpmem"), SubResource("Resource_water"), SubResource("Resource_gas"), SubResource("Resource_trail")])
 connections = Array[Resource]([SubResource("Resource_458bd"), SubResource("Resource_8qdij")])
 regions = Array[Resource]([SubResource("Resource_62e5p")])
 tags = PackedStringArray()

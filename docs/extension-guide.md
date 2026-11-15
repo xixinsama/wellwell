@@ -210,23 +210,29 @@ See `docs/fog-zones-and-crumble.md` for the full rules and the test world.
 - `scenes/levels/test/test_world_runner.tscn` starts the test world directly;
   edit `scenes/levels/test/*.tscn`, bake, then run the runner.
 
-## Water and Mist
+## Water and Gas
 
-See `docs/water-and-mist.md` for the full rules, tuning tables and limits. In short:
+The fluid systems live in the **Fluid Kit** addon (`addons/fluid_kit/`); see
+`addons/fluid_kit/README.md` for the node reference, every tunable parameter, the
+interactor recipes and the demos, and `docs/water-and-mist.md` for the project
+guide. In short:
 
 - Water is a room extension (`WaterField`, group `water_field`) fed by `WaterBasin`
   markers; `WaterGate` holds the water until the room is entered. Column floors are
-  scanned from `SolidTiles` bottom-up, so painting terrain is enough.
+  scanned from `SolidTiles` bottom-up, so painting terrain is enough. Splashes are
+  requested through the `splash_requested` signal (the template assigns
+  `splash_scene`).
 - The player composes `PlayerWaterMotion` (buoyancy, swimming, entry depth) the
   same way as `LadderMotionComponent2D`; keep water feel in that component, not in
   the controller.
-- Gas is `Atmosphere`: three densities (heavy sinks, neutral drifts, light rises)
-  simulated on the GPU by `GasSim`, two ping-ponged SubViewports running
-  `gas_sim.gdshader`; the CPU `FogGrid` is only the headless fallback. `FogLight`
-  markers light it, an 8 px solid+water mask keeps it out of walls and pools, and
-  the Game setting **Gas Simulation** (`atmosphere_enabled`) toggles it live. Add a
-  `LIGHT` `FogZone` covering any room with water, otherwise the exploration fog
-  clips the pools and the gas into a black band.
+- Gas is `Atmosphere`: a full 2D Navier-Stokes field (advection, buoyancy forces,
+  viscosity, Jacobi pressure projection) moving three passive densities (heavy
+  sinks, neutral drifts, light rises); the CPU `FogGrid` is the headless fallback.
+  `FogLight` markers light it, an 8 px solid+water mask keeps it out of walls and
+  pools, and the Game setting **Gas Simulation** (`atmosphere_enabled`) toggles it
+  live. Add `GasInteractor` nodes to entities that should push, emit or blast gas.
+  Add a `LIGHT` `FogZone` covering any room with water, otherwise the exploration
+  fog clips the pools and the gas into a black band.
 - Regenerate `scenes/levels/test/water_hall.tscn` with
   `godot --headless --path . -s res://tools/build_water_room.gd`. The room is
   generated rather than inherited from the template, so change the generator for

@@ -5,7 +5,7 @@ extends Node
 ## The script is loaded by path and stays the primary reference for the class, so
 ## the test also runs before the editor has refreshed the global class cache.
 
-const WATER_SIMULATION: Script = preload("res://scripts/world/water/water_simulation.gd")
+const WATER_SIMULATION: Script = preload("res://addons/fluid_kit/runtime/water/water_simulation.gd")
 
 const DT := 1.0 / 60.0
 const FLOOR_Y := 180.0

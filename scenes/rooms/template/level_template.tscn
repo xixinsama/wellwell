@@ -12,8 +12,8 @@
 [ext_resource type="PackedScene" uid="uid://d6sqanrtcnmo" path="res://addons/platformer_debug/runtime/debug_overlay_2d.tscn" id="8_debug_overlay"]
 [ext_resource type="Script" path="res://scripts/world/ladder_tile_area_builder.gd" id="9_ladder_builder"]
 [ext_resource type="Script" path="res://scripts/world/crumble_runtime.gd" id="10_crumble"]
-[ext_resource type="Script" path="res://scripts/world/water/water_field.gd" id="11_water"]
-[ext_resource type="Script" path="res://scripts/world/atmosphere/atmosphere.gd" id="12_atmosphere"]
+[ext_resource type="Script" path="res://addons/fluid_kit/runtime/water/water_field.gd" id="11_water"]
+[ext_resource type="Script" path="res://addons/fluid_kit/runtime/gas/atmosphere.gd" id="12_atmosphere"]
 
 [node name="RoomAuthoringRoot" type="Node2D" unique_id=1018949667]
 script = ExtResource("1_f53rw")

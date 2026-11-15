@@ -37,13 +37,13 @@
 新增文件：
 
 ```
-scripts/world/water/
+addons/fluid_kit/runtime/water/
   water_simulation.gd     RefCounted，纯一维流体核心（可测试）
   water_field.gd          Node2D，房间扩展：地形采样、模拟驱动、渲染、水花
   water_basin.gd          @tool 标记：池范围与初始水位（编辑器预览）
   water_gate.gd           @tool 标记：闸门，进房延时开启
   water_surface.gdshader  高度纹理 → 水体分层、亮边、泡沫
-scripts/world/atmosphere/
+addons/fluid_kit/runtime/gas/
   fog_grid.gd             RefCounted，纯雾场核心（可测试）
   atmosphere.gd           Node2D，房间扩展：实心掩码、光源、渲染
   fog_light.gd            @tool 标记：静态光源
