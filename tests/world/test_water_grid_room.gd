@@ -11,6 +11,9 @@ extends Node
 const ROOM_DATA := preload("res://resources/rooms/generated/water_grid.tres")
 const RUNTIME_SCENE := preload("res://scenes/rooms/generated/water_grid/runtime.tscn")
 const TERRAIN_SCENE := preload("res://scenes/rooms/generated/water_grid/terrain.tscn")
+const OTHER_ROOM := preload("res://resources/rooms/generated/water_hall.tres")
+const OTHER_RUNTIME := preload("res://scenes/rooms/generated/water_hall/runtime.tscn")
+const OTHER_TERRAIN := preload("res://scenes/rooms/generated/water_hall/terrain.tscn")
 const WATER_GRID := preload("res://addons/fluid_kit/runtime/water/water_grid.gd")
 const FLUID_REGION := preload("res://addons/fluid_kit/runtime/water/fluid_region.gd")
 
@@ -23,8 +26,27 @@ const RIGHT_X := 250.0
 func run() -> Array[String]:
 	var failures: Array[String] = []
 	_assert_baked_room(failures)
+	_assert_room_without_region_is_accepted(failures)
 	_assert_grid_flow(failures)
 	return failures
+
+
+## A room without a FluidRegion must not fail the bind: the world session aborts
+## the whole room load when an extension returns false.
+func _assert_room_without_region_is_accepted(failures: Array[String]) -> void:
+	var runtime := OTHER_RUNTIME.instantiate() as Node2D
+	var terrain := OTHER_TERRAIN.instantiate() as Node2D
+	add_child(runtime)
+	add_child(terrain)
+	var grid := WATER_GRID.new() as Node2D
+	add_child(grid)
+	if not bool(grid.call("bind_room_with_origin", OTHER_ROOM, terrain, Vector2i.ZERO)):
+		failures.append("water grid rejected a room without a fluid region")
+	if bool(grid.call("is_ready")):
+		failures.append("water grid is active in a room without a fluid region")
+	grid.free()
+	runtime.free()
+	terrain.free()
 
 
 func _assert_baked_room(failures: Array[String]) -> void:

@@ -81,8 +81,10 @@ func _exit_tree() -> void:
 
 # ---------------------------------------------------------------------------- binding
 
-## Builds the grid for a room. Returns false when the room holds no FluidRegion,
-## which is the normal case for every room that does not use the 2D fluid.
+## Builds the grid for a room. Returns true when the room is handled (including a
+## room with no FluidRegion, which simply keeps the grid inert), and false only
+## when the room data cannot be used at all. The world session aborts a room load
+## on false, so "nothing to do" must never be an error.
 func bind_room_with_origin(room_data: Variant, terrain_root: Node, origin_chunk: Vector2i) -> bool:
 	clear_room()
 	if room_data == null or terrain_root == null:
@@ -91,15 +93,17 @@ func bind_room_with_origin(room_data: Variant, terrain_root: Node, origin_chunk:
 	var room_chunks := Vector2i.ONE if sizes == null else Vector2i(sizes)
 	_terrain = _resolve_terrain(terrain_root)
 	if _terrain == null:
-		return false
+		return true
 	_solid_tiles = _terrain.get_node_or_null("SolidTiles") as TileMapLayer
 	if _solid_tiles == null:
-		return false
+		return true
 	_origin_chunk = origin_chunk
 	_room_rect = Rect2(Vector2(origin_chunk) * CHUNK_PIXELS, Vector2(room_chunks) * CHUNK_PIXELS)
 	var regions := _collect_nodes(REGION_GROUP, _room_rect)
 	if regions.is_empty():
-		return false
+		# Nothing to simulate: a room without a FluidRegion is a valid, inert room
+		# for this extension, exactly like a room without basins for WaterField.
+		return true
 
 	var cells := Vector2i(
 		maxi(int(ceil(_room_rect.size.x / float(cell_pixels))), 1),
@@ -122,8 +126,9 @@ func bind_room_with_origin(room_data: Variant, terrain_root: Node, origin_chunk:
 		_region_cells += cell_rect.size.x * cell_rect.size.y
 		_region_volume += _sim.fill_rect(cell_rect)
 	if _sim.total_volume() <= 0.0:
+		# The regions are entirely solid: leave the field empty and accept the room.
 		clear_room()
-		return false
+		return true
 
 	_build_render(cells)
 	_needs_texture = true
