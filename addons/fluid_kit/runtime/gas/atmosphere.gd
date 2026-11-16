@@ -7,14 +7,19 @@ extends Node2D
 ## only covers open cells (SolidTiles become an 8 px mask), runs at a fixed
 ## 30 Hz, and stops stepping once the hero stops moving and the gas settles.
 ##
-## GPU first: `GasSim` ping-pongs two 80x45 SubViewports with a fragment shader,
-## so a room of gas costs no CPU time (only two tiny draws). When no
-## RenderingDevice is available (headless) it falls back to the CPU `FogGrid`,
-## which keeps the same interface, the tests and previews working.
+## `backend` chooses the implementation per room: AUTO uses the GPU `GasSim`
+## (which ping-pongs two 80x45 SubViewports with a fragment shader, so a room of
+## gas costs no CPU time) and falls back to the CPU `FogGrid` when no
+## RenderingDevice exists (headless, previews); GPU forces the solver and warns
+## once if it cannot start; CPU always keeps the fog grid. Both paths share one
+## interface, so the render layer, the tests and the demos do not care which one
+## runs a room.
 ##
 ## The hero pushes the gas aside and leaves a wake; up to four point lights (the
 ## hero lantern plus authored FogLight nodes) brighten it. This node draws above
 ## the hero and below FogOfWar, so unexplored cells stay covered.
+
+enum Backend { AUTO, GPU, CPU }
 
 const FOG_GRID := preload("res://addons/fluid_kit/runtime/gas/fog_grid.gd")
 const GAS_SIM := preload("res://addons/fluid_kit/runtime/gas/gas_sim.gd")
@@ -31,6 +36,12 @@ const MAX_LIGHTS := 4
 const MAX_STATIC_LIGHTS := 3
 const MAX_VENTS := 4
 
+## Which gas implementation this node binds for the next room. AUTO keeps the
+## historical behaviour (GPU when a RenderingDevice exists, CPU otherwise), GPU
+## forces the solver and degrades to the CPU grid with one warning when it cannot
+## start, CPU keeps the fog grid even on a GPU. The choice is per bind, so
+## changing it takes effect on the next `bind_room_with_origin()`.
+@export var backend: Backend = Backend.AUTO
 ## Simulation steps per second. This is the overall "gas speed" knob: higher
 ## values advance the same shader more often. The GPU cost stays tiny (two 80x45
 ## passes); the CPU cost is one dispatch per step.
@@ -126,7 +137,6 @@ func bind_room_with_origin(room_data: Variant, terrain_root: Node, origin_chunk:
 	_static_lights = _collect_static_lights()
 	_step_interval = 1.0 / maxf(sim_hz, 1.0)
 
-	var gas := GAS_SIM.new() as Node
 	# A GasField marker in the room can override the ambient gas (for example a
 	# clean room with no gas at all, only trails).
 	var field := _find_gas_field()
@@ -139,31 +149,7 @@ func bind_room_with_origin(room_data: Variant, terrain_root: Node, origin_chunk:
 		decay = float(field.get("decay"))
 		diffusion = float(field.get("diffusion"))
 		refill = float(field.get("refill"))
-	gas.set("ambient", ambient)
-	gas.set("decay", decay)
-	gas.set("buoyancy", gas_buoyancy)
-	gas.set("dissipation", gas_dissipation)
-	gas.set("viscosity", gas_viscosity)
-	gas.set("pressure_iterations", pressure_iterations)
-	gas.set("diffusion", diffusion)
-	gas.set("refill", refill)
-	gas.set("wind", gas_wind)
-	gas.set("push_radius", push_radius)
-	gas.set("push_strength", push_strength)
-	add_child(gas)
-	if bool(gas.call("setup", _room_rect.size, _solid_mask, _mask_columns, _mask_rows)):
-		_gas = gas
-		gas.set("vents", _collect_vents())
-	else:
-		gas.queue_free()
-		_gas = null
-		var grid := FOG_GRID.new()
-		grid.cell_size = CELL_PIXELS
-		grid.ambient_density = ambient_density
-		grid.push_radius = push_radius
-		grid.setup(Vector2i(_columns, _rows), _room_rect.position, CELL_PIXELS)
-		grid.set_solid_mask(_solid_mask_at_grid_resolution())
-		_grid = grid
+	_bind_gas_backend(ambient, decay, diffusion, refill)
 	_build_render()
 	_refresh_gas_mask()
 	_needs_upload = true
@@ -224,14 +210,19 @@ func is_ready() -> bool:
 
 
 func get_debug_state() -> Dictionary:
-	var backend := "none"
+	var active_backend := "none"
 	if _gas != null:
-		backend = "gpu"
+		active_backend = "gpu"
 	elif _grid != null:
-		backend = "cpu"
+		active_backend = "cpu"
 	return {
 		"ready": is_ready(),
-		"backend": backend,
+		# The key keeps its historical values ("gpu"/"cpu"/"none") and reports the
+		# implementation actually running, while the request keys expose what the
+		# exported backend asked for (and whether a GPU request had to degrade).
+		"backend": active_backend,
+		"requested_backend": _backend_name(backend),
+		"fallback": backend == Backend.GPU and _grid != null,
 		"enabled": _enabled,
 		"active": _gas != null or (_grid != null and _grid.is_active()),
 		"lights": _static_lights.size() + (1 if is_instance_valid(_player) else 0),
@@ -325,7 +316,9 @@ func refresh_vents() -> void:
 		_gas.set("vents", _collect_vents())
 
 
-## Turns the gas simulation and its layer on or off (the Game setting).
+## Turns the gas simulation and its layer on or off (the Game setting). This only
+## parks the bound field: neither the GPU pipeline nor the CPU grid is torn down,
+## so re-enabling resumes the same gas instead of rebuilding it from scratch.
 func set_enabled(value: bool) -> void:
 	_enabled = bool(value)
 	if _quad != null:
@@ -418,6 +411,81 @@ func _refresh_enabled() -> void:
 
 
 # ---------------------------------------------------------------------------- construction
+
+## Picks and creates the gas field for the room that was just bound. The GPU path
+## is only attempted when this backend allows it; a forced GPU that cannot start
+## warns once and degrades to the CPU grid, so a room is never left unbound.
+func _bind_gas_backend(ambient: Vector3, decay: float, diffusion: float, refill: float) -> void:
+	_gas = null
+	_grid = null
+	if _should_try_gpu():
+		_gas = _create_gas_sim(ambient, decay, diffusion, refill)
+		if _gas != null:
+			_gas.set("vents", _collect_vents())
+		elif backend == Backend.GPU:
+			push_warning("Atmosphere: the GPU gas solver could not start; using the CPU fog grid.")
+	if _gas == null:
+		_grid = _create_cpu_grid()
+
+
+## AUTO keeps the historical behaviour: GPU when a RenderingDevice exists, CPU
+## otherwise and silently. A forced GPU without a device warns once instead of
+## failing the bind, while CPU never looks at the renderer at all.
+func _should_try_gpu() -> bool:
+	if backend == Backend.CPU:
+		return false
+	if RenderingServer.get_rendering_device() != null:
+		return true
+	if backend == Backend.GPU:
+		push_warning("Atmosphere: GPU backend requested without a RenderingDevice; using the CPU fog grid.")
+	return false
+
+
+## Builds and starts the GPU solver, returning null when setup() refused it (for
+## example a zero-sized room) so the caller can fall back to the CPU grid.
+func _create_gas_sim(ambient: Vector3, decay: float, diffusion: float, refill: float) -> GasSim:
+	var gas := GAS_SIM.new() as GasSim
+	gas.set("ambient", ambient)
+	gas.set("decay", decay)
+	gas.set("buoyancy", gas_buoyancy)
+	gas.set("dissipation", gas_dissipation)
+	gas.set("viscosity", gas_viscosity)
+	gas.set("pressure_iterations", pressure_iterations)
+	gas.set("diffusion", diffusion)
+	gas.set("refill", refill)
+	gas.set("wind", gas_wind)
+	gas.set("push_radius", push_radius)
+	gas.set("push_strength", push_strength)
+	add_child(gas)
+	if bool(gas.call("setup", _room_rect.size, _solid_mask, _mask_columns, _mask_rows)):
+		return gas
+	gas.queue_free()
+	return null
+
+
+## The CPU fog grid is the always-available path: coarse cells, no rendering
+## device needed, and the same interface the tests and previews use.
+func _create_cpu_grid() -> FogGrid:
+	var grid := FOG_GRID.new() as FogGrid
+	grid.cell_size = CELL_PIXELS
+	grid.ambient_density = ambient_density
+	grid.push_radius = push_radius
+	grid.setup(Vector2i(_columns, _rows), _room_rect.position, CELL_PIXELS)
+	grid.set_solid_mask(_solid_mask_at_grid_resolution())
+	return grid
+
+
+## Stable debug spelling of the exporter-facing enum. The actual backend strings
+## stay "gpu"/"cpu"/"none" because existing debug tools already read them.
+func _backend_name(value: Backend) -> String:
+	match value:
+		Backend.GPU:
+			return "gpu"
+		Backend.CPU:
+			return "cpu"
+		_:
+			return "auto"
+
 
 func _resolve_terrain(terrain_root: Node) -> Node:
 	var terrain := terrain_root.get_node_or_null("Terrain")

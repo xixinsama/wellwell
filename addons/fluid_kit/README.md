@@ -185,6 +185,27 @@ than only its x, because a column can hold more than one body of water.
 `demos/grid_water_demo.tscn` is the runnable demo and starts the hero inside the
 left pool; `docs/water-authoring.md` has the authoring rules.
 
+### Why the grid water is CPU-only
+
+A GPU version of this grid was built and measured, and it loses for this kind of
+game, so it is not shipped:
+
+- gameplay asks the water questions every frame — the hero's buoyancy needs the
+  surface under the body, enemies need `is_water_at` — and a GPU simulation has to
+  read that answer back. Reading a viewport back to the CPU is a pipeline stall:
+  **11 ms** for one full room in the water demo, against **1.6 ms** for the whole
+  CPU simulation of the same room.
+- without the read back the GPU wins easily (the simulation is one draw per
+  sub-step, well under 0.1 ms), which is exactly why the *gas* has a GPU backend:
+  nothing on the CPU ever needs to read the gas field back, it is only drawn.
+- the CPU water also scales with the wet area rather than the map, sleeps when it
+  settles, and its coefficients are tuned so 4 px and 8 px behave the same.
+
+If you need GPU water anyway, the shape is: keep the simulation on the GPU, read
+back one summary row per column at a low rate (5-15 Hz) and accept a stale
+surface for queries, or move the queries that matter (swimming) into a GPU-driven
+path so the CPU never asks.
+
 
 ## Gas: the solver
 
@@ -207,6 +228,21 @@ Per fixed step (`sim_hz`, 10..60):
 The gas is a passive scalar set on a divergence-free field: it cannot pile up,
 only swirl and fade. `GAS_FIELD_CELL` is 4 px and the grid is capped at 80x45 per
 room; the whole pipeline is 20 GPU passes (16 pressure + 4) on HDR viewports.
+
+## Gas backends (`Atmosphere.backend`)
+
+The gas field ships both implementations:
+
+| `backend` | What runs | When to use |
+| :--- | :--- | :--- |
+| `AUTO` (default) | `GasSim` (GPU) when a `RenderingDevice` exists, else `FogGrid` (CPU) | Normal projects. |
+| `GPU` | `GasSim`, and if it cannot start it warns once and degrades to `FogGrid` | You want the GPU cost, or you are testing that path. |
+| `CPU` | `FogGrid` always, even on a GPU host | Headless servers, the compatibility renderer, or debugging. |
+
+`get_debug_state()` reports `backend` (what is running: `"gpu"`, `"cpu"`,
+`"none"`), `requested_backend` and `fallback` (GPU asked for but CPU running).
+`set_enabled(false)` parks either backend without tearing it down, so
+re-enabling resumes instead of rebuilding.
 
 ## Gas parameters (`Atmosphere`)
 
