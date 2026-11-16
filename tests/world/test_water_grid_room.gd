@@ -101,7 +101,9 @@ func _assert_grid_flow(failures: Array[String]) -> void:
 
 
 func _cleanup(grid: Node, runtime: Node, terrain: Node) -> void:
-	grid.queue_free()
-	runtime.queue_free()
-	terrain.queue_free()
+	# Free immediately: a queued-free grid stays in the "water_field" group until
+	# the end of the frame, and the next test would resolve it as the active field.
+	grid.free()
+	runtime.free()
+	terrain.free()
 

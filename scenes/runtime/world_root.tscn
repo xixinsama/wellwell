@@ -12,7 +12,7 @@
 [ext_resource type="Script" uid="uid://bcvhavis06bpg" path="res://scripts/world/crumble_runtime.gd" id="9_crumble"]
 [ext_resource type="Script" uid="uid://dleqflojm4oba" path="res://addons/fluid_kit/runtime/water/water_field.gd" id="10_water"]
 [ext_resource type="Script" uid="uid://fqwahtimacjq" path="res://addons/fluid_kit/runtime/gas/atmosphere.gd" id="11_atmosphere"]
-[ext_resource type="PackedScene" path="res://scenes/fx/water_splash_fx.tscn" id="12_splash"]
+[ext_resource type="PackedScene" path="res://game/water/effects/water_splash_pixels.tscn" id="12_splash"]
 [ext_resource type="Script" path="res://addons/fluid_kit/runtime/water/water_grid.gd" id="13_grid"]
 
 [node name="WorldRoot" type="Node2D" unique_id=1531965248]

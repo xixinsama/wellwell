@@ -96,7 +96,7 @@ water_field.is_ready()
 | `flow_rate` | 54 | Column-to-column transfer; stability limit is `SIM_HZ / 2`. |
 | `splash_radius_base` / `splash_radius_scale` | 8 / 10 | Impact disturbance radius. |
 
-| `splash_scene` | null | Optional effect scene spawned on every splash; the field also emits `splash_requested(world_position, power)`. |
+| `splash_scene` | null | Optional effect scene spawned on every splash; the field also emits `splash_requested(world_position, power)`. **Keep it cheap**: one is spawned per impact, and a baked PixelFX effect is cached per option set, so a continuous `power` re-bakes a 300 ms effect for every distinct impact speed. `game/water/effects/water_splash_pixels.tscn` is a hand-drawn splash that costs nothing to spawn. |
 
 The falling water at a spill lip is a water column quad in the pool palette
 (`water_fall.gdshader`), not a texture and not particles. Up to four spills get
