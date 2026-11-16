@@ -49,18 +49,25 @@ float value_noise(vec2 p) {
 	return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
 }
 
-// Vertical offset of the surface from one impact: a decaying ring that travels
-// outwards. Purely visual - the height field is not disturbed.
+// Height of the surface from one impact.
+//
+// The peak sits exactly on the impact point and the wave travels outwards from
+// there: the ring front moves at `speed` px/s, the envelope falls off with
+// distance (so the neighbours are quieter than the landing point) and the whole
+// thing fades in about a second. Purely visual - the height field never moves.
 float ripple_offset(vec4 ripple, float world_x) {
 	if (ripple.w <= 0.001) {
 		return 0.0;
 	}
 	float age = ripple.z;
-	float distance = world_x - ripple.x;
-	float envelope = exp(-abs(distance) / (12.0 + 18.0 * ripple.w));
-	float ring = sin(distance * 0.45 - age * 11.0);
-	float decay = exp(-age * 2.6);
-	return ring * envelope * decay * ripple.w * ripple_amplitude;
+	float distance = abs(world_x - ripple.x);
+	float width = 16.0 + 20.0 * ripple.w;
+	float envelope = exp(-distance / width);
+	float front = 120.0 * age;
+	float ring = exp(-pow((distance - front) / (8.0 + 8.0 * ripple.w), 2.0));
+	float wave = cos((distance - front) * 0.85);
+	float decay = exp(-age * 2.0);
+	return wave * ring * envelope * decay * ripple.w * ripple_amplitude;
 }
 
 void fragment() {

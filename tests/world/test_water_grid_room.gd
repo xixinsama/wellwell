@@ -85,11 +85,13 @@ func _assert_grid_flow(failures: Array[String]) -> void:
 	if region_volume <= 0.0:
 		failures.append("fluid region added no volume")
 	# The rock column stands inside the region, so the region holds less than its
-	# full box: 17 x 9 cells of 8 px, minus 2 x 6 cells of rock.
+	# full box: 17 x 9 tiles, minus 2 x 6 tiles of rock. Volume is an area on this
+	# grid, so a full cell is cell_pixels * cell_pixels.
 	var cells := float(state.get("region_cells", 0))
 	if cells <= 0.0:
 		failures.append("fluid region reported no cells")
-	var empty_volume := cells * float(state.get("cell_pixels", 8.0)) * float(state.get("cell_pixels", 8.0)) * float(state.get("cell_pixels", 8.0))
+	var cell_px := float(state.get("cell_pixels", 4.0))
+	var empty_volume := cells * cell_px * cell_px
 	if start_volume >= empty_volume:
 		failures.append(
 			"the wall inside the region did not remove volume: %.0f of %.0f" % [start_volume, empty_volume]

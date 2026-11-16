@@ -63,9 +63,10 @@ var overflow_rate := 30.0
 ## equalizes in a frame instead of taking a minute to creep across a wide basin.
 var level_rate := 96.0
 ## Leveling sweeps per step. Each sweep may move up to half of the surface
-## difference of a column pair, so four sweeps flatten a basin to a few percent in
-## a single step.
-const LEVEL_SWEEPS := 4
+## difference of a column pair, so three sweeps flatten a basin to a few percent in
+## a single step. Leveling is the most expensive pass per cell, so this is the knob
+## to turn down on a fine grid.
+const LEVEL_SWEEPS := 3
 ## How far apart two neighbouring column surfaces may be and still be treated as
 ## one body. A waterfall is far above the pool it feeds and must not be levelled.
 const LEVEL_MAX_ROW_GAP := 2
@@ -83,6 +84,20 @@ var _active := false
 var _moved_last := 0.0
 var _max_transfer := 0.0
 var _last_delta := 1.0 / 60.0
+## Physics sub-steps per simulation step. A transfer moves water at most one cell,
+## and every coefficient is per second, so the model needs a smaller time step on a
+## finer grid: a 4 px cell covers half the distance in the same time. `setup` sets
+## this from `cell_pixels`, which keeps the fall speed, the spill rate and the
+## settling behaviour identical at every resolution instead of needing a different
+## set of tuned coefficients per cell size.
+var inner_steps := 1
+## Transfer coefficients are tuned for 8 px cells at 1/60 s. A transfer of `h` px of
+## height in a cell of `cell_pixels` width carries `h * cell_pixels` of area, so a
+## narrower cell carries less for the same surface difference: the coefficients are
+## multiplied by `8 / cell_pixels` to keep the physical flow (px^2/s) the same at
+## every resolution. Per inner step the product `rate * delta` is unchanged, so
+## this does not affect stability.
+var rate_scale := 1.0
 ## Topmost wet cell of each column, recomputed every step.
 var _tops := PackedInt32Array()
 ## Cell rect that can hold water. The passes only walk this rect, so a settled
@@ -114,6 +129,10 @@ func setup(cells: Vector2i, size_px: float, solid: PackedByteArray) -> bool:
 	_flow_y.fill(0.0)
 	_tops.resize(width)
 	_tops.fill(-1)
+	# An 8 px cell per 1/60 s is the reference speed. A finer grid runs smaller time
+	# steps, so water falls, spills and levels at the same rate in px/s.
+	inner_steps = clampi(int(round(8.0 / cell_pixels)), 1, 4)
+	rate_scale = 8.0 / cell_pixels
 	_bounds = Rect2i()
 	_active = false
 	return true
@@ -180,7 +199,7 @@ func is_solid_at(index: int) -> bool:
 
 
 ## Fills every open cell of `rect` (cell space) to the top. Returns the volume in
-## px^3 that was added, so callers can report how much a wall removed.
+## in px^2, so callers can report how much a wall removed.
 func fill_rect(rect: Rect2i) -> float:
 	var added := 0.0
 	var from_x := clampi(rect.position.x, 0, width)
@@ -201,10 +220,10 @@ func fill_rect(rect: Rect2i) -> float:
 	if added > 0.0:
 		_touch_rect(Rect2i(from_x, from_y, to_x - from_x, to_y - from_y))
 		wake()
-	return added * cell_pixels * cell_pixels
+	return added * cell_pixels
 
 
-## Adds `amount` px^3 around `world` with a linear falloff inside `radius`. The
+## Adds `amount` px^2 around `world` with a linear falloff inside `radius`. The
 ## water is spread only over open cells that still have room; whatever does not
 ## fit is returned instead of being dropped.
 func add_volume(world: Vector2, radius: float, amount: float) -> float:
@@ -230,7 +249,7 @@ func add_volume(world: Vector2, radius: float, amount: float) -> float:
 			total += weight
 	if total <= 0.0:
 		return amount
-	var area := cell_pixels * cell_pixels
+	var area := cell_pixels
 	var left := amount
 	for index: int in weights:
 		var share := amount * weights[index] / total
@@ -244,13 +263,13 @@ func add_volume(world: Vector2, radius: float, amount: float) -> float:
 	return maxf(left, 0.0)
 
 
-## Removes up to `amount` px^3 in a radius and returns what was actually taken.
+## Removes up to `amount` px^2 in a radius and returns what was actually taken.
 func remove_volume(world: Vector2, radius: float, amount: float) -> float:
 	if amount <= 0.0 or not is_valid():
 		return 0.0
 	var cell := cell_of_world(world)
 	var reach := maxi(int(ceil(radius / cell_pixels)), 1)
-	var area := cell_pixels * cell_pixels
+	var area := cell_pixels
 	var taken := 0.0
 	for y in range(cell.y - reach, cell.y + reach + 1):
 		for x in range(cell.x - reach, cell.x + reach + 1):
@@ -276,7 +295,7 @@ func remove_volume(world: Vector2, radius: float, amount: float) -> float:
 func splash(world: Vector2, radius: float, depth: float) -> void:
 	if depth <= 0.0 or not is_valid():
 		return
-	var area := cell_pixels * cell_pixels
+	var area := cell_pixels
 	var cell := cell_of_world(world)
 	var reach := maxi(int(ceil(radius / cell_pixels)), 2)
 	var centre: Array[int] = []
@@ -327,7 +346,7 @@ func total_height() -> float:
 
 
 func total_volume() -> float:
-	return total_height() * cell_pixels * cell_pixels
+	return total_height() * cell_pixels
 
 
 ## World y of the local water surface at a cell: the top of the water in that
@@ -416,9 +435,14 @@ func step(delta: float) -> void:
 		return
 	_last_delta = step_delta
 	_max_transfer = 0.0
-	var moved := _fall_pass()
-	moved += _level_pass(step_delta)
-	moved += _lateral_pass(step_delta)
+	# Smaller time steps on a finer grid: one transfer per inner step can only move
+	# water one cell, so this is what makes a 4 px grid as fast as an 8 px one.
+	var sub_delta := step_delta / float(inner_steps)
+	var moved := 0.0
+	for sub_step in inner_steps:
+		moved += _fall_pass(sub_step == 0, sub_step == 0)
+		moved += _lateral_pass(sub_delta)
+		moved += _level_pass(sub_delta)
 	_moved_last = moved
 	_shrink_bounds()
 	if _max_transfer < SLEEP_TRANSFER:
@@ -477,7 +501,7 @@ func _level_pair(column: int, delta: float) -> float:
 	var room := _rise_room(receiver)
 	if room <= 0.0:
 		return 0.0
-	var amount := minf(minf(absf(difference) * level_rate * delta, available * DONOR_SHARE), room)
+	var amount := minf(minf(absf(difference) * level_rate * rate_scale * delta, available * DONOR_SHARE), room)
 	if amount <= 0.0:
 		return 0.0
 	_water[donor] -= amount
@@ -643,11 +667,16 @@ func _overflowing(index: int) -> bool:
 	return _solid[below] != 0 or _water[below] >= cell_pixels - EPSILON
 
 
-## Pass 1: gravity. Each cell gives to the cell below while that one has room, at
-## most one cell per step, so a fall is a visible falling column instead of water
-## teleporting to the floor. Transfers go through a scratch array so the top-down
-## scan order cannot move one parcel several cells in a single step.
-func _fall_pass() -> float:
+## Pass 1: gravity. Each cell gives to the cell below while that one has room, one
+## cell per sub-step, so a fall is a visible falling column instead of water
+## teleporting to the floor.
+##
+## The scan runs bottom-up and applies each transfer immediately: the receiver row
+## has already been visited, so no parcel can move twice in one sub-step and no
+## scratch array or extra traversal is needed. `clear` resets the motion arrays and
+## the cached surface cells (first sub-step only) and `last` caches the surface
+## cells afterwards, so a multi-sub-step fall still clears and caches once.
+func _fall_pass(clear: bool, last: bool) -> float:
 	var rect := _pass_rect()
 	if rect.size.x <= 0 or rect.size.y <= 0:
 		return 0.0
@@ -656,22 +685,25 @@ func _fall_pass() -> float:
 	var moved := 0.0
 	var from_x := rect.position.x
 	var to_x := rect.position.x + rect.size.x
-	var last_row := mini(rect.position.y + rect.size.y, height - 1)
-	for row in range(rect.position.y, last_row + 1):
-		var base := row * width
+	var first_row := rect.position.y
+	var last_row := mini(rect.position.y + rect.size.y, height)
+	if clear:
+		for row in range(first_row, last_row):
+			var base := row * width
+			for column in range(from_x, to_x):
+				_flow_y[base + column] = 0.0
+				_flow_x[base + column] = 0.0
 		for column in range(from_x, to_x):
-			_delta[base + column] = 0.0
-			_flow_y[base + column] = 0.0
-			_flow_x[base + column] = 0.0
 			_tops[column] = -1
-	for row in range(rect.position.y, last_row):
+	for row in range(last_row - 2, first_row - 1, -1):
 		var base := row * width
+		var below_base := base + width
 		for column in range(from_x, to_x):
 			var index := base + column
 			var amount := _water[index]
 			if amount <= 0.0:
 				continue
-			var below := index + width
+			var below := below_base + column
 			if _solid[below] != 0:
 				continue
 			var free := capacity - _water[below]
@@ -680,24 +712,22 @@ func _fall_pass() -> float:
 			var give := minf(minf(amount, free), limit)
 			if give <= 0.0:
 				continue
-			_delta[index] -= give
-			_delta[below] += give
+			_water[index] = amount - give
+			_water[below] += give
 			_flow_y[below] = maxf(_flow_y[below], give)
 			_flow_y[index] = maxf(_flow_y[index], give)
 			_touch(below)
 			if give > _max_transfer:
 				_max_transfer = give
 			moved += give
-	for row in range(rect.position.y, last_row + 1):
-		var base := row * width
-		for column in range(from_x, to_x):
-			var index := base + column
-			var change := _delta[index]
-			_delta[index] = 0.0
-			if change != 0.0:
-				_water[index] = clampf(_water[index] + change, 0.0, capacity)
-			if _tops[column] < 0 and _water[index] > REST_HEIGHT:
-				_tops[column] = index
+	if last:
+		# First wet cell of every column, for the leveling pass.
+		for row in range(first_row, last_row):
+			var base := row * width
+			for column in range(from_x, to_x):
+				var index := base + column
+				if _tops[column] < 0 and _water[index] > REST_HEIGHT:
+					_tops[column] = index
 	return moved
 
 
@@ -708,7 +738,7 @@ func _lateral_pass(delta: float) -> float:
 	if rect.size.x <= 0 or rect.size.y <= 0:
 		return 0.0
 	var capacity := cell_pixels
-	var rate := lateral_rate * delta
+	var rate := lateral_rate * rate_scale * delta
 	var moved := 0.0
 	var from_x := rect.position.x
 	var to_x := rect.position.x + rect.size.x
@@ -717,9 +747,7 @@ func _lateral_pass(delta: float) -> float:
 	for row in range(from_y, to_y):
 		var base := row * width
 		for column in range(from_x, to_x):
-			var index := base + column
-			_delta[index] = 0.0
-			_flow_x[index] = 0.0
+			_delta[base + column] = 0.0
 	for row in range(from_y, to_y):
 		var base := row * width
 		for index in range(base + from_x, base + to_x - 1):
@@ -738,9 +766,9 @@ func _lateral_pass(delta: float) -> float:
 				continue
 			var limited := diff * rate
 			if _overflowing(index):
-				limited = maxf(limited, capacity * overflow_rate * delta)
+				limited = maxf(limited, capacity * overflow_rate * rate_scale * delta)
 			elif _overflowing(other):
-				limited = minf(limited, -capacity * overflow_rate * delta)
+				limited = minf(limited, -capacity * overflow_rate * rate_scale * delta)
 			if limited > 0.0:
 				var give := minf(
 					minf(limited, _water[index] * DONOR_SHARE),
@@ -779,6 +807,67 @@ func _lateral_pass(delta: float) -> float:
 				continue
 			_water[index] = clampf(_water[index] + change, 0.0, capacity)
 	return moved
+
+
+## Cells that can hold water right now, plus one cell of margin. The renderer uses
+## it to touch only the part of the texture that can have changed.
+func wet_bounds() -> Rect2i:
+	if _bounds.size.x <= 0 or _bounds.size.y <= 0:
+		return Rect2i()
+	return _bounds.grow(1).intersection(Rect2i(0, 0, width, height))
+
+
+## Writes the render texture for `rect` into `bytes`, an RGBA8 buffer of the whole
+## grid (row-major, `width` texels per row).
+##
+##   R = fill of the cell, G = water depth above it, B = motion, A = 255 water.
+##
+## Cells without water are left as they are (0 = draw nothing). With `with_solid`
+## the walls of the rect are written as A = 64: the shader mirrors the surface at a
+## wall instead of tapering into it, and the wall mask never changes, so only the
+## first build has to write it.
+##
+## Direct array access with no per-cell calls, because this is the hot path of the
+## upload: the caller rebuilds only the wet rect, so a fine grid costs about the
+## same as a coarse one.
+func write_cell_texture(
+	bytes: PackedByteArray, rect: Rect2i, depth_scale: float, with_solid: bool = false
+) -> void:
+	var inv_capacity := 255.0 / maxf(cell_pixels, 0.001)
+	var inv_depth := 255.0 / maxf(depth_scale, 0.001)
+	var inv_cell := 1.0 / maxf(cell_pixels, 0.001)
+	var from_x := maxi(rect.position.x, 0)
+	var to_x := mini(rect.position.x + rect.size.x, width)
+	var from_y := maxi(rect.position.y, 0)
+	var to_y := mini(rect.position.y + rect.size.y, height)
+	for x in range(from_x, to_x):
+		var above := 0.0
+		for y in range(from_y, to_y):
+			var index := y * width + x
+			var offset := index * 4
+			if _solid[index] != 0:
+				if with_solid:
+					bytes[offset] = 0
+					bytes[offset + 1] = 0
+					bytes[offset + 2] = 0
+					bytes[offset + 3] = 64
+				above = 0.0
+				continue
+			if _water[index] <= REST_HEIGHT:
+				bytes[offset] = 0
+				bytes[offset + 1] = 0
+				bytes[offset + 2] = 0
+				bytes[offset + 3] = 0
+				above = 0.0
+				continue
+			var water := _water[index]
+			bytes[offset] = int(clampf(water * inv_capacity, 0.0, 255.0))
+			bytes[offset + 1] = int(clampf(above * inv_depth, 0.0, 255.0))
+			bytes[offset + 2] = int(
+				clampf((absf(_flow_x[index]) + _flow_y[index]) * inv_cell, 0.0, 1.0) * 255.0
+			)
+			bytes[offset + 3] = 255
+			above += water
 
 
 func get_debug_state() -> Dictionary:

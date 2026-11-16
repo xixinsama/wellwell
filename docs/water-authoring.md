@@ -149,10 +149,10 @@ FluidRegion：position (2*8, 5*8)，size (17, 9)
 
 | 参数 | 默认 | 作用 |
 | :--- | :--- | :--- |
-| `cell_pixels` | 8 | 模拟格子大小。8 和瓦片对齐、最省；4 更细腻但格子数 ×4 |
+| `cell_pixels` | 4 | 模拟格子大小。8 更省 CPU，4 更细腻；格子变小时会自动用更小的时间步，所以下落和漫流速度不变 |
 | `sim_hz` | 60 | 模拟频率 |
-| `lateral_rate` / `fall_rate` | 24 / 1 | 横向摊平速度 / 每步下落速度 |
-| `splash_depth` | 1.6 | 角色入水时推开的深度 |
+| `lateral_rate` / `fall_rate` | 24 / 1 | 横向摊平速度 / 每步下落格数 |
+| `ripple_amplitude` | 2.2 | 入水波纹振幅（px），纯视觉 |
 | `shallow_color` / `deep_color` | 见节点 | 浅水/深水颜色 |
 
 放在 `scenes/runtime/world_root.tscn` 的 `WaterGrid` 节点上；房间里没有 `FluidRegion` 时它完全不启动。
@@ -178,4 +178,6 @@ water_grid.request_splash(x, impact_speed)                 # 入水水花
 - 静止后模拟会自己睡眠，`step` 不再花时间；只有水在动时才占用 CPU。
 - 全部房间跑满水的最坏情况约 0.8ms / 步（320×180、8px 格）；普通水池只占其中一小块。
 - 入水/跳跃的水花是**纯视觉**的：粒子 + 着色器里的一圈表面波纹（`ripple_amplitude`）。它不会排开水面、也不会增加体积，所以跳进跳出水面完全不花模拟时间。
+- 波纹的形态：**落点处振幅最大**，然后一圈波以约 120px/s 由落点向外扩散并逐渐衰减（1.2 秒消失）。想调快慢改 `water_grid.gdshader` 里的 `front = 120.0 * age`，想调范围改 `width`。
+- 水面不是"每格一个台阶"：着色器在相邻格子中心之间插值出一个连续的水面高度，所以 4px 格子看起来也是平滑的曲线，落下的水边缘是斜的而不是锯齿。
 

@@ -26,9 +26,10 @@ const UPLOAD_INTERVAL := 1.0 / 30.0
 ## Depth the render maps to the deepest colour.
 const DEPTH_SCALE := 90.0
 
-## Simulation cell size in pixels. 8 matches the tile grid and drains a wide
-## basin in seconds; 4 gives a finer surface at four times the cell count.
-@export_range(2, 16, 1) var cell_pixels := 8
+## Simulation cell size in pixels. 4 draws a pool surface and a falling stream
+## that read as smooth once the shader interpolates the height field between cells;
+## 8 is about half the cost and 2 is only worth it for a small, contained pool.
+@export_range(2, 16, 1) var cell_pixels := 4
 @export_range(30.0, 120.0, 1.0) var sim_hz := 60.0
 @export_range(4.0, 30.0, 0.5) var lateral_rate := 24.0
 @export_range(0.2, 1.0, 0.05) var fall_rate := 1.0
@@ -41,7 +42,7 @@ const DEPTH_SCALE := 90.0
 ## Ripple amplitude in pixels at the impact point. The ripple is drawn by the
 ## surface shader only: the water body is not disturbed, so a splash cannot pump
 ## volume into the pool and costs nothing.
-@export_range(0.0, 4.0, 0.1) var ripple_amplitude := 1.8
+@export_range(0.0, 6.0, 0.1) var ripple_amplitude := 2.2
 @export var debug_stats := false
 
 ## Visual ripples: impact x, impact y, age (s), strength. Updated every frame and
@@ -278,19 +279,20 @@ func _clear_ripples() -> void:
 	_apply_ripples()
 
 
-## Adds water to the room at a point: a source, a wave or a debug probe.
+## Adds water to the room at a point: a source, a wave or a debug probe. The
+## volume is an area (px^2) on the same scale as `get_debug_state().volume`.
 func add_water(point: Vector2, radius: float, volume: float) -> float:
 	if _sim == null:
 		return volume
 	_needs_texture = true
-	return _sim.add_volume(point, radius, volume * _sim.cell_pixels * _sim.cell_pixels)
+	return _sim.add_volume(point, radius, volume * _sim.cell_pixels)
 
 
 func remove_water(point: Vector2, radius: float, volume: float) -> float:
 	if _sim == null:
 		return 0.0
 	_needs_texture = true
-	return _sim.remove_volume(point, radius, volume * _sim.cell_pixels * _sim.cell_pixels)
+	return _sim.remove_volume(point, radius, volume * _sim.cell_pixels)
 
 
 func get_debug_state() -> Dictionary:
@@ -330,7 +332,6 @@ func _physics_process(delta: float) -> void:
 		_upload_accumulator = 0.0
 		_update_texture()
 		_uploads += 1
-
 
 # ---------------------------------------------------------------------------- construction
 
@@ -421,45 +422,25 @@ func _build_render(cells: Vector2i) -> void:
 	_material.set_shader_parameter("grid_texture", _texture)
 	_bytes.resize(cells.x * cells.y * 4)
 	_bytes.fill(0)
+	# One full build under the "needs texture" flag below: every later upload is
+	# incremental over the wet rect.
+	_update_texture(true)
 
 
 ## Rebuilds the cell texture. R is the fill of the cell, G the water depth above
 ## it, B the motion of the last step and A the cell kind (water, wall, empty).
-func _update_texture() -> void:
+##
+## Only the wet rect (plus a cell of margin) is rebuilt, so the upload cost does
+## not grow with the room: the grid walks the water, not the map. The first build
+## writes the whole grid once so every texel has a known value.
+func _update_texture(full: bool = false) -> void:
 	if _sim == null or _texture == null:
 		return
-	var width := _sim.width
-	var height := _sim.height
-	var capacity := _sim.cell_pixels
-	var inv_capacity := 1.0 / maxf(capacity, 0.001)
-	var inv_depth := 1.0 / DEPTH_SCALE
-	var bytes := _bytes
-	for x in width:
-		var above := 0.0
-		for y in height:
-			var index := y * width + x
-			var offset := index * 4
-			if _sim.is_solid_at(index):
-				bytes[offset] = 255
-				bytes[offset + 1] = 0
-				bytes[offset + 2] = 0
-				bytes[offset + 3] = 64
-				above = 0.0
-				continue
-			var water := _sim.get_height_at(index)
-			if water <= 0.0001:
-				bytes[offset] = 0
-				bytes[offset + 1] = 0
-				bytes[offset + 2] = 0
-				bytes[offset + 3] = 0
-				above = 0.0
-				continue
-			bytes[offset] = int(clampf(water * inv_capacity, 0.0, 1.0) * 255.0)
-			bytes[offset + 1] = int(clampf(above * inv_depth, 0.0, 1.0) * 255.0)
-			bytes[offset + 2] = int(clampf(_sim.motion_at(index), 0.0, 1.0) * 255.0)
-			bytes[offset + 3] = 255
-			above += water
-	_image = Image.create_from_data(width, height, false, Image.FORMAT_RGBA8, bytes)
+	var rect := Rect2i(0, 0, _sim.width, _sim.height) if full else _sim.wet_bounds()
+	if rect.size.x <= 0 or rect.size.y <= 0:
+		return
+	_sim.write_cell_texture(_bytes, rect, DEPTH_SCALE, full)
+	_image = Image.create_from_data(_sim.width, _sim.height, false, Image.FORMAT_RGBA8, _bytes)
 	_texture.update(_image)
 
 

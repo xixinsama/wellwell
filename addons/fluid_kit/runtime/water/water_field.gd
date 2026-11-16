@@ -32,7 +32,7 @@ const COLUMN_WIDTH := 8.0
 const RIPPLE_SLOTS := 3
 const RIPPLE_LIFE := 1.2
 ## Ripple amplitude in pixels at the impact point.
-const RIPPLE_AMPLITUDE := 1.8
+const RIPPLE_AMPLITUDE := 2.2
 ## One waterfall column quad per spill lip.
 const MAX_FALLS := 4
 ## A falling column can widen to this many 8 px columns with a big flow.

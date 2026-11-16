@@ -44,7 +44,7 @@ splash_scene = ExtResource("12_splash")
 
 [node name="WaterGrid" type="Node2D" parent="."]
 script = ExtResource("13_grid")
-cell_pixels = 8
+cell_pixels = 4
 splash_scene = ExtResource("12_splash")
 
 [node name="Atmosphere" type="Node2D" parent="." unique_id=1286727046]

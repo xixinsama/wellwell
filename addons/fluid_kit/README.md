@@ -160,23 +160,23 @@ free space, so total volume is conserved exactly and no cell ever leaves
 
 | WaterGrid parameter | Default | Meaning |
 | :--- | :--- | :--- |
-| `cell_pixels` | 8 | Cell size. 8 matches the tile grid; 4 is finer at 4x the cells. |
+| `cell_pixels` | 4 | Cell size. The grid runs smaller time steps on a finer grid, so the water falls and spills at the same px/s at any size. |
 | `sim_hz` | 60 | Steps per second. |
-| `lateral_rate` | 24 | Row-to-row transfer coefficient (1/s). |
+| `lateral_rate` | 24 | Row-to-row transfer coefficient (1/s), tuned for 8 px cells. |
 | `fall_rate` | 1 | Cells a falling cell may dump per step. |
 | `overflow_rate` | 30 | Extra spill rate for a full, backed-up cell. |
-| `level_rate` | 96 | Column leveling coefficient (1/s), swept 4x per step. |
-| `ripple_amplitude` | 1.8 | Visual surface ripple at an impact (px). Purely shader-side: an impact never displaces the body. |
+| `level_rate` | 96 | Column leveling coefficient (1/s), swept 3x per step. |
+| `ripple_amplitude` | 2.2 | Visual surface ripple at an impact (px). Purely shader-side: an impact never displaces the body. |
 | `shallow_color` / `deep_color` / `crest_color` / `foam_color` | water palette | Render colours. |
 
 The renderer uploads an RGBA cell texture at 30 Hz: fill, depth above the cell,
-motion, and a cell kind (water / wall / empty). The surface is ramped
-horizontally between cells and a falling cell is drawn at full height, so a thin
-stream reads as a continuous column. A splash is drawn, not simulated: the
-shader adds a decaying ring offset to the top cell of the affected columns and
-the particle scene adds the droplets, so jumping in the water never moves the
-body. `demos/grid_water_demo.tscn` is the runnable demo and starts the hero
-inside the left pool; `docs/water-authoring.md` has the authoring rules.
+motion, and a cell kind (water / wall / empty). The surface is a height field
+interpolated between cell centres, so a pool reads as a continuous line and a
+falling stream gets soft edges instead of a staircase of whole cells. A splash is
+drawn, not simulated: the shader adds a decaying ring to the top cell of the
+affected columns, peaking at the impact point and travelling outwards from it.
+`demos/grid_water_demo.tscn` is the runnable demo and starts the hero inside the
+left pool; `docs/water-authoring.md` has the authoring rules.
 
 
 ## Gas: the solver
@@ -293,9 +293,12 @@ so the gas falls back to the CPU `FogGrid` and the same tests cover that path.
 - Gas: ~0.06 ms of CPU per step for 20 GPU passes on an 80x45 grid; the 120 fps
   frame budget (8.3 ms) makes it drop ~1% of frames, 60 fps is flat. Water: a
   sleeping pool costs nothing; the surface upload is capped at 60 Hz.
-- Grid water: 0.8 ms per 60 Hz step for a 320x180 room fully in motion at 8 px
-  cells (920 cells); a normal basin is a fraction of that and a settled pool
-  sleeps. `cell_pixels = 4` quadruples the cell count.
+- Grid water: a 320x180 room with the whole room in motion costs about 1.0 ms per
+  60 Hz step at 8 px cells and 3.5 ms at 4 px cells (four times the cells, two
+  inner steps); the renderer only rebuilds the wet rect, so the upload does not
+  grow with the map. A normal basin is a fraction of that and a settled pool
+  sleeps. Measured end to end in `water_grid`: p95 frame 9.4 ms at 8 px and
+  12.1 ms at 4 px, both inside a 60 fps budget.
 - The pressure solve is Jacobi: it removes ~93% of the divergence in open cells
   and leaves a small residual next to walls (no-flux boundary). More
   `pressure_iterations` tightens it; a multigrid V-cycle would be the next step.

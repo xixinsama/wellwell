@@ -20,6 +20,7 @@ func run() -> Array[String]:
 	_assert_no_upward_flow(failures)
 	_assert_settles_and_sleeps(failures)
 	_assert_splash_keeps_volume(failures)
+	_assert_size_independent(failures)
 	_assert_empty_setup_is_safe(failures)
 	return failures
 
@@ -49,7 +50,7 @@ func _assert_fill_excludes_walls(failures: Array[String]) -> void:
 				open_cells += 1
 	_check(
 		failures,
-		absf(added - float(open_cells) * CELL * CELL * CELL) < 0.001,
+		absf(added - float(open_cells) * CELL * CELL) < 0.001,
 		"fill_rect added %.3f for %d open cells" % [added, open_cells]
 	)
 	for y in range(1, 4):
@@ -77,8 +78,8 @@ func _assert_wall_removes_volume(failures: Array[String]) -> void:
 	)
 	_check(
 		failures,
-		absf((open_volume - walled_volume) - 4.0 * CELL * CELL * CELL) < 0.001,
-		"the wall removed %.3f instead of %.3f" % [open_volume - walled_volume, 4.0 * CELL * CELL * CELL]
+		absf((open_volume - walled_volume) - 4.0 * CELL * CELL) < 0.001,
+		"the wall removed %.3f instead of %.3f" % [open_volume - walled_volume, 4.0 * CELL * CELL]
 	)
 
 
@@ -194,6 +195,39 @@ func _assert_splash_keeps_volume(failures: Array[String]) -> void:
 	)
 
 
+func _assert_size_independent(failures: Array[String]) -> void:
+	# The same pool at two resolutions has to fall, spill and settle the same way in
+	# pixels: a fine grid runs smaller time steps and scaled coefficients instead of
+	# behaving like a different fluid.
+	var coarse := _make_basin(24, 14, 8.0)
+	var fine := _make_basin(48, 28, 4.0)
+	# The same pixel rect of water: 48 x 32 px, i.e. 6 x 4 cells of 8 px or
+	# 12 x 8 cells of 4 px.
+	coarse.fill_rect(Rect2i(1, 1, 6, 4))
+	fine.fill_rect(Rect2i(2, 2, 12, 8))
+	_check(failures, coarse.inner_steps == 1, "an 8 px grid should use one inner step")
+	_check(failures, fine.inner_steps == 2, "a 4 px grid should use two inner steps")
+	_check(
+		failures,
+		absf(coarse.total_volume() - fine.total_volume()) < 0.5,
+		"the same region holds %.1f at 8 px and %.1f at 4 px" % [coarse.total_volume(), fine.total_volume()]
+	)
+	for _step in 900:
+		coarse.step(DT)
+		fine.step(DT)
+	var coarse_surface := coarse.surface_y_at(Vector2(64.0, 0.0))
+	var fine_surface := fine.surface_y_at(Vector2(64.0, 0.0))
+	_check(failures, coarse_surface != INF and fine_surface != INF, "a pool drained completely")
+	if coarse_surface != INF and fine_surface != INF:
+		# Up to one coarse cell: the two grids quantize the surface differently, and
+		# a pool can be a cell deeper on one side at fine resolution.
+		_check(
+			failures,
+			absf(coarse_surface - fine_surface) <= 8.5,
+			"the same pool settled at %.1f at 8 px and %.1f at 4 px" % [coarse_surface, fine_surface]
+		)
+
+
 func _assert_empty_setup_is_safe(failures: Array[String]) -> void:
 	var sim: GridWater = GRID_WATER.new()
 	_check(failures, not sim.setup(Vector2i.ZERO, CELL, PackedByteArray()), "empty setup succeeded")
@@ -214,6 +248,20 @@ func _make_grid(width: int, height: int) -> GridWater:
 		solid[(height - 1) * width + x] = 1
 	var sim: GridWater = GRID_WATER.new()
 	sim.setup(Vector2i(width, height), CELL, solid)
+	sim.origin = Vector2.ZERO
+	return sim
+
+
+## The same grid at an explicit cell size: `width` and `height` stay in cells, so
+## doubling both at half the size covers the same pixels.
+func _make_basin(width: int, height: int, size_px: float) -> GridWater:
+	var solid := PackedByteArray()
+	solid.resize(width * height)
+	solid.fill(0)
+	for x in width:
+		solid[(height - 1) * width + x] = 1
+	var sim: GridWater = GRID_WATER.new()
+	sim.setup(Vector2i(width, height), size_px, solid)
 	sim.origin = Vector2.ZERO
 	return sim
 
