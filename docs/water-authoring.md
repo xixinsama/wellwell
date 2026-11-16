@@ -168,7 +168,8 @@ water_grid.get_surface_y_at(x)                             # 兼容旧接口
 water_grid.get_flow_velocity_at_point(point)
 water_grid.add_water(point, radius, volume)                # 加水（水源）
 water_grid.remove_water(point, radius, volume)             # 抽水
-water_grid.request_splash(x, impact_speed)                 # 入水水花
+water_grid.request_splash(x, impact_speed)                 # 入水水花（只有 x，取该列最上面那层水）
+water_grid.request_splash_at(point, impact_speed)          # 入水水花（按落点，取角色所在的那层水）
 ```
 
 ## 5. 注意事项

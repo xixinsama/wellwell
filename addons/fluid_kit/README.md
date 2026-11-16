@@ -138,7 +138,8 @@ water_grid.get_surface_y_at_point(player.global_position)
 water_grid.get_flow_velocity_at_point(player.global_position)
 water_grid.add_water(point, radius, volume)      # a spring, leaked pipe, ...
 water_grid.remove_water(point, radius, volume)   # a drain
-water_grid.request_splash(world_x, impact_speed)
+water_grid.request_splash_at(player.global_position, impact_speed)  # exact body
+water_grid.request_splash(world_x, impact_speed)                   # x only
 ```
 
 How a step works (fixed `sim_hz`, 60 by default):
@@ -175,6 +176,10 @@ interpolated between cell centres, so a pool reads as a continuous line and a
 falling stream gets soft edges instead of a staircase of whole cells. A splash is
 drawn, not simulated: the shader adds a decaying ring to the top cell of the
 affected columns, peaking at the impact point and travelling outwards from it.
+The ripple is anchored to the surface it was made on (it fades with the vertical
+distance to that surface), so jumping in a pool at the bottom of a room never
+wobbles a pool higher up; pass the impact *point* (`request_splash_at`) rather
+than only its x, because a column can hold more than one body of water.
 `demos/grid_water_demo.tscn` is the runnable demo and starts the hero inside the
 left pool; `docs/water-authoring.md` has the authoring rules.
 

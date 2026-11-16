@@ -67,11 +67,19 @@ vec4 cell_at(vec2 index) {
 // there: the ring front moves at `speed` px/s, the envelope falls off with
 // distance (so the neighbours are quieter than the landing point) and the whole
 // thing fades in about a second. Purely visual - the body never moves.
-float ripple_offset(vec4 ripple, float world_x) {
+//
+// The ripple is a point on *one* surface, so it also decays with the vertical
+// distance to that surface: a pool above or below the impact is a different body
+// and must not wobble when the hero jumps somewhere else.
+float ripple_offset(vec4 ripple, float world_x, float world_y) {
 	if (ripple.w <= 0.001) {
 		return 0.0;
 	}
 	float age = ripple.z;
+	float vertical = exp(-abs(world_y - ripple.y) / 5.0);
+	if (vertical < 0.01) {
+		return 0.0;
+	}
 	float distance = abs(world_x - ripple.x);
 	float width = 16.0 + 20.0 * ripple.w;
 	float envelope = exp(-distance / width);
@@ -79,7 +87,7 @@ float ripple_offset(vec4 ripple, float world_x) {
 	float ring = exp(-pow((distance - front) / (8.0 + 8.0 * ripple.w), 2.0));
 	float wave = cos((distance - front) * 0.85);
 	float decay = exp(-age * 2.0);
-	return wave * ring * envelope * decay * ripple.w * ripple_amplitude;
+	return wave * ring * envelope * decay * vertical * ripple.w * ripple_amplitude;
 }
 
 void fragment() {
@@ -114,11 +122,14 @@ void fragment() {
 		}
 		float surface = cell_pixels - clamp(fill, 0.0, 1.0) * cell_pixels;
 		// A ripple only moves the top cell of a column: shifting a full cell deep
-		// inside the body would punch a hole in it.
+		// inside the body would punch a hole in it. `surface_world_y` is where that
+		// top cell's surface sits in the world, so a ripple knows which body it
+		// belongs to.
 		if (cell.g < 0.002) {
-			float ripple = ripple_offset(ripple_0, world.x)
-				+ ripple_offset(ripple_1, world.x)
-				+ ripple_offset(ripple_2, world.x);
+			float surface_world_y = field_origin.y + index.y * cell_pixels + surface;
+			float ripple = ripple_offset(ripple_0, world.x, surface_world_y)
+				+ ripple_offset(ripple_1, world.x, surface_world_y)
+				+ ripple_offset(ripple_2, world.x, surface_world_y);
 			surface -= clamp(ripple, -3.5, 3.5);
 		}
 		float water_top = clamp(surface, 0.0, cell_pixels);

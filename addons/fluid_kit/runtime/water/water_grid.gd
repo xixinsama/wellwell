@@ -224,19 +224,33 @@ func get_flow_velocity_at_point(point: Vector2) -> float:
 	return _sim.flow_x_at(point)
 
 
-## Called by the player on water entry and on a surface hop: the splash pushes
-## water out of the way and keeps the volume, so the dip flows back in.
+## Called by the player on water entry and on a surface hop. Only the x is known,
+## so the surface is taken from the first water column below the top of the room:
+## prefer `request_splash_at` when the impact point is known, because a room can
+## hold more than one pool in the same column.
 func request_splash(world_x: float, impact_speed: float) -> void:
 	if _sim == null:
 		return
-	var surface := _sim.surface_y_at(Vector2(world_x, _room_rect.position.y))
+	_notify_splash(Vector2(world_x, _room_rect.position.y), impact_speed)
+
+
+## Same, at a point: the ripple and the droplets land on the water body the point
+## is in (or the next one below it), never on a pool higher up.
+func request_splash_at(point: Vector2, impact_speed: float) -> void:
+	if _sim == null:
+		return
+	_notify_splash(point, impact_speed)
+
+
+func _notify_splash(point: Vector2, impact_speed: float) -> void:
+	var surface := _sim.surface_y_at(point)
 	if surface == INF:
 		return
 	var energy := clampf(impact_speed / 300.0, 0.0, 1.4)
 	# Purely visual: the body is not displaced. A shader ripple and the droplet
 	# effect sell the impact without waking the simulation or adding volume.
-	_add_ripple(Vector2(world_x, surface), energy)
-	_spawn_splash(world_x, surface, energy)
+	_add_ripple(Vector2(point.x, surface), energy)
+	_spawn_splash(point.x, surface, energy)
 
 
 ## Records a visual ripple at `point`. Older ripples are dropped once the list is

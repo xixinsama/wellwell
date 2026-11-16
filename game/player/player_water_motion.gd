@@ -126,7 +126,7 @@ func step(context: RefCounted, intent: RefCounted, environment: RefCounted, prof
 	var velocity := Vector2(context.get("velocity"))
 	var impact := velocity.y
 	if not _was_in_water and impact > min_splash_speed:
-		_enter_water(body.global_position.x, impact)
+		_enter_water(body.global_position, impact)
 		velocity.y += minf(impact, 320.0) * entry_depth_scale
 	_was_in_water = true
 	_emit_animation(true, Vector2(float(intent.get("move_axis")), float(intent.get("vertical_axis"))))
@@ -156,7 +156,7 @@ func step(context: RefCounted, intent: RefCounted, environment: RefCounted, prof
 	velocity.y = clampf(velocity.y, -float(profile.get("max_fall_speed")), float(profile.get("max_fall_speed")))
 
 	if bool(intent.get("jump_pressed")) and submerged <= 0.8:
-		_surface_hop(body.global_position.x)
+		_surface_hop(body.global_position)
 		velocity.y = -surface_hop_speed
 		context.set("just_jumped", true)
 		intent.set("jump_pressed", false)
@@ -189,18 +189,28 @@ func _flow_at(point: Vector2) -> float:
 	return float(_field.call("get_flow_velocity_at", point.x))
 
 
-func _surface_hop(world_x: float) -> void:
+func _surface_hop(point: Vector2) -> void:
 	if _splash_timer > 0.0 or _field == null:
 		return
 	_splash_timer = splash_cooldown
-	_field.call("request_splash", world_x, surface_hop_speed * 0.7)
+	_request_splash(point, surface_hop_speed * 0.7)
 
 
-func _enter_water(world_x: float, impact_speed: float) -> void:
+func _enter_water(point: Vector2, impact_speed: float) -> void:
 	if _field == null:
 		return
-	_field.call("request_splash", world_x, impact_speed)
+	_request_splash(point, impact_speed)
 	_splash_timer = splash_cooldown
+
+
+## A 2D field knows which pool the point is in, so prefer the point variant: with
+## only an x, a splash at the bottom of a room lands on the first surface below the
+## ceiling, which can be a pool the hero never touched.
+func _request_splash(point: Vector2, impact_speed: float) -> void:
+	if _field.has_method("request_splash_at"):
+		_field.call("request_splash_at", point, impact_speed)
+		return
+	_field.call("request_splash", point.x, impact_speed)
 
 
 func _clear_jump_timers(context: RefCounted) -> void:

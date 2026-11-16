@@ -121,7 +121,37 @@ func _assert_grid_flow(failures: Array[String]) -> void:
 		failures.append("water never crossed the dam")
 	if float(end_state.get("steps", 0)) <= 0:
 		failures.append("the grid never stepped")
+	_assert_ripple_lands_on_the_right_body(grid, failures)
 	_cleanup(grid, runtime, terrain)
+
+
+## A splash must be placed on the water body the impact point is in. Asking by x
+## alone takes the first surface below the ceiling, which in this room is the
+## upper pool: jumping in the lower one then wobbled the upper one, which the hero
+## could never touch.
+func _assert_ripple_lands_on_the_right_body(grid: Node2D, failures: Array[String]) -> void:
+	var upper := 60.0
+	var lower := 200.0
+	var upper_surface := float(grid.call("get_surface_y_at", upper))
+	var lower_surface := float(grid.call("get_surface_y_at", lower))
+	if upper_surface == INF or lower_surface == INF:
+		# One of the two pools is still dry: nothing to compare.
+		return
+	grid.call("request_splash_at", Vector2(lower, lower_surface + 2.0), 300.0)
+	var ripples: Array = grid.get("_ripples")
+	if ripples.is_empty():
+		failures.append("request_splash_at recorded no ripple")
+		return
+	var ripple: Vector4 = ripples[0]
+	if absf(ripple.y - lower_surface) > 1.0:
+		failures.append(
+			"a splash at the lower pool was placed at y=%.1f instead of %.1f"
+			% [ripple.y, lower_surface]
+		)
+	if absf(ripple.y - upper_surface) <= 1.0:
+		failures.append("a splash at the lower pool landed on the upper pool")
+	if absf(ripple.x - lower) > 0.5:
+		failures.append("the ripple x did not follow the impact point: %.1f" % ripple.x)
 
 
 func _cleanup(grid: Node, runtime: Node, terrain: Node) -> void:

@@ -54,9 +54,15 @@ float value_noise(vec2 p) {
 // The peak sits exactly on the impact point and the wave travels outwards from
 // there: the ring front moves at `speed` px/s, the envelope falls off with
 // distance (so the neighbours are quieter than the landing point) and the whole
-// thing fades in about a second. Purely visual - the height field never moves.
-float ripple_offset(vec4 ripple, float world_x) {
+// thing fades in about a second. The ripple also fades with the vertical distance
+// to the surface it was created on, so a splash in one pool cannot wobble the
+// surface of another. Purely visual - the height field never moves.
+float ripple_offset(vec4 ripple, float world_x, float world_y) {
 	if (ripple.w <= 0.001) {
+		return 0.0;
+	}
+	float vertical = exp(-abs(world_y - ripple.y) / 5.0);
+	if (vertical < 0.01) {
 		return 0.0;
 	}
 	float age = ripple.z;
@@ -67,7 +73,7 @@ float ripple_offset(vec4 ripple, float world_x) {
 	float ring = exp(-pow((distance - front) / (8.0 + 8.0 * ripple.w), 2.0));
 	float wave = cos((distance - front) * 0.85);
 	float decay = exp(-age * 2.0);
-	return wave * ring * envelope * decay * ripple.w * ripple_amplitude;
+	return wave * ring * envelope * decay * vertical * ripple.w * ripple_amplitude;
 }
 
 void fragment() {
@@ -83,9 +89,9 @@ void fragment() {
 		discard;
 	}
 	float surface_y = field_top + data.r * field_height;
-	float ripple = ripple_offset(ripple_0, world.x)
-		+ ripple_offset(ripple_1, world.x)
-		+ ripple_offset(ripple_2, world.x);
+	float ripple = ripple_offset(ripple_0, world.x, surface_y)
+		+ ripple_offset(ripple_1, world.x, surface_y)
+		+ ripple_offset(ripple_2, world.x, surface_y);
 	surface_y += clamp(ripple, -3.0, 3.0);
 	float floor_y = field_top + data.g * field_height;
 	if (world.y < surface_y || world.y >= floor_y) {
