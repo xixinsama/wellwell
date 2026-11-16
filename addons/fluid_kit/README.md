@@ -166,8 +166,10 @@ free space, so total volume is conserved exactly and no cell ever leaves
 | `lateral_rate` | 24 | Row-to-row transfer coefficient (1/s), tuned for 8 px cells. |
 | `fall_rate` | 1 | Cells a falling cell may dump per step. |
 | `overflow_rate` | 30 | Extra spill rate for a full, backed-up cell. |
-| `level_rate` | 96 | Column leveling coefficient (1/s), swept 3x per step. |
-| `ripple_amplitude` | 2.2 | Visual surface ripple at an impact (px). Purely shader-side: an impact never displaces the body. |
+| `level_rate` | 96 | Column leveling coefficient (1/s); two sweeps per step on a fine grid, three on 8 px. |
+| `ripple_amplitude` | 3.6 | Visual surface ripple at an impact (px). Purely shader-side: an impact never displaces the body. |
+| `ripple_speed` | 64 | How fast the ripple ring travels outwards (px/s). Lower is a slower, heavier swell. |
+| `ripple_damping` | 1.1 | Ripple damping per second; lower keeps the swell alive longer. |
 | `shallow_color` / `deep_color` / `crest_color` / `foam_color` | water palette | Render colours. |
 
 The renderer uploads an RGBA cell texture at 30 Hz: fill, depth above the cell,
@@ -298,12 +300,13 @@ so the gas falls back to the CPU `FogGrid` and the same tests cover that path.
 - Gas: ~0.06 ms of CPU per step for 20 GPU passes on an 80x45 grid; the 120 fps
   frame budget (8.3 ms) makes it drop ~1% of frames, 60 fps is flat. Water: a
   sleeping pool costs nothing; the surface upload is capped at 60 Hz.
-- Grid water: a 320x180 room with the whole room in motion costs about 1.0 ms per
-  60 Hz step at 8 px cells and 3.5 ms at 4 px cells (four times the cells, two
-  inner steps); the renderer only rebuilds the wet rect, so the upload does not
-  grow with the map. A normal basin is a fraction of that and a settled pool
-  sleeps. Measured end to end in `water_grid`: p95 frame 9.4 ms at 8 px and
-  12.1 ms at 4 px, both inside a 60 fps budget.
+- Grid water: a 320x180 room with the whole room in motion costs about 0.9 ms per
+  60 Hz step at 8 px cells and 1.6 ms at 4 px cells (four times the cells, two
+  inner steps, two leveling sweeps). Measured end to end in `water_grid`: p95
+  frame 10.7 ms at 4 px against 8.3 ms with no water, both inside a 60 fps budget.
+  The passes walk the wet rect only, the leveling pass is inlined, lateral
+  transfers only re-visit the cells they wrote, and the texture rebuilds just the
+  cells that changed since the last upload, so none of it scales with map size.
 - The pressure solve is Jacobi: it removes ~93% of the divergence in open cells
   and leaves a small residual next to walls (no-flux boundary). More
   `pressure_iterations` tightens it; a multigrid V-cycle would be the next step.

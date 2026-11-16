@@ -30,9 +30,14 @@ const COLUMN_WIDTH := 8.0
 ## Visual ripples: impact x, impact y, age (s), strength. Handed to the surface
 ## shader; the water body itself is never displaced by an impact.
 const RIPPLE_SLOTS := 3
-const RIPPLE_LIFE := 1.2
+## Seconds a ripple stays in the list. The amplitude is gone before this, it only
+## keeps the slot busy.
+const RIPPLE_LIFE := 2.0
 ## Ripple amplitude in pixels at the impact point.
-const RIPPLE_AMPLITUDE := 2.2
+const RIPPLE_AMPLITUDE := 3.6
+## Ripple ring speed (px/s) and damping (1/s).
+const RIPPLE_SPEED := 64.0
+const RIPPLE_DAMPING := 1.1
 ## One waterfall column quad per spill lip.
 const MAX_FALLS := 4
 ## A falling column can widen to this many 8 px columns with a big flow.
@@ -541,6 +546,8 @@ func _build_render() -> void:
 	_material.set_shader_parameter("crest_color", Color(0.85, 0.97, 1.0, 0.95))
 	_material.set_shader_parameter("foam_color", Color(0.96, 1.0, 1.0, 0.9))
 	_material.set_shader_parameter("ripple_amplitude", RIPPLE_AMPLITUDE)
+	_material.set_shader_parameter("ripple_speed", RIPPLE_SPEED)
+	_material.set_shader_parameter("ripple_damping", RIPPLE_DAMPING)
 	_quad = MeshInstance2D.new()
 	_quad.name = "WaterSurface"
 	var surface_mesh := QuadMesh.new()

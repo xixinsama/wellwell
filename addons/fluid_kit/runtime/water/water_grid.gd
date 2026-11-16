@@ -42,13 +42,20 @@ const DEPTH_SCALE := 90.0
 ## Ripple amplitude in pixels at the impact point. The ripple is drawn by the
 ## surface shader only: the water body is not disturbed, so a splash cannot pump
 ## volume into the pool and costs nothing.
-@export_range(0.0, 6.0, 0.1) var ripple_amplitude := 2.2
+@export_range(0.0, 8.0, 0.1) var ripple_amplitude := 3.6
+## How fast the ripple ring travels outwards, px/s. Lower is a slower, heavier
+## swell.
+@export_range(20.0, 240.0, 5.0) var ripple_speed := 64.0
+## Ripple damping per second. Lower keeps the swell alive for longer.
+@export_range(0.2, 6.0, 0.1) var ripple_damping := 1.1
 @export var debug_stats := false
 
 ## Visual ripples: impact x, impact y, age (s), strength. Updated every frame and
 ## handed to the shader; the oldest one is dropped when the list is full.
 const RIPPLE_SLOTS := 3
-const RIPPLE_LIFE := 1.2
+## Seconds a ripple stays in the list. The amplitude is gone before this, it only
+## keeps the slot busy.
+const RIPPLE_LIFE := 2.0
 
 var _sim: GridWater
 var _room_rect := Rect2()
@@ -418,6 +425,9 @@ func _build_render(cells: Vector2i) -> void:
 	_material.set_shader_parameter("foam_color", foam_color)
 	_material.set_shader_parameter("caustic_strength", caustic_strength)
 	_material.set_shader_parameter("ripple_amplitude", ripple_amplitude)
+	_material.set_shader_parameter("ripple_speed", ripple_speed)
+	_material.set_shader_parameter("ripple_damping", ripple_damping)
+	_material.set_shader_parameter("ripple_limit", maxf(float(cell_pixels), 4.0))
 	var quad := MeshInstance2D.new()
 	quad.name = "WaterGridSurface"
 	var mesh := QuadMesh.new()
@@ -444,13 +454,14 @@ func _build_render(cells: Vector2i) -> void:
 ## Rebuilds the cell texture. R is the fill of the cell, G the water depth above
 ## it, B the motion of the last step and A the cell kind (water, wall, empty).
 ##
-## Only the wet rect (plus a cell of margin) is rebuilt, so the upload cost does
-## not grow with the room: the grid walks the water, not the map. The first build
-## writes the whole grid once so every texel has a known value.
+## Only the cells that changed since the last upload are rebuilt (plus a cell of
+## margin), so a narrow waterfall in a big room costs a narrow band instead of the
+## whole grid. The first build writes the whole grid once so every texel, walls
+## included, has a known value.
 func _update_texture(full: bool = false) -> void:
 	if _sim == null or _texture == null:
 		return
-	var rect := Rect2i(0, 0, _sim.width, _sim.height) if full else _sim.wet_bounds()
+	var rect := Rect2i(0, 0, _sim.width, _sim.height) if full else _sim.take_dirty_bounds()
 	if rect.size.x <= 0 or rect.size.y <= 0:
 		return
 	_sim.write_cell_texture(_bytes, rect, DEPTH_SCALE, full)

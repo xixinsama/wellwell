@@ -30,7 +30,9 @@ uniform float foam_height = 2.5;
 uniform vec4 ripple_0 = vec4(0.0);
 uniform vec4 ripple_1 = vec4(0.0);
 uniform vec4 ripple_2 = vec4(0.0);
-uniform float ripple_amplitude = 1.8;
+uniform float ripple_amplitude = 3.6;
+uniform float ripple_speed = 64.0;
+uniform float ripple_damping = 1.1;
 
 float hash21(vec2 p) {
 	p = fract(p * vec2(123.34, 456.21));
@@ -67,12 +69,12 @@ float ripple_offset(vec4 ripple, float world_x, float world_y) {
 	}
 	float age = ripple.z;
 	float distance = abs(world_x - ripple.x);
-	float width = 16.0 + 20.0 * ripple.w;
+	float width = 18.0 + 22.0 * ripple.w;
 	float envelope = exp(-distance / width);
-	float front = 120.0 * age;
-	float ring = exp(-pow((distance - front) / (8.0 + 8.0 * ripple.w), 2.0));
-	float wave = cos((distance - front) * 0.85);
-	float decay = exp(-age * 2.0);
+	float front = ripple_speed * age;
+	float ring = exp(-pow((distance - front) / (10.0 + 10.0 * ripple.w), 2.0));
+	float wave = cos((distance - front) * 0.8);
+	float decay = exp(-age * ripple_damping);
 	return wave * ring * envelope * decay * vertical * ripple.w * ripple_amplitude;
 }
 
@@ -92,7 +94,7 @@ void fragment() {
 	float ripple = ripple_offset(ripple_0, world.x, surface_y)
 		+ ripple_offset(ripple_1, world.x, surface_y)
 		+ ripple_offset(ripple_2, world.x, surface_y);
-	surface_y += clamp(ripple, -3.0, 3.0);
+	surface_y += clamp(ripple, -6.0, 6.0);
 	float floor_y = field_top + data.g * field_height;
 	if (world.y < surface_y || world.y >= floor_y) {
 		discard;

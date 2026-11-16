@@ -62,14 +62,16 @@ var overflow_rate := 30.0
 ## while it fills or drains. It is swept several times per step, so the surface
 ## equalizes in a frame instead of taking a minute to creep across a wide basin.
 var level_rate := 96.0
-## Leveling sweeps per step. Each sweep may move up to half of the surface
-## difference of a column pair, so three sweeps flatten a basin to a few percent in
-## a single step. Leveling is the most expensive pass per cell, so this is the knob
-## to turn down on a fine grid.
-const LEVEL_SWEEPS := 3
+## Leveling sweeps per step. Leveling is the most expensive pass per column, so this
+## is the knob to turn down on a fine grid; `setup` drops it to two sweeps when the
+## grid also runs inner steps, which already equalize the surface twice per tick.
+var level_sweeps := 3
 ## How far apart two neighbouring column surfaces may be and still be treated as
 ## one body. A waterfall is far above the pool it feeds and must not be levelled.
 const LEVEL_MAX_ROW_GAP := 2
+## Surface difference (px) below which the leveling pass does nothing. Well under
+## a pixel, so it only skips pairs that are already level.
+const LEVEL_DEADBAND := 0.05
 ## How many cells the leveling pass may raise a receiving column in one sweep.
 const MAX_RISE := 3
 
@@ -100,10 +102,20 @@ var inner_steps := 1
 var rate_scale := 1.0
 ## Topmost wet cell of each column, recomputed every step.
 var _tops := PackedInt32Array()
+## Scratch list of the cells a lateral transfer wrote, so the apply loop visits
+## those instead of clearing and re-walking the whole rect every step.
+var _touched := PackedInt32Array()
 ## Cell rect that can hold water. The passes only walk this rect, so a settled
 ## pool in the corner of a big room costs almost nothing. It grows whenever a
 ## transfer writes a cell and shrinks one dry ring per step.
 var _bounds := Rect2i()
+## Rows and columns whose cells changed since the last texture rebuild. A narrow
+## waterfall moves one band of cells, so rebuilding only that band keeps the upload
+## cheap even in a big room.
+var _dirty_top := -1
+var _dirty_bottom := -1
+var _dirty_left := 0
+var _dirty_right := 0
 
 
 ## Builds the cell layout. `solid` is one byte per cell in row-major order; a
@@ -133,6 +145,9 @@ func setup(cells: Vector2i, size_px: float, solid: PackedByteArray) -> bool:
 	# steps, so water falls, spills and levels at the same rate in px/s.
 	inner_steps = clampi(int(round(8.0 / cell_pixels)), 1, 4)
 	rate_scale = 8.0 / cell_pixels
+	# Inner steps already equalize the surface more often per tick, so a fine grid
+	# needs fewer sweeps to reach the same flatness.
+	level_sweeps = 3 if inner_steps <= 1 else 2
 	_bounds = Rect2i()
 	_active = false
 	return true
@@ -167,6 +182,7 @@ func set_solid(cell: Vector2i, value: bool) -> void:
 	_solid[index] = 1 if value else 0
 	if value:
 		_water[index] = 0.0
+	_touch(index)
 	wake()
 
 
@@ -283,6 +299,7 @@ func remove_volume(world: Vector2, radius: float, amount: float) -> float:
 			if share <= 0.0:
 				continue
 			_water[index] -= share / area
+			_touch(index)
 			taken += share
 	if taken > 0.0:
 		wake()
@@ -449,8 +466,11 @@ func step(delta: float) -> void:
 		_active = false
 
 
-## World y of a cell's local water surface.
-func _surface_of_cell(index: int) -> float:
+## World y of a cell's local water surface. The leveling pass inlines this; the
+## method stays for queries and tests.
+func surface_of_cell(index: int) -> float:
+	if index < 0 or index >= _water.size():
+		return 0.0
 	var row := index / width
 	return float(row + 1) * cell_pixels - _water[index]
 
@@ -460,57 +480,72 @@ func _surface_of_cell(index: int) -> float:
 ## receiver's level climbs by more than one cell height when the difference is
 ## large. Swept in alternating directions, `LEVEL_SWEEPS` times per step. Total
 ## volume is unchanged and both ends stay inside [0, cell_pixels].
+##
+## Inlined from `_level_pair`: this runs a few hundred times per step (three sweeps
+## over every column), so a function call per pair was measurable. The cached
+## surface cells are only refreshed when a transfer can have invalidated them.
 func _level_pass(delta: float) -> float:
 	if _tops.is_empty() or _bounds.size.x <= 0:
 		return 0.0
-	var sub_delta := delta / float(LEVEL_SWEEPS)
+	var capacity := cell_pixels
+	var sub_delta := level_rate * rate_scale * delta / float(level_sweeps)
+	var first := maxi(_bounds.position.x, 0)
+	var last := mini(_bounds.position.x + _bounds.size.x - 1, width - 2)
+	if first > last:
+		return 0.0
+	var water := _water
+	var solid := _solid
+	var tops := _tops
 	var moved := 0.0
-	for sweep in LEVEL_SWEEPS:
-		var first := maxi(_bounds.position.x, 0)
-		var last := mini(_bounds.position.x + _bounds.size.x - 1, width - 2)
-		if first > last:
-			return moved
-		if sweep % 2 == 0:
-			for column in range(first, last + 1):
-				moved += _level_pair(column, sub_delta)
-		else:
-			for column in range(last, first - 1, -1):
-				moved += _level_pair(column, sub_delta)
+	for sweep in level_sweeps:
+		var ascending := sweep % 2 == 0
+		var column := first if ascending else last
+		var stop := last + 1 if ascending else first - 1
+		var step := 1 if ascending else -1
+		while column != stop:
+			var pair_left := column
+			column += step
+			var top_a := tops[pair_left]
+			var top_b := tops[pair_left + 1]
+			if top_a < 0 or top_b < 0:
+				continue
+			# Only level surfaces that sit next to each other. A waterfall is many
+			# cells above the pool it feeds, and moving water sideways out of its
+			# top would thin the fall from above instead of letting it land.
+			if absi(top_a / width - top_b / width) > LEVEL_MAX_ROW_GAP:
+				continue
+			var surface_a := float(top_a / width + 1) * capacity - water[top_a]
+			var surface_b := float(top_b / width + 1) * capacity - water[top_b]
+			var difference := surface_a - surface_b
+			if absf(difference) <= LEVEL_DEADBAND:
+				continue
+			# difference > 0 means column a holds its surface lower, so b feeds a.
+			var a_is_donor := difference < 0.0
+			var donor := top_a if a_is_donor else top_b
+			var receiver := top_b if a_is_donor else top_a
+			var available := water[donor]
+			if available <= REST_HEIGHT:
+				continue
+			var room := _rise_room(receiver)
+			if room <= 0.0:
+				continue
+			var amount := minf(minf(absf(difference) * sub_delta, available * DONOR_SHARE), room)
+			if amount <= 0.0:
+				continue
+			water[donor] -= amount
+			_raise_cell(receiver, amount)
+			# A transfer only invalidates a cached surface cell when it empties the
+			# donor or fills the receiver's top cell.
+			if water[donor] <= REST_HEIGHT:
+				_refresh_top(pair_left if a_is_donor else pair_left + 1)
+			var receiver_column := pair_left + 1 if a_is_donor else pair_left
+			var receiver_top := tops[receiver_column]
+			if receiver_top >= 0 and water[receiver_top] >= capacity - EPSILON:
+				_refresh_top(receiver_column)
+			if amount > _max_transfer:
+				_max_transfer = amount
+			moved += amount
 	return moved
-
-
-func _level_pair(column: int, delta: float) -> float:
-	var top_a := _tops[column]
-	var top_b := _tops[column + 1]
-	if top_a < 0 or top_b < 0:
-		return 0.0
-	# Only level surfaces that sit next to each other. A waterfall is many cells
-	# above the pool it feeds, and moving water sideways out of its top would
-	# thin the fall from above instead of letting it land.
-	if absi(top_a / width - top_b / width) > LEVEL_MAX_ROW_GAP:
-		return 0.0
-	var difference := _surface_of_cell(top_a) - _surface_of_cell(top_b)
-	if absf(difference) <= EPSILON:
-		return 0.0
-	# difference > 0 means column a holds its surface lower, so b feeds a.
-	var donor := top_b if difference > 0.0 else top_a
-	var receiver := top_a if difference > 0.0 else top_b
-	var available := _water[donor]
-	if available <= REST_HEIGHT:
-		return 0.0
-	var room := _rise_room(receiver)
-	if room <= 0.0:
-		return 0.0
-	var amount := minf(minf(absf(difference) * level_rate * rate_scale * delta, available * DONOR_SHARE), room)
-	if amount <= 0.0:
-		return 0.0
-	_water[donor] -= amount
-	_raise_cell(receiver, amount)
-	_refresh_top(column)
-	_refresh_top(column + 1)
-	if amount > _max_transfer:
-		_max_transfer = amount
-	return amount
 
 
 ## Keeps a column's cached surface cell in step with the cell heights: it climbs
@@ -575,13 +610,23 @@ func _pass_rect() -> Rect2i:
 
 
 ## Grows the wet area to include a cell and one cell of margin, so a transfer can
-## always write its receiver. Kept to plain int comparisons: it runs on every
-## transfer of every step.
+## always write its receiver, and remembers that the cell's row changed. Kept to
+## plain int comparisons: it runs on every transfer of every step.
 func _touch(index: int) -> void:
 	if index < 0 or index >= _water.size():
 		return
 	var column := index % width
 	var row := index / width
+	if _dirty_top < 0:
+		_dirty_top = row
+		_dirty_bottom = row
+		_dirty_left = column
+		_dirty_right = column
+	else:
+		_dirty_top = mini(_dirty_top, row)
+		_dirty_bottom = maxi(_dirty_bottom, row)
+		_dirty_left = mini(_dirty_left, column)
+		_dirty_right = maxi(_dirty_right, column)
 	if _bounds.size.x <= 0 or _bounds.size.y <= 0:
 		_bounds = Rect2i(column, row, 1, 1)
 		return
@@ -602,6 +647,16 @@ func _touch_rect(rect: Rect2i) -> void:
 	var clipped := rect.intersection(Rect2i(0, 0, width, height))
 	if clipped.size.x <= 0 or clipped.size.y <= 0:
 		return
+	if _dirty_top < 0:
+		_dirty_top = clipped.position.y
+		_dirty_bottom = clipped.position.y + clipped.size.y - 1
+		_dirty_left = clipped.position.x
+		_dirty_right = clipped.position.x + clipped.size.x - 1
+	else:
+		_dirty_top = mini(_dirty_top, clipped.position.y)
+		_dirty_bottom = maxi(_dirty_bottom, clipped.position.y + clipped.size.y - 1)
+		_dirty_left = mini(_dirty_left, clipped.position.x)
+		_dirty_right = maxi(_dirty_right, clipped.position.x + clipped.size.x - 1)
 	if _bounds.size.x <= 0 or _bounds.size.y <= 0:
 		_bounds = clipped
 		return
@@ -648,23 +703,20 @@ func _column_dry(column: int) -> bool:
 
 ## A cell holds water that is resting on something: the cell below is solid or
 ## full. Water mid-fall is not supported, which is what keeps a waterfall a
-## column instead of a spreading sheet.
-func _supported(index: int) -> bool:
+## column instead of a spreading sheet. The passes inline this test; the method
+## stays for queries and tests.
+func is_supported(index: int) -> bool:
 	var below := index + width
 	if below >= _water.size():
 		return true
 	return _solid[below] != 0 or _water[below] >= cell_pixels - EPSILON
 
 
-## A full cell standing on something solid or on a full cell holds water up, so it
-## can pour over its side. A cell with room below is falling and must not spread.
-func _overflowing(index: int) -> bool:
+## A full, supported cell can pour over its side at the overflow rate.
+func is_overflowing(index: int) -> bool:
 	if _water[index] < cell_pixels - EPSILON:
 		return false
-	var below := index + width
-	if below >= _water.size():
-		return true
-	return _solid[below] != 0 or _water[below] >= cell_pixels - EPSILON
+	return is_supported(index)
 
 
 ## Pass 1: gravity. Each cell gives to the cell below while that one has room, one
@@ -733,79 +785,86 @@ func _fall_pass(clear: bool, last: bool) -> float:
 
 ## Pass 2: lateral flow inside each row. Transfers are written to a scratch array
 ## and applied afterwards, so the scan direction cannot bias the result.
+##
+## Only the cells a transfer wrote are visited again: the scratch delta is cleared
+## by the apply loop, so the pass never walks the dry part of the rect. The pair
+## checks are inlined (`_supported`, `_overflowing` and `_touch` are all small
+## functions called once per pair, and this loop is the hottest one in the model).
 func _lateral_pass(delta: float) -> float:
 	var rect := _pass_rect()
 	if rect.size.x <= 0 or rect.size.y <= 0:
 		return 0.0
 	var capacity := cell_pixels
 	var rate := lateral_rate * rate_scale * delta
+	var spill := capacity * overflow_rate * rate_scale * delta
 	var moved := 0.0
 	var from_x := rect.position.x
 	var to_x := rect.position.x + rect.size.x
 	var from_y := rect.position.y
 	var to_y := rect.position.y + rect.size.y
-	for row in range(from_y, to_y):
-		var base := row * width
-		for column in range(from_x, to_x):
-			_delta[base + column] = 0.0
+	_touched.clear()
+	var water := _water
+	var solid := _solid
+	var delta_buffer := _delta
+	var flow := _flow_x
 	for row in range(from_y, to_y):
 		var base := row * width
 		for index in range(base + from_x, base + to_x - 1):
 			var other := index + 1
-			if _solid[index] != 0 or _solid[other] != 0:
+			if solid[index] != 0 or solid[other] != 0:
 				continue
-			var diff := _water[index] - _water[other]
+			var left := water[index]
+			var right := water[other]
+			var diff := left - right
 			if absf(diff) <= EPSILON:
 				continue
 			# Only standing water spreads sideways: a falling cell must keep its
-			# water, or a waterfall fans out into a thin sheet on the way down.
-			# The receiver may be in mid-air, which is exactly a spill over an edge.
-			if diff > 0.0 and not _supported(index):
-				continue
-			if diff < 0.0 and not _supported(other):
+			# water, or a waterfall fans out into a thin sheet on the way down. The
+			# receiver may be in mid-air, which is exactly a spill over an edge. The
+			# donor being full and backed up is also what allows a spill at the much
+			# higher overflow rate.
+			var donor := index if diff > 0.0 else other
+			var below := donor + width
+			var supported := below >= water.size() or solid[below] != 0 \
+					or water[below] >= capacity - EPSILON
+			if not supported:
 				continue
 			var limited := diff * rate
-			if _overflowing(index):
-				limited = maxf(limited, capacity * overflow_rate * rate_scale * delta)
-			elif _overflowing(other):
-				limited = minf(limited, -capacity * overflow_rate * rate_scale * delta)
+			if water[donor] >= capacity - EPSILON:
+				limited = maxf(limited, spill) if diff > 0.0 else minf(limited, -spill)
 			if limited > 0.0:
-				var give := minf(
-					minf(limited, _water[index] * DONOR_SHARE),
-					(capacity - _water[other]) * RECEIVER_SHARE
-				)
+				var give := minf(minf(limited, left * DONOR_SHARE), (capacity - right) * RECEIVER_SHARE)
 				if give <= 0.0:
 					continue
-				_delta[index] -= give
-				_delta[other] += give
-				_flow_x[index] -= give
-				_flow_x[other] += give
-				_touch(other)
+				delta_buffer[index] -= give
+				delta_buffer[other] += give
+				flow[index] -= give
+				flow[other] += give
+				_touched.append(index)
+				_touched.append(other)
 				if give > _max_transfer:
 					_max_transfer = give
 				moved += give
-			else:
-				var give_back := minf(
-					minf(-limited, _water[other] * DONOR_SHARE),
-					(capacity - _water[index]) * RECEIVER_SHARE
-				)
+			elif limited < 0.0:
+				var give_back := minf(minf(-limited, right * DONOR_SHARE), (capacity - left) * RECEIVER_SHARE)
 				if give_back <= 0.0:
 					continue
-				_delta[index] += give_back
-				_delta[other] -= give_back
-				_flow_x[index] += give_back
-				_flow_x[other] -= give_back
-				_touch(index)
+				delta_buffer[index] += give_back
+				delta_buffer[other] -= give_back
+				flow[index] += give_back
+				flow[other] -= give_back
+				_touched.append(index)
+				_touched.append(other)
 				if give_back > _max_transfer:
 					_max_transfer = give_back
 				moved += give_back
-	for row in range(from_y, to_y):
-		var base := row * width
-		for index in range(base + from_x, base + to_x):
-			var change := _delta[index]
-			if change == 0.0:
-				continue
-			_water[index] = clampf(_water[index] + change, 0.0, capacity)
+	for touched_index: int in _touched:
+		var change := delta_buffer[touched_index]
+		if change == 0.0:
+			continue
+		delta_buffer[touched_index] = 0.0
+		water[touched_index] = clampf(water[touched_index] + change, 0.0, capacity)
+		_touch(touched_index)
 	return moved
 
 
@@ -815,6 +874,33 @@ func wet_bounds() -> Rect2i:
 	if _bounds.size.x <= 0 or _bounds.size.y <= 0:
 		return Rect2i()
 	return _bounds.grow(1).intersection(Rect2i(0, 0, width, height))
+
+
+## Cells whose texture changed since the last call. This is what the renderer
+## rebuilds: a narrow waterfall moves one band of cells, not the whole pool, so the
+## upload stays cheap in a large room. Empty when nothing moved.
+func take_dirty_bounds() -> Rect2i:
+	if _dirty_top < 0:
+		return Rect2i()
+	var rect := Rect2i(
+		_dirty_left,
+		_dirty_top,
+		_dirty_right - _dirty_left + 1,
+		_dirty_bottom - _dirty_top + 1
+	)
+	_dirty_top = -1
+	_dirty_bottom = -1
+	# One cell of margin: the shader reads the cell above, below and beside for its
+	# edges, and a cell that just went dry has to be cleared.
+	return rect.grow(1).intersection(Rect2i(0, 0, width, height))
+
+
+## Marks the whole grid dirty: used after a fill, a gate change or a resize.
+func mark_all_dirty() -> void:
+	_dirty_top = 0
+	_dirty_bottom = height - 1
+	_dirty_left = 0
+	_dirty_right = width - 1
 
 
 ## Writes the render texture for `rect` into `bytes`, an RGBA8 buffer of the whole
