@@ -32,15 +32,22 @@ const DEPTH_SCALE := 90.0
 @export_range(30.0, 120.0, 1.0) var sim_hz := 60.0
 @export_range(4.0, 30.0, 0.5) var lateral_rate := 24.0
 @export_range(0.2, 1.0, 0.05) var fall_rate := 1.0
-## Manual push multiplier used by the splash brush.
-@export_range(0.0, 3.0, 0.05) var splash_depth := 1.6
 @export var shallow_color := Color(0.24, 0.66, 0.95, 0.72)
 @export var deep_color := Color(0.04, 0.16, 0.42, 0.92)
 @export var crest_color := Color(0.85, 0.97, 1.0, 0.95)
 @export var foam_color := Color(0.96, 1.0, 1.0, 0.9)
 @export var caustic_strength := 0.14
 @export var splash_scene: PackedScene
+## Ripple amplitude in pixels at the impact point. The ripple is drawn by the
+## surface shader only: the water body is not disturbed, so a splash cannot pump
+## volume into the pool and costs nothing.
+@export_range(0.0, 4.0, 0.1) var ripple_amplitude := 1.8
 @export var debug_stats := false
+
+## Visual ripples: impact x, impact y, age (s), strength. Updated every frame and
+## handed to the shader; the oldest one is dropped when the list is full.
+const RIPPLE_SLOTS := 3
+const RIPPLE_LIFE := 1.2
 
 var _sim: GridWater
 var _room_rect := Rect2()
@@ -61,6 +68,7 @@ var _steps := 0
 var _uploads := 0
 var _region_volume := 0.0
 var _region_cells := 0
+var _ripples: Array[Vector4] = []
 
 
 func _ready() -> void:
@@ -125,6 +133,7 @@ func bind_room_with_origin(room_data: Variant, terrain_root: Node, origin_chunk:
 
 
 func clear_room() -> void:
+	_clear_ripples()
 	_sim = null
 	_room_rect = Rect2()
 	_solid_tiles = null
@@ -218,10 +227,50 @@ func request_splash(world_x: float, impact_speed: float) -> void:
 	if surface == INF:
 		return
 	var energy := clampf(impact_speed / 300.0, 0.0, 1.4)
-	var radius := 10.0 + 14.0 * energy
-	_sim.splash(Vector2(world_x, surface + 1.0), radius, splash_depth * (0.4 + energy))
-	_needs_texture = true
+	# Purely visual: the body is not displaced. A shader ripple and the droplet
+	# effect sell the impact without waking the simulation or adding volume.
+	_add_ripple(Vector2(world_x, surface), energy)
 	_spawn_splash(world_x, surface, energy)
+
+
+## Records a visual ripple at `point`. Older ripples are dropped once the list is
+## full, and `_update_ripples` ages them out.
+func _add_ripple(point: Vector2, energy: float) -> void:
+	_ripples.push_front(Vector4(point.x, point.y, 0.0, 0.55 + energy))
+	while _ripples.size() > RIPPLE_SLOTS:
+		_ripples.pop_back()
+	_apply_ripples()
+
+
+func _update_ripples(delta: float) -> void:
+	if _ripples.is_empty():
+		return
+	var changed := false
+	for index in _ripples.size():
+		var ripple := _ripples[index]
+		ripple.z += delta
+		_ripples[index] = ripple
+		changed = true
+	while not _ripples.is_empty() and _ripples.back().z > RIPPLE_LIFE:
+		_ripples.pop_back()
+	if changed:
+		_apply_ripples()
+
+
+func _apply_ripples() -> void:
+	if _material == null:
+		return
+	for slot in RIPPLE_SLOTS:
+		var value := Vector4.ZERO
+		if slot < _ripples.size():
+			var ripple := _ripples[slot]
+			value = Vector4(ripple.x, ripple.y, ripple.z, ripple.w)
+		_material.set_shader_parameter("ripple_%d" % slot, value)
+
+
+func _clear_ripples() -> void:
+	_ripples.clear()
+	_apply_ripples()
 
 
 ## Adds water to the room at a point: a source, a wave or a debug probe.
@@ -257,6 +306,7 @@ func get_debug_state() -> Dictionary:
 func _physics_process(delta: float) -> void:
 	if _sim == null:
 		return
+	_update_ripples(maxf(delta, 0.0))
 	var step := 1.0 / maxf(sim_hz, 1.0)
 	_accumulator = minf(_accumulator + maxf(delta, 0.0), step * 4.0)
 	if _accumulator < step:
@@ -347,6 +397,7 @@ func _build_render(cells: Vector2i) -> void:
 	_material.set_shader_parameter("crest_color", crest_color)
 	_material.set_shader_parameter("foam_color", foam_color)
 	_material.set_shader_parameter("caustic_strength", caustic_strength)
+	_material.set_shader_parameter("ripple_amplitude", ripple_amplitude)
 	var quad := MeshInstance2D.new()
 	quad.name = "WaterGridSurface"
 	var mesh := QuadMesh.new()

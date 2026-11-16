@@ -122,7 +122,9 @@ func _place_entities(root: Node) -> void:
 	var entities := root.get_node("RoomContent/Entities")
 	var spawn := entities.get_node_or_null("StartSpawn") as Node2D
 	if spawn != null:
-		spawn.position = Vector2(float(HOLE_LEFT - 3) * TILE, float(RIGHT_FLOOR_ROW - 1) * TILE)
+		# Start the hero inside the left pool: the water is deep there, so the
+		# splash reads, and the cascade runs into view as the basin spills.
+		spawn.position = Vector2(float(BASIN_LEFT + 4) * TILE, float(BASIN_FLOOR_ROW - 2) * TILE)
 		spawn.set("spawn_id", "start")
 
 	var region := FluidRegion.new()

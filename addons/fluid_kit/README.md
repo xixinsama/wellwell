@@ -94,7 +94,7 @@ water_field.is_ready()
 | :--- | :--- | :--- |
 | `max_depth` | 64 | Maximum depth per column (px), the capacity. |
 | `flow_rate` | 54 | Column-to-column transfer; stability limit is `SIM_HZ / 2`. |
-| `splash_radius_base` / `splash_radius_scale` | 8 / 10 | Impact disturbance radius. |
+| `waterfall_min_drop` | 5 | Smallest surface drop that gets a falling column (px). |
 
 | `splash_scene` | null | Optional effect scene spawned on every splash; the field also emits `splash_requested(world_position, power)`. **Keep it cheap**: one is spawned per impact, and a baked PixelFX effect is cached per option set, so a continuous `power` re-bakes a 300 ms effect for every distinct impact speed. `game/water/effects/water_splash_pixels.tscn` is a hand-drawn splash that costs nothing to spawn. |
 
@@ -103,8 +103,10 @@ The falling water at a spill lip is a water column quad in the pool palette
 their own quad; each one is placed in the open columns just after the lip and is
 at most two columns wide, so it never paints over a solid tile, and its height is
 the real drop between the two surfaces. The volume itself stays in the height
-field (the transfer is instant and conservative). Splashes are random droplets and
-mist only: side-view games must not show round ripples, those read as top-down.
+field (the transfer is instant and conservative). A splash is a cheap droplet
+effect plus a shader-only surface ripple: an impact never displaces the body, so
+entering, hopping out or swimming adds no volume and wakes no waves. Side-view
+games must not show round ripples, those read as top-down.
 
 The simulation runs at 120 Hz over 8 px columns; the surface texture is uploaded
 at most 60 times a second because the upload forces a GPU sync. Still pools sleep
@@ -164,14 +166,17 @@ free space, so total volume is conserved exactly and no cell ever leaves
 | `fall_rate` | 1 | Cells a falling cell may dump per step. |
 | `overflow_rate` | 30 | Extra spill rate for a full, backed-up cell. |
 | `level_rate` | 96 | Column leveling coefficient (1/s), swept 4x per step. |
-| `splash_depth` | 1.6 | Depth the player pushes aside on entry. |
+| `ripple_amplitude` | 1.8 | Visual surface ripple at an impact (px). Purely shader-side: an impact never displaces the body. |
 | `shallow_color` / `deep_color` / `crest_color` / `foam_color` | water palette | Render colours. |
 
 The renderer uploads an RGBA cell texture at 30 Hz: fill, depth above the cell,
 motion, and a cell kind (water / wall / empty). The surface is ramped
 horizontally between cells and a falling cell is drawn at full height, so a thin
-stream reads as a continuous column. `demos/grid_water_demo.tscn` is the runnable
-demo; `docs/water-authoring.md` has the authoring rules.
+stream reads as a continuous column. A splash is drawn, not simulated: the
+shader adds a decaying ring offset to the top cell of the affected columns and
+the particle scene adds the droplets, so jumping in the water never moves the
+body. `demos/grid_water_demo.tscn` is the runnable demo and starts the hero
+inside the left pool; `docs/water-authoring.md` has the authoring rules.
 
 
 ## Gas: the solver

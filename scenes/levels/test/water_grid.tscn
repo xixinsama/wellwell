@@ -63,7 +63,7 @@ script = ExtResource("4_h7ay7")
 [node name="Entities" type="Node2D" parent="RoomContent" unique_id=190854283]
 
 [node name="StartSpawn" type="Marker2D" parent="RoomContent/Entities" unique_id=1039911569]
-position = Vector2(216, 144)
+position = Vector2(44, 96)
 script = ExtResource("5_oma4o")
 
 [node name="FluidRegionBasin" type="Node2D" parent="RoomContent/Entities" unique_id=1406751897]

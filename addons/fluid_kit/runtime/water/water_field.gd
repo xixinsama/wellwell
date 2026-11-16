@@ -27,6 +27,12 @@ const TILE_PIXELS := 8.0
 ## faster than a 4 px column at the same stability, so wide tanks stay level
 ## while the water drains.
 const COLUMN_WIDTH := 8.0
+## Visual ripples: impact x, impact y, age (s), strength. Handed to the surface
+## shader; the water body itself is never displaced by an impact.
+const RIPPLE_SLOTS := 3
+const RIPPLE_LIFE := 1.2
+## Ripple amplitude in pixels at the impact point.
+const RIPPLE_AMPLITUDE := 1.8
 ## One waterfall column quad per spill lip.
 const MAX_FALLS := 4
 ## A falling column can widen to this many 8 px columns with a big flow.
@@ -46,8 +52,6 @@ const WATER_GROUP := &"water_field"
 ## while flow_rate / SIM_HZ stays below 0.5; 54 at 120 Hz levels a 30-column tank
 ## in about two seconds.
 @export_range(1.0, 59.0, 0.5) var flow_rate := 54.0
-@export_range(2.0, 24.0, 0.5) var splash_radius_base := 8.0
-@export_range(0.0, 32.0, 0.5) var splash_radius_scale := 10.0
 @export_range(0.0, 20.0, 0.5) var waterfall_min_drop := 5.0
 ## Optional splash effect scene spawned on every impact. The plugin only emits
 ## `splash_requested`; the game assigns its own effect scene here.
@@ -75,6 +79,7 @@ var _step_ms := 0.0
 var _steps := 0
 var _texture_updates := 0
 var _upload_accumulator := 0.0
+var _ripples: Array[Vector4] = []
 
 
 func _ready() -> void:
@@ -150,6 +155,7 @@ func bind_room_with_origin(room_data: Variant, terrain_root: Node, origin_chunk:
 
 
 func clear_room() -> void:
+	_clear_ripples()
 	_sim = null
 	_columns = 0
 	_origin_x = 0.0
@@ -251,13 +257,9 @@ func request_splash(world_x: float, impact_speed: float) -> void:
 		return
 	var surface_y := _sim.get_surface_y(index)
 	var energy := clampf(impact_speed / 300.0, 0.0, 1.4)
-	_sim.add_splash(
-		world_x,
-		splash_radius_base + splash_radius_scale * energy,
-		4.0 + 26.0 * energy,
-		30.0 + 110.0 * energy
-	)
-	_needs_texture = true
+	# Purely visual: the body is not displaced. A shader ripple and the droplet
+	# effect sell the impact without adding volume to the pool or waking the waves.
+	_add_ripple(world_x, surface_y, energy)
 	_spawn_splash(world_x, surface_y, energy)
 	if energy >= 0.35:
 		var camera := get_viewport().get_camera_2d() if is_inside_tree() else null
@@ -265,11 +267,49 @@ func request_splash(world_x: float, impact_speed: float) -> void:
 			camera.call("add_shake", 1 + int(round(energy * 6.0)), 1.0 if energy < 0.6 else 2.0)
 
 
+## Records a visual ripple at an impact. Older ripples are dropped once the list
+## is full, and `_update_ripples` ages them out.
+func _add_ripple(world_x: float, surface_y: float, energy: float) -> void:
+	_ripples.push_front(Vector4(world_x, surface_y, 0.0, 0.55 + energy))
+	while _ripples.size() > RIPPLE_SLOTS:
+		_ripples.pop_back()
+	_apply_ripples()
+
+
+func _update_ripples(delta: float) -> void:
+	if _ripples.is_empty():
+		return
+	for index in _ripples.size():
+		var ripple := _ripples[index]
+		ripple.z += delta
+		_ripples[index] = ripple
+	while not _ripples.is_empty() and _ripples.back().z > RIPPLE_LIFE:
+		_ripples.pop_back()
+	_apply_ripples()
+
+
+func _apply_ripples() -> void:
+	if _material == null:
+		return
+	for slot in RIPPLE_SLOTS:
+		var value := Vector4.ZERO
+		if slot < _ripples.size():
+			var ripple := _ripples[slot]
+			value = Vector4(ripple.x, ripple.y, ripple.z, ripple.w)
+		_material.set_shader_parameter("ripple_%d" % slot, value)
+
+
+func _clear_ripples() -> void:
+	_ripples.clear()
+	_apply_ripples()
+
+
 # ---------------------------------------------------------------------------- simulation
 
 func _physics_process(delta: float) -> void:
 	if _sim == null:
 		return
+	_update_ripples(maxf(delta, 0.0))
 	_update_gates()
 	_accumulator = minf(_accumulator + maxf(delta, 0.0), SIM_STEP * 4.0)
 	if _accumulator < SIM_STEP:
@@ -500,6 +540,7 @@ func _build_render() -> void:
 	_material.set_shader_parameter("deep_color", Color(0.05, 0.18, 0.42, 0.9))
 	_material.set_shader_parameter("crest_color", Color(0.85, 0.97, 1.0, 0.95))
 	_material.set_shader_parameter("foam_color", Color(0.96, 1.0, 1.0, 0.9))
+	_material.set_shader_parameter("ripple_amplitude", RIPPLE_AMPLITUDE)
 	_quad = MeshInstance2D.new()
 	_quad.name = "WaterSurface"
 	var surface_mesh := QuadMesh.new()

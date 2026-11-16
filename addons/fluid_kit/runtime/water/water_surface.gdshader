@@ -26,6 +26,11 @@ uniform vec4 crest_color : source_color = vec4(0.85, 0.97, 1.0, 0.95);
 uniform vec4 foam_color : source_color = vec4(0.96, 1.0, 1.0, 0.9);
 uniform float caustic_strength = 0.14;
 uniform float foam_height = 2.5;
+// Impact ripples: xy = impact point, z = age in seconds, w = strength.
+uniform vec4 ripple_0 = vec4(0.0);
+uniform vec4 ripple_1 = vec4(0.0);
+uniform vec4 ripple_2 = vec4(0.0);
+uniform float ripple_amplitude = 1.8;
 
 float hash21(vec2 p) {
 	p = fract(p * vec2(123.34, 456.21));
@@ -44,6 +49,20 @@ float value_noise(vec2 p) {
 	return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
 }
 
+// Vertical offset of the surface from one impact: a decaying ring that travels
+// outwards. Purely visual - the height field is not disturbed.
+float ripple_offset(vec4 ripple, float world_x) {
+	if (ripple.w <= 0.001) {
+		return 0.0;
+	}
+	float age = ripple.z;
+	float distance = world_x - ripple.x;
+	float envelope = exp(-abs(distance) / (12.0 + 18.0 * ripple.w));
+	float ring = sin(distance * 0.45 - age * 11.0);
+	float decay = exp(-age * 2.6);
+	return ring * envelope * decay * ripple.w * ripple_amplitude;
+}
+
 void fragment() {
 	// QuadMesh UVs run bottom-up, the field is authored top-down.
 	vec2 quad_uv = vec2(UV.x, 1.0 - UV.y);
@@ -57,6 +76,10 @@ void fragment() {
 		discard;
 	}
 	float surface_y = field_top + data.r * field_height;
+	float ripple = ripple_offset(ripple_0, world.x)
+		+ ripple_offset(ripple_1, world.x)
+		+ ripple_offset(ripple_2, world.x);
+	surface_y += clamp(ripple, -3.0, 3.0);
 	float floor_y = field_top + data.g * field_height;
 	if (world.y < surface_y || world.y >= floor_y) {
 		discard;
