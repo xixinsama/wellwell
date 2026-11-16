@@ -19,6 +19,9 @@ extends Polygon2D
 ## warning and yields no shape.
 
 const CELL_RECT_MERGER := preload("res://scripts/util/cell_rect_merger.gd")
+const FOG_OCCLUDER_GROUP := &"fog_occluder"
+const FOG_GROUP := &"fog_of_war"
+const FOG_CELL_PIXELS := 8.0
 
 @export var movement_mode: PieceDefinition.MovementMode = PieceDefinition.MovementMode.FREE
 ## Whether interactive input may move this piece. Disabled pieces still occupy
@@ -48,6 +51,13 @@ var is_void: bool = false
 var _base_color: Color = Color.WHITE
 var _cached_polygon: PackedVector2Array = PackedVector2Array()
 var _cached_cell_size: int = -1
+var _last_fog_position := Vector2.INF
+
+
+func _enter_tree() -> void:
+    if Engine.is_editor_hint():
+        return
+    add_to_group(FOG_OCCLUDER_GROUP)
 
 
 func _ready() -> void:
@@ -56,6 +66,16 @@ func _ready() -> void:
     _refresh_from_polygon()
     if not Engine.is_editor_hint():
         _build_collision()
+
+
+func _physics_process(_delta: float) -> void:
+    if Engine.is_editor_hint():
+        return
+    if global_position == _last_fog_position:
+        return
+    _last_fog_position = global_position
+    if is_inside_tree():
+        get_tree().call_group(FOG_GROUP, "request_refresh")
 
 
 func _process(_delta: float) -> void:
@@ -181,6 +201,37 @@ func _build_collision() -> void:
             Vector2(rect.position) + Vector2(rect.size) * 0.5
         ) * float(cell_size)
         body.add_child(collision_shape)
+
+
+# --- Fog participation --------------------------------------------------------
+
+## Sliding pieces block sight with their wall cells, so moving a block can open
+## or seal a pocket. Void pieces are holes and do not occlude.
+func is_occluding() -> bool:
+    return not is_void
+
+
+func get_occluder_cells() -> Array[Vector2i]:
+    return _fog_cells(wall_shape)
+
+
+func get_occluder_one_way_cells() -> Array[Vector2i]:
+    return _fog_cells(one_way_shape)
+
+
+func _fog_cells(cells: Array[Vector2i]) -> Array[Vector2i]:
+    var result: Array[Vector2i] = []
+    var seen: Dictionary[Vector2i, bool] = {}
+    for cell: Vector2i in cells:
+        var center := global_position + (Vector2(cell) + Vector2(0.5, 0.5)) * float(cell_size)
+        var fog_cell := Vector2i(
+            floori(center.x / FOG_CELL_PIXELS),
+            floori(center.y / FOG_CELL_PIXELS)
+        )
+        if not seen.has(fog_cell):
+            seen[fog_cell] = true
+            result.append(fog_cell)
+    return result
 
 
 # --- Queries / state ----------------------------------------------------------

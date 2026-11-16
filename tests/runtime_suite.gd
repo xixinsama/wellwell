@@ -57,6 +57,7 @@ const TESTS: Array[Script] = [
 	preload("res://tests/world/test_crumble_runtime.gd"),
 	preload("res://tests/world/test_fog_door.gd"),
 	preload("res://tests/puzzle/test_sliding_puzzle_core.gd"),
+	preload("res://tests/puzzle/test_piece_fog_occlusion.gd"),
 	preload("res://tests/puzzle/test_one_way_occupancy.gd"),
 	preload("res://tests/puzzle/test_puzzle_void_zone.gd"),
 	preload("res://tests/puzzle/test_void_slider.gd"),

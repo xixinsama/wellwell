@@ -152,6 +152,20 @@ if present.
 - Door state is runtime-only; it resets when the room reloads.
 - `size_cells`, `blocks_sight`, `interactive` and `door_id` are exported.
 
+## Sliding puzzle pieces
+
+Sliding blocks participate in the fog with no extra wiring:
+
+- `PuzzlePiece` / `PuzzleTilePiece` join the `fog_occluder` group at runtime.
+- Their `wall_shape` cells block sight; `one_way_shape` cells follow the one-way
+  platform setting; void pieces do not occlude at all.
+- The cells are converted from the piece's current global position, and the
+  piece calls `request_refresh` on the fog whenever its position changes, so a
+  block opens or seals a pocket as it slides (including during the board tween).
+- Pieces sitting in unexplored cells are covered by the fog like any other room
+  content; because exploration is persistent, a slider that uncovers a new
+  pocket makes it light up, while already explored cells stay known.
+
 ## Test World
 
 `resources/worlds/test_world.tres` (catalog name **Exploration Test World**) has

@@ -70,6 +70,24 @@ class FakeOccluder extends Node2D:
 		return Rect2(global_position, Vector2(size_cells) * 8)
 
 
+class FakeCellOccluder extends Node2D:
+	var occluding := true
+	var cells: Array[Vector2i] = []
+	var one_way_cells: Array[Vector2i] = []
+
+	func _ready() -> void:
+		add_to_group(&"fog_occluder")
+
+	func is_occluding() -> bool:
+		return occluding
+
+	func get_occluder_cells() -> Array[Vector2i]:
+		return cells
+
+	func get_occluder_one_way_cells() -> Array[Vector2i]:
+		return one_way_cells
+
+
 func run() -> Array[String]:
 	var failures: Array[String] = []
 	_assert_blocker_is_visible_but_stops_spread(failures)
@@ -87,6 +105,7 @@ func run() -> Array[String]:
 	_assert_partial_overlap_lights_both_sides(failures)
 	_assert_sub_cell_zone_edge_refreshes(failures)
 	_assert_door_occludes_sight(failures)
+	_assert_cell_occluder_participates(failures)
 	_assert_room_switch_clears_state(failures)
 	_assert_mask_matches_lit_cells(failures)
 	_assert_saved_exploration_updates_mask(failures)
@@ -474,6 +493,39 @@ func _assert_door_occludes_sight(failures: Array[String]) -> void:
 	if opened.has(Vector2i(3, 1)):
 		failures.append("open door kept blocking sight")
 	door.free()
+	root.free()
+
+
+func _assert_cell_occluder_participates(failures: Array[String]) -> void:
+	# This is the shape a sliding puzzle piece exposes: wall cells plus one-way
+	# cells in world coordinates, with no rectangular bounding box.
+	var root := Node2D.new()
+	var terrain := _make_terrain({})
+	root.add_child(terrain)
+	var occluder := FakeCellOccluder.new()
+	occluder.cells = [Vector2i(3, 1), Vector2i(3, 2)]
+	occluder.one_way_cells = [Vector2i(4, 1)]
+	root.add_child(occluder)
+	var fog: Node2D = FOG_OF_WAR.new() as Node2D
+	fog.cell_size = Vector2i(8, 8)
+	fog.chunk_size_pixels = Vector2i(320, 180)
+	root.add_child(fog)
+	add_child(root)
+	var room: Resource = _make_room("slider_room", Vector2i.ZERO, Vector2i(1, 1))
+	fog.call("bind_room", room, terrain, Vector2i.ZERO)
+	var blockers: Dictionary = fog.call("_collect_sight")
+	var one_way: Dictionary = fog.get("_one_way_cells")
+	for cell: Vector2i in [Vector2i(3, 1), Vector2i(3, 2)]:
+		if not blockers.has(cell):
+			failures.append("cell occluder wall cell %s did not block sight" % cell)
+	if not one_way.has(Vector2i(4, 1)):
+		failures.append("cell occluder one-way cell did not participate")
+	occluder.occluding = false
+	fog.call("request_refresh")
+	var opened: Dictionary = fog.call("_collect_sight")
+	if opened.has(Vector2i(3, 1)):
+		failures.append("disabled cell occluder kept blocking sight")
+	occluder.free()
 	root.free()
 
 

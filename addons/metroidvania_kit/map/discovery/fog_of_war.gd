@@ -610,7 +610,7 @@ func _collect_sight() -> Dictionary[Vector2i, bool]:
 	if _solid_tiles != null:
 		_add_solid_layer(_solid_tiles)
 	_add_legacy_layers()
-	_add_door_blockers()
+	_add_occluder_blockers()
 	return _blockers
 
 
@@ -656,14 +656,25 @@ func _add_legacy_layers() -> void:
 			_one_way_cells[world_to_cell(legacy_one_way.to_global(legacy_one_way.map_to_local(tile_cell)))] = true
 
 
-func _add_door_blockers() -> void:
+func _add_occluder_blockers() -> void:
 	if not is_inside_tree():
 		return
 	var room := _room_cell_rect()
 	for node: Node in get_tree().get_nodes_in_group(OCCLUDER_GROUP):
-		if not is_instance_valid(node) or not node.has_method("is_occluding") or not node.has_method("get_world_rect"):
+		if not is_instance_valid(node) or not node.has_method("is_occluding"):
 			continue
 		if not bool(node.call("is_occluding")):
+			continue
+		if node.has_method("get_occluder_cells"):
+			for cell: Vector2i in node.call("get_occluder_cells"):
+				if room.has_point(cell):
+					_blockers[cell] = true
+			if node.has_method("get_occluder_one_way_cells"):
+				for cell: Vector2i in node.call("get_occluder_one_way_cells"):
+					if room.has_point(cell):
+						_one_way_cells[cell] = true
+			continue
+		if not node.has_method("get_world_rect"):
 			continue
 		var rect: Rect2 = node.call("get_world_rect")
 		for cell: Vector2i in _cells_in_world_rect(rect, room):

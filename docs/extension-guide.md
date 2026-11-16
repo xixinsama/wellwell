@@ -204,7 +204,10 @@ See `docs/fog-zones-and-crumble.md` for the full rules and the test world.
   room towards the player while inside.
 - `scenes/world/fog_door.tscn` blocks movement and sight while closed; interact
   toggles it. Occluders join the `fog_occluder` group and expose
-  `is_occluding()` and `get_world_rect()`.
+  `is_occluding()` and either `get_world_rect()` or `get_occluder_cells()` /
+  `get_occluder_one_way_cells()`. `PuzzlePiece` and `PuzzleTilePiece` already
+  implement the cell interface, so sliders block sight and refresh the fog as
+  they move without extra setup.
 - `CrumbleRuntime` shakes a crumble cell for 0.25 s, erases it, and writes it
   back after 1.5 s; leaving the room restores everything.
 - `scenes/levels/test/test_world_runner.tscn` starts the test world directly;
