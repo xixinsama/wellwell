@@ -15,12 +15,26 @@ extends Node2D
 ## - authored dark zones (until their reveal condition fires)
 ##
 ## Authored light zones are always lit, even inside a sealed pocket.
+##
+## Rendering: the fog is a single GPU quad over the room, not one draw_rect per
+## cell. The CPU writes a mask texture with one texel block per cell (alpha =
+## fog opacity, red = reveal flash) and FogMask turns that into an animated
+## border: a blurred presence band whose cut is pushed around by layered noise,
+## so the shadow grows tendrils and slowly breathes instead of following the
+## cell grid. The mask is only rewritten when the revealed set, a reveal wave or
+## the focus spotlight actually changes, so a settled room costs nothing.
 
 const FOG_VISIBILITY: Script = preload("res://addons/metroidvania_kit/map/discovery/fog_visibility.gd")
 const ROOM_DATA_SCRIPT: Script = preload("res://addons/platformer_kit/world/data/room_data.gd")
+const FOG_SHADER: Shader = preload("res://addons/metroidvania_kit/map/discovery/fog_mask.gdshader")
 const ZONE_GROUP := &"fog_zone"
 const OCCLUDER_GROUP := &"fog_occluder"
 const FOG_GROUP := &"fog_of_war"
+## How far the mask's distance channel reaches, in pixels. Encoded as
+## 0.5 + distance / (2 * MASK_DISTANCE_PIXELS); the shader must use the same
+## value, so it is pushed as a uniform.
+const MASK_DISTANCE_PIXELS := 32.0
+
 
 @export var player_path: NodePath
 @export var terrain_path: NodePath
@@ -29,7 +43,10 @@ const FOG_GROUP := &"fog_of_war"
 @export var cell_size := Vector2i(8, 8)
 @export var chunk_size_pixels := Vector2i(320, 180)
 @export var level_id := "level_01"
-@export var fog_color := Color.BLACK
+@export var fog_color := Color.BLACK:
+	set(value):
+		fog_color = value
+		_apply_mask_shader_parameters()
 @export var glass_tile_atlas := Vector2i(0, 3)
 @export var reveal_seconds := 0.28
 @export var reveal_stagger_seconds := 0.012
@@ -38,6 +55,36 @@ const FOG_GROUP := &"fog_of_war"
 ## (feet). The sprite is 10x10 and the feet origin is at its bottom edge.
 @export var hero_body_rect := Rect2(-5, -10, 10, 10)
 
+@export_group("Fog Edge")
+## How far the noise may push the border out or in, in pixels. This is also the
+## depth of the tendrils that grow out of (and bite into) the shadow.
+@export_range(0.0, 20.0, 0.5) var tendril_pixels := 7.0
+## Anti-alias width of the cut in pixels; 0 gives a hard pixel edge.
+@export_range(0.0, 8.0, 0.1) var edge_softness := 1.6
+## Size of the coarse lobes in pixels; smaller means busier tendrils.
+@export_range(2.0, 60.0, 0.5) var edge_noise_scale := 13.0
+## Size of the fine grain layer in pixels.
+@export_range(1.0, 16.0, 0.1) var edge_noise_grain := 3.2
+## Drift speed of the lobes; 0 freezes the border.
+@export_range(0.0, 3.0, 0.05) var edge_noise_speed := 0.55
+## How strongly the lobes are bent, which turns blobs into tongues.
+@export_range(0.0, 2.0, 0.05) var edge_noise_warp := 0.65
+
+@export_group("Fog Breathing")
+## How far the whole border swells in and out, in pixels. This is the shadow
+## slowly inhaling rather than only shimmering where the noise is.
+@export_range(0.0, 16.0, 0.5) var breath_pixels := 3.0
+## Size of the swell lobes in pixels; big values move the whole silhouette.
+@export_range(8.0, 160.0, 1.0) var breath_scale := 46.0
+## Speed of the swell.
+@export_range(0.0, 2.0, 0.01) var breath_speed := 0.16
+
+@export_group("Fog Pixel Grain")
+## Blend towards a 4x4 ordered dither on the border, 0 (smooth) to 1 (chunky).
+@export_range(0.0, 1.0, 0.01) var dither_strength := 0.6
+## Size of one dither cell in pixels; 1 keeps the grain at design resolution.
+@export_range(1.0, 4.0, 1.0) var dither_scale := 1.0
+
 var currently_visible: Dictionary[Vector2i, bool] = {}
 
 var _explored_cells: Dictionary[Vector2i, bool] = {}
@@ -45,9 +92,13 @@ var _dark_cells: Dictionary[Vector2i, bool] = {}
 var _light_cells: Dictionary[Vector2i, bool] = {}
 var _revealed_zones: Dictionary[String, bool] = {}
 var _ripple: Dictionary[Vector2i, float] = {}
-var _ripple_end := 0.0
 var _mask_image: Image
 var _mask_texture: ImageTexture
+## Binary revealed/fogged field the animated mask is rebuilt from.
+var _mask_base: Image
+var _mask_base_dirty := true
+var _mask_sprite: Sprite2D
+var _mask_material: ShaderMaterial
 var _player: Node2D
 var _terrain: Node
 var _solid_tiles: TileMapLayer
@@ -95,15 +146,35 @@ func _process(_delta: float) -> void:
 		return
 	if _room_binding_is_explicit and not _room_is_bound:
 		return
+	var now := _now()
+	_settle_finished_focus(now)
 	var origin := _current_player_cell()
 	var view := _view_bounds_cells()
 	var zone_signature := _zone_overlap_signature()
 	if origin != _last_origin_cell or view != _last_view_bounds or zone_signature != _last_zone_signature or _dirty:
 		reveal_from_player()
-	elif not _ripple.is_empty() and _now() < _ripple_end:
-		queue_redraw()
-	if _focus_zone != null or not _focus_cells.is_empty():
-		queue_redraw()
+	elif _mask_animating(now):
+		_update_mask_image(now)
+
+
+## The shader animates on its own; the mask only has to be repainted while a
+## reveal wave is still evaporating or the focus spotlight is still fading in
+## or out. A settled room repaints nothing at all.
+func _mask_animating(now: float) -> bool:
+	if not _ripple.is_empty():
+		return true
+	if _focus_zone != null and now - _focus_start < _focus_seconds:
+		return true
+	if _focus_release >= 0.0 and now - _focus_release < _focus_seconds:
+		return true
+	return false
+
+
+func _settle_finished_focus(now: float) -> void:
+	if _focus_release < 0.0 or now - _focus_release < _focus_seconds:
+		return
+	_clear_focus()
+	_update_mask_image(now)
 
 
 func _now() -> float:
@@ -136,6 +207,7 @@ func load_explored_cells(cell_ids: Array[String]) -> void:
 			added = true
 	if added:
 		_exploration_version += 1
+		_mask_base_dirty = true
 	queue_redraw()
 
 
@@ -193,6 +265,9 @@ func is_focus_active() -> bool:
 	return _focus_zone != null
 
 
+## The raw mask the fog shader reads: alpha is the fog opacity of a cell, red
+## is its reveal flash. Cells are still 0 or 1 once a reveal wave has finished,
+## but mid-wave and under the focus spotlight they hold in-between values.
 func get_mask_image() -> Image:
 	return _mask_image
 
@@ -263,8 +338,7 @@ func clear_room() -> void:
 	_revealed_zones.clear()
 	_ripple.clear()
 	_clear_focus()
-	_mask_image = null
-	_mask_texture = null
+	_release_mask()
 	_last_origin_cell = Vector2i(2147483647, 2147483647)
 	_last_view_bounds = Rect2i()
 	_last_zone_signature = ""
@@ -301,8 +375,7 @@ func set_room_chunks(room_origin_chunk: Vector2i, room_size_chunks: Vector2i) ->
 		ceili(float(_room_size_pixels.y) / float(cell_size.y))
 	)
 	_has_exact_room_bounds = true
-	_mask_image = null
-	_mask_texture = null
+	_release_mask()
 	_last_view_bounds = Rect2i()
 	_explored_cells.clear()
 	_ripple.clear()
@@ -315,6 +388,7 @@ func set_room_chunks(room_origin_chunk: Vector2i, room_size_chunks: Vector2i) ->
 func request_refresh() -> void:
 	_dirty = true
 	_blockers_dirty = true
+	_mask_base_dirty = true
 
 
 func reveal_from_player() -> void:
@@ -376,78 +450,55 @@ func _reveal(origin: Vector2i, bounds: Rect2i, blockers: Dictionary, one_way: Di
 		_exploration_version += 1
 		var distance := Vector2(cell - origin).length() / distance_scale
 		_ripple[cell] = now + distance * reveal_stagger_seconds
-		_ripple_end = maxf(_ripple_end, _ripple[cell] + reveal_seconds)
 		if save_manager != null and save_manager.has_method("mark_cell_explored"):
 			save_manager.call("mark_cell_explored", cell_to_id(cell))
+	_mask_base_dirty = true
 	_update_mask_image()
-	queue_redraw()
 
 
 func _draw() -> void:
-	if not _is_fog_enabled():
-		return
-	var now := _now()
-	var room := _room_cell_rect()
-	for y: int in range(room.position.y, room.end.y):
-		for x: int in range(room.position.x, room.end.x):
-			var cell := Vector2i(x, y)
-			if is_cell_lit(cell):
-				if _ripple.has(cell):
-					_draw_revealing_cell(cell, now)
-				continue
-			var alpha := 1.0
-			if _ripple.has(cell):
-				var start: float = _ripple[cell]
-				if now >= start:
-					alpha = clampf(1.0 - (now - start) / reveal_seconds, 0.0, 1.0)
-					if alpha <= 0.0:
-						_ripple.erase(cell)
-						continue
-			var color := fog_color
-			if alpha < 1.0:
-				color.a *= alpha
-			draw_rect(_cell_rect(cell), color, true)
-	_draw_focus(now)
+	# The fog is the FogMask quad now; nothing is drawn immediate mode, so a
+	# repaint can never leave a stale per-cell rect behind.
+	pass
 
 
-func _draw_revealing_cell(cell: Vector2i, now: float) -> void:
+## Per-cell fog opacity of a reveal wave, 0 when the wave is done here.
+func _ripple_alpha(cell: Vector2i, now: float) -> float:
+	if not _ripple.has(cell):
+		return -1.0
 	var start: float = _ripple[cell]
-	if now < start:
-		return
 	var elapsed := now - start
+	if elapsed < 0.0:
+		return 1.0
 	if elapsed >= reveal_seconds:
-		_ripple.erase(cell)
-		return
-	if elapsed <= reveal_flash_seconds:
-		var flash := 1.0 - elapsed / reveal_flash_seconds
-		draw_rect(_cell_rect(cell), Color(1.0, 1.0, 1.0, 0.55 * flash), false, 1.0)
+		return 0.0
+	return clampf(1.0 - elapsed / maxf(reveal_seconds, 0.001), 0.0, 1.0)
 
 
-func _draw_focus(now: float) -> void:
+func _ripple_flash(cell: Vector2i, now: float) -> float:
+	if not _ripple.has(cell) or reveal_flash_seconds <= 0.0:
+		return 0.0
+	var elapsed := now - float(_ripple[cell])
+	if elapsed < 0.0 or elapsed >= reveal_flash_seconds:
+		return 0.0
+	return clampf(1.0 - elapsed / reveal_flash_seconds, 0.0, 1.0)
+
+
+## Extra darkness the focus spotlight adds on top of an already lit cell.
+func _focus_alpha_at(cell: Vector2i, now: float) -> float:
 	if _focus_cells.is_empty() and _focus_zone == null:
-		return
+		return 0.0
+	if _focus_cells.has(cell) or not is_cell_lit(cell):
+		return 0.0
 	var strength := _focus_strength(now)
 	if strength <= 0.0:
-		if _focus_zone == null:
-			_clear_focus()
-		return
-	var room := _room_cell_rect()
-	var center := _focus_center
-	for y: int in range(room.position.y, room.end.y):
-		for x: int in range(room.position.x, room.end.x):
-			var cell := Vector2i(x, y)
-			if _focus_cells.has(cell):
-				continue
-			if not is_cell_lit(cell):
-				continue
-			var distance := Vector2(cell - center).length()
-			var far := 1.0 - clampf(distance / maxf(_focus_max_distance, 1.0), 0.0, 1.0)
-			var local := clampf((strength - far * 0.55) / 0.45, 0.0, 1.0)
-			if local <= 0.0:
-				continue
-			var color := fog_color
-			color.a *= local * _focus_alpha
-			draw_rect(_cell_rect(cell), color, true)
+		return 0.0
+	var distance := Vector2(cell - _focus_center).length()
+	var far := 1.0 - clampf(distance / maxf(_focus_max_distance, 1.0), 0.0, 1.0)
+	var local := clampf((strength - far * 0.55) / 0.45, 0.0, 1.0)
+	if local <= 0.0:
+		return 0.0
+	return local * _focus_alpha
 
 
 func _focus_strength(now: float) -> float:
@@ -593,7 +644,6 @@ func _collect_zone_cells() -> void:
 			_explored_cells[cell] = true
 			_exploration_version += 1
 			_ripple[cell] = now
-			_ripple_end = maxf(_ripple_end, now + reveal_seconds)
 			if save_manager != null and save_manager.has_method("mark_cell_explored"):
 				save_manager.call("mark_cell_explored", cell_to_id(cell))
 		if "focus_room" in node and bool(node.get("focus_room")) and fully_inside:
@@ -777,48 +827,237 @@ func _id_to_cell(cell_id: String) -> Variant:
 	return Vector2i(int(coords[0]), int(coords[1]))
 
 
-func _cell_rect(cell: Vector2i) -> Rect2:
-	if _has_exact_room_bounds:
-		var local_origin := (cell - map_origin_cell) * cell_size
-		var remaining := _room_size_pixels - local_origin
-		return Rect2(
-			Vector2(_room_origin_pixels + local_origin),
-			Vector2(mini(cell_size.x, remaining.x), mini(cell_size.y, remaining.y))
-		)
-	return Rect2(
-		Vector2(cell.x * cell_size.x, cell.y * cell_size.y),
-		Vector2(cell_size)
-	)
-
-
-func _update_mask_image() -> void:
-	var mask_size := _room_size_pixels if _has_exact_room_bounds else Vector2i(
-		map_size_cells.x * cell_size.x,
-		map_size_cells.y * cell_size.y
-	)
+## Repaints the mask texture the fog shader reads.
+##
+## The mask holds one texel block per cell: alpha is the fog opacity, red is the
+## reveal flash and green is the signed distance to the border. It is rebuilt
+## from a cached base plus the cells that are currently animating, so a reveal
+## wave costs a memcpy and a handful of fill_rect calls per frame instead of
+## walking the whole room.
+func _update_mask_image(now: float = -1.0) -> void:
+	if now < 0.0:
+		now = _now()
+	var mask_size := get_mask_size_pixels()
 	if mask_size.x <= 0 or mask_size.y <= 0:
 		return
 	if _mask_image == null or _mask_image.get_size() != mask_size:
 		_mask_image = Image.create_empty(mask_size.x, mask_size.y, false, Image.FORMAT_RGBA8)
+		_mask_base = Image.create_empty(mask_size.x, mask_size.y, false, Image.FORMAT_RGBA8)
 		_mask_texture = null
-
-	_mask_image.fill(fog_color)
-	var room := _room_cell_rect()
-	for y: int in range(room.position.y, room.end.y):
-		for x: int in range(room.position.x, room.end.x):
-			var cell := Vector2i(x, y)
-			if not is_cell_lit(cell):
-				continue
-			var local_origin := Vector2i(
-				(cell.x - map_origin_cell.x) * cell_size.x,
-				(cell.y - map_origin_cell.y) * cell_size.y
-			)
-			_mask_image.fill_rect(Rect2i(local_origin, cell_size), Color.TRANSPARENT)
+		_mask_base_dirty = true
+	if _mask_base == null or _mask_base.get_size() != mask_size:
+		_mask_base = Image.create_empty(mask_size.x, mask_size.y, false, Image.FORMAT_RGBA8)
+		_mask_base_dirty = true
+	if _mask_base_dirty:
+		_rebuild_mask_base()
+	_mask_image.copy_from(_mask_base)
+	_apply_mask_animation(now)
 
 	if _mask_texture == null:
 		_mask_texture = ImageTexture.create_from_image(_mask_image)
 	else:
 		_mask_texture.update(_mask_image)
+	_sync_mask_quad()
+
+
+## Binary revealed/fogged field plus the signed distance to the border that the
+## shader cuts the tendrils out of. Only rebuilt when the revealed set changes.
+##
+## The distance is a chamfer transform over the cell grid (3-4 weights, two
+## passes), so the middle of a cell has the same continuous value the shader
+## interpolates between cell centres. Encoding it costs one channel and makes
+## the wobbling cut land on any pixel instead of on a cell edge.
+func _rebuild_mask_base() -> void:
+	_mask_base_dirty = false
+	var cells := map_size_cells
+	if cells.x <= 0 or cells.y <= 0:
+		return
+	var count := cells.x * cells.y
+	var far := 4096.0
+	var fog_depth := PackedFloat32Array()
+	var lit_depth := PackedFloat32Array()
+	fog_depth.resize(count)
+	lit_depth.resize(count)
+	for index: int in count:
+		var cell := _mask_index_to_cell(index)
+		var fogged := not is_cell_lit(cell)
+		# fog_depth is the distance to the nearest revealed cell and the other
+		# way round, so the revealed cells seed the fog field and vice versa.
+		fog_depth[index] = far if fogged else 0.0
+		lit_depth[index] = 0.0 if fogged else far
+	_chamfer(fog_depth, cells.x, cells.y)
+	_chamfer(lit_depth, cells.x, cells.y)
+
+	_mask_base.fill(Color(0.0, 0.5, 0.0, 0.0))
+	var pixels := float(cell_size.x)
+	for index: int in count:
+		var cell := _mask_index_to_cell(index)
+		var rect := _mask_cell_rect(cell)
+		if rect.size.x <= 0 or rect.size.y <= 0:
+			continue
+		var fogged := not is_cell_lit(cell)
+		var depth: float = fog_depth[index] if fogged else lit_depth[index]
+		# Chamfer runs cell centre to cell centre in thirds of a cell; the border
+		# sits half a cell further in, so the signed value is zero on the edge.
+		var signed_pixels := (depth / 3.0 - 0.5) * pixels
+		if not fogged:
+			signed_pixels = -signed_pixels
+		var encoded := clampf(
+			0.5 + signed_pixels / (2.0 * MASK_DISTANCE_PIXELS), 0.0, 1.0
+		)
+		_mask_base.fill_rect(rect, Color(0.0, encoded, 0.0, 1.0 if fogged else 0.0))
+
+
+## Two-pass 3-4 chamfer distance transform, in thirds of a cell.
+func _chamfer(field: PackedFloat32Array, width: int, height: int) -> void:
+	for y: int in height:
+		for x: int in width:
+			var index := y * width + x
+			var best := field[index]
+			if best <= 0.0:
+				continue
+			if x > 0:
+				best = minf(best, field[index - 1] + 3.0)
+			if y > 0:
+				best = minf(best, field[index - width] + 3.0)
+				if x > 0:
+					best = minf(best, field[index - width - 1] + 4.0)
+				if x < width - 1:
+					best = minf(best, field[index - width + 1] + 4.0)
+			field[index] = best
+	for y: int in range(height - 1, -1, -1):
+		for x: int in range(width - 1, -1, -1):
+			var index := y * width + x
+			var best := field[index]
+			if best <= 0.0:
+				continue
+			if x < width - 1:
+				best = minf(best, field[index + 1] + 3.0)
+			if y < height - 1:
+				best = minf(best, field[index + width] + 3.0)
+				if x < width - 1:
+					best = minf(best, field[index + width + 1] + 4.0)
+				if x > 0:
+					best = minf(best, field[index + width - 1] + 4.0)
+			field[index] = best
+
+
+func _mask_index_to_cell(index: int) -> Vector2i:
+	return Vector2i(
+		map_origin_cell.x + index % map_size_cells.x,
+		map_origin_cell.y + index / map_size_cells.x
+	)
+
+
+## Overlays the reveal wave (fog evaporating from the hero outwards, which the
+## shader turns into a ragged receding front) and the focus spotlight.
+func _apply_mask_animation(now: float) -> void:
+	var finished: Array[Vector2i] = []
+	for cell: Vector2i in _ripple:
+		var alpha := _ripple_alpha(cell, now)
+		if now - float(_ripple[cell]) >= reveal_seconds:
+			finished.append(cell)
+			continue
+		_write_mask_cell(cell, alpha, _ripple_flash(cell, now))
+	for cell: Vector2i in finished:
+		_ripple.erase(cell)
+		_write_mask_cell(cell, 1.0 if not is_cell_lit(cell) else 0.0, 0.0)
+
+	if _focus_cells.is_empty() and _focus_zone == null:
+		return
+	var room := _room_cell_rect()
+	for y: int in range(room.position.y, room.end.y):
+		for x: int in range(room.position.x, room.end.x):
+			var cell := Vector2i(x, y)
+			var focus := _focus_alpha_at(cell, now)
+			if focus <= 0.0:
+				continue
+			var rect := _mask_cell_rect(cell)
+			if rect.size.x <= 0 or rect.size.y <= 0:
+				continue
+			_mask_image.fill_rect(rect, Color(0.0, _mask_cell_distance(cell), 0.0, clampf(focus, 0.0, 1.0)))
+
+
+func _write_mask_cell(cell: Vector2i, alpha: float, flash: float) -> void:
+	if _mask_image == null:
+		return
+	var rect := _mask_cell_rect(cell)
+	if rect.size.x <= 0 or rect.size.y <= 0:
+		return
+	_mask_image.fill_rect(
+		rect,
+		Color(clampf(flash, 0.0, 1.0), _mask_cell_distance(cell), 0.0, clampf(alpha, 0.0, 1.0))
+	)
+
+
+## Encoded border distance of a cell, read back from the base so the animation
+## only has to paint opacity and flash.
+func _mask_cell_distance(cell: Vector2i) -> float:
+	if _mask_base == null:
+		return 0.5
+	var rect := _mask_cell_rect(cell)
+	if rect.size.x <= 0 or rect.size.y <= 0:
+		return 0.5
+	return _mask_base.get_pixel(rect.position.x, rect.position.y).g
+
+
+## Mask-local pixel rect of a cell, clamped to the mask, empty when outside.
+func _mask_cell_rect(cell: Vector2i) -> Rect2i:
+	if _mask_image == null:
+		return Rect2i()
+	var local := (cell - map_origin_cell) * cell_size
+	return Rect2i(local, cell_size).intersection(
+		Rect2i(Vector2i.ZERO, _mask_image.get_size())
+	)
+
+
+## Keeps the quad that draws the mask in step with the room bounds.
+func _sync_mask_quad() -> void:
+	if _mask_texture == null or not is_inside_tree():
+		return
+	if _mask_sprite == null:
+		_mask_sprite = Sprite2D.new()
+		_mask_sprite.name = "FogMask"
+		_mask_sprite.centered = false
+		_mask_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		_mask_material = ShaderMaterial.new()
+		_mask_material.shader = FOG_SHADER
+		_mask_sprite.material = _mask_material
+		add_child(_mask_sprite)
+	_mask_sprite.texture = _mask_texture
+	_mask_sprite.position = to_local(Vector2(get_mask_origin_pixels()))
+	_apply_mask_shader_parameters()
+
+
+func _apply_mask_shader_parameters() -> void:
+	if _mask_material == null:
+		return
+	_mask_material.set_shader_parameter("fog_color", fog_color)
+	_mask_material.set_shader_parameter("mask_tex", _mask_texture)
+	_mask_material.set_shader_parameter("mask_pixels", Vector2(get_mask_size_pixels()))
+	_mask_material.set_shader_parameter("cell_pixels", Vector2(cell_size))
+	_mask_material.set_shader_parameter("distance_range", MASK_DISTANCE_PIXELS)
+	_mask_material.set_shader_parameter("tendril_pixels", tendril_pixels)
+	_mask_material.set_shader_parameter("edge_softness", edge_softness)
+	_mask_material.set_shader_parameter("noise_scale", edge_noise_scale)
+	_mask_material.set_shader_parameter("noise_grain", edge_noise_grain)
+	_mask_material.set_shader_parameter("noise_speed", edge_noise_speed)
+	_mask_material.set_shader_parameter("noise_warp", edge_noise_warp)
+	_mask_material.set_shader_parameter("breath_pixels", breath_pixels)
+	_mask_material.set_shader_parameter("breath_scale", breath_scale)
+	_mask_material.set_shader_parameter("breath_speed", breath_speed)
+	_mask_material.set_shader_parameter("dither_strength", dither_strength)
+	_mask_material.set_shader_parameter("dither_scale", dither_scale)
+
+
+## Drops the mask and the quad texture, for example on a room switch.
+func _release_mask() -> void:
+	_mask_image = null
+	_mask_base = null
+	_mask_texture = null
+	_mask_base_dirty = true
+	if _mask_sprite != null:
+		_mask_sprite.texture = null
 
 
 func _cells_per_chunk() -> Vector2i:

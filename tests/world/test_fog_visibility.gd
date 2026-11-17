@@ -108,6 +108,8 @@ func run() -> Array[String]:
 	_assert_cell_occluder_participates(failures)
 	_assert_room_switch_clears_state(failures)
 	_assert_mask_matches_lit_cells(failures)
+	_assert_mask_reveal_wave_animates(failures)
+	_assert_mask_quad_follows_room(failures)
 	_assert_saved_exploration_updates_mask(failures)
 	return failures
 
@@ -569,6 +571,9 @@ func _assert_mask_matches_lit_cells(failures: Array[String]) -> void:
 	fog.map_size_cells = Vector2i(4, 1)
 	fog.cell_size = Vector2i(8, 8)
 	fog.reveal_from_cell(Vector2i(0, 0), {Vector2i(1, 0): true})
+	# The mask fades revealed cells out over reveal_seconds, so read the settled
+	# state to keep asserting the shape of the fog rather than the wave.
+	fog.call("_update_mask_image", 1000.0)
 	var mask: Image = fog.get_mask_image()
 	if mask == null:
 		failures.append("fog mask image was not created")
@@ -582,6 +587,63 @@ func _assert_mask_matches_lit_cells(failures: Array[String]) -> void:
 		failures.append("unreached fog mask pixel was not opaque")
 	if fog.get_mask_texture() == null:
 		failures.append("fog mask texture was not created")
+	fog.free()
+
+
+func _assert_mask_reveal_wave_animates(failures: Array[String]) -> void:
+	var fog: Node2D = FOG_OF_WAR.new() as Node2D
+	fog.map_origin_cell = Vector2i(0, 0)
+	fog.map_size_cells = Vector2i(4, 1)
+	fog.cell_size = Vector2i(8, 8)
+	fog.reveal_seconds = 0.5
+	fog.reveal_flash_seconds = 0.2
+	fog.reveal_from_cell(Vector2i(0, 0), {Vector2i(1, 0): true})
+	var wave: Image = fog.get_mask_image()
+	if wave == null:
+		failures.append("fog mask was not created for the reveal wave")
+		fog.free()
+		return
+	if wave.get_pixel(4, 4).a < 0.5:
+		failures.append("a cell mid reveal wave should still hold its fog")
+	if wave.get_pixel(4, 4).r <= 0.0:
+		failures.append("a cell that just opened should carry a reveal flash")
+	if not bool(fog.call("_mask_animating", float(Time.get_ticks_msec()) / 1000.0)):
+		failures.append("fog mask stopped animating before the wave finished")
+	fog.call("_update_mask_image", 1000.0)
+	var settled: Image = fog.get_mask_image()
+	if settled.get_pixel(4, 4).a != 0.0:
+		failures.append("fog mask kept a revealed cell opaque after the wave")
+	if settled.get_pixel(4, 4).r != 0.0:
+		failures.append("fog mask kept a reveal flash after the wave")
+	if bool(fog.call("_mask_animating", 1000.0)):
+		failures.append("fog mask kept animating after the wave settled")
+	fog.free()
+
+
+func _assert_mask_quad_follows_room(failures: Array[String]) -> void:
+	var root := get_tree().root
+	var fog: Node2D = FOG_OF_WAR.new() as Node2D
+	root.add_child(fog)
+	fog.call("set_room_chunks", Vector2i.ONE, Vector2i.ONE)
+	fog.call("reveal_from_cell", fog.map_origin_cell, {})
+	var quad := fog.get_node_or_null("FogMask") as Sprite2D
+	if quad == null:
+		failures.append("fog did not create its mask quad")
+	else:
+		if quad.texture == null or quad.texture != fog.get_mask_texture():
+			failures.append("fog mask quad did not show the current mask texture")
+		if quad.texture_filter != CanvasItem.TEXTURE_FILTER_NEAREST:
+			failures.append("fog mask quad would blur the mask while scaling")
+		if not (quad.material is ShaderMaterial):
+			failures.append("fog mask quad was not driven by the fog shader")
+		if quad.position != Vector2(fog.get_mask_origin_pixels()):
+			failures.append("fog mask quad did not sit at the room origin")
+		if quad.texture != null and quad.texture.get_size() != Vector2(fog.get_mask_size_pixels()):
+			failures.append("fog mask quad size drifted from the room bounds")
+	fog.call("clear_room")
+	if quad != null and quad.texture != null:
+		failures.append("clearing the room kept the stale mask on screen")
+	root.remove_child(fog)
 	fog.free()
 
 

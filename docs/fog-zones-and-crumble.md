@@ -115,6 +115,63 @@ It is a rectangle in cells, positioned in room pixels.
 Persistence: zone keys are stored as `room_id:zone_id` in the save module.
 Restore zones are remembered as seen but are not forced lit when reloaded.
 
+## Fog rendering: the animated edge
+
+The fog is not drawn cell by cell any more. `FogOfWar` writes a mask texture and
+a single `Sprite2D` child (`FogMask`) draws it through
+`addons/metroidvania_kit/map/discovery/fog_mask.gdshader`, so the border can be
+organic instead of following the 8 px grid and a settled room costs nothing per
+frame on the CPU.
+
+The mask holds one texel block per cell, three channels:
+
+| Channel | Contents |
+| :--- | :--- |
+| alpha | fog opacity of the cell: 1 = fog, 0 = revealed, in between while it evaporates or is dimmed by a focus zone |
+| red | reveal flash, drawn as a 1 px outline inside the cell for a moment |
+| green | signed distance to the border, encoded around 0.5 (the reach is `MASK_DISTANCE_PIXELS`, 32 px) |
+
+The distance is a two-pass 3-4 chamfer transform over the cell grid, so the
+shader can sample it bilinearly between cell centres and place the cut on any
+pixel instead of on a cell edge. On top of that the shader adds three noise
+layers to the cut:
+
+1. **tendrils** — domain-warped fbm, so tongues of shadow grow out of the border
+   and bite into it, drifting slowly,
+2. **breathing** — one very low frequency swell that moves the whole silhouette
+   in and out, which reads as the shadow inhaling,
+3. **pixel grain** — a 4×4 ordered dither that only applies where the cut is in
+   flight, so the last pixels break into hard 1 px chunks while the fog interior
+   stays clean.
+
+A cell that is fogged, fading or dimmed always keeps exactly its own opacity, so
+the reveal wave and the focus spotlight stay truthful; only a fully revealed cell
+can be covered by a tongue, and that one is solid at the cut and thins out
+towards its tip.
+
+The mask is only rewritten when the revealed set changes, while a reveal wave is
+evaporating, or while the focus spotlight fades. Everything else is animated by
+the shader from `TIME`, so a settled room uploads nothing.
+
+### Edge parameters (`FogOfWar`)
+
+| Property | Default | Meaning |
+| :--- | :--- | :--- |
+| `tendril_pixels` | 7 | how far noise may push the border out or in, in pixels; this is the tongue depth |
+| `edge_softness` | 1.6 | anti-alias width of the cut; 0 gives a hard pixel edge |
+| `edge_noise_scale` | 13 | size of the coarse lobes; smaller means busier |
+| `edge_noise_grain` | 3.2 | size of the fine grain layer |
+| `edge_noise_speed` | 0.55 | drift speed; 0 freezes the border |
+| `edge_noise_warp` | 0.65 | how strongly the lobes are bent, which turns blobs into tongues |
+| `breath_pixels` | 3 | how far the whole border swells |
+| `breath_scale` | 46 | size of the swell lobes; big values move the whole silhouette |
+| `breath_speed` | 0.16 | swell speed |
+| `dither_strength` | 0.6 | blend towards the ordered dither, 0 to 1 |
+| `dither_scale` | 1 | size of one dither cell in pixels |
+
+Set `tendril_pixels`, `breath_pixels` and `dither_strength` to 0 to get the old
+cell-aligned border back.
+
 ## Crumble Tiles
 
 Paint the crumble tiles in `SolidTiles`:
