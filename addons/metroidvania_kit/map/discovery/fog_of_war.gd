@@ -85,6 +85,13 @@ const MASK_DISTANCE_PIXELS := 32.0
 ## Size of one dither cell in pixels; 1 keeps the grain at design resolution.
 @export_range(1.0, 4.0, 1.0) var dither_scale := 1.0
 
+@export_group("Fog Light")
+## How far light pushes the tendrils back, in pixels. Light never reveals a cell:
+## it only moves the border, so the dark side of the edge stays dark.
+@export_range(0.0, 40.0, 0.5) var light_push_px := 10.0
+## Multiplier on the light map before it pushes the edge.
+@export_range(0.0, 2.0, 0.01) var light_gain := 1.0
+
 var currently_visible: Dictionary[Vector2i, bool] = {}
 
 var _explored_cells: Dictionary[Vector2i, bool] = {}
@@ -94,6 +101,9 @@ var _revealed_zones: Dictionary[String, bool] = {}
 var _ripple: Dictionary[Vector2i, float] = {}
 var _mask_image: Image
 var _mask_texture: ImageTexture
+## Room light map from LightField, sampled by the edge shader.
+var _light_texture: Texture2D
+var _light_pixels := Vector2i.ZERO
 ## Binary revealed/fogged field the animated mask is rebuilt from.
 var _mask_base: Image
 var _mask_base_dirty := true
@@ -360,6 +370,14 @@ func clear_persistence_source() -> void:
 
 func bind_settings_source(source: Object) -> void:
 	_settings_source = source
+
+
+## Called by LightField when a room is bound. The fog only needs the texture and
+## its size; both are room-local, so no offset is involved.
+func set_light_field(texture: Texture2D, pixels: Vector2i, _origin_pixels: Vector2i) -> void:
+	_light_texture = texture
+	_light_pixels = pixels
+	_apply_mask_shader_parameters()
 
 
 func set_room_chunks(room_origin_chunk: Vector2i, room_size_chunks: Vector2i) -> void:
@@ -1048,6 +1066,14 @@ func _apply_mask_shader_parameters() -> void:
 	_mask_material.set_shader_parameter("breath_speed", breath_speed)
 	_mask_material.set_shader_parameter("dither_strength", dither_strength)
 	_mask_material.set_shader_parameter("dither_scale", dither_scale)
+	_mask_material.set_shader_parameter("light_tex", _light_texture)
+	_mask_material.set_shader_parameter("light_pixels", Vector2(_light_pixels))
+	# Without a light map the sampler would read as white and push every border,
+	# so the push is switched off instead.
+	_mask_material.set_shader_parameter(
+		"light_push_px", light_push_px if _light_texture != null else 0.0
+	)
+	_mask_material.set_shader_parameter("light_gain", light_gain)
 
 
 ## Drops the mask and the quad texture, for example on a room switch.

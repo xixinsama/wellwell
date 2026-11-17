@@ -57,6 +57,14 @@ uniform float dither_scale = 1.0;
 // --- reveal ---------------------------------------------------------------
 uniform float flash_strength = 0.45;
 uniform bool animate = true;
+// --- light ----------------------------------------------------------------
+// The room light map (see LightField). Light does not reveal anything: it only
+// pushes the wobbling cut back, so a lit border recedes while the dark cells
+// behind it stay black.
+uniform sampler2D light_tex : filter_linear, repeat_disable;
+uniform vec2 light_pixels = vec2(320.0, 180.0);
+uniform float light_push_px = 10.0;
+uniform float light_gain = 1.0;
 // Test hook: 1 draws the sign of the distance field, 2 draws the two bilinear
 // fields as colour and 3 draws the final shape, so captures can be measured.
 uniform float debug_view = 0.0;
@@ -146,6 +154,15 @@ void fragment() {
 		float wobble = (lobes - 0.5) * 2.0 * tendril_pixels;
 		wobble += grain * 0.6 * tendril_pixels;
 		wobble += swell * 2.0 * breath_pixels;
+		// Light bites back into the tendrils. The mask is untouched, so this can
+		// only move the cut, never open up a cell that is still unexplored.
+		if (light_push_px != 0.0) {
+			vec3 light_sample = texture(light_tex, (px + 0.5) / light_pixels).rgb;
+			float light = clamp(
+				dot(light_sample, vec3(0.3, 0.59, 0.11)) * light_gain, 0.0, 1.0
+			);
+			wobble -= light * light_push_px;
+		}
 
 		float soft = max(edge_softness, 0.001);
 		float shape = smoothstep(-soft, soft, distance_px - wobble);

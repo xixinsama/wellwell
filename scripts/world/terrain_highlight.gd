@@ -42,20 +42,61 @@ const PLAYER_PATH := NodePath("../Player")
 @export var hero_side_only := true
 ## Draw above the terrain but under fog, water and gas.
 @export_range(-10, 20, 1) var draw_order := 1
+## Light that always reaches the rim, added on top of the light map so unlit
+## walls keep a faint outline instead of vanishing.
+@export_range(0.0, 1.0, 0.01) var light_floor := 0.55
+## Multiplier on the light map before it gates the rim.
+@export_range(0.0, 2.0, 0.01) var light_gain := 1.0
 
 ## One entry per decorated room: its layer, sizes, shape grid and reach grid.
 var _entries: Array[Dictionary] = []
 var _player: Node2D
 var _last_player_cell := Vector2i(2147483647, 2147483647)
+## Room light map from LightField: the rim only shows where the light reaches.
+var _light_texture: Texture2D
+var _light_pixels := Vector2i.ZERO
+var _light_origin := Vector2i.ZERO
 
 
 func _ready() -> void:
+	add_to_group(&"terrain_highlight")
 	_player = get_node_or_null(PLAYER_PATH) as Node2D
 	var world := get_parent()
 	if world != null and world.has_signal("world_ready"):
 		if not world.is_connected("world_ready", decorate_rooms):
 			world.connect("world_ready", decorate_rooms)
 	decorate_rooms()
+
+
+## Called by LightField when a room is bound. Every decorated quad re-binds its
+## offset, so a neighbouring room visible at the edge samples the same map.
+func set_light_field(texture: Texture2D, pixels: Vector2i, origin_pixels: Vector2i) -> void:
+	_light_texture = texture
+	_light_pixels = pixels
+	_light_origin = origin_pixels
+	_apply_light_to_all()
+
+
+func _apply_light_to_all() -> void:
+	for entry: Dictionary in _entries:
+		if not entry.has("quad") or not is_instance_valid(entry["quad"]):
+			continue
+		_apply_light(entry["quad"] as MeshInstance2D, entry)
+
+
+## Binds the light map and this quad's offset inside it to a quad's material.
+func _apply_light(quad: MeshInstance2D, entry: Dictionary) -> void:
+	var material := quad.material as ShaderMaterial
+	if material == null:
+		return
+	material.set_shader_parameter("light_texture", _light_texture)
+	material.set_shader_parameter("light_pixels", Vector2(_light_pixels))
+	var offset := Vector2.ZERO
+	if _light_texture != null and _light_pixels.x > 0:
+		offset = quad.global_position - Vector2(_light_origin)
+	material.set_shader_parameter("light_offset", offset)
+	material.set_shader_parameter("light_gain", light_gain)
+	material.set_shader_parameter("light_floor", light_floor)
 
 
 ## Re-runs the reachability fill when the hero moves into another tile. Tiles are
@@ -334,6 +375,7 @@ func _decorate_room(room: Node) -> bool:
 		entry["mask"] = rebuilt["mask"]
 		entry["image"] = rebuilt["image"]
 		entry["texture"] = rebuilt["texture"]
+	entry["quad"] = quad
 	_sync_quad(quad, entry)
 	return true
 
@@ -482,6 +524,7 @@ func _sync_quad(quad: MeshInstance2D, entry: Dictionary) -> void:
 		top_left = parent_node.to_local(top_left)
 	quad.position = top_left + size * 0.5
 	quad.scale = size
+	_apply_light(quad, entry)
 
 
 ## Push the exported tuning values onto every built quad (live editing).
@@ -498,6 +541,8 @@ func apply_parameters() -> void:
 		material.set_shader_parameter("rim_grain", rim_grain)
 		material.set_shader_parameter("inside", 1.0 if rim_inside else 0.0)
 		material.set_shader_parameter("require_reach", 1.0 if hero_side_only else 0.0)
+		material.set_shader_parameter("light_gain", light_gain)
+		material.set_shader_parameter("light_floor", light_floor)
 
 
 func _resolve_rooms_root() -> Node:

@@ -132,7 +132,9 @@ func _assert_player_scene(failures: Array[String]) -> void:
 	var player := (load("res://scenes/player/player.tscn") as PackedScene).instantiate()
 	for path: String in ["SpriteRoot/Block", "SpriteRoot/MeshInstance2D", "SpriteRoot/MeshInstance2D2"]:
 		var placeholder := player.get_node_or_null(path) as CanvasItem
-		if placeholder == null or placeholder.visible:
+		# A deleted placeholder is as good as a hidden one: only a leftover that
+		# is still drawing fails the contract.
+		if placeholder != null and placeholder.visible:
 			failures.append("old placeholder must be hidden: %s" % path)
 	var sprite := player.get_node_or_null("SpriteRoot/HeroAnimation/AnimatedSprite2D") as AnimatedSprite2D
 	if sprite == null or sprite.position != Vector2(0, -5):

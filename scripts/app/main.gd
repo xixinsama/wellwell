@@ -35,6 +35,7 @@ func _ready() -> void:
         var water := world_root.get_node_or_null("WaterField")
         var water_grid := world_root.get_node_or_null("WaterGrid")
         var atmosphere := world_root.get_node_or_null("Atmosphere")
+        var light_field := world_root.get_node_or_null("LightField")
         var persistence_bridge := world_root.get_node_or_null("MetroidvaniaPersistenceBridge")
         if fog != null and world_root.has_method("register_room_extension"):
             world_root.call("register_room_extension", fog)
@@ -46,6 +47,8 @@ func _ready() -> void:
             world_root.call("register_room_extension", water_grid)
         if atmosphere != null and world_root.has_method("register_room_extension"):
             world_root.call("register_room_extension", atmosphere)
+        if light_field != null and world_root.has_method("register_room_extension"):
+            world_root.call("register_room_extension", light_field)
         if persistence_bridge != null:
             _configure_metroidvania_runtime(world_root, persistence_bridge, fog)
             persistence_bridge.call("bind_save_manager", SaveManager)

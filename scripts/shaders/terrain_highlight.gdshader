@@ -34,6 +34,20 @@ uniform float rim_softness = 0.6;
 uniform float rim_grain = 0.18;
 // 1 lights the inside of the silhouette, 0 lights the air just outside it.
 uniform float inside = 1.0;
+// Room light map (see LightField): the rim only shows where the light reaches,
+// so walls fade into the dark away from the lantern.
+uniform sampler2D light_texture : filter_linear, repeat_disable;
+uniform vec2 light_pixels = vec2(320.0, 180.0);
+// Offset of this quad inside the light map, in mask pixels.
+uniform vec2 light_offset = vec2(0.0);
+uniform float light_floor = 0.55;
+uniform float light_gain = 1.0;
+
+float light_at(vec2 pixel) {
+	vec2 uv = (pixel + light_offset + 0.5) / light_pixels;
+	vec3 light = texture(light_texture, uv).rgb;
+	return clamp(dot(light, vec3(0.3, 0.59, 0.11)) * light_gain + light_floor, 0.0, 1.0);
+}
 
 float solid_at(vec2 pixel) {
 	if (pixel.x < 0.0 || pixel.y < 0.0 || pixel.x >= mask_pixels.x || pixel.y >= mask_pixels.y) {
@@ -111,7 +125,11 @@ void fragment() {
 			float fade = 1.0 - clamp((distance - 1.0) / max(rim_width, 1.0), 0.0, 1.0);
 			fade = mix(1.0, fade, clamp(rim_softness, 0.0, 1.0));
 			float grain = mix(1.0, hash21(pixel) * 2.0, clamp(rim_grain, 0.0, 1.0));
-			result = vec4(rim_color.rgb, rim_color.a * clamp(rim_strength * fade * grain, 0.0, 1.0));
+			float light = light_at(pixel);
+			result = vec4(
+				rim_color.rgb,
+				rim_color.a * clamp(rim_strength * fade * grain * light, 0.0, 1.0)
+			);
 		}
 	}
 	COLOR = result;

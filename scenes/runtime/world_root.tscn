@@ -16,6 +16,7 @@
 [ext_resource type="Script" uid="uid://ucenmxbdpetr" path="res://addons/fluid_kit/runtime/water/water_grid.gd" id="13_grid"]
 [ext_resource type="Script" uid="uid://dxuog2of6kyji" path="res://scripts/world/backdrop_field.gd" id="14_backdrop"]
 [ext_resource type="Script" path="res://scripts/world/terrain_highlight.gd" id="15_highlight"]
+[ext_resource type="Script" path="res://scripts/world/light_field.gd" id="16_light"]
 
 [node name="WorldRoot" type="Node2D" unique_id=1531965248]
 script = ExtResource("1_session")
@@ -59,6 +60,10 @@ script = ExtResource("11_atmosphere")
 sim_hz = 60.0
 gas_refill = 1.0
 push_strength = 2.2
+
+[node name="LightField" type="Node2D" parent="."]
+script = ExtResource("16_light")
+player_path = NodePath("../Player")
 
 [node name="FogOfWar" type="Node2D" parent="." unique_id=896215342]
 z_index = 10

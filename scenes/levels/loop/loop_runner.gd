@@ -19,6 +19,7 @@ func _ready() -> void:
 	var water := world_root.get_node_or_null("WaterField")
 	var water_grid := world_root.get_node_or_null("WaterGrid")
 	var atmosphere := world_root.get_node_or_null("Atmosphere")
+	var light_field := world_root.get_node_or_null("LightField")
 	if fog != null:
 		world_root.call("register_room_extension", fog)
 	if crumble != null:
@@ -29,6 +30,8 @@ func _ready() -> void:
 		world_root.call("register_room_extension", water_grid)
 	if atmosphere != null:
 		world_root.call("register_room_extension", atmosphere)
+	if light_field != null:
+		world_root.call("register_room_extension", light_field)
 	if world_root.has_method("bind_settings_source"):
 		world_root.call("bind_settings_source", GlobalSettings)
 	_wire_persistence_bridge(fog)
