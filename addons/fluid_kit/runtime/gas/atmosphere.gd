@@ -651,7 +651,10 @@ func _build_render() -> void:
 	_quad.mesh = mist_mesh
 	_quad.scale = _room_rect.size
 	_quad.position = _room_rect.position + _room_rect.size * 0.5
-	_quad.z_index = 10
+	# Below the light passes (shade 8, glow 9) so the mist is darkened like
+
+	# everything else; the fog still covers it.
+	_quad.z_index = 5
 	_quad.z_as_relative = false
 	_quad.material = _material
 	_quad.visible = _enabled
