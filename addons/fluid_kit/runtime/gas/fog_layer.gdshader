@@ -40,6 +40,15 @@ uniform vec4 light2_color : source_color = vec4(1.0, 0.8, 0.5, 1.0);
 uniform vec4 light3 = vec4(0.0, 0.0, 1.0, 0.0);
 uniform vec4 light3_color : source_color = vec4(1.0, 0.8, 0.5, 1.0);
 
+// The room light map (see LightField). It is taken as a *maximum* with the four
+// authored lights above instead of replacing them: the authored lights keep the
+// wide, soft falloff the mist already had, and the map adds the lantern's real
+// shape and the shadows walls cast, so gas behind a wall no longer glows.
+uniform sampler2D light_tex : filter_linear, repeat_disable;
+uniform vec2 light_pixels = vec2(320.0, 180.0);
+uniform float map_gain = 1.0;
+uniform float map_weight = 1.4;
+
 float hash21(vec2 p) {
 	p = fract(p * vec2(123.34, 456.21));
 	p += dot(p, p + 45.32);
@@ -112,6 +121,12 @@ void fragment() {
 	lit += light_term(world, light1, light1_color, light_sum);
 	lit += light_term(world, light2, light2_color, light_sum);
 	lit += light_term(world, light3, light3_color, light_sum);
+	vec3 map_sample = texture(light_tex, (world + 0.5) / light_pixels).rgb;
+	float map_lit = clamp(dot(map_sample, vec3(0.3, 0.59, 0.11)) * map_gain, 0.0, 1.0);
+	if (map_lit > 0.0) {
+		lit = max(lit, map_lit * map_weight);
+		light_sum = max(light_sum, map_sample * map_weight);
+	}
 
 	color = mix(color, lit_tint.rgb * color * 1.6, clamp(lit * 0.55, 0.0, 0.8));
 	color += light_sum * 0.22;

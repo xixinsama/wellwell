@@ -33,6 +33,13 @@ uniform vec4 ripple_2 = vec4(0.0);
 uniform float ripple_amplitude = 3.6;
 uniform float ripple_speed = 64.0;
 uniform float ripple_damping = 1.1;
+// Room light map (see LightField). The surface mirrors the light that reaches it:
+// a bright band right under the surface plus a drifting sparkle, so a lantern
+// next to a pool shows up in the water.
+uniform sampler2D light_tex : filter_linear, repeat_disable;
+uniform vec2 light_pixels = vec2(320.0, 180.0);
+uniform float light_gain = 1.0;
+uniform float reflection_strength = 0.8;
 
 float hash21(vec2 p) {
 	p = fract(p * vec2(123.34, 456.21));
@@ -76,6 +83,12 @@ float ripple_offset(vec4 ripple, float world_x, float world_y) {
 	float wave = cos((distance - front) * 0.8);
 	float decay = exp(-age * ripple_damping);
 	return wave * ring * envelope * decay * vertical * ripple.w * ripple_amplitude;
+}
+
+float light_at(vec2 world) {
+	vec2 uv = (world + 0.5) / light_pixels;
+	vec3 light = texture(light_tex, uv).rgb;
+	return clamp(dot(light, vec3(0.3, 0.59, 0.11)) * light_gain, 0.0, 1.0);
 }
 
 void fragment() {
@@ -123,6 +136,16 @@ void fragment() {
 		// Faint light bands drifting along the bottom of the body.
 		float caustic = sin(world.x * 0.55 + TIME * 1.1) * sin(world.y * 0.85 - TIME * 0.7);
 		color += clamp(caustic, 0.0, 1.0) * caustic_strength * (1.0 - t * 0.5);
+	}
+	// Reflection: the body mirrors the light, strongest right under the surface
+	// and fading with depth, with a pixel sparkle drifting on top of it.
+	float lit = light_at(world);
+	if (lit > 0.01) {
+		float under = exp(-under_surface / 10.0);
+		color += mix(shallow_color.rgb, crest_color.rgb, 0.65) * lit * under * reflection_strength;
+		float sparkle = step(0.74, value_noise(vec2(world.x * 0.9, world.y * 0.4 + TIME * 4.0)));
+		color += crest_color.rgb * sparkle * lit * 0.4 * reflection_strength;
+		alpha = clamp(alpha + lit * under * 0.16, 0.0, 1.0);
 	}
 	COLOR = vec4(color, alpha);
 }

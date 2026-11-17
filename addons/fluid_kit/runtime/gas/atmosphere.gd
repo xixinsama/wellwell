@@ -97,6 +97,10 @@ var _solid_mask := PackedByteArray()
 var _mask_columns := 0
 var _mask_rows := 0
 var _static_lights: Array[Node] = []
+## Room light map (see LightField). Kept in sync so the mist is lit by the same
+## map as everything else, walls and shadows included.
+var _light_texture: Texture2D
+var _light_pixels := Vector2i.ZERO
 var _settings_source: Object
 var _water: Node
 var _water_mask := PackedByteArray()
@@ -590,6 +594,25 @@ func _collect_vents() -> Array[Dictionary]:
 	return result
 
 
+## Called by LightField when a room is bound: the mist takes the same light map,
+## so a lamp behind a wall stops lighting the gas on the near side.
+func set_light_field(texture: Texture2D, pixels: Vector2i, _origin_pixels: Vector2i) -> void:
+	_light_texture = texture
+	_light_pixels = pixels
+	_apply_light_field()
+
+
+func _apply_light_field() -> void:
+	if _material == null:
+		return
+	_material.set_shader_parameter("light_tex", _light_texture)
+	_material.set_shader_parameter("light_pixels", Vector2(_light_pixels))
+	_material.set_shader_parameter("map_gain", 1.0)
+	# An unbound sampler reads as white, which would light the whole mist, so the
+	# map only participates when a room actually handed one over.
+	_material.set_shader_parameter("map_weight", 1.4 if _light_texture != null else 0.0)
+
+
 func _build_render() -> void:
 	_material = ShaderMaterial.new()
 	_material.shader = FOG_SHADER
@@ -604,6 +627,7 @@ func _build_render() -> void:
 	_material.set_shader_parameter("light_alpha", light_alpha)
 	_material.set_shader_parameter("noise_amount", noise_amount)
 	_material.set_shader_parameter("lit_tint", lit_color)
+	_apply_light_field()
 
 	var solid_bytes := PackedByteArray()
 	solid_bytes.resize(_mask_columns * _mask_rows)

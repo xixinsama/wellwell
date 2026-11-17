@@ -61,6 +61,8 @@ const WATER_GROUP := &"water_field"
 ## Optional splash effect scene spawned on every impact. The plugin only emits
 ## `splash_requested`; the game assigns its own effect scene here.
 @export var splash_scene: PackedScene
+## How strongly the surface mirrors the room light map. 0 disables it.
+@export_range(0.0, 2.0, 0.01) var water_reflection := 0.8
 
 var _sim: WaterSimulation
 var _columns := 0
@@ -85,6 +87,9 @@ var _steps := 0
 var _texture_updates := 0
 var _upload_accumulator := 0.0
 var _ripples: Array[Vector4] = []
+## Room light map (see LightField), for the surface reflection.
+var _light_texture: Texture2D
+var _light_pixels := Vector2i.ZERO
 
 
 func _ready() -> void:
@@ -532,6 +537,25 @@ func _column_index(world_x: float) -> int:
 	return mini(int((world_x - _origin_x) / COLUMN_WIDTH), _columns - 1)
 
 
+## Called by LightField when a room is bound: the surface mirrors the light.
+func set_light_field(texture: Texture2D, pixels: Vector2i, _origin_pixels: Vector2i) -> void:
+	_light_texture = texture
+	_light_pixels = pixels
+	_apply_light_field()
+
+
+func _apply_light_field() -> void:
+	if _material == null:
+		return
+	_material.set_shader_parameter("light_tex", _light_texture)
+	_material.set_shader_parameter("light_pixels", Vector2(_light_pixels))
+	# An unbound sampler reads as white; keep the reflection off until a room
+	# actually hands a light map over.
+	_material.set_shader_parameter(
+		"reflection_strength", water_reflection if _light_texture != null else 0.0
+	)
+
+
 func _build_render() -> void:
 	var width := float(_columns) * COLUMN_WIDTH
 	_material = ShaderMaterial.new()
@@ -558,7 +582,7 @@ func _build_render() -> void:
 	_quad.z_index = 1
 	_quad.material = _material
 	add_child(_quad)
-
+	_apply_light_field()
 	_image = Image.create(_columns, 1, false, Image.FORMAT_RGBA8)
 	_image.fill(Color(0.0, 0.0, 0.0, 0.0))
 	_texture = ImageTexture.create_from_image(_image)

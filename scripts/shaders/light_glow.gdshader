@@ -9,8 +9,8 @@ uniform sampler2D light_tex : filter_linear, repeat_disable;
 uniform vec2 light_pixels = vec2(320.0, 180.0);
 uniform vec4 glow_color : source_color = vec4(1.0, 0.86, 0.62, 1.0);
 uniform float glow_gain = 0.45;
-// The glow is quantised to a few steps so it stays pixel art.
-uniform float steps = 5.0;
+// Quantise the glow to N steps. 0 keeps it continuous; a low N makes it banded.
+uniform float steps = 0.0;
 
 void fragment() {
 	vec2 px = floor(UV * light_pixels);

@@ -154,14 +154,15 @@ void fragment() {
 		float wobble = (lobes - 0.5) * 2.0 * tendril_pixels;
 		wobble += grain * 0.6 * tendril_pixels;
 		wobble += swell * 2.0 * breath_pixels;
-		// Light bites back into the tendrils. The mask is untouched, so this can
-		// only move the cut, never open up a cell that is still unexplored.
+		// Light pushes the cut outwards, so the shadow recedes where it is lit.
+		// The mask is untouched: this moves the border, it never opens a cell
+		// that is still unexplored.
 		if (light_push_px != 0.0) {
 			vec3 light_sample = texture(light_tex, (px + 0.5) / light_pixels).rgb;
 			float light = clamp(
 				dot(light_sample, vec3(0.3, 0.59, 0.11)) * light_gain, 0.0, 1.0
 			);
-			wobble -= light * light_push_px;
+			wobble += light * light_push_px;
 		}
 
 		float soft = max(edge_softness, 0.001);

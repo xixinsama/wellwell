@@ -39,6 +39,8 @@ const DEPTH_SCALE := 90.0
 @export var foam_color := Color(0.96, 1.0, 1.0, 0.9)
 @export var caustic_strength := 0.14
 @export var splash_scene: PackedScene
+## How strongly the surface mirrors the room light map. 0 disables it.
+@export_range(0.0, 2.0, 0.01) var water_reflection := 0.8
 ## Ripple amplitude in pixels at the impact point. The ripple is drawn by the
 ## surface shader only: the water body is not disturbed, so a splash cannot pump
 ## volume into the pool and costs nothing.
@@ -65,6 +67,9 @@ var _solid_tiles: TileMapLayer
 var _player: Node2D
 var _quad: MeshInstance2D
 var _material: ShaderMaterial
+## Room light map (see LightField), for the surface reflection.
+var _light_texture: Texture2D
+var _light_pixels := Vector2i.ZERO
 var _image: Image
 var _texture: ImageTexture
 var _bytes := PackedByteArray()
@@ -411,6 +416,25 @@ func _world_rect_to_cells(rect: Rect2) -> Rect2i:
 	)
 
 
+## Called by LightField when a room is bound: the surface mirrors the light.
+func set_light_field(texture: Texture2D, pixels: Vector2i, _origin_pixels: Vector2i) -> void:
+	_light_texture = texture
+	_light_pixels = pixels
+	_apply_light_field()
+
+
+func _apply_light_field() -> void:
+	if _material == null:
+		return
+	_material.set_shader_parameter("light_tex", _light_texture)
+	_material.set_shader_parameter("light_pixels", Vector2(_light_pixels))
+	# An unbound sampler reads as white; keep the reflection off until a room
+	# actually hands a light map over.
+	_material.set_shader_parameter(
+		"reflection_strength", water_reflection if _light_texture != null else 0.0
+	)
+
+
 func _build_render(cells: Vector2i) -> void:
 	_material = ShaderMaterial.new()
 	_material.shader = GRID_SHADER
@@ -428,6 +452,7 @@ func _build_render(cells: Vector2i) -> void:
 	_material.set_shader_parameter("ripple_speed", ripple_speed)
 	_material.set_shader_parameter("ripple_damping", ripple_damping)
 	_material.set_shader_parameter("ripple_limit", maxf(float(cell_pixels), 4.0))
+	_apply_light_field()
 	var quad := MeshInstance2D.new()
 	quad.name = "WaterGridSurface"
 	var mesh := QuadMesh.new()
