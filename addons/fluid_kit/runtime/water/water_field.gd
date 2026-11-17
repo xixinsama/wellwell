@@ -30,9 +30,10 @@ const COLUMN_WIDTH := 8.0
 ## Visual ripples: impact x, impact y, age (s), strength. Handed to the surface
 ## shader; the water body itself is never displaced by an impact.
 const RIPPLE_SLOTS := 3
-## Seconds a ripple stays in the list. The amplitude is gone before this, it only
-## keeps the slot busy.
-const RIPPLE_LIFE := 2.0
+## Seconds a ripple stays in the list. This has to be longer than the crest needs to
+## cross the widest basin it lands in and come back off the far wall, or the echo would
+## be cut off mid-flight: 4 s covers a 260 px basin at the default crest speed.
+const RIPPLE_LIFE := 4.0
 ## A ripple carries at least this many columns, so an impact in a narrow channel is a
 ## local bump instead of a one-column spike.
 const RIPPLE_MIN_REACH_CELLS := 8
@@ -41,9 +42,11 @@ const RIPPLE_MIN_REACH_CELLS := 8
 const RIPPLE_BODY_TOLERANCE_CELLS := 2.5
 ## Ripple amplitude in pixels at the impact point.
 const RIPPLE_AMPLITUDE := 3.6
-## Ripple ring speed (px/s) and damping (1/s).
-const RIPPLE_SPEED := 64.0
-const RIPPLE_DAMPING := 1.1
+## Crest speed in px/s and ring-down per second. The crest has to cross the body and
+## come back off its walls inside one ripple life, so it stays fast: a 200 px basin is
+## crossed in 1.3 s.
+const RIPPLE_SPEED := 150.0
+const RIPPLE_DAMPING := 1.4
 ## One waterfall column quad per spill lip.
 const MAX_FALLS := 4
 ## A falling column can widen to this many 8 px columns with a big flow.
@@ -93,10 +96,11 @@ var _steps := 0
 var _texture_updates := 0
 var _upload_accumulator := 0.0
 var _ripples: Array[Vector4] = []
-## 1/e reach in px of the ripple in the same slot of `_ripples`: how far that swell
-## carries. Kept next to the ripple list instead of inside the vector because the
-## shader already uses all four components of it.
-var _ripple_reach: Array[float] = []
+## Edges of the water body each ripple landed in, in world x (left, right), in the
+## same slot of `_ripples`. The shader needs them to mirror the impact across the walls
+## and send the crest back; kept next to the ripple list instead of inside the vector
+## because the shader already uses all four components of it.
+var _ripple_span: Array[Vector2] = []
 ## Room light map (see LightField), for the surface reflection.
 var _light_texture: Texture2D
 var _light_pixels := Vector2i.ZERO
@@ -288,14 +292,14 @@ func request_splash(world_x: float, impact_speed: float) -> void:
 
 
 ## Records a visual ripple at an impact. Older ripples are dropped once the list
-## is full, and `_update_ripples` ages them out. The reach is measured from the water
-## the impact landed in, so the swell covers that body and nothing else.
+## is full, and `_update_ripples` ages them out. The body it landed in is measured from
+## the simulation, so the crest travels to its real walls and echoes back off them.
 func _add_ripple(world_x: float, surface_y: float, energy: float) -> void:
 	_ripples.push_front(Vector4(world_x, surface_y, 0.0, 0.55 + energy))
-	_ripple_reach.push_front(_measure_ripple_reach(world_x, surface_y))
+	_ripple_span.push_front(_measure_ripple_span(world_x, surface_y))
 	while _ripples.size() > RIPPLE_SLOTS:
 		_ripples.pop_back()
-		_ripple_reach.pop_back()
+		_ripple_span.pop_back()
 	_apply_ripples()
 
 
@@ -308,7 +312,7 @@ func _update_ripples(delta: float) -> void:
 		_ripples[index] = ripple
 	while not _ripples.is_empty() and _ripples.back().z > RIPPLE_LIFE:
 		_ripples.pop_back()
-		_ripple_reach.pop_back()
+		_ripple_span.pop_back()
 	_apply_ripples()
 
 
@@ -317,46 +321,66 @@ func _apply_ripples() -> void:
 		return
 	for slot in RIPPLE_SLOTS:
 		var value := Vector4.ZERO
+		var span := Vector2.ZERO
 		var reach := 0.0
 		if slot < _ripples.size():
 			var ripple := _ripples[slot]
 			value = Vector4(ripple.x, ripple.y, ripple.z, ripple.w)
-			reach = _ripple_reach[slot]
+			span = _ripple_span[slot]
+			reach = maxf(RIPPLE_MIN_REACH_CELLS * COLUMN_WIDTH, _reach_of(value, span))
 		_material.set_shader_parameter("ripple_%d" % slot, value)
+		_material.set_shader_parameter("ripple_wall_%d" % slot, span)
 		_material.set_shader_parameter("ripple_reach_%d" % slot, reach)
 
 
 func _clear_ripples() -> void:
 	_ripples.clear()
-	_ripple_reach.clear()
+	_ripple_span.clear()
 	_apply_ripples()
 
 
-## 1/e reach in px of the ripple in `index`, 0 when the slot is free. Handy for
-## tests and for the debug HUD: this is how far a landing actually carries.
+## Edges of the water body the ripple in `index` landed in, in world x (left, right).
+func get_ripple_span(index: int) -> Vector2:
+	if index < 0 or index >= _ripple_span.size():
+		return Vector2.ZERO
+	return _ripple_span[index]
+
+
+## 1/e reach in px of the ripple in `index`, 0 when the slot is free: how far from the
+## impact the crest is still a third of its height. Handy for tests and for the debug
+## HUD.
 func get_ripple_reach(index: int) -> float:
-	if index < 0 or index >= _ripple_reach.size():
+	if index < 0 or index >= _ripples.size():
 		return 0.0
-	return _ripple_reach[index]
+	return maxf(
+		RIPPLE_MIN_REACH_CELLS * COLUMN_WIDTH,
+		_reach_of(_ripples[index], _ripple_span[index])
+	)
 
 
-## Half-width of the water body the impact landed in, in px.
+## Distance from an impact to the furthest wall of its body: the geometric attenuation
+## length of that ripple.
+func _reach_of(ripple: Vector4, span: Vector2) -> float:
+	return maxf(absf(ripple.x - span.x), absf(span.y - ripple.x))
+
+
+## Edges of the water body the impact landed in, in world x (left, right).
 ##
-## The ripple is drawn by the shader, so its horizontal size has to come from the
-## simulation: a landing in one end of a two hundred pixel basin has to carry across
-## the whole basin, while the same landing in a narrow channel has to stay local.
-## Walking the column surfaces outwards from the impact and stopping at the first
-## blocked, dry or differently levelled column gives that size, instead of one
-## constant that is wrong for every basin but the one it was tuned on. The walk is
-## contiguous on purpose: probing at a growing distance would step over a dry gap and
-## claim the pool on its other side.
-func _measure_ripple_reach(world_x: float, surface_y: float) -> float:
+## The ripple is drawn by the shader, so the body it belongs to has to come from the
+## simulation: a landing in one end of a two hundred pixel basin has to reach the
+## basin's far wall and come back off it, while the same landing in a narrow channel
+## has to stay local. Walking the column surfaces outwards from the impact and
+## stopping at the first blocked, dry or differently levelled column gives those walls,
+## instead of one constant that is wrong for every basin but the one it was tuned on.
+## The walk is contiguous on purpose: probing at a growing distance would step over a
+## dry gap and claim the pool on its other side.
+func _measure_ripple_span(world_x: float, surface_y: float) -> Vector2:
 	var centre := _column_index(world_x)
-	var minimum := RIPPLE_MIN_REACH_CELLS * COLUMN_WIDTH
 	if centre < 0 or _sim == null:
-		return minimum
+		return Vector2(world_x, world_x)
 	var tolerance := RIPPLE_BODY_TOLERANCE_CELLS * COLUMN_WIDTH
-	var farthest := 0
+	var left := centre
+	var right := centre
 	for direction: int in [-1, 1]:
 		var index := centre
 		while true:
@@ -366,8 +390,14 @@ func _measure_ripple_reach(world_x: float, surface_y: float) -> float:
 			if not _is_same_surface(next, surface_y, tolerance):
 				break
 			index = next
-			farthest = maxi(farthest, absi(next - centre))
-	return maxf(minimum, float(farthest) * COLUMN_WIDTH)
+		if direction < 0:
+			left = index
+		else:
+			right = index
+	return Vector2(
+		_origin_x + float(left) * COLUMN_WIDTH,
+		_origin_x + float(right + 1) * COLUMN_WIDTH
+	)
 
 
 ## True when `index` holds water at (about) `surface_y`: the same body, so the ripple
@@ -639,6 +669,7 @@ func _build_render() -> void:
 	_material.set_shader_parameter("ripple_amplitude", RIPPLE_AMPLITUDE)
 	_material.set_shader_parameter("ripple_speed", RIPPLE_SPEED)
 	_material.set_shader_parameter("ripple_damping", RIPPLE_DAMPING)
+	WaterRipple.apply_to(_material)
 	_quad = MeshInstance2D.new()
 	_quad.name = "WaterSurface"
 	var surface_mesh := QuadMesh.new()

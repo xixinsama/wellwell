@@ -45,19 +45,22 @@ const DEPTH_SCALE := 90.0
 ## surface shader only: the water body is not disturbed, so a splash cannot pump
 ## volume into the pool and costs nothing.
 @export_range(0.0, 8.0, 0.1) var ripple_amplitude := 3.6
-## How fast the ripple ring travels outwards, px/s. Lower is a slower, heavier
-## swell.
-@export_range(20.0, 240.0, 5.0) var ripple_speed := 64.0
-## Ripple damping per second. Lower keeps the swell alive for longer.
-@export_range(0.2, 6.0, 0.1) var ripple_damping := 1.1
+## How fast the crest travels outwards, px/s. The crest has to cross the body and come
+## back off its walls inside one ripple life, so this stays fast: a 200 px pool is
+## crossed in 1.3 s. Lower is a slower, heavier swell.
+@export_range(20.0, 400.0, 5.0) var ripple_speed := 150.0
+## Ring-down of one crest after it passed a column, per second. Lower keeps the swell
+## alive for longer.
+@export_range(0.2, 6.0, 0.1) var ripple_damping := 1.4
 @export var debug_stats := false
 
 ## Visual ripples: impact x, impact y, age (s), strength. Updated every frame and
 ## handed to the shader; the oldest one is dropped when the list is full.
 const RIPPLE_SLOTS := 3
-## Seconds a ripple stays in the list. The amplitude is gone before this, it only
-## keeps the slot busy.
-const RIPPLE_LIFE := 2.0
+## Seconds a ripple stays in the list. This has to be longer than the crest needs to
+## cross the widest body it lands in and come back off the far wall, or the echo would
+## be cut off mid-flight: 4 s covers a 260 px pool at the default crest speed.
+const RIPPLE_LIFE := 4.0
 ## A ripple carries at least this many cells, so an impact in a narrow stream or a
 ## one-column ledge is a local bump instead of a one-pixel spike.
 const RIPPLE_MIN_REACH_CELLS := 8
@@ -88,10 +91,11 @@ var _uploads := 0
 var _region_volume := 0.0
 var _region_cells := 0
 var _ripples: Array[Vector4] = []
-## 1/e reach in px of the ripple in the same slot of `_ripples`: how far that swell
-## carries. Kept next to the ripple list instead of inside the vector because the
-## shader already uses all four components of it.
-var _ripple_reach: Array[float] = []
+## Edges of the water body each ripple landed in, in world x (left, right), in the
+## same slot of `_ripples`. The shader needs them to mirror the impact across the walls
+## and send the crest back; kept next to the ripple list instead of inside the vector
+## because the shader already uses all four components of it.
+var _ripple_span: Array[Vector2] = []
 
 
 func _ready() -> void:
@@ -282,14 +286,14 @@ func _notify_splash(point: Vector2, impact_speed: float) -> void:
 
 
 ## Records a visual ripple at `point`. Older ripples are dropped once the list is
-## full, and `_update_ripples` ages them out. The reach is measured from the water
-## the impact landed in, so the swell covers that body and nothing else.
+## full, and `_update_ripples` ages them out. The body it landed in is measured from
+## the simulation, so the crest travels to its real walls and echoes back off them.
 func _add_ripple(point: Vector2, energy: float) -> void:
 	_ripples.push_front(Vector4(point.x, point.y, 0.0, 0.55 + energy))
-	_ripple_reach.push_front(_measure_ripple_reach(point, point.y))
+	_ripple_span.push_front(_measure_ripple_span(point, point.y))
 	while _ripples.size() > RIPPLE_SLOTS:
 		_ripples.pop_back()
-		_ripple_reach.pop_back()
+		_ripple_span.pop_back()
 	_apply_ripples()
 
 
@@ -304,7 +308,7 @@ func _update_ripples(delta: float) -> void:
 		changed = true
 	while not _ripples.is_empty() and _ripples.back().z > RIPPLE_LIFE:
 		_ripples.pop_back()
-		_ripple_reach.pop_back()
+		_ripple_span.pop_back()
 	if changed:
 		_apply_ripples()
 
@@ -314,44 +318,65 @@ func _apply_ripples() -> void:
 		return
 	for slot in RIPPLE_SLOTS:
 		var value := Vector4.ZERO
+		var span := Vector2.ZERO
 		var reach := 0.0
 		if slot < _ripples.size():
 			var ripple := _ripples[slot]
 			value = Vector4(ripple.x, ripple.y, ripple.z, ripple.w)
-			reach = _ripple_reach[slot]
+			span = _ripple_span[slot]
+			reach = maxf(RIPPLE_MIN_REACH_CELLS * float(cell_pixels), _reach_of(value, span))
 		_material.set_shader_parameter("ripple_%d" % slot, value)
+		_material.set_shader_parameter("ripple_wall_%d" % slot, span)
 		_material.set_shader_parameter("ripple_reach_%d" % slot, reach)
 
 
 func _clear_ripples() -> void:
 	_ripples.clear()
-	_ripple_reach.clear()
+	_ripple_span.clear()
 	_apply_ripples()
 
 
-## 1/e reach in px of the ripple in `index`, 0 when the slot is free. Handy for
-## tests and for the debug HUD: this is how far a landing actually carries.
+## Edges of the water body the ripple in `index` landed in, in world x (left, right).
+func get_ripple_span(index: int) -> Vector2:
+	if index < 0 or index >= _ripple_span.size():
+		return Vector2.ZERO
+	return _ripple_span[index]
+
+
+## 1/e reach in px of the ripple in `index`, 0 when the slot is free: how far from the
+## impact the crest is still a third of its height. Handy for tests and for the debug
+## HUD.
 func get_ripple_reach(index: int) -> float:
-	if index < 0 or index >= _ripple_reach.size():
+	if index < 0 or index >= _ripples.size():
 		return 0.0
-	return _ripple_reach[index]
+	return maxf(
+		RIPPLE_MIN_REACH_CELLS * float(cell_pixels),
+		_reach_of(_ripples[index], _ripple_span[index])
+	)
 
 
-## Half-width of the water body the impact landed in, in px.
+## Distance from an impact to the furthest wall of its body: the geometric attenuation
+## length of that ripple.
+func _reach_of(ripple: Vector4, span: Vector2) -> float:
+	return maxf(absf(ripple.x - span.x), absf(span.y - ripple.x))
+
+
+## Edges of the water body the impact landed in, in world x (left, right).
 ##
-## The ripple is drawn by the shader, so its horizontal size has to come from the
-## simulation: a landing in the corner of a 220 px puddle has to carry across the
-## whole puddle, while the same landing in a narrow stream has to stay local. Walking
-## the surface outwards from the impact column by column and stopping at the first
-## cell that is dry, a different pool or a drop gives that size, instead of one
-## constant that is wrong for every body but the one it was tuned on. The walk is
+## The ripple is drawn by the shader, so the body it belongs to has to come from the
+## simulation: a landing in the corner of a 220 px puddle has to reach the puddle's far
+## wall and come back off it, while the same landing in a narrow stream has to stay
+## local. Walking the surface outwards from the impact column by column and stopping at
+## the first cell that is dry, a different pool or a drop gives those walls, instead of
+## one constant that is wrong for every body but the one it was tuned on. The walk is
 ## contiguous on purpose: probing at a growing distance would step over a dry gap and
 ## claim the water on its other side.
-func _measure_ripple_reach(point: Vector2, surface_y: float) -> float:
+func _measure_ripple_span(point: Vector2, surface_y: float) -> Vector2:
 	var step := maxf(float(cell_pixels), 1.0)
 	var tolerance := RIPPLE_BODY_TOLERANCE_CELLS * step
 	var column := int(floor((point.x - _room_rect.position.x) / step))
-	var farthest := 0
+	var left := column
+	var right := column
 	for direction: int in [-1, 1]:
 		var index := column
 		while true:
@@ -362,8 +387,14 @@ func _measure_ripple_reach(point: Vector2, surface_y: float) -> float:
 			if not _is_same_surface(probe_x, surface_y, tolerance):
 				break
 			index = next
-			farthest = maxi(farthest, absi(next - column))
-	return maxf(RIPPLE_MIN_REACH_CELLS * step, float(farthest) * step)
+		if direction < 0:
+			left = index
+		else:
+			right = index
+	return Vector2(
+		_room_rect.position.x + float(left) * step,
+		_room_rect.position.x + float(right + 1) * step
+	)
 
 
 ## True when `world_x` holds water at (about) `surface_y`: the same body, so the
@@ -526,6 +557,7 @@ func _build_render(cells: Vector2i) -> void:
 	_material.set_shader_parameter("ripple_speed", ripple_speed)
 	_material.set_shader_parameter("ripple_damping", ripple_damping)
 	_material.set_shader_parameter("ripple_limit", maxf(float(cell_pixels), 4.0))
+	WaterRipple.apply_to(_material)
 	_apply_light_field()
 	var quad := MeshInstance2D.new()
 	quad.name = "WaterGridSurface"

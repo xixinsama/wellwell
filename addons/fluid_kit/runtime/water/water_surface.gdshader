@@ -30,15 +30,42 @@ uniform float foam_height = 2.5;
 uniform vec4 ripple_0 = vec4(0.0);
 uniform vec4 ripple_1 = vec4(0.0);
 uniform vec4 ripple_2 = vec4(0.0);
+// The water body each ripple landed in: the world x of its left and right edge.
+// WaterField measures them from the simulation, so the mirrors below are real walls of
+// the basin and never an arbitrary distance.
+uniform vec2 ripple_wall_0 = vec2(0.0);
+uniform vec2 ripple_wall_1 = vec2(0.0);
+uniform vec2 ripple_wall_2 = vec2(0.0);
 // How far each ripple carries, in px: the 1/e distance of its swell. WaterField
-// measures the water body the impact landed in and hands its half-width over, so
-// one landing moves the *whole* body instead of a patch around the impact point.
+// measures the water body the impact landed in and hands its half-width over.
 uniform float ripple_reach_0 = 24.0;
 uniform float ripple_reach_1 = 24.0;
 uniform float ripple_reach_2 = 24.0;
 uniform float ripple_amplitude = 3.6;
-uniform float ripple_speed = 64.0;
-uniform float ripple_damping = 1.1;
+// Crest speed in px/s. The crest has to cross the basin inside one ripple life, so
+// this is fast enough to cross a two hundred pixel basin and come back.
+uniform float ripple_speed = 150.0;
+// Ring-down of one crest after it passed a column, per second.
+uniform float ripple_damping = 1.4;
+// Angular frequency of one crest, rad/s. One cycle is a single heavy swell.
+uniform float ripple_omega = 7.5;
+// Share of the crest that comes back off the edges of the basin.
+uniform float ripple_reflection = 0.55;
+// Multi-layer surface. The same wave is drawn three times with its own age offset,
+// speed and amplitude, and the three crests sit at slightly different depths: the back
+// one lower and darker, the front one higher and brighter. A passing wave then shows
+// three crests out of phase instead of one flat line, which is what gives the body
+// thickness (Rain World builds its water the same way).
+uniform float layer_back_delay = 0.10;
+uniform float layer_back_speed = 0.92;
+uniform float layer_back_amplitude = 0.60;
+uniform float layer_back_drop = 1.5;
+uniform float layer_back_shade = 0.22;
+uniform float layer_front_delay = -0.06;
+uniform float layer_front_speed = 1.12;
+uniform float layer_front_amplitude = 0.50;
+uniform float layer_front_rise = 1.5;
+uniform float layer_front_lift = 0.55;
 // Room light map (see LightField). The surface mirrors the light that reaches it:
 // a bright band right under the surface plus a drifting sparkle, so a lantern
 // next to a pool shows up in the water.
@@ -64,25 +91,47 @@ float value_noise(vec2 p) {
 	return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
 }
 
-// Height of the surface from one impact.
+// One crest that has been travelling for `age` seconds and is `distance` px from the
+// source it belongs to.
 //
-// The landing sends a ring train outwards: the pattern is a cosine of how far the
-// crest has travelled (`speed` px/s), so the rings visibly leave the impact point,
-// and the train fades out at `ripple_damping` per second. The ripple also fades
-// with the vertical distance to the surface it was created on, so a splash in one
-// pool cannot wobble the surface of another. Purely visual - the height field never
-// moves.
+// Zero until the crest arrives: the surface of a basin must stay exactly at rest ahead
+// of the wave, so the disturbance spreads out from the impact instead of the whole
+// body lifting at once (the previous model had a static envelope times a cosine of
+// `distance - speed * age`, which at small ages puts every column at nearly the same
+// phase: the entire basin bulged together).
 //
-// The amplitude must not die next to the impact. This ripple is the only thing that
-// moves the surface of a settled basin, so an envelope that is gone after a cell or
-// two does not read as a quiet ripple: it reads as a hard vertical edge through the
-// middle of one basin, with one end wobbling and the rest of the same body frozen
-// flat (the old `exp(-distance / (18 + 22 * w))` envelope plus a +-25 px Gaussian on
-// the ring front dropped below one rendered pixel about 40 px from the landing).
-// `reach` is therefore the measured half-width of the water body the impact landed
-// in (WaterField measures it from the simulation), which keeps the swell inside its
-// own body and above the one pixel that makes it visible everywhere in that body.
-float ripple_offset(vec4 ripple, float reach, float world_x, float world_y) {
+// After arrival the surface rises once and falls once (`ripple_omega`), rings down at
+// `ripple_damping`, and is quieter the further it travelled (`reach`).
+float retarded_wave(float age, float distance, float speed, float reach) {
+	float travel = distance / max(speed, 1.0);
+	if (age <= travel) {
+		return 0.0;
+	}
+	float local = age - travel;
+	float swell = sin(local * ripple_omega) * exp(-local * ripple_damping);
+	return swell * exp(-distance / max(reach, 1.0));
+}
+
+// Displacement of one surface of a body from one impact, at one column.
+//
+// The direct crest plus its two mirrors in the body edges (method of images): a crest
+// that hits the edge comes back, so a column `d` px from the impact that also sits
+// `e` px from a wall moves again about `(d + e) / speed` after the landing. The mirrors
+// are the measured edges of the body, so the echo can only exist inside the basin that
+// was actually splashed - never across a dry gap.
+//
+// `age_offset`, `speed_factor` and `amplitude_factor` are per layer: the three visible
+// surfaces run the same wave, shifted in time and scaled, so they drift out of phase
+// while the crest passes.
+//
+// The ripple is a point on *one* surface, so it also decays with the vertical distance
+// to that surface: a splash in one pool cannot wobble the surface of another. Purely
+// visual - the height field never moves.
+float ripple_surface(
+	vec4 ripple, vec2 walls, float reach,
+	float age_offset, float speed_factor, float amplitude_factor,
+	float world_x, float world_y
+) {
 	if (ripple.w <= 0.001) {
 		return 0.0;
 	}
@@ -90,13 +139,34 @@ float ripple_offset(vec4 ripple, float reach, float world_x, float world_y) {
 	if (vertical < 0.01) {
 		return 0.0;
 	}
-	float age = ripple.z;
-	float distance = abs(world_x - ripple.x);
-	float envelope = exp(-distance / max(reach, 1.0));
-	float front = ripple_speed * age;
-	float wave = cos((distance - front) * 0.8);
-	float decay = exp(-age * ripple_damping);
-	return wave * envelope * decay * vertical * ripple.w * ripple_amplitude;
+	float age = ripple.z - age_offset;
+	if (age <= 0.0) {
+		return 0.0;
+	}
+	float speed = ripple_speed * speed_factor;
+	float total = retarded_wave(age, abs(world_x - ripple.x), speed, reach);
+	total += ripple_reflection
+		* retarded_wave(age, abs(world_x - (2.0 * walls.x - ripple.x)), speed, reach);
+	total += ripple_reflection
+		* retarded_wave(age, abs(world_x - (2.0 * walls.y - ripple.x)), speed, reach);
+	return total * vertical * ripple.w * ripple_amplitude * amplitude_factor;
+}
+
+// The three surfaces of the body at one column, from the three ripple slots.
+// Layer 0 is the back surface, 1 the simulated one and 2 the front one.
+float ripple_layer(int layer, float world_x, float world_y) {
+	float age_offset = layer == 0 ? layer_back_delay
+		: (layer == 2 ? layer_front_delay : 0.0);
+	float speed_factor = layer == 0 ? layer_back_speed
+		: (layer == 2 ? layer_front_speed : 1.0);
+	float amplitude_factor = layer == 0 ? layer_back_amplitude
+		: (layer == 2 ? layer_front_amplitude : 1.0);
+	return ripple_surface(ripple_0, ripple_wall_0, ripple_reach_0,
+			age_offset, speed_factor, amplitude_factor, world_x, world_y)
+		+ ripple_surface(ripple_1, ripple_wall_1, ripple_reach_1,
+			age_offset, speed_factor, amplitude_factor, world_x, world_y)
+		+ ripple_surface(ripple_2, ripple_wall_2, ripple_reach_2,
+			age_offset, speed_factor, amplitude_factor, world_x, world_y);
 }
 
 float light_at(vec2 world) {
@@ -117,21 +187,28 @@ void fragment() {
 	if (data.a < 0.5) {
 		discard;
 	}
-	float surface_y = field_top + data.r * field_height;
-	float ripple = ripple_offset(ripple_0, ripple_reach_0, world.x, surface_y)
-		+ ripple_offset(ripple_1, ripple_reach_1, world.x, surface_y)
-		+ ripple_offset(ripple_2, ripple_reach_2, world.x, surface_y);
-	surface_y += clamp(ripple, -6.0, 6.0);
+	// The three surfaces of this column: the simulated one, the back one slightly
+	// deeper and the front one slightly higher. Each carries its own ripple phase.
+	float mid_y = field_top + data.r * field_height;
+	float back_y = mid_y + layer_back_drop;
+	float front_y = mid_y - layer_front_rise;
+	mid_y -= clamp(ripple_layer(1, world.x, mid_y), -6.0, 6.0);
+	back_y -= clamp(ripple_layer(0, world.x, back_y), -6.0, 6.0);
+	front_y -= clamp(ripple_layer(2, world.x, front_y), -6.0, 6.0);
+	// The nearest surface is the front one, so it decides where the water starts.
+	if (world.y < front_y) {
+		discard;
+	}
 	float floor_y = field_top + data.g * field_height;
-	if (world.y < surface_y || world.y >= floor_y) {
+	if (world.y >= floor_y) {
 		discard;
 	}
 
-	float depth = max(floor_y - surface_y, 1.0);
-	float t = clamp((world.y - surface_y) / depth, 0.0, 1.0);
+	float depth = max(floor_y - mid_y, 1.0);
+	float t = clamp((world.y - mid_y) / depth, 0.0, 1.0);
 	vec3 color = mix(shallow_color.rgb, deep_color.rgb, smoothstep(0.0, 0.8, t));
 	float alpha = mix(shallow_color.a, deep_color.a, t);
-	float under_surface = world.y - surface_y;
+	float under_surface = world.y - mid_y;
 
 	if (under_surface < 1.0) {
 		// One pixel of crest: the brightest part of the surface.
@@ -150,6 +227,17 @@ void fragment() {
 		// Faint light bands drifting along the bottom of the body.
 		float caustic = sin(world.x * 0.55 + TIME * 1.1) * sin(world.y * 0.85 - TIME * 0.7);
 		color += clamp(caustic, 0.0, 1.0) * caustic_strength * (1.0 - t * 0.5);
+	}
+	// Multi-layer depth: the band above the simulated surface is the raised lip of the
+	// nearest water (brightest, foamiest), and everything below the back surface is
+	// water seen through all three layers (darker, less saturated). Each layer runs the
+	// wave with its own delay, so the three bands wave out of phase instead of moving
+	// as one line.
+	if (world.y < mid_y) {
+		color = mix(color, foam_color.rgb, layer_front_lift);
+		alpha = mix(alpha, foam_color.a, layer_front_lift);
+	} else if (world.y >= back_y) {
+		color = mix(color, deep_color.rgb, layer_back_shade);
 	}
 	// Reflection: a *surface* highlight, not a glow filling the body. The crest
 	// pixel takes the light, then a couple of hard rows under it, thinning out
