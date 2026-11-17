@@ -231,6 +231,14 @@ func get_light_texture() -> Texture2D:
 	return _texture
 
 
+## The light map as an image. Debug/inspection only: reading a render target back
+## stalls the GPU for a frame, so nothing in the game path may call this.
+func get_light_image() -> Image:
+	if _texture == null:
+		return null
+	return _texture.get_image()
+
+
 func get_light_pixels() -> Vector2i:
 	return _room_pixels
 

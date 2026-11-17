@@ -137,6 +137,13 @@ func get_mask_texture() -> Texture2D:
 	return _mask_texture
 
 
+## The silhouette as an image. Debug/inspection only (render-target read back).
+func get_mask_image() -> Image:
+	if _mask_texture == null:
+		return null
+	return _mask_texture.get_image()
+
+
 func get_shadow_quad() -> Sprite2D:
 	return _quad
 

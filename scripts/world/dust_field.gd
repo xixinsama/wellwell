@@ -17,6 +17,10 @@ extends Node2D
 
 const GROUP := &"dust_field"
 const CHUNK_PIXELS := Vector2i(320, 180)
+## Redraws per second. A mote moves well under a pixel per frame and the twinkle is
+## a slow pulse, so quantising the clock here is free visually and saves most of the
+## draw cost.
+const REDRAW_HZ := 8.0
 
 ## Motes in a whole room. A screen is 320x180 px, so 40 is already a visible
 ## murmur without turning into snow.
@@ -52,6 +56,7 @@ var _room_pixels := Vector2i.ZERO
 var _room_bound := false
 var _enabled := true
 var _time := 0.0
+var _redraw_step := -1
 var _player: Node2D
 var _motes := PackedVector2Array()
 var _phases := PackedFloat32Array()
@@ -142,6 +147,14 @@ func _process(delta: float) -> void:
 	if not _room_bound:
 		return
 	_time += maxf(delta, 0.0)
+	# A mote is one pixel and drifts at a few px/s, so most frames would redraw the
+	# exact same picture. Quantise the animation clock and only repaint when the
+	# quantised time moved: the cost drops from one draw per frame to ~8 per second
+	# without any visible difference at this pixel scale.
+	var step := int(_time * REDRAW_HZ)
+	if step == _redraw_step:
+		return
+	_redraw_step = step
 	queue_redraw()
 
 

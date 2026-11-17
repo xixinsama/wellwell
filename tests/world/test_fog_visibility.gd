@@ -727,6 +727,74 @@ func _assert_zone_fade_is_gradual(failures: Array[String]) -> void:
 ## The focus spotlight is a shader term now, because it follows the hero every
 ## frame. What the mask material must receive: the zone rectangle, a strength that
 ## ramps up, and a centre that tracks the player.
+## Flipping a fade back mid-wave must not teleport the block: each cell keeps its
+## own start opacity, so the zone stays continuous when the hero steps back in
+## while it is still opening (that reversal is what a player triggers by walking
+## along a zone edge).
+func _assert_fade_reversal_stays_continuous(failures: Array[String]) -> void:
+	var root := Node2D.new()
+	var player := Node2D.new()
+	player.position = Vector2(52.0, 12.0)
+	root.add_child(player)
+	var terrain := _make_terrain({})
+	root.add_child(terrain)
+	var zone := _make_zone(root, DARK_MODE, Vector2i(1, 1), Vector2i(6, 6), "reversal_zone")
+	zone.set("restore_on_exit", true)
+	var fog: Node2D = FOG_OF_WAR.new() as Node2D
+	fog.cell_size = Vector2i(8, 8)
+	fog.chunk_size_pixels = Vector2i(320, 180)
+	fog.zone_reveal_seconds = 0.9
+	fog.zone_reveal_stagger = 0.02
+	fog.zone_restore_seconds = 0.8
+	fog.zone_restore_stagger = 0.02
+	fog.call("bind_player", player)
+	root.add_child(fog)
+	add_child(root)
+	var room: Resource = _make_room("reversal_room", Vector2i.ZERO, Vector2i(1, 1))
+	fog.call("bind_room", room, terrain, Vector2i.ZERO)
+	var opened_at := float(Time.get_ticks_msec()) / 1000.0
+	player.position = Vector2(24.0, 24.0)
+	fog.call("bind_player", player)
+	fog.call("reveal_from_player")
+	# Halfway through the opening wave, walk back out.
+	fog.call("_update_mask_image", opened_at + 0.45)
+	var before := _mask_alpha_samples(fog)
+	var closed_at := float(Time.get_ticks_msec()) / 1000.0
+	player.position = Vector2(52.0, 12.0)
+	fog.call("bind_player", player)
+	fog.call("reveal_from_player")
+	fog.call("_update_mask_image", closed_at)
+	var after := _mask_alpha_samples(fog)
+	if before.size() != after.size() or before.is_empty():
+		failures.append("fade reversal produced no samples")
+	else:
+		var biggest := 0.0
+		for index: int in before.size():
+			biggest = maxf(biggest, absf(before[index] - after[index]))
+		# A single frame of either fade moves at most a few hundredths; picking one
+		# cell's value for the whole block used to jump by ~0.1 or more.
+		if biggest > 0.06:
+			failures.append("fade reversal jumped %.3f in one frame" % biggest)
+	zone.free()
+	root.free()
+
+
+## Opacity of a few fixed cells of the last zone, in a stable order.
+func _mask_alpha_samples(fog: Node2D) -> PackedFloat32Array:
+	var samples := PackedFloat32Array()
+	var mask: Image = fog.call("get_mask_image")
+	if mask == null:
+		return samples
+	for cell: Vector2i in [
+		Vector2i(2, 2), Vector2i(3, 3), Vector2i(4, 2), Vector2i(2, 4), Vector2i(5, 5)
+	]:
+		var rect: Rect2i = fog.call("_mask_cell_rect", cell)
+		if rect.size.x <= 0 or rect.size.y <= 0:
+			continue
+		samples.append(mask.get_pixel(rect.position.x, rect.position.y).a)
+	return samples
+
+
 func _assert_focus_spotlight_reaches_the_shader(failures: Array[String]) -> void:
 	var root := Node2D.new()
 	var player := Node2D.new()

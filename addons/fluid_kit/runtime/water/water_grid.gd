@@ -250,6 +250,12 @@ func get_flow_velocity_at_point(point: Vector2) -> float:
 ## so the surface is taken from the first water column below the top of the room:
 ## prefer `request_splash_at` when the impact point is known, because a room can
 ## hold more than one pool in the same column.
+## The cell texture the shader reads (R fill, G depth above, B motion). Used by the
+## render inspector; it is the CPU-side copy, not a render target.
+func get_cell_image() -> Image:
+	return _image
+
+
 func request_splash(world_x: float, impact_speed: float) -> void:
 	if _sim == null:
 		return

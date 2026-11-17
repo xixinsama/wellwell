@@ -201,6 +201,14 @@ func get_normal_origin() -> Vector2i:
 	return _room_origin_pixels
 
 
+## The authored buffer as an image. Debug/inspection only: a render-target read
+## back stalls the GPU, so nothing in the game path may call this.
+func get_normal_image() -> Image:
+	if _texture == null:
+		return null
+	return _texture.get_image()
+
+
 func has_normal_map() -> bool:
 	return _has_map
 

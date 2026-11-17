@@ -209,11 +209,16 @@ void fragment() {
 
 		// A cell that is fogged, fading or dimmed keeps exactly its own
 		// opacity, so the reveal wave and the focus spotlight stay truthful.
-		// Only a fully revealed cell can still be covered by a tongue, and
-		// that one is solid at the cut and thins out towards its tip.
+		// Only a fully revealed cell can still be covered by a tongue, and that
+		// one is solid at the cut and thins out towards its tip.
+		//
+		// The tongue share is scaled by (1 - opacity) instead of switching at a
+		// threshold: a hard step made the whole border pop the moment a cell
+		// crossed the threshold, which read as a flicker at the start and the end
+		// of every authored zone fade.
 		float past = max(0.0, wobble - distance_px);
 		float tongue = 1.0 - smoothstep(0.0, max(tendril_pixels, 0.5), past);
-		float value = max(centre.a, tongue * (1.0 - step(0.01, centre.a)));
+		float value = max(centre.a, tongue * (1.0 - centre.a));
 
 		// Ordered dither only where the cut is in flight, so the fog interior
 		// stays clean and the border breaks into chunky pixel grain.

@@ -1078,20 +1078,32 @@ func _apply_mask_animation(now: float) -> void:
 		_zone_fades.erase(zone_id)
 
 
-## Starts (or restarts) the fade of one authored zone. When a fade is already
-## running for the same zone the current opacity is picked up, so a hero that
-## bounces in and out of the zone never makes the fog jump.
+## Starts (or restarts) the fade of one authored zone.
+##
+## A fade that is already heading where this one would go is kept as it is: a hero
+## walking along a zone edge toggles the overlap flag every few pixels, and
+## restarting the wave each time would reset its stagger and read as a stutter.
+## When the direction *does* flip (walking back into a zone that is still opening),
+## the start opacity is captured **per cell**, because the running wave has every
+## cell at a different point of the ease: picking one cell's value for the whole
+## block would snap the rest of the zone to it.
 func _start_zone_fade(zone: Node, cells: Dictionary[Vector2i, bool], revealed: bool, now: float) -> void:
 	var seconds := zone_reveal_seconds if revealed else zone_restore_seconds
 	var stagger := zone_reveal_stagger if revealed else zone_restore_stagger
-	var default_from := 1.0 if revealed else 0.0
-	var from := default_from
+	var target := 0.0 if revealed else 1.0
+	var counter := 1.0 - target
 	var zone_id := zone.get_instance_id()
+	var running: Dictionary = {}
 	if _zone_fades.has(zone_id):
-		var running: Dictionary = _zone_fades[zone_id]
-		for cell: Vector2i in running["cells"]:
-			from = _fade_value(running, cell, now)
-			break
+		running = _zone_fades[zone_id]
+		if is_equal_approx(float(running["to"]), target):
+			# Same destination: let the wave finish instead of restarting it.
+			return
+	# Per-cell starting opacity: the running wave's value, or the natural opposite
+	# of the target when this zone was not fading.
+	var from_cells: Dictionary[Vector2i, float] = {}
+	for cell: Vector2i in cells:
+		from_cells[cell] = _fade_value(running, cell, now) if not running.is_empty() else counter
 	var center := _current_player_cell()
 	var reach := _max_cell_distance(center, cells)
 	var span := maxf(seconds, 0.0) + stagger * reach
@@ -1100,8 +1112,8 @@ func _start_zone_fade(zone: Node, cells: Dictionary[Vector2i, bool], revealed: b
 		return
 	_zone_fades[zone_id] = {
 		"cells": cells,
-		"from": from,
-		"to": 0.0 if revealed else 1.0,
+		"from_cells": from_cells,
+		"to": target,
 		"start": now,
 		"seconds": maxf(seconds, 0.001),
 		"stagger": stagger,
@@ -1115,12 +1127,22 @@ func _start_zone_fade(zone: Node, cells: Dictionary[Vector2i, bool], revealed: b
 
 
 ## Smooth opacity of one cell of a fade: every cell waits for its own distance
-## based delay, then eases with a smoothstep so the wave has no hard front.
+## based delay, then eases with a smoothstep so the wave has no hard front. The
+## start value is per cell (`from_cells`), which is what keeps a direction flip
+## mid-wave continuous.
 func _fade_value(fade: Dictionary, cell: Vector2i, now: float) -> float:
+	if fade.is_empty():
+		return 0.0
+	var from := 0.0
+	var starts: Dictionary = fade["from_cells"]
+	if starts.has(cell):
+		from = float(starts[cell])
+	else:
+		from = 1.0 - float(fade["to"])
 	var delay := _fade_delay(fade, cell)
 	var t := clampf((now - float(fade["start"]) - delay) / maxf(float(fade["seconds"]), 0.001), 0.0, 1.0)
 	var eased := t * t * (3.0 - 2.0 * t)
-	return lerpf(float(fade["from"]), float(fade["to"]), eased)
+	return lerpf(from, float(fade["to"]), eased)
 
 
 func _fade_delay(fade: Dictionary, cell: Vector2i) -> float:
