@@ -26,11 +26,15 @@ float bayer4(vec2 p) {
 void fragment() {
 	vec3 glow = texture(source, UV).rgb * strength * tint.rgb;
 	if (levels > 0.5) {
-		// Dither between steps on the design pixel grid.
+		// Dither between steps on the design pixel grid. The ratio is clamped:
+		// a nearly black pixel would otherwise be scaled up by a huge factor and
+		// blow a single pixel out to white.
 		vec2 px = floor(UV * vec2(textureSize(source, 0)) * 2.0);
 		float level = clamp(dot(glow, vec3(0.3, 0.59, 0.11)), 0.0, 1.0);
-		float stepped = floor(level * levels + bayer4(px)) / levels;
-		glow *= (stepped / max(level, 0.0001));
+		if (level > 0.0) {
+			float stepped = floor(level * levels + bayer4(px)) / levels;
+			glow *= clamp(stepped / max(level, 0.08), 0.0, 1.5);
+		}
 	}
 	COLOR = vec4(glow, 1.0);
 }

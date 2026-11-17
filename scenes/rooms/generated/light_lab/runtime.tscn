@@ -5,15 +5,15 @@
 [ext_resource type="Script" path="res://addons/fluid_kit/runtime/water/fluid_region.gd" id="3_iyjjq"]
 [ext_resource type="Script" path="res://scripts/world/fog_zone.gd" id="4_c6jex"]
 
-[node name="RoomRuntimeContent" type="Node2D" unique_id=568633463]
+[node name="RoomRuntimeContent" type="Node2D" unique_id=524648055]
 
-[node name="Entities" type="Node2D" parent="." unique_id=1716803343]
+[node name="Entities" type="Node2D" parent="." unique_id=1637934425]
 
-[node name="StartSpawn" type="Marker2D" parent="Entities" unique_id=218145671]
+[node name="StartSpawn" type="Marker2D" parent="Entities" unique_id=246971271]
 position = Vector2(24, 144)
 script = ExtResource("1_x4dpx")
 
-[node name="SwingingLamp" type="Node2D" parent="Entities" unique_id=696954174]
+[node name="SwingingLamp" type="Node2D" parent="Entities" unique_id=1047819652]
 position = Vector2(144, 40)
 script = ExtResource("2_ai8pr")
 light_id = "swing"
@@ -25,7 +25,7 @@ swing_speed = 0.22
 flicker = 0.12
 flicker_speed = 5.0
 
-[node name="PoolLamp" type="Node2D" parent="Entities" unique_id=1394721221]
+[node name="PoolLamp" type="Node2D" parent="Entities" unique_id=1098742743]
 position = Vector2(264, 96)
 script = ExtResource("2_ai8pr")
 light_id = "pool"
@@ -34,7 +34,7 @@ energy = 0.95
 color = Color(0.72, 0.88, 1, 1)
 flicker = 0.08
 
-[node name="UnoccludedGlow" type="Node2D" parent="Entities" unique_id=2091375461]
+[node name="UnoccludedGlow" type="Node2D" parent="Entities" unique_id=110284087]
 position = Vector2(48, 96)
 script = ExtResource("2_ai8pr")
 light_id = "glow"
@@ -45,7 +45,7 @@ flicker = 0.25
 flicker_speed = 7.0
 casts_shadows = false
 
-[node name="Firefly0" type="Node2D" parent="Entities" unique_id=1236685628]
+[node name="Firefly0" type="Node2D" parent="Entities" unique_id=1986132944]
 position = Vector2(40, 32)
 script = ExtResource("2_ai8pr")
 light_id = "firefly0"
@@ -58,7 +58,7 @@ flicker = 0.45
 flicker_speed = 3.0
 casts_shadows = false
 
-[node name="Firefly1" type="Node2D" parent="Entities" unique_id=1951724623]
+[node name="Firefly1" type="Node2D" parent="Entities" unique_id=56356317]
 position = Vector2(88, 72)
 script = ExtResource("2_ai8pr")
 light_id = "firefly1"
@@ -71,7 +71,7 @@ flicker = 0.45
 flicker_speed = 4.0
 casts_shadows = false
 
-[node name="Firefly2" type="Node2D" parent="Entities" unique_id=1113439882]
+[node name="Firefly2" type="Node2D" parent="Entities" unique_id=1595211444]
 position = Vector2(136, 112)
 script = ExtResource("2_ai8pr")
 light_id = "firefly2"
@@ -84,7 +84,7 @@ flicker = 0.45
 flicker_speed = 5.0
 casts_shadows = false
 
-[node name="Firefly3" type="Node2D" parent="Entities" unique_id=1701022900]
+[node name="Firefly3" type="Node2D" parent="Entities" unique_id=283024960]
 position = Vector2(184, 56)
 script = ExtResource("2_ai8pr")
 light_id = "firefly3"
@@ -96,7 +96,7 @@ wander_speed = 0.21
 flicker = 0.45
 casts_shadows = false
 
-[node name="Firefly4" type="Node2D" parent="Entities" unique_id=1360235054]
+[node name="Firefly4" type="Node2D" parent="Entities" unique_id=1270578034]
 position = Vector2(232, 96)
 script = ExtResource("2_ai8pr")
 light_id = "firefly4"
@@ -109,7 +109,7 @@ flicker = 0.45
 flicker_speed = 7.0
 casts_shadows = false
 
-[node name="Firefly5" type="Node2D" parent="Entities" unique_id=1444366602]
+[node name="Firefly5" type="Node2D" parent="Entities" unique_id=1928717720]
 position = Vector2(40, 40)
 script = ExtResource("2_ai8pr")
 light_id = "firefly5"
@@ -122,16 +122,16 @@ flicker = 0.45
 flicker_speed = 8.0
 casts_shadows = false
 
-[node name="PoolFluid" type="Node2D" parent="Entities" unique_id=465637761]
+[node name="PoolFluid" type="Node2D" parent="Entities" unique_id=1960768374]
 position = Vector2(248, 120)
 script = ExtResource("3_iyjjq")
 size_cells = Vector2i(7, 4)
 region_id = "pool"
 
-[node name="LabLight" type="Node2D" parent="Entities" unique_id=1183034222]
+[node name="LabLight" type="Node2D" parent="Entities" unique_id=1101362517]
 script = ExtResource("4_c6jex")
 mode = 1
 size_cells = Vector2i(40, 23)
 zone_id = "light_lab_lit"
 
-[node name="Foreground" type="Node2D" parent="." unique_id=588073776]
+[node name="Foreground" type="Node2D" parent="." unique_id=735308325]

@@ -15,6 +15,11 @@ const LIGHT_FIELD_SCRIPT: Script = preload("res://scripts/world/light_field.gd")
 
 const SOURCE_PATH := "res://scenes/levels/test/light_lab.tscn"
 const ROOM_ID := "light_lab"
+const ROOM_RESOURCE_PATH := "res://resources/rooms/generated/light_lab.tres"
+const WORLD_PATH := "res://resources/worlds/test_world.tres"
+const ROOM_PLACEMENT := preload("res://addons/platformer_kit/world/data/world_room_placement_data.gd")
+## Free chunk of the test world next to the existing demo rooms.
+const ORIGIN_CHUNK := Vector2i(3, 0)
 const WIDTH_CELLS := 40
 const HEIGHT_CELLS := 23
 const TILE := 8
@@ -82,7 +87,38 @@ func _run() -> void:
 		quit(1)
 		return
 	print("baked room: %s" % str(bake_result.get("outputs", {})))
+	_register_in_world()
 	quit(0)
+
+
+## Puts the room into the test world so the demo runs through the real pipeline
+## (background field, pixel camera, fog, water, light field, bloom, outline)
+## instead of a hand-rolled runner scene.
+func _register_in_world() -> void:
+	var room_data: Resource = ResourceLoader.load(
+		ROOM_RESOURCE_PATH, "", ResourceLoader.CACHE_MODE_IGNORE
+	)
+	if room_data == null:
+		push_error("generated room data missing at %s" % ROOM_RESOURCE_PATH)
+		return
+	var world := load(WORLD_PATH) as WorldData
+	if world == null:
+		push_error("could not load %s" % WORLD_PATH)
+		return
+	if world.has_room(ROOM_ID):
+		print("room already registered in the world")
+		return
+	world.rooms.append(room_data)
+	var placement: Resource = ROOM_PLACEMENT.new()
+	placement.room_id = ROOM_ID
+	placement.origin_chunk = ORIGIN_CHUNK
+	world.placements.append(placement)
+	world.sort_for_serialization()
+	var save_error := ResourceSaver.save(world, WORLD_PATH)
+	if save_error != OK:
+		push_error("could not save the world: %d" % save_error)
+		return
+	print("registered %s in %s at chunk %s" % [ROOM_ID, WORLD_PATH, str(ORIGIN_CHUNK)])
 
 
 func _paint_terrain(root: Node) -> void:

@@ -21,15 +21,15 @@ const COMPOSITE_SHADER: Shader = preload("res://scripts/shaders/bloom_composite.
 const DOWNSCALE := 2
 
 ## Everything brighter than this blooms, 0..1.
-@export_range(0.0, 1.0, 0.01) var threshold := 0.62
+@export_range(0.0, 1.0, 0.01) var threshold := 0.72
 ## Soft knee, so a pixel just over the threshold does not pop.
 @export_range(0.0, 1.0, 0.01) var knee := 0.12
 ## How strong the bright pass is.
 @export_range(0.0, 3.0, 0.01) var intensity := 1.0
 ## Blur radius in half-resolution texels.
-@export_range(0.0, 24.0, 0.5) var radius := 6.0
+@export_range(0.0, 24.0, 0.5) var radius := 5.0
 ## How much of the blurred bright pass is added back.
-@export_range(0.0, 3.0, 0.01) var strength := 0.85
+@export_range(0.0, 3.0, 0.01) var strength := 0.35
 @export var tint := Color(1.0, 0.94, 0.86, 1.0)
 ## Ordered dither levels on the composite; 0 keeps the glow smooth.
 @export_range(0.0, 32.0, 1.0) var levels := 6.0

@@ -71,7 +71,7 @@ const AUTHORED_SPILL := 0.25
 ## Light that reaches everything, added on top of the light map.
 @export_range(0.0, 1.0, 0.01) var ambient := 0.55
 ## How much of the light map is added back as warm glow (0 = shade only).
-@export_range(0.0, 2.0, 0.01) var glow_gain := 0.5
+@export_range(0.0, 2.0, 0.01) var glow_gain := 0.15
 @export var glow_color := Color(1.0, 0.86, 0.62, 1.0)
 ## Dither amount on the shade falloff. 0 keeps the shade a plain brightness
 ## multiply; anything above turns the unlit area into a halftone pattern.
