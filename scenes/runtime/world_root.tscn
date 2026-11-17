@@ -19,6 +19,9 @@
 [ext_resource type="Script" uid="uid://d10q7hvrp01va" path="res://scripts/world/light_field.gd" id="16_light"]
 [ext_resource type="Script" uid="uid://cgs4fckq1mcre" path="res://scripts/world/screen_bloom.gd" id="17_bloom"]
 [ext_resource type="Script" uid="uid://hmuy3srqjmbi" path="res://scripts/world/normal_field.gd" id="18_normal"]
+[ext_resource type="TileSet" path="res://resources/tilesets/primordial_tileset_normal.tres" id="19_normal_tileset"]
+[ext_resource type="Script" uid="uid://dc46t71srlh6s" path="res://scripts/world/backdrop_shadow.gd" id="19_shadow"]
+[ext_resource type="Script" uid="uid://4mvblpmovy5n" path="res://scripts/world/dust_field.gd" id="20_dust"]
 
 [node name="WorldRoot" type="Node2D" unique_id=1531965248]
 script = ExtResource("1_session")
@@ -30,6 +33,9 @@ script = ExtResource("5_terrain")
 
 [node name="BackdropField" type="Node2D" parent="." unique_id=1856933694]
 script = ExtResource("14_backdrop")
+
+[node name="BackdropShadow" type="Node2D" parent="."]
+script = ExtResource("19_shadow")
 
 [node name="TerrainHighlight" type="Node2D" parent="." unique_id=1715857535]
 script = ExtResource("15_highlight")
@@ -69,9 +75,16 @@ script = ExtResource("17_bloom")
 [node name="LightField" type="Node2D" parent="." unique_id=394850553]
 script = ExtResource("16_light")
 player_path = NodePath("../Player")
+relief_normal_mode = 2
 
 [node name="NormalField" type="Node2D" parent="."]
 script = ExtResource("18_normal")
+normal_tileset = ExtResource("19_normal_tileset")
+
+[node name="DustField" type="Node2D" parent="."]
+z_index = 9
+z_as_relative = false
+script = ExtResource("20_dust")
 
 [node name="FogOfWar" type="Node2D" parent="." unique_id=896215342]
 z_index = 10

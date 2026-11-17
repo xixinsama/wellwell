@@ -116,6 +116,15 @@ const AUTHORED_SPILL := 0.25
 ## Softens the terminator: 0 keeps a linear dot product, 1 only moves the steep
 ## faces, which keeps the relief from reading as a uniform brightness change.
 @export_range(0.0, 1.0, 0.01) var relief_softness := 0.3
+## Extra gain applied to `relief_strength` in authored mode.
+##
+## A baked normal atlas describes the art's real bevels (about 20-45° on this
+## tileset), while the derived normals are amplified screen slopes that reach
+## 60-75°. With one shared strength the authored look is therefore far weaker —
+## measured, it moved less than one 8-bit level. This multiplier puts the two
+## modes in the same visual range, so switching between them is a change of shape,
+## not of intensity.
+@export_range(1.0, 6.0, 0.05) var authored_relief_gain := 2.6
 
 var _room_pixels := Vector2i.ZERO
 var _room_origin_pixels := Vector2i.ZERO
@@ -502,6 +511,9 @@ func _paint_overlay_parameters() -> void:
 	if normal_mode == RELIEF_AUTHORED and _normal_texture != null:
 		normal_texture = _normal_texture
 	var screen_pixels := _screen_pixels()
+	# A baked atlas is a real surface description, so its bevels are shallower than the
+	# amplified screen slopes; the gain puts both modes in the same range.
+	var strength := relief_strength * (authored_relief_gain if normal_mode == RELIEF_AUTHORED else 1.0)
 	if _shade_material != null:
 		_shade_material.set_shader_parameter("light_tex", _texture)
 		_shade_material.set_shader_parameter("light_pixels", Vector2(_room_pixels))
@@ -515,7 +527,7 @@ func _paint_overlay_parameters() -> void:
 		_shade_material.set_shader_parameter("normal_mode", float(normal_mode))
 		_shade_material.set_shader_parameter("normal_tex", normal_texture)
 		_shade_material.set_shader_parameter("normal_pixels", Vector2(_room_pixels))
-		_shade_material.set_shader_parameter("relief_strength", relief_strength)
+		_shade_material.set_shader_parameter("relief_strength", strength)
 		_shade_material.set_shader_parameter("relief_radius_px", float(relief_radius_px))
 		_shade_material.set_shader_parameter("relief_softness", relief_softness)
 		_shade_material.set_shader_parameter("screen_pixels", screen_pixels)
@@ -529,7 +541,7 @@ func _paint_overlay_parameters() -> void:
 		_glow_material.set_shader_parameter("normal_mode", float(normal_mode))
 		_glow_material.set_shader_parameter("normal_tex", normal_texture)
 		_glow_material.set_shader_parameter("normal_pixels", Vector2(_room_pixels))
-		_glow_material.set_shader_parameter("relief_strength", relief_strength)
+		_glow_material.set_shader_parameter("relief_strength", strength)
 		_glow_material.set_shader_parameter("relief_radius_px", float(relief_radius_px))
 		_glow_material.set_shader_parameter("relief_softness", relief_softness)
 		_glow_material.set_shader_parameter("screen_pixels", screen_pixels)

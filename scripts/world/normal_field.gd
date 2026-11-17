@@ -3,23 +3,37 @@ extends Node2D
 
 ## Room-sized buffer of authored per-pixel surface normals, rendered once per room.
 ##
-## The room may carry a `TileMapLayer` named `NormalTiles` under
-## `RoomContent/Terrain` (baked rooms put it under `Terrain`) whose tiles are plain
-## RGB vectors: r = x, g = y, b = z, flat = (128, 128, 255). The layer is rendered
-## **once** into a viewport the size of the room, and the result is handed to
-## LightField's shade and glow passes as a texture. Nothing is read back on the CPU
-## and nothing repaints per frame: `UPDATE_ONCE` renders the buffer on the first
-## frame after binding and the engine then leaves it `UPDATE_DISABLED`.
+## Two ways to get authored normals into a room, in this order:
+##
+## 1. **authored layer** — the room carries a `TileMapLayer` named `NormalTiles`
+##    under `RoomContent/Terrain` (baked rooms put it under `Terrain`) whose tiles
+##    are plain RGB vectors: r = x, g = y, b = z, flat = (128, 128, 255). The layer
+##    is rendered **once** into a viewport the size of the room and the result is
+##    handed to LightField's shade and glow passes as a texture.
+## 2. **`normal_tileset`** — no authored layer, but this field has a normal TileSet
+##    assigned: every terrain layer named in `source_layer_names` (the collision
+##    layer `SolidTiles` by default) is cloned with that TileSet instead. The clone
+##    keeps the room's `tile_map_data`, and the normal atlas mirrors the albedo
+##    tileset coordinate for coordinate, so the cells line up with no room edits at
+##    all: one `NormalField` with `normal_tileset` assigned lights every existing
+##    room with authored normals. A room that wants hand-drawn normals keeps
+##    priority through path 1.
+##
+## Nothing is read back on the CPU and nothing repaints per frame: `UPDATE_ONCE`
+## renders the buffer on the first frame after binding and the engine then leaves it
+## `UPDATE_DISABLED`. `set_normal_tileset()` rebuilds the buffer for the bound room
+## when the TileSet is assigned after the room was bound (the case of a runner or a
+## test wiring it up in code).
 ##
 ## The authored layer is never reparented or touched. A programmatic clone copies
-## `tile_set` and `tile_map_data` into the viewport, so the room's own node stays
-## exactly as the level scene wrote it; the clone is what the renderer sees.
+## `tile_set` and `tile_map_data` into the viewport, so the room's own nodes stay
+## exactly as the level scene wrote them; the clone is what the renderer sees.
 ##
 ## Bound through WorldSession.register_room_extension like the light field. The
 ## node also self-registers when its parent is a world session, so adding it to
 ## `world_root.tscn` is enough: no runner change and no authored scene change.
-## When the room has no `NormalTiles` layer the field reports "no authored map"
-## and does nothing; the light field then falls back to screen-derived normals.
+## When neither source exists the field reports "no authored map" and does nothing;
+## the light field then falls back to screen-derived normals.
 
 const GROUP := &"normal_field"
 const LAYER_NAME := "NormalTiles"
@@ -35,6 +49,17 @@ const CHUNK_PIXELS := Vector2i(320, 180)
 ## accepted, plus a recursive name lookup as a last resort.
 @export var layer_path := NodePath("Terrain/NormalTiles")
 @export var layer_name := LAYER_NAME
+## Normal TileSet that mirrors the albedo tileset's atlas (one normal per pixel, one
+## alternative per albedo alternative). Assigning it is what lights existing rooms
+## with authored normals without adding a `NormalTiles` layer to any of them.
+## `assets/images/primordial_tileset_normal.png` is generated with
+## `scripts/tools/bake_tileset_normals.gd`; this is its TileSet.
+@export var normal_tileset: TileSet
+## Terrain layers cloned with `normal_tileset` when the room has no authored
+## `NormalTiles` layer. `SolidTiles` is the collision layer, so walls, floors and
+## slopes get relief; add `BackTiles` to light the decorative background too, in
+## the order they should be drawn.
+@export var source_layer_names: Array[String] = ["SolidTiles"]
 
 var _room_pixels := Vector2i.ZERO
 var _room_origin_pixels := Vector2i.ZERO
@@ -43,6 +68,10 @@ var _has_map := false
 var _texture: Texture2D
 var _viewport: SubViewport
 var _clone: TileMapLayer
+## Terrain the current room was bound with, kept so a TileSet assigned after the
+## binding can rebuild the buffer without waiting for the next room.
+var _terrain_root: Node
+var _missing_tiles: Array[String] = []
 ## Frames left before the one-shot viewport is explicitly switched off. Godot's
 ## UPDATE_ONCE already renders a single frame, but pinning it to UPDATE_DISABLED
 ## afterwards makes the "costs nothing per frame" promise explicit (and testable
@@ -81,11 +110,47 @@ func bind_room_with_origin(room_data: Variant, terrain_root: Node, origin_chunk:
 	_room_origin_pixels = origin_chunk * CHUNK_PIXELS
 	_room_pixels = chunks * CHUNK_PIXELS
 	_room_bound = true
+	_terrain_root = terrain_root
 	var layer := _find_authored_layer(terrain_root)
 	if layer != null:
-		_build_buffer(terrain_root, layer)
+		_build_buffer(terrain_root, [layer], layer.tile_set, false)
+	elif normal_tileset != null:
+		# No hand-authored layer: mirror the room's own terrain into normals with
+		# the generated tileset, so every existing room gets relief unedited.
+		var sources := _find_layers_named(terrain_root, source_layer_names)
+		_build_buffer(terrain_root, sources, normal_tileset, true)
 	_push_to_light_fields()
 	return true
+
+
+## Assigns the normal TileSet at runtime (a runner or a test wiring the field up in
+## code). Rebuilds the bound room's buffer so the change takes effect immediately;
+## with no room bound this is just a property write.
+func set_normal_tileset(tileset: TileSet) -> void:
+	if normal_tileset == tileset:
+		return
+	normal_tileset = tileset
+	_rebuild_for_terrain()
+
+
+## Rebuilds the buffer for the room that is already bound, keeping the room's size
+## and origin (a rebind would read them again, a TileSet change must not).
+func _rebuild_for_terrain() -> void:
+	if not _room_bound or not is_instance_valid(_terrain_root):
+		return
+	if _find_authored_layer(_terrain_root) != null or normal_tileset == null:
+		# The room authored its own normals: the tile set is not its source.
+		return
+	var terrain_root := _terrain_root
+	var pixels := _room_pixels
+	var origin := _room_origin_pixels
+	clear_room()
+	_terrain_root = terrain_root
+	_room_pixels = pixels
+	_room_origin_pixels = origin
+	_room_bound = true
+	_build_buffer(terrain_root, _find_layers_named(terrain_root, source_layer_names), normal_tileset, true)
+	_push_to_light_fields()
 
 
 func _process(_delta: float) -> void:
@@ -106,6 +171,8 @@ func clear_room() -> void:
 	set_process(false)
 	_texture = null
 	_clone = null
+	_missing_tiles.clear()
+	_terrain_root = null
 	if is_instance_valid(_viewport):
 		if _viewport.get_parent() != null:
 			_viewport.get_parent().remove_child(_viewport)
@@ -156,38 +223,48 @@ func get_buffer_layer() -> TileMapLayer:
 
 
 ## Accepts the same room pattern as LightField, with the authoring-scene nesting
-## and the baked runtime nesting both understood.
+## and the baked runtime nesting both understood: an explicit `layer_path` wins,
+## otherwise the first layer of that name anywhere under the room is the authored
+## one.
 func _find_authored_layer(terrain_root: Node) -> TileMapLayer:
 	var layer := terrain_root.get_node_or_null(layer_path) as TileMapLayer
 	if layer != null:
 		return layer
-	layer = terrain_root.get_node_or_null("RoomContent/Terrain/%s" % layer_name) as TileMapLayer
-	if layer != null:
-		return layer
-	return _find_layer_recursive(terrain_root, layer_name)
+	var found := _find_layers_named(terrain_root, [layer_name] as Array[String])
+	return found[0] if not found.is_empty() else null
 
 
-func _find_layer_recursive(node: Node, wanted: String) -> TileMapLayer:
+## Every terrain layer with one of the given names, in tree order, so the clone
+## order (and with it the draw order inside the normal viewport) follows the room.
+## Layers without a tile set or without cells carry no normals and are skipped.
+func _find_layers_named(terrain_root: Node, wanted: Array[String]) -> Array[TileMapLayer]:
+	var layers: Array[TileMapLayer] = []
+	if wanted.is_empty():
+		return layers
+	_collect_layers(terrain_root, wanted, layers)
+	return layers
+
+
+func _collect_layers(node: Node, wanted: Array[String], layers: Array[TileMapLayer]) -> void:
 	for child: Node in node.get_children():
-		if child is TileMapLayer and child.name == wanted:
-			return child as TileMapLayer
-		var found := _find_layer_recursive(child, wanted)
-		if found != null:
-			return found
-	return null
+		if child is TileMapLayer:
+			var layer := child as TileMapLayer
+			if layer.name in wanted and layer.tile_set != null and not layer.get_used_cells().is_empty():
+				layers.append(layer)
+		_collect_layers(child, wanted, layers)
 
 
-func _build_buffer(terrain_root: Node, layer: TileMapLayer) -> void:
-	if layer.tile_set == null or layer.get_used_cells().is_empty():
+## Builds the one-shot viewport and clones `layers` into it with `tileset`. When
+## `check_tiles` is set the clone's tiles are also verified against that TileSet,
+## which is how a room that uses a coordinate the normal atlas forgot becomes
+## visible instead of silently flat.
+func _build_buffer(
+	terrain_root: Node, layers: Array[TileMapLayer], tileset: TileSet, check_tiles: bool
+) -> void:
+	if tileset == null or layers.is_empty():
 		# A layer with no tiles carries no normals; it is not worth a viewport.
 		return
-	if layer.visible:
-		# The layer is data, not art: leaving it visible would paint the normal
-		# colours over the room. Warn instead of mutating the owner's node.
-		push_warning(
-			"NormalField: %s is visible; hide the authored NormalTiles layer so the room does not draw it"
-			% layer.name
-		)
+	_missing_tiles.clear()
 	_viewport = SubViewport.new()
 	_viewport.name = "NormalViewport"
 	_viewport.size = _room_pixels
@@ -217,26 +294,67 @@ func _build_buffer(terrain_root: Node, layer: TileMapLayer) -> void:
 	flat.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	_viewport.add_child(flat)
 
-	# A clone, not the authored node: TileMapLayer has exactly one parent, and
-	# reparenting would edit the owner's level. tile_map_data is read-only as a
-	# property copy, tile_set is shared (never mutated).
-	_clone = TileMapLayer.new()
-	_clone.name = "NormalTiles"
-	_clone.tile_set = layer.tile_set
-	_clone.tile_map_data = layer.tile_map_data
-	_clone.collision_enabled = false
-	_clone.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	# Room-local canvas coordinates: the viewport is the room, so only the layer's
-	# offset inside the room survives.
-	var offset := layer.position
-	var terrain_2d := terrain_root as Node2D
-	if terrain_2d != null:
-		offset = terrain_2d.to_local(layer.global_position)
-	_clone.position = offset
-	_viewport.add_child(_clone)
+	# Clones, never the authored nodes: TileMapLayer has exactly one parent, and
+	# reparenting would edit the owner's level. `tile_map_data` is a plain copy of
+	# the cells (coordinates, alternative ids and flips), which is why the mirror
+	# tileset has to keep the albedo's layout: the cells are not remapped.
+	for layer: TileMapLayer in layers:
+		if not check_tiles and layer.visible:
+			# The layer is data, not art: leaving it visible would paint the normal
+			# colours over the room. Warn instead of mutating the owner's node.
+			push_warning(
+				"NormalField: %s is visible; hide the authored NormalTiles layer so the room does not draw it"
+				% layer.name
+			)
+		if check_tiles:
+			_collect_missing_tiles(layer, tileset)
+		var clone := TileMapLayer.new()
+		clone.name = layer.name
+		clone.tile_set = tileset
+		clone.tile_map_data = layer.tile_map_data
+		# A clone renders even when the source layer is hidden (a hidden `NormalTiles`
+		# authored layer is the documented setup), so this is set explicitly.
+		clone.visible = true
+		clone.collision_enabled = false
+		clone.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		# Room-local canvas coordinates: the viewport is the room, so only the
+		# layer's offset inside the room survives.
+		var offset := layer.position
+		var terrain_2d := terrain_root as Node2D
+		if terrain_2d != null:
+			offset = terrain_2d.to_local(layer.global_position)
+		clone.position = offset
+		_viewport.add_child(clone)
+		if _clone == null:
+			_clone = clone
+	if check_tiles and not _missing_tiles.is_empty():
+		push_warning(
+			"NormalField: %d cell(s) have no tile in %s (%s); those pixels stay flat"
+			% [_missing_tiles.size(), normal_tileset.resource_path, ", ".join(_missing_tiles.slice(0, 6))]
+		)
 
 	_texture = _viewport.get_texture()
 	_has_map = true
+
+
+## Cells the generated normal TileSet cannot resolve, as "coords/alternative"
+## strings. Empty for a room that only uses tiles the normal atlas mirrors, which
+## is what the baker guarantees: it copies every coordinate and every alternative.
+func get_missing_normal_tiles() -> Array[String]:
+	return _missing_tiles
+
+
+func _collect_missing_tiles(layer: TileMapLayer, tileset: TileSet) -> void:
+	for cell: Vector2i in layer.get_used_cells():
+		var source_id := layer.get_cell_source_id(cell)
+		var coords := layer.get_cell_atlas_coords(cell)
+		var alternative := layer.get_cell_alternative_tile(cell)
+		var entry := "%d:%d/%d" % [coords.x, coords.y, alternative]
+		if _missing_tiles.has(entry):
+			continue
+		var source := tileset.get_source(source_id) as TileSetAtlasSource
+		if source == null or source.get_tile_data(coords, alternative) == null:
+			_missing_tiles.append(entry)
 
 
 ## Pushes the buffer (or its absence) to every light field in the scene. The

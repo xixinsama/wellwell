@@ -140,7 +140,10 @@ func _assert_handshake_reaches_the_light_materials(failures: Array[String]) -> v
 			failures.append("%s pass did not receive the authored normal texture" % label)
 		if material.get_shader_parameter("normal_pixels") != Vector2(320, 180):
 			failures.append("%s pass received the wrong normal buffer size" % label)
-		if float(material.get_shader_parameter("relief_strength")) != 0.35:
+		# Authored normals describe the art's real bevels, so the field scales the
+		# strength by `authored_relief_gain` to match the derived mode's range.
+		var expected_strength := float(field.get("relief_strength")) * float(field.get("authored_relief_gain"))
+		if not is_equal_approx(float(material.get_shader_parameter("relief_strength")), expected_strength):
 			failures.append("%s pass received the wrong relief strength" % label)
 		if float(material.get_shader_parameter("relief_radius_px")) != 2.0:
 			failures.append("%s pass received the wrong relief radius" % label)

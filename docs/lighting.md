@@ -115,6 +115,75 @@ the two field nodes can bind in either order. Removing the `NormalField` node
 from `world_root.tscn` is a supported configuration: flat or derived lighting
 keeps working.
 
+`normal_tileset` lets the field build that buffer from the room's own
+`SolidTiles` instead, which is how the generated atlas lights rooms nobody
+re-authored; the next section covers it, including why the shipped scene still
+runs the derived mode.
+
+### The generated atlas: authored normals in every room, with no re-authoring
+
+`assets/images/primordial_tileset_normal.png` (32x72, one 8x8 normal per tile) and
+`resources/tilesets/primordial_tileset_normal.tres` are baked from the albedo atlas
+by `scripts/tools/bake_tileset_normals.gd`. The normal TileSet mirrors the albedo
+tileset cell for cell (same coordinates, same alternatives in the same order, same
+flip/transpose flags), because `NormalField` clones a room layer by copying raw
+`tile_map_data`: cells and alternative ids are never remapped.
+
+`NormalField.normal_tileset` (`world_root.tscn`) points at it and
+`source_layer_names` (default `SolidTiles`) says which terrain layers to mirror, so
+a room that never authored normals gets them from its own solid cells; a room that
+does carry a `NormalTiles` layer keeps priority.
+
+Re-bake after adding or repainting tiles. The tool bakes every tile of the PNG, so
+a new tile (like the spike added at `0:8`) needs no script change, and it only
+rewrites the PNG when the result actually changed:
+
+```
+godot --headless --path . -s res://scripts/tools/bake_tileset_normals.gd
+```
+
+The height model (luminance as height, a one-pixel bevel from the alpha
+silhouette, a periodic height field so tiles tile with themselves, one 3x3
+smoothing pass, central-difference gradient) is documented at the top of the tool,
+together with the one thing this atlas cannot do: `TileData` has no
+`texture_region` in Godot 4.7, so an alternative tile cannot point at its own slot
+of the sheet and the renderer's flip mirrors the normal instead of negating its
+x/y. Alternatives therefore read correctly in position and shading depth but with
+a mirrored tilt sign.
+
+Authored vs derived, measured on `light_lab` and `water_hall` (322x182 capture,
+every animated system frozen, byte-identical between two runs of the same mode,
+noise floor 0 pixels):
+
+| | derived (1) | authored (2) |
+| :--- | :--- | :--- |
+| pixels changed | 4.6% / 6.8% | 0.5% / 0.2% |
+| of those, on a pixel that has a normal | 19% / 8% | 100% / 100% |
+| peak change | 28/255 / 20/255 | 17/255 / 7/255 |
+| mean luminance shift | -0.08% / -0.03% | -0.005% / -0.006% |
+| busiest band, columns over 1/255 | 35/320 and 31/320 | 2/320 and 0/320 |
+
+The authored normals are the *correct* ones (every change lands on a surface;
+derived also "relieves" the water, the gas, the fog and open air) and they are
+continuous across tile seams: the baked buffer's normal step across a seam between
+two identical tiles is 0.079 (light lab) and 0.137 (water hall) against 0.062 /
+0.097 inside a tile, so there is no per-tile grid.
+
+They are also much subtler. `relief_strength` masks the relief by
+`smoothstep(0.02, 0.35, light)` and clamps `light * (1 + relief)` to 1, so in a
+room whose light map is mostly black or saturated only a narrow band of pixels can
+move at all: with the current `relief_strength` (0.35) the authored path shifts
+0.5% of the screen and, in its busiest band, moves columns by less than one 8-bit
+level (2 of 320 columns over 1/255, against 35 for derived). Switching
+`relief_normal_mode` to 2 today would read as "relief off", so `world_root.tscn`
+keeps the default `1`; the atlas and the install path are in place, and enabling
+authored mode is that one property plus, if the owner wants the same amount of
+relief, a much higher `relief_strength` (the derived normals reach roughly
+edge-on 60-75 degree tilts on the same art edges, the baked ones 20-45).
+
+`tests/world/test_tileset_normals.gd` covers the atlas, the mirror and the install
+path, including a sweep that binds every baked room.
+
 ### Cost
 
 Both modes only run in the shade and glow fragments: derived normals add eight
