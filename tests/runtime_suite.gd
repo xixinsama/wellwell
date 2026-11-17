@@ -101,6 +101,7 @@ const TESTS: Array[Script] = [
 	preload("res://tests/platformer_kit/character/test_ladder_motion.gd"),
 	preload("res://tests/world/test_ladder_tiles.gd"),
 	preload("res://tests/world/test_cell_rect_merger.gd"),
+	preload("res://tests/world/test_terrain_highlight.gd"),
 	preload("res://tests/world/test_backdrop_field.gd"),
 	preload("res://tests/player/test_hero_animation.gd"),
 	preload("res://tests/world/test_water_simulation.gd"),

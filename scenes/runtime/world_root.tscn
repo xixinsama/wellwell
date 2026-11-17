@@ -15,6 +15,7 @@
 [ext_resource type="PackedScene" path="res://game/water/effects/water_splash_pixels.tscn" id="12_splash"]
 [ext_resource type="Script" uid="uid://ucenmxbdpetr" path="res://addons/fluid_kit/runtime/water/water_grid.gd" id="13_grid"]
 [ext_resource type="Script" uid="uid://dxuog2of6kyji" path="res://scripts/world/backdrop_field.gd" id="14_backdrop"]
+[ext_resource type="Script" path="res://scripts/world/terrain_highlight.gd" id="15_highlight"]
 
 [node name="WorldRoot" type="Node2D" unique_id=1531965248]
 script = ExtResource("1_session")
@@ -26,6 +27,9 @@ script = ExtResource("5_terrain")
 
 [node name="BackdropField" type="Node2D" parent="." unique_id=1856933694]
 script = ExtResource("14_backdrop")
+
+[node name="TerrainHighlight" type="Node2D" parent="."]
+script = ExtResource("15_highlight")
 
 [node name="WorldRuntime" type="Node2D" parent="." unique_id=2137384709]
 script = ExtResource("6_runtime")
