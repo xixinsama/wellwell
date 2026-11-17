@@ -289,6 +289,13 @@ func _capture_masks() -> void:
 		for node: Node in get_nodes_in_group(StringName(source["group"])):
 			if not is_instance_valid(node) or not node.has_method(String(source["method"])):
 				continue
+			# A system whose mask is a one-shot render target (the normal atlas and
+			# the backdrop silhouette) has already been switched to UPDATE_DISABLED
+			# by the time the inspector runs, and reading such a target later comes
+			# back blank. Bounce it once before the read.
+			if await _refresh_one_shot_buffers(node):
+				await process_frame
+				await RenderingServer.frame_post_draw
 			var image: Variant = node.call(String(source["method"]))
 			if image is Image and (image as Image).get_width() > 0:
 				(image as Image).save_png("%s/%s_%s.png" % [
@@ -296,6 +303,21 @@ func _capture_masks() -> void:
 				])
 				_captures += 1
 				print("mask %s_%s.png %s" % [source["label"], String(node.name).to_lower(), str((image as Image).get_size())])
+
+
+## Re-renders any `SubViewport` child of a system once, so a mask that lives in a
+## one-shot target has fresh content for the read back. Returns true when something
+## was kicked, so the caller can wait a frame.
+func _refresh_one_shot_buffers(node: Node) -> bool:
+	var refreshed := false
+	for child: Node in _all_nodes(node):
+		if child is SubViewport:
+			var viewport := child as SubViewport
+			if viewport.render_target_update_mode == SubViewport.UPDATE_ALWAYS:
+				continue
+			viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
+			refreshed = true
+	return refreshed
 
 
 func _capture(name: String) -> void:
