@@ -107,6 +107,14 @@ static func _build_definitions() -> void:
 			"SETTINGS_DESC_CAMERA_SHAKE"
 		),
 		SettingsDefinition.toggle(
+			&"smooth_room_transition",
+			GAME,
+			"SETTINGS_ROOM_TRANSITION",
+			false,
+			"SmoothRoomTransitionToggle",
+			"SETTINGS_DESC_ROOM_TRANSITION"
+		),
+		SettingsDefinition.toggle(
 			&"one_way_drop_enabled",
 			GAME,
 			"SETTINGS_ONE_WAY_DROP",

@@ -30,12 +30,12 @@ const LIGHT_GROUPS: Array[StringName] = [&"room_light", &"fog_light"]
 
 @export var layer_path := NodePath("Terrain/BackTiles")
 ## How much the plate darkens where the shadow lands.
-@export_range(0.0, 1.0, 0.01) var strength := 0.55
+@export_range(0.0, 1.0, 0.01) var strength := 0.7
 ## Soft edge of the shadow, in pixels.
-@export_range(0.0, 12.0, 0.1) var blur_px := 2.5
+@export_range(0.0, 12.0, 0.1) var blur_px := 3.0
 ## Upper bound of the displacement, in pixels. Small on purpose: the backdrop
 ## shadow is a parallax-ish hint, not a second copy of the tiles.
-@export_range(0.0, 24.0, 0.1) var max_offset_px := 6.0
+@export_range(0.0, 24.0, 0.1) var max_offset_px := 8.0
 ## Share of the light distance that becomes shadow displacement (kept under 1 so
 ## a far lamp does not throw the plate's shadow across the room).
 @export_range(0.0, 1.0, 0.05) var follow_ratio := 0.5

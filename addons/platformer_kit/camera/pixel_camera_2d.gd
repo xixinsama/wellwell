@@ -7,6 +7,14 @@ const CHUNK_SIZE_PIXELS := Vector2(320.0, 180.0)
 
 @export var target_path: NodePath
 @export var camera_mode: CameraMode = CameraMode.FREE
+## Glide to a new room instead of cutting to it.
+##
+## The glide is Godot's built-in position smoothing, and it is exactly what makes a
+## room switch look half-built: the camera spends ~0.3 s travelling while every
+## overlay (light shade, glow, gas, fog) has already rebound to the *new* room rect,
+## so the part of the screen still showing the old room is lit and fogged by the
+## wrong room. Rooms in this game are one screen, so the default is a hard cut.
+@export var smooth_room_transition := false
 
 var target: Node2D
 var smoothed_position := Vector2.ZERO
@@ -24,7 +32,34 @@ func _ready() -> void:
 	if target != null:
 		smoothed_position = target.global_position
 		global_position = smoothed_position.round()
+	position_smoothing_enabled = smooth_room_transition
 	make_current()
+
+
+## Switches between gliding into a room and cutting to it. Cutting also drops the
+## engine's own smoothing, so the next `set_room_bounds` lands on the final camera
+## position within the same frame instead of easing towards it.
+func set_smooth_room_transition(value: bool) -> void:
+	smooth_room_transition = bool(value)
+	position_smoothing_enabled = smooth_room_transition
+	if not smooth_room_transition:
+		reset_smoothing()
+
+
+func is_smooth_room_transition() -> bool:
+	return smooth_room_transition
+
+
+## Jumps the camera onto the room it is bound to, right now. Used by the room
+## session for an instant switch: every overlay is already on the new room, so the
+## camera has to be there too before the frame is presented.
+func snap_to_room() -> void:
+	if not room_bounds.has_area() or target == null:
+		return
+	var target_position := get_room_camera_target(target.global_position)
+	smoothed_position = target_position
+	global_position = target_position.round()
+	reset_smoothing()
 
 
 func bind_target(new_target: Node2D) -> void:
@@ -76,8 +111,12 @@ func _physics_process(delta: float) -> void:
 	var desired_position := target.global_position
 	if camera_mode == CameraMode.ROOM_LOCKED and room_bounds.has_area():
 		desired_position = get_room_camera_target(desired_position)
-	var weight := 1.0 - exp(-position_smoothing_speed * delta)
-	smoothed_position = smoothed_position.lerp(desired_position, weight)
+	if smooth_room_transition:
+		var weight := 1.0 - exp(-position_smoothing_speed * delta)
+		smoothed_position = smoothed_position.lerp(desired_position, weight)
+	else:
+		# A hard cut: no easing, the camera is where the room says it is.
+		smoothed_position = desired_position
 	global_position = (smoothed_position + _consume_shake_offset()).round()
 
 

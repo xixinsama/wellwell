@@ -103,3 +103,5 @@ MAP_STYLE_GRID,Grid,网格
 MAP_HINT,Tab switch style / M or Esc close / Wheel zoom,按 Tab 切换样式 / M 或 Esc 关闭 / 滚轮缩放
 MAP_LEGEND_PRECISE,Solid / One-way / Glass / Ladder / Crumble - only explored cells are drawn,实心 / 单向 / 玻璃 / 梯子 / 崩塌 - 只画已探索的格子
 MAP_LEGEND_GRID,Brightness = how much of the room has been explored,亮度 = 该房间的已探索比例
+SETTINGS_ROOM_TRANSITION,Smooth Room Transition,房间转场滑动
+SETTINGS_DESC_ROOM_TRANSITION,Off cuts straight to the next room; on glides the camera and hides the rebuild behind a short fade,房间切换是否用相机滑动过渡；关闭则瞬移切到下一个房间，所有图层当帧就绪

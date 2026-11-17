@@ -127,6 +127,11 @@ FogOfWar mask(CPU) ──纹理──→ FogMask（片元生成边缘）──�
 & $godot --path . --resolution 1280x720 `
     -s res://scripts/tools/render_inspector.gd -- --out C:/tmp/a --hide=DustField,ScreenBloom
 
+# 看"被上层盖住的中间件"（默认把 BackTiles 压到 alpha 0.2 再截一张）
+& $godot --path . --resolution 1280x720 `
+    -s res://scripts/tools/render_inspector.gd -- --out C:/tmp/peek --peek
+# 压哪几层、压多少：--peek-layers=BackTiles,SolidTiles --peek-alpha=0.35
+
 # 换场景
 ... -- --scene res://scenes/levels/test/water_hall_runner.tscn --out C:/tmp/hall
 ```
@@ -146,10 +151,30 @@ FogOfWar mask(CPU) ──纹理──→ FogMask（片元生成边缘）──�
 | `mask_water_cells_*.png` | 水体单元（80×45，R 填充/G 深度/B 流动） |
 | `inventory.txt` | 整棵树按绘制顺序的层清单：z、是否相对、可见、纹理尺寸、shader |
 | `timings.txt` | 整帧时间（含噪声说明） |
+| `peek.png` | **中间件**：把 `--peek-layers` 指定的层压暗后的那一帧（默认背景瓦片），
+用来确认被上层盖住的效果（比如背景瓦片投影）|
+
 
 注意：`solo_<层>` 只对"自己画的"层有效。`BackdropField` 的 plate 挂在
 `TerrainRoot/<room>/Background` 下（不是它的子节点），所以 `solo_backdropfield`
 是空的 —— 这时看 `stack_z-001` / `inventory.txt` 里的 `BackdropPlate`。
+
+## 6.5 房间转场：瞬切 vs 滑动
+
+房间切换默认是 **瞬切**，可以在 设置 → 游戏 → `房间转场滑动` 打开相机滑动。
+
+- **瞬切**（默认）：`PixelCamera2D.set_smooth_room_transition(false)` 关掉 Godot 内置的
+  `position_smoothing_enabled`，相机在 `set_room_bounds()` 里直接落到新房间；
+  紧接着 `WorldSession` 调一次 `RenderingServer.force_draw(false)`。
+  法线缓冲、背景投影剪影这类**一次性缓冲**本来要等下一帧才出内容，
+  强制画一次之后 **切换后的第一帧就是完整的**，不会再出现"一帧平法线/没阴影"。
+- **滑动**：保留原来的相机 glide。注意滑动期间相机还在看旧房间，而光照/泛光/气体/迷雾
+  的 quad 已经绑到新房间的矩形上了，所以旧房间那半边会短暂地缺这些层。
+  本项目的房间就是一屏（320×180），滑动没有可看的内容，这也是默认瞬切的原因；
+  多 chunk 房间再开滑动。
+- 两种模式共用同一套房间绑定流程，差别只有相机目标 + 是否强制渲染一帧，见
+  `addons/platformer_kit/world/runtime/world_session.gd:_configure_camera_for_room()`。
+
 
 ## 7. 今天这批美化项在哪
 

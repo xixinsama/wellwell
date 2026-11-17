@@ -112,6 +112,18 @@ func set_camera_shake_enabled(enabled: bool) -> void:
     set_value(&"camera_shake_enabled", enabled)
 
 
+## Room switches are hard cuts unless this is on: the camera lands on the new room
+## immediately and the room's one-shot buffers are rendered before the frame is
+## presented, which is what "instant" means here. Off by default because a room in
+## this game is exactly one screen, so there is nothing to glide across.
+func is_smooth_room_transition_enabled() -> bool:
+    return bool(get_value(&"smooth_room_transition"))
+
+
+func set_smooth_room_transition_enabled(enabled: bool) -> void:
+    set_value(&"smooth_room_transition", enabled)
+
+
 func is_atmosphere_enabled() -> bool:
     return bool(get_value(&"atmosphere_enabled"))
 

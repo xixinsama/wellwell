@@ -46,6 +46,9 @@ const MASK_SOURCES: Array[Dictionary] = [
 ]
 
 var _hidden: Array[String] = []
+## Layers the --peek capture dims so whatever they cover becomes visible.
+var _peek_layers: Array[String] = ["BackTiles"]
+var _peek_alpha := 1.0
 var _scene_path := DEFAULT_SCENE
 var _out_dir := ""
 var _world: Node
@@ -87,6 +90,7 @@ func _run() -> void:
 	await _capture_masks()
 	await _capture_solo_layers()
 	await _capture_z_ladder()
+	await _capture_peek()
 	await _write_timings(instance)
 	print("render_inspector: %d captures, %d files in %s" % [_captures, _captures, _out_dir])
 	quit(0)
@@ -104,6 +108,14 @@ func _parse_arguments() -> void:
 			_out_dir = argument.substr(6)
 		elif argument == "--out" and index + 1 < arguments.size():
 			_out_dir = arguments[index + 1]
+		elif argument.begins_with("--peek-alpha="):
+			_peek_alpha = clampf(argument.substr(13).to_float(), 0.0, 1.0)
+		elif argument.begins_with("--peek-layers="):
+			_peek_layers.clear()
+			for name: String in argument.substr(14).split(",", false):
+				_peek_layers.append(name.strip_edges())
+		elif argument == "--peek":
+			_peek_alpha = 0.2
 		elif argument.begins_with("--hide="):
 			for name: String in argument.substr(7).split(",", false):
 				_hidden.append(name.strip_edges())
@@ -193,6 +205,40 @@ func _capture_z_ladder() -> void:
 		await _capture("stack_z%+03d.png" % level)
 	for item: CanvasItem in items:
 		item.visible = bool(item.get_meta(&"inv_visible", true))
+
+
+## Layers that sit *under* another layer are invisible in a normal frame: the
+## backdrop tile shadow is drawn beneath the background tiles, so its whole job is
+## the part of it that peeks out around them. `--peek` dims those occluding layers
+## (default the background tiles) and captures the frame again, so the intermediate
+## layer can actually be looked at. `--peek-alpha` sets how far they are dimmed.
+func _capture_peek() -> void:
+	if _peek_alpha >= 1.0:
+		return
+	var dimmed: Array[Node] = []
+	for name: String in _peek_layers:
+		for node: Node in _all_nodes(_world):
+			if String(node.name) == name and node is CanvasItem:
+				var item := node as CanvasItem
+				item.set_meta(&"peek_modulate", item.modulate)
+				item.modulate = Color(1.0, 1.0, 1.0, _peek_alpha)
+				dimmed.append(item)
+	await _capture("peek.png")
+	for node: Node in dimmed:
+		var item := node as CanvasItem
+		item.modulate = item.get_meta(&"peek_modulate", Color.WHITE)
+		if item.has_meta(&"peek_modulate"):
+			item.remove_meta(&"peek_modulate")
+	print("peek: dimmed %d layer(s) named %s to alpha %.2f" % [
+		dimmed.size(), str(_peek_layers), _peek_alpha
+	])
+
+
+func _all_nodes(node: Node) -> Array[Node]:
+	var result: Array[Node] = [node]
+	for child: Node in node.get_children():
+		result.append_array(_all_nodes(child))
+	return result
 
 
 func _collect_canvas_items() -> Array[CanvasItem]:

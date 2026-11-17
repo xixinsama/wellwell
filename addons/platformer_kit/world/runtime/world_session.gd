@@ -151,8 +151,30 @@ func _on_current_room_changed(room_id: String, terrain_runtime: Node, camera: No
 func _configure_camera_for_room(camera: Node, world: WorldData, room_id: String) -> void:
 	if camera == null or world == null:
 		return
+	var smooth := _is_smooth_room_transition()
+	if camera.has_method("set_smooth_room_transition"):
+		camera.call("set_smooth_room_transition", smooth)
 	if camera.has_method("set_room_bounds"):
 		camera.call("set_room_bounds", Rect2(world.get_room_pixel_rect(room_id)))
+	if not smooth:
+		if camera.has_method("snap_to_room"):
+			camera.call("snap_to_room")
+		# An instant switch means the frame after the switch has to be complete.
+		# The room's one-shot buffers (the normal atlas and the backdrop shadow
+		# silhouette) otherwise render on the next presented frame, which shows as
+		# one frame of flat normals and no shadow. Forcing a draw here renders them
+		# now; it costs one draw per room switch and nothing per frame.
+		RenderingServer.force_draw(false)
+
+
+## Which room transition the game setting asks for. Defaults to the hard cut, which
+## is also the setting's default: a room is one screen here, so a glide has nothing
+## to show and only exposes the overlays that already rebound to the new room.
+func _is_smooth_room_transition() -> bool:
+	var settings := _settings_source
+	if settings == null or not settings.has_method("is_smooth_room_transition_enabled"):
+		return false
+	return bool(settings.call("is_smooth_room_transition_enabled"))
 
 
 func _bind_room_extensions(world: WorldData, room_id: String, terrain_runtime: Node) -> bool:
