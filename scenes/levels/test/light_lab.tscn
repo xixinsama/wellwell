@@ -173,15 +173,15 @@ flicker_speed = 8.0
 casts_shadows = false
 
 [node name="PoolFluid" type="Node2D" parent="RoomContent/Entities" unique_id=1802503604]
-position = Vector2(240, 104)
+position = Vector2(240, 64)
 script = ExtResource("7_7pbym")
-size_cells = Vector2i(8, 6)
+size_cells = Vector2i(9, 11)
 region_id = "pool"
 
 [node name="RightVent" type="Node2D" parent="RoomContent/Entities" unique_id=1275274015]
 position = Vector2(40, 168)
 script = ExtResource("25_gasvent")
-direction = Vector2(0.5431031, -0.83966595)
+direction = Vector2(0.54310316, -0.839666)
 radius = 26.0
 rate = 3.6
 jet_speed = 1200.0

@@ -1,89 +1,89 @@
-[gd_resource type="Resource" script_class="WorldData" format=3 uid="uid://c8ool7qx6wbsq"]
+[gd_resource type="Resource" script_class="WorldData" format=3 uid="uid://cf7o1ofvihtfu"]
 
-[ext_resource type="Script" uid="uid://e2qiwoakwcux" path="res://addons/platformer_kit/world/data/room_connection_data.gd" id="1_lq7ps"]
-[ext_resource type="Script" uid="uid://b1ws1oeewd0ks" path="res://addons/platformer_kit/world/data/world_room_placement_data.gd" id="2_tlcfc"]
-[ext_resource type="Script" uid="uid://c521t73sjen5" path="res://addons/platformer_kit/world/region/region_data.gd" id="3_pbuvv"]
-[ext_resource type="Resource" uid="uid://c03c6ki5n8h15" path="res://resources/rooms/generated/test_fog_start.tres" id="4_jrtf8"]
-[ext_resource type="Resource" uid="uid://dl46x6juumdw2" path="res://resources/rooms/generated/test_fog_wide.tres" id="5_u30kj"]
-[ext_resource type="Resource" uid="uid://diuhor8lppdro" path="res://resources/rooms/generated/light_lab.tres" id="6_458bd"]
-[ext_resource type="Resource" uid="uid://rpagshdo2nno" path="res://resources/rooms/generated/water_hall.tres" id="6_water"]
-[ext_resource type="Resource" uid="uid://buy06gtby72b7" path="res://resources/rooms/generated/gas_lab.tres" id="7_gas"]
-[ext_resource type="Resource" uid="uid://djsx3oyv0rdwf" path="res://resources/rooms/generated/gas_trail.tres" id="8_trail"]
-[ext_resource type="Script" uid="uid://dkcwb87qn5n2c" path="res://addons/platformer_kit/world/data/world_data.gd" id="9_world"]
-[ext_resource type="Resource" uid="uid://b77laye1337sb" path="res://resources/rooms/generated/water_cascade.tres" id="10_cascade"]
-[ext_resource type="Resource" uid="uid://bmvcgy1lwimkp" path="res://resources/rooms/generated/water_grid.tres" id="11_grid"]
+[ext_resource type="Script" uid="uid://e2qiwoakwcux" path="res://addons/platformer_kit/world/data/room_connection_data.gd" id="1_jshn0"]
+[ext_resource type="Script" uid="uid://b1ws1oeewd0ks" path="res://addons/platformer_kit/world/data/world_room_placement_data.gd" id="2_cyhcw"]
+[ext_resource type="Script" uid="uid://c521t73sjen5" path="res://addons/platformer_kit/world/region/region_data.gd" id="3_8wo3v"]
+[ext_resource type="Resource" uid="uid://buy06gtby72b7" path="res://resources/rooms/generated/gas_lab.tres" id="4_lf5a0"]
+[ext_resource type="Resource" uid="uid://djsx3oyv0rdwf" path="res://resources/rooms/generated/gas_trail.tres" id="5_fxh2x"]
+[ext_resource type="Resource" uid="uid://diuhor8lppdro" path="res://resources/rooms/generated/light_lab.tres" id="6_1y7hg"]
+[ext_resource type="Resource" uid="uid://c03c6ki5n8h15" path="res://resources/rooms/generated/test_fog_start.tres" id="7_w35xd"]
+[ext_resource type="Resource" uid="uid://dl46x6juumdw2" path="res://resources/rooms/generated/test_fog_wide.tres" id="8_ft218"]
+[ext_resource type="Resource" uid="uid://b77laye1337sb" path="res://resources/rooms/generated/water_cascade.tres" id="9_lrc53"]
+[ext_resource type="Resource" uid="uid://bmvcgy1lwimkp" path="res://resources/rooms/generated/water_grid.tres" id="10_83c45"]
+[ext_resource type="Resource" uid="uid://rpagshdo2nno" path="res://resources/rooms/generated/water_hall.tres" id="11_knkrs"]
+[ext_resource type="Script" uid="uid://dkcwb87qn5n2c" path="res://addons/platformer_kit/world/data/world_data.gd" id="12_efnjk"]
 
-[sub_resource type="Resource" id="Resource_458bd"]
-script = ExtResource("1_lq7ps")
+[sub_resource type="Resource" id="Resource_q432j"]
+script = ExtResource("1_jshn0")
 from_room_id = "test_fog_start"
 from_entrance_id = "to_east"
 to_room_id = "test_fog_wide"
 to_spawn_id = "from_west"
 direction = 4
 
-[sub_resource type="Resource" id="Resource_8qdij"]
-script = ExtResource("1_lq7ps")
+[sub_resource type="Resource" id="Resource_mimgs"]
+script = ExtResource("1_jshn0")
 from_room_id = "test_fog_wide"
 from_entrance_id = "to_west"
 to_room_id = "test_fog_start"
 to_spawn_id = "start"
 direction = 3
 
-[sub_resource type="Resource" id="Resource_gas"]
-script = ExtResource("2_tlcfc")
+[sub_resource type="Resource" id="Resource_dm2ch"]
+script = ExtResource("2_cyhcw")
 room_id = "gas_lab"
 origin_chunk = Vector2i(1, 1)
 
-[sub_resource type="Resource" id="Resource_trail"]
-script = ExtResource("2_tlcfc")
+[sub_resource type="Resource" id="Resource_s3nmb"]
+script = ExtResource("2_cyhcw")
 room_id = "gas_trail"
 origin_chunk = Vector2i(2, 1)
 
-[sub_resource type="Resource" id="Resource_h0has"]
-script = ExtResource("2_tlcfc")
+[sub_resource type="Resource" id="Resource_hbpdx"]
+script = ExtResource("2_cyhcw")
 room_id = "light_lab"
 origin_chunk = Vector2i(3, 0)
 
-[sub_resource type="Resource" id="Resource_qcdcs"]
-script = ExtResource("2_tlcfc")
+[sub_resource type="Resource" id="Resource_npbb6"]
+script = ExtResource("2_cyhcw")
 room_id = "test_fog_start"
 
-[sub_resource type="Resource" id="Resource_mpmem"]
-script = ExtResource("2_tlcfc")
+[sub_resource type="Resource" id="Resource_jq3oo"]
+script = ExtResource("2_cyhcw")
 room_id = "test_fog_wide"
 origin_chunk = Vector2i(1, 0)
 
-[sub_resource type="Resource" id="Resource_cascade"]
-script = ExtResource("2_tlcfc")
+[sub_resource type="Resource" id="Resource_6rhcj"]
+script = ExtResource("2_cyhcw")
 room_id = "water_cascade"
 origin_chunk = Vector2i(0, 2)
 
-[sub_resource type="Resource" id="Resource_grid"]
-script = ExtResource("2_tlcfc")
+[sub_resource type="Resource" id="Resource_df6sw"]
+script = ExtResource("2_cyhcw")
 room_id = "water_grid"
 origin_chunk = Vector2i(1, 2)
 
-[sub_resource type="Resource" id="Resource_water"]
-script = ExtResource("2_tlcfc")
+[sub_resource type="Resource" id="Resource_84fnw"]
+script = ExtResource("2_cyhcw")
 room_id = "water_hall"
 origin_chunk = Vector2i(0, 1)
 
-[sub_resource type="Resource" id="Resource_62e5p"]
-script = ExtResource("3_pbuvv")
+[sub_resource type="Resource" id="Resource_l4en8"]
+script = ExtResource("3_8wo3v")
 region_id = &"test"
 display_name = "Test Area"
 room_ids = PackedStringArray("test_fog_start", "test_fog_wide", "water_hall", "gas_lab", "gas_trail", "water_cascade", "water_grid")
 tags = PackedStringArray()
 
 [resource]
-script = ExtResource("9_world")
+script = ExtResource("12_efnjk")
 world_id = "test_world"
 display_name = "Exploration Test World"
 description = "Water hall with two pools, a gas lab with three vented gas layers, a gas trail room, a 2D grid fluid room, plus fog, dark/light zones, crumbling platforms and a two-screen room."
 start_room_id = "water_hall"
 start_spawn_id = "start"
-rooms = Array[Resource]([ExtResource("7_gas"), ExtResource("8_trail"), ExtResource("6_458bd"), ExtResource("4_jrtf8"), ExtResource("5_u30kj"), ExtResource("10_cascade"), ExtResource("11_grid"), ExtResource("6_water")])
-placements = Array[Resource]([SubResource("Resource_gas"), SubResource("Resource_trail"), SubResource("Resource_h0has"), SubResource("Resource_qcdcs"), SubResource("Resource_mpmem"), SubResource("Resource_cascade"), SubResource("Resource_grid"), SubResource("Resource_water")])
-connections = Array[Resource]([SubResource("Resource_458bd"), SubResource("Resource_8qdij")])
-regions = Array[Resource]([SubResource("Resource_62e5p")])
+rooms = Array[Resource]([ExtResource("4_lf5a0"), ExtResource("5_fxh2x"), ExtResource("6_1y7hg"), ExtResource("7_w35xd"), ExtResource("8_ft218"), ExtResource("9_lrc53"), ExtResource("10_83c45"), ExtResource("11_knkrs")])
+placements = Array[Resource]([SubResource("Resource_dm2ch"), SubResource("Resource_s3nmb"), SubResource("Resource_hbpdx"), SubResource("Resource_npbb6"), SubResource("Resource_jq3oo"), SubResource("Resource_6rhcj"), SubResource("Resource_df6sw"), SubResource("Resource_84fnw")])
+connections = Array[Resource]([SubResource("Resource_q432j"), SubResource("Resource_mimgs")])
+regions = Array[Resource]([SubResource("Resource_l4en8")])
 tags = PackedStringArray()

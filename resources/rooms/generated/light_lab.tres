@@ -1,6 +1,6 @@
 [gd_resource type="Resource" script_class="RoomData" format=3 uid="uid://diuhor8lppdro"]
 
-[ext_resource type="Script" path="res://addons/platformer_kit/world/data/room_data.gd" id="1_3ddpc"]
+[ext_resource type="Script" uid="uid://iffewvgc6ofw" path="res://addons/platformer_kit/world/data/room_data.gd" id="1_3ddpc"]
 
 [resource]
 script = ExtResource("1_3ddpc")
@@ -8,7 +8,7 @@ room_id = "light_lab"
 display_name = "光照实验"
 scene_path = "res://scenes/rooms/generated/light_lab/runtime.tscn"
 source_scene_path = "res://scenes/levels/test/light_lab.tscn"
-source_fingerprint = "d510f139b39b66b8208e558daac6d61c1f1e5c7dfa417f8d7bd1ab3ddf9b51e0"
+source_fingerprint = "fac047f3ea4954787bbcd4428135a9b687410f7ad732b87621ab05be581945b0"
 terrain_scene_path = "res://scenes/rooms/generated/light_lab/terrain.tscn"
 entrance_ids = PackedStringArray()
 spawn_ids = PackedStringArray("start")
