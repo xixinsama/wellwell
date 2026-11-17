@@ -93,14 +93,21 @@ func get_decorated_room_count() -> int:
 ## Builds the silhouette of one solid layer, one texel per pixel of the layer's
 ## used rect.
 ##
-## The mask comes from the tile art's alpha, not from the cell grid: a slope tile,
-## a half tile or a decorative tile placed in the solid layer has a shape of its
-## own, and an outline drawn from whole cells would cut corners across the empty
-## half of the tile. Reads the atlas image once per source and copies each tile's
-## region, honouring flip_h / flip_v / transpose.
+## The shape comes from the tile's **collision polygon**, not from the cell grid and
+## not from the art alpha:
 ##
-## Returns an empty image when the layer has no tiles, which is how a room without
-## solids opts out.
+## - a slope tile is a triangle, a half tile is half a rect, so the outline follows
+##   the real geometry instead of cutting across the empty half;
+## - a tile with **no collision polygon** is not terrain at all (ladders, vines,
+##   decals placed in the solid layer), so it is skipped. Its art was the reason a
+##   ladder used to light up like a solid block;
+## - polygons are in tile-local pixels centred on zero, so flips are a negation.
+##
+
+## Whether tiles without a collision shape count as solid. Ladders and decals in
+## the solid layer have no shape and are skipped by default.
+@export var solid_needs_collision := true
+
 func build_mask(layer: TileMapLayer) -> Image:
 	var used := layer.get_used_rect()
 	if used.size.x <= 0 or used.size.y <= 0:
@@ -114,37 +121,96 @@ func build_mask(layer: TileMapLayer) -> Image:
 		var local := (cell - used.position) * tile_size
 		var data := layer.get_cell_tile_data(cell)
 		if data == null:
-			# No tile data: treat the cell as filled, the way the collision mask does.
-			mask.fill_rect(Rect2i(local, tile_size), Color(1.0, 1.0, 1.0, 1.0))
+			# No tile data: nothing describes a shape, so treat the cell as filled
+			# unless the caller asked for collision shapes only.
+			if not solid_needs_collision:
+				mask.fill_rect(Rect2i(local, tile_size), Color(1.0, 1.0, 1.0, 1.0))
 			continue
-		var source_id := layer.get_cell_source_id(cell)
-		var source := layer.tile_set.get_source(source_id) as TileSetAtlasSource if layer.tile_set != null else null
-		if source == null:
-			mask.fill_rect(Rect2i(local, tile_size), Color(1.0, 1.0, 1.0, 1.0))
+		var polygons := data.get_collision_polygons_count(0)
+		if polygons > 0:
+			for index in polygons:
+				_fill_polygon(
+					mask, local, tile_size, data.get_collision_polygon_points(0, index), data
+				)
 			continue
-		if not atlas_images.has(source_id):
-			var texture := source.texture
-			atlas_images[source_id] = texture.get_image() if texture != null else null
-		var atlas: Image = atlas_images[source_id]
-		var coords := layer.get_cell_atlas_coords(cell)
-		var region := source.get_tile_texture_region(coords)
-		if atlas == null or region.size.x <= 0 or region.size.y <= 0:
-			mask.fill_rect(Rect2i(local, tile_size), Color(1.0, 1.0, 1.0, 1.0))
+		if solid_needs_collision:
+			# A tile without a collision shape is decoration: leave it out.
 			continue
-		_stamp_tile(mask, local, tile_size, atlas, region, data)
+		_stamp_tile(mask, local, tile_size, layer, cell, data, atlas_images)
 	return mask
 
 
+## Fills one collision polygon into the mask with a scanline, honouring the cell's
+## flips. Points are in tile-local pixels centred on zero.
+func _fill_polygon(
+	mask: Image, origin: Vector2i, tile_size: Vector2i, points: PackedVector2Array, data: TileData
+) -> void:
+	if points.size() < 3:
+		return
+	var flip_h := bool(data.get("flip_h")) if data.get("flip_h") != null else false
+	var flip_v := bool(data.get("flip_v")) if data.get("flip_v") != null else false
+	var transpose := bool(data.get("transpose")) if data.get("transpose") != null else false
+	var half := Vector2(tile_size) * 0.5
+	var transformed := PackedVector2Array()
+	transformed.resize(points.size())
+	for index in points.size():
+		var point := points[index]
+		if transpose:
+			point = Vector2(point.y, point.x)
+		if flip_h:
+			point.x = -point.x
+		if flip_v:
+			point.y = -point.y
+		transformed[index] = point + half
+	var lowest := INF
+	var highest := -INF
+	for point: Vector2 in transformed:
+		lowest = minf(lowest, point.y)
+		highest = maxf(highest, point.y)
+	var white := Color(1.0, 1.0, 1.0, 1.0)
+	for row in range(maxi(floori(lowest), 0), mini(ceili(highest), tile_size.y)):
+		var scan := float(row) + 0.5
+		var crossings: Array[float] = []
+		for index in transformed.size():
+			var a := transformed[index]
+			var b := transformed[(index + 1) % transformed.size()]
+			if (a.y <= scan and b.y > scan) or (b.y <= scan and a.y > scan):
+				var t := (scan - a.y) / (b.y - a.y)
+				crossings.append(a.x + t * (b.x - a.x))
+		crossings.sort()
+		for index in range(0, crossings.size() - 1, 2):
+			var from := clampi(ceili(crossings[index]), 0, tile_size.x)
+			var to := clampi(floori(crossings[index + 1]), 0, tile_size.x)
+			for column in range(from, to):
+				mask.set_pixel(origin.x + column, origin.y + row, white)
+
+
 ## Copies one tile's atlas region into the mask, 1 for opaque art and 0 for the
-## transparent part, applying the cell's flips.
+## transparent part, applying the cell's flips. Only used when `solid_needs_collision`
+## is off and the tile has no collision shape.
 func _stamp_tile(
 	mask: Image,
 	origin: Vector2i,
 	tile_size: Vector2i,
-	atlas: Image,
-	region: Rect2i,
-	data: TileData
+	layer: TileMapLayer,
+	cell: Vector2i,
+	data: TileData,
+	atlas_images: Dictionary
 ) -> void:
+	var source_id := layer.get_cell_source_id(cell)
+	var source := layer.tile_set.get_source(source_id) as TileSetAtlasSource if layer.tile_set != null else null
+	if source == null:
+		mask.fill_rect(Rect2i(origin, tile_size), Color(1.0, 1.0, 1.0, 1.0))
+		return
+	if not atlas_images.has(source_id):
+		var texture := source.texture
+		atlas_images[source_id] = texture.get_image() if texture != null else null
+	var atlas: Image = atlas_images[source_id]
+	var coords := layer.get_cell_atlas_coords(cell)
+	var region := source.get_tile_texture_region(coords)
+	if atlas == null or region.size.x <= 0 or region.size.y <= 0:
+		mask.fill_rect(Rect2i(origin, tile_size), Color(1.0, 1.0, 1.0, 1.0))
+		return
 	var flip_h := bool(data.get("flip_h")) if data.get("flip_h") != null else false
 	var flip_v := bool(data.get("flip_v")) if data.get("flip_v") != null else false
 	var transpose := bool(data.get("transpose")) if data.get("transpose") != null else false

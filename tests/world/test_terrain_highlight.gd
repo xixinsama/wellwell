@@ -1,10 +1,10 @@
 extends Node
 
 ## The terrain highlight bakes the solid layer's silhouette into a one texel per
-## pixel mask (from the tile art, so slopes and half tiles keep their shape) and
-## draws the inner outline from it. These checks pin the things that can silently
-## break: the mask must line up with the tiles, transparent art must not be masked
-## as solid, and a room without solids must not grow a quad.
+## pixel mask from the tiles' collision shapes, then draws the inner outline from
+## it. These checks pin what can silently break: the mask must line up with the
+## tiles, a slope must be a diagonal, a tile without a collision shape (a ladder, a
+## vine) must not be masked, and a room without solids must not grow a quad.
 
 const HIGHLIGHT := preload("res://scripts/world/terrain_highlight.gd")
 const TERRAIN_SCENE := preload("res://scenes/rooms/generated/water_grid/terrain.tscn")
@@ -15,7 +15,8 @@ const TILE := 8
 func run() -> Array[String]:
 	var failures: Array[String] = []
 	_assert_mask_matches_tiles(failures)
-	_assert_missing_collision_tiles_are_open(failures)
+	_assert_slope_is_a_diagonal(failures)
+	_assert_tiles_without_collision_are_skipped(failures)
 	_assert_empty_room_is_skipped(failures)
 	return failures
 
@@ -52,13 +53,11 @@ func _assert_mask_matches_tiles(failures: Array[String]) -> void:
 		failures.append("the quad is %s instead of %s" % [str(quad.scale), str(expected)])
 	if quad.z_index < 1:
 		failures.append("the highlight is not drawn above the terrain")
-	# Every solid cell with fully opaque art has to be masked, and air has to be
-	# open. Cells whose art is partly transparent are the point of the art mask, so
-	# they are only checked for "some pixels set".
+	# This room is built from full square tiles, so every solid cell has to be
+	# fully masked and every open cell fully clear.
 	var mask := mask_texture.get_image()
 	var solid_count := 0
 	var open_count := 0
-	var checked_partial := false
 	for row in used.size.y:
 		for column in used.size.x:
 			var cell := used.position + Vector2i(column, row)
@@ -75,50 +74,53 @@ func _assert_mask_matches_tiles(failures: Array[String]) -> void:
 					failures.append("open cell %s has %d opaque mask pixels" % [str(cell), set_pixels])
 				continue
 			solid_count += 1
-			if set_pixels == 0:
-				failures.append("solid cell %s is missing from the mask" % str(cell))
-			elif set_pixels < TILE * TILE:
-				checked_partial = true
+			if set_pixels != TILE * TILE:
+				failures.append(
+					"solid cell %s has %d of %d mask pixels" % [str(cell), set_pixels, TILE * TILE]
+				)
 	if solid_count == 0 or open_count == 0:
 		failures.append("the test room does not have both solid and open cells")
-	# The room is drawn from full square tiles today, so there should be no partial
-	# tile; if one appears the art mask is doing its job and the check above already
-	# accepted it.
-	if checked_partial:
-		pass
 	_cleanup(rig)
 
 
-## A tile placed in the solid layer with no collision polygon is decoration: its
-## transparent art must stay open in the mask, otherwise the outline would trace
-## the empty half of the tile.
-func _assert_missing_collision_tiles_are_open(failures: Array[String]) -> void:
-	var rig := _make_rig()
-	var room: Node = rig["room"]
-	var layer := room.get_node_or_null("Terrain/SolidTiles") as TileMapLayer
-	var highlight: Node = rig["highlight"]
-	var decoration := PackedStringArray()
-	for cell: Vector2i in layer.get_used_cells():
-		var data := layer.get_cell_tile_data(cell)
-		if data != null and data.get_collision_polygons_count(0) == 0:
-			decoration.append(str(cell))
-	if decoration.is_empty():
-		# This room has no decollisioned tiles; nothing to assert here.
-		_cleanup(rig)
-		return
-	var mask := highlight.call("build_mask", layer) as Image
-	var used := layer.get_used_rect()
-	for entry: String in decoration:
-		var parts := entry.trim_prefix("(").trim_suffix(")").split(",")
-		var cell := Vector2i(int(parts[0]), int(parts[1]))
-		var origin := (cell - used.position) * TILE
-		var set_pixels := 0
-		for y in TILE:
-			for x in TILE:
-				if mask.get_pixel(origin.x + x, origin.y + y).r > 0.5:
-					set_pixels += 1
-		if set_pixels == TILE * TILE:
-			failures.append("decoration tile %s is masked as a full solid cell" % entry)
+## A triangle collision polygon has to come out as a diagonal, not as a full cell:
+## that is what makes slope tiles outline correctly.
+func _assert_slope_is_a_diagonal(failures: Array[String]) -> void:
+	var rig := _make_synthetic_rig(PackedVector2Array([
+		Vector2(-4.0, -4.0), Vector2(4.0, 4.0), Vector2(-4.0, 4.0)
+	]), true)
+	var mask: Image = rig["mask"]
+	# The triangle keeps the bottom-left half, so the filled area is 1 + 2 + ... + 7
+	# pixels: a full cell would be 64 and an empty one 0.
+	var opaque := 0
+	for y in TILE:
+		for x in TILE:
+			if mask.get_pixel(x, y).r > 0.5:
+				opaque += 1
+	if opaque != 28:
+		failures.append("the slope tile covers %d pixels instead of 28" % opaque)
+	if mask.get_pixel(0, 7).r <= 0.5:
+		failures.append("the slope tile is open at the bottom-left corner")
+	if mask.get_pixel(0, 6).r <= 0.5:
+		failures.append("the slope tile is open along its tall edge")
+	if mask.get_pixel(7, 0).r > 0.5:
+		failures.append("the slope tile is solid at its empty corner")
+	if mask.get_pixel(6, 6).r > 0.5:
+		failures.append("the slope tile is solid outside the diagonal")
+	_cleanup(rig)
+
+
+## A tile with no collision polygon is not terrain: a ladder or a vine placed in
+## the solid layer must not be outlined as a block.
+func _assert_tiles_without_collision_are_skipped(failures: Array[String]) -> void:
+	var rig := _make_synthetic_rig(PackedVector2Array(), false)
+	var mask: Image = rig["mask"]
+	for y in TILE:
+		for x in TILE:
+			if mask.get_pixel(x, y).r > 0.5:
+				failures.append("a tile without a collision shape was masked solid")
+				_cleanup(rig)
+				return
 	_cleanup(rig)
 
 
@@ -134,6 +136,52 @@ func _assert_empty_room_is_skipped(failures: Array[String]) -> void:
 	if highlight.call("get_highlight_for_room", room) != null:
 		failures.append("a room without solid tiles grew a quad")
 	_cleanup(rig)
+
+
+## One tile layer with a single cell, whose tile either has a collision polygon or
+## none. Returns the mask built for it.
+func _make_synthetic_rig(polygon: PackedVector2Array, with_collision: bool) -> Dictionary:
+	var image := Image.create(TILE * 2, TILE, false, Image.FORMAT_RGBA8)
+	image.fill(Color(1.0, 1.0, 1.0, 1.0))
+	var source := TileSetAtlasSource.new()
+	source.texture = ImageTexture.create_from_image(image)
+	source.texture_region_size = Vector2i(TILE, TILE)
+	var coords := Vector2i.ZERO
+	source.create_tile(coords)
+	var tile_set := TileSet.new()
+	tile_set.tile_size = Vector2i(TILE, TILE)
+	tile_set.add_physics_layer()
+	tile_set.add_source(source, 0)
+	if with_collision:
+		var data := source.get_tile_data(coords, 0)
+		if data != null and data.get_collision_polygons_count(0) == 0:
+			data.add_collision_polygon(0)
+		if data != null:
+			data.set_collision_polygon_points(0, 0, polygon)
+	var rooms := Node2D.new()
+	rooms.name = "TerrainRoot"
+	add_child(rooms)
+	var room := Node2D.new()
+	room.name = "synthetic"
+	rooms.add_child(room)
+	var terrain := Node2D.new()
+	terrain.name = "Terrain"
+	room.add_child(terrain)
+	var layer := TileMapLayer.new()
+	layer.name = "SolidTiles"
+	layer.tile_set = tile_set
+	terrain.add_child(layer)
+	layer.set_cell(Vector2i.ZERO, 0, coords)
+	var highlight := HIGHLIGHT.new() as Node2D
+	highlight.name = "TerrainHighlight"
+	add_child(highlight)
+	var mask: Image = highlight.call("build_mask", layer)
+	var opaque := 0
+	for yy in mask.get_height():
+		for xx in mask.get_width():
+			if mask.get_pixel(xx, yy).r > 0.5:
+				opaque += 1
+	return {"rooms": rooms, "room": room, "highlight": highlight, "mask": mask, "layer": layer}
 
 
 func _make_rig() -> Dictionary:
