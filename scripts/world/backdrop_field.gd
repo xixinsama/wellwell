@@ -32,8 +32,8 @@ const ROOMS_PATH := NodePath("../TerrainRoot")
 @export_range(0.0, 1.5, 0.01) var vignette := 0.22
 ## Ordered-dither posterise of the plate, so the backdrop is banded pixel art
 ## instead of a smooth blurred photo.
-@export_range(0.0, 1.0, 0.01) var dither_strength := 0.75
-@export_range(2.0, 32.0, 1.0) var dither_levels := 5.0
+@export_range(0.0, 1.0, 0.01) var dither_strength := 0.6
+@export_range(2.0, 32.0, 1.0) var dither_levels := 8.0
 ## Alpha kept by the room's background tilemap. 1 = untouched and crisp.
 @export_range(0.0, 1.0, 0.01) var background_tilemap_alpha := 1.0
 

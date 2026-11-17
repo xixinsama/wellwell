@@ -1,6 +1,6 @@
 [gd_resource type="Resource" script_class="RoomData" format=3 uid="uid://rpagshdo2nno"]
 
-[ext_resource type="Script" path="res://addons/platformer_kit/world/data/room_data.gd" id="1_6ik2j"]
+[ext_resource type="Script" uid="uid://iffewvgc6ofw" path="res://addons/platformer_kit/world/data/room_data.gd" id="1_6ik2j"]
 
 [resource]
 script = ExtResource("1_6ik2j")
@@ -8,7 +8,7 @@ room_id = "water_hall"
 display_name = "水池与雾气"
 scene_path = "res://scenes/rooms/generated/water_hall/runtime.tscn"
 source_scene_path = "res://scenes/levels/test/water_hall.tscn"
-source_fingerprint = "8f8dff42fdf10741685d1824c826806ceccd8d1465ffa8a2d5f29bc515e7b84f"
+source_fingerprint = "834a8695deab171692d8d1134b3fdb2dd0e287887ab4a611b327be7f3cd44537"
 terrain_scene_path = "res://scenes/rooms/generated/water_hall/terrain.tscn"
 entrance_ids = PackedStringArray()
 spawn_ids = PackedStringArray("start")

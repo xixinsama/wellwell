@@ -67,11 +67,17 @@ void fragment() {
 	col.rgb *= tint.rgb * brightness;
 	if (dither_strength > 0.0) {
 		// Step the colour on the design pixel grid, then let the dither pick the
-		// neighbouring step per pixel: banding without a smooth gradient.
+		// neighbouring step per pixel. The mask keeps the dots off flat areas:
+		// without it the ordered pattern covers the whole plate and reads as a
+		// dot grid over the picture.
+		vec3 right = texture(TEXTURE, uv + vec2(TEXTURE_PIXEL_SIZE.x, 0.0)).rgb * tint.rgb * brightness;
+		vec3 down = texture(TEXTURE, uv + vec2(0.0, TEXTURE_PIXEL_SIZE.y)).rgb * tint.rgb * brightness;
+		float contrast = max(length(right - col.rgb), length(down - col.rgb));
+		float mask = smoothstep(0.02, 0.1, contrast);
 		vec2 screen_px = floor(UV * vec2(320.0, 180.0));
 		float noise = bayer4(screen_px);
 		vec3 stepped = floor(col.rgb * dither_levels + noise) / dither_levels;
-		col.rgb = mix(col.rgb, stepped, clamp(dither_strength, 0.0, 1.0));
+		col.rgb = mix(col.rgb, stepped, clamp(dither_strength, 0.0, 1.0) * mask);
 	}
 	COLOR = vec4(col.rgb, 1.0);
 }

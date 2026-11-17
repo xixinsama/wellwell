@@ -15,9 +15,9 @@
 [ext_resource type="PackedScene" path="res://game/water/effects/water_splash_pixels.tscn" id="12_splash"]
 [ext_resource type="Script" uid="uid://ucenmxbdpetr" path="res://addons/fluid_kit/runtime/water/water_grid.gd" id="13_grid"]
 [ext_resource type="Script" uid="uid://dxuog2of6kyji" path="res://scripts/world/backdrop_field.gd" id="14_backdrop"]
-[ext_resource type="Script" path="res://scripts/world/terrain_highlight.gd" id="15_highlight"]
-[ext_resource type="Script" path="res://scripts/world/light_field.gd" id="16_light"]
-[ext_resource type="Script" path="res://scripts/world/screen_bloom.gd" id="17_bloom"]
+[ext_resource type="Script" uid="uid://dy45jy15p3gpe" path="res://scripts/world/terrain_highlight.gd" id="15_highlight"]
+[ext_resource type="Script" uid="uid://d10q7hvrp01va" path="res://scripts/world/light_field.gd" id="16_light"]
+[ext_resource type="Script" uid="uid://cgs4fckq1mcre" path="res://scripts/world/screen_bloom.gd" id="17_bloom"]
 
 [node name="WorldRoot" type="Node2D" unique_id=1531965248]
 script = ExtResource("1_session")
@@ -30,7 +30,7 @@ script = ExtResource("5_terrain")
 [node name="BackdropField" type="Node2D" parent="." unique_id=1856933694]
 script = ExtResource("14_backdrop")
 
-[node name="TerrainHighlight" type="Node2D" parent="."]
+[node name="TerrainHighlight" type="Node2D" parent="." unique_id=1715857535]
 script = ExtResource("15_highlight")
 
 [node name="WorldRuntime" type="Node2D" parent="." unique_id=2137384709]
@@ -62,10 +62,10 @@ sim_hz = 60.0
 gas_refill = 1.0
 push_strength = 2.2
 
-[node name="ScreenBloom" type="Node2D" parent="."]
+[node name="ScreenBloom" type="Node2D" parent="." unique_id=1951074867]
 script = ExtResource("17_bloom")
 
-[node name="LightField" type="Node2D" parent="."]
+[node name="LightField" type="Node2D" parent="." unique_id=394850553]
 script = ExtResource("16_light")
 player_path = NodePath("../Player")
 

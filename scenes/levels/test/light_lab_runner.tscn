@@ -4,6 +4,7 @@
 [ext_resource type="PackedScene" path="res://scenes/runtime/world_root.tscn" id="2_world"]
 [ext_resource type="Resource" path="res://resources/worlds/test_world.tres" id="3_test_world"]
 [ext_resource type="PackedScene" path="res://addons/platformer_debug/runtime/debug_hud.tscn" id="4_debug_hud"]
+[ext_resource type="PackedScene" path="res://scenes/ui/crt_overlay.tscn" id="5_crt"]
 
 [node name="LightLabRunner" type="Control"]
 layout_mode = 3
@@ -39,3 +40,5 @@ world_data = ExtResource("3_test_world")
 
 [node name="DebugHud" parent="HUD" instance=ExtResource("4_debug_hud")]
 visible = false
+
+[node name="CrtOverlay" parent="." instance=ExtResource("5_crt")]
