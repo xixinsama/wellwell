@@ -4,10 +4,15 @@ class_name TerrainHighlight
 ## Draws an inner outline along the solid terrain of every loaded room.
 ##
 ## The solid layer's silhouette is baked into a one-texel-per-pixel mask from the
-## tile art alpha (so slopes, half tiles and decorative bricks keep their real
-## shape), and `terrain_highlight.gdshader` lights the pixels within a couple of
-## pixels of open air in every direction: the line runs around the whole shape,
-## not just the top faces.
+## tiles' collision shapes, and `terrain_highlight.gdshader` lights the pixels
+## within a couple of pixels of open air in every direction: the line runs around
+## the whole shape, not just the top faces.
+##
+## Only the side the hero is on lights up. A flood fill from the hero's tile over
+## open air says which pockets of the room are reachable, and the shader only counts
+## an air pixel that belongs to that set: a sealed cavity (a closed room, a hollow
+## inside a wall) stays dark on its inside, while the outside of the same wall lights
+## up. The fill is redone when the hero moves to a different tile, not per frame.
 ##
 ## The node is world level (like BackdropField): it decorates each room under
 ## TerrainRoot, so rooms without solid tiles simply get nothing. Rebuilds on
@@ -17,6 +22,9 @@ const HIGHLIGHT_SHADER: Shader = preload("res://scripts/shaders/terrain_highligh
 const LAYER_NAME := "TerrainHighlight"
 const ROOMS_PATH := NodePath("../TerrainRoot")
 const TILE_FALLBACK := 8.0
+## Where the hero is, for the reachability fill. The node lives next to the player
+## under the world root.
+const PLAYER_PATH := NodePath("../Player")
 
 ## The tile layer whose outline is highlighted.
 @export var layer_path := NodePath("Terrain/SolidTiles")
@@ -30,13 +38,19 @@ const TILE_FALLBACK := 8.0
 @export_range(0.0, 1.0, 0.01) var rim_grain := 0.18
 ## Light the inside of the silhouette (the usual rim) instead of the air outside it.
 @export var rim_inside := true
+## Only light the terrain that faces the pocket of air the hero is in.
+@export var hero_side_only := true
 ## Draw above the terrain but under fog, water and gas.
 @export_range(-10, 20, 1) var draw_order := 1
 
-var _decorated_rooms: Array[Node] = []
+## One entry per decorated room: its layer, sizes, shape grid and reach grid.
+var _entries: Array[Dictionary] = []
+var _player: Node2D
+var _last_player_cell := Vector2i(2147483647, 2147483647)
 
 
 func _ready() -> void:
+	_player = get_node_or_null(PLAYER_PATH) as Node2D
 	var world := get_parent()
 	if world != null and world.has_signal("world_ready"):
 		if not world.is_connected("world_ready", decorate_rooms):
@@ -44,18 +58,68 @@ func _ready() -> void:
 	decorate_rooms()
 
 
+## Re-runs the reachability fill when the hero moves into another tile. Tiles are
+## 8 px, so this is a few times per second at most, and the fill itself is a walk
+## over a few hundred tiles.
+func _process(_delta: float) -> void:
+	if not hero_side_only or _entries.is_empty():
+		return
+	if _player == null or not is_instance_valid(_player):
+		_player = get_node_or_null(PLAYER_PATH) as Node2D
+	if _player == null:
+		return
+	var tile := _player_tile()
+	if tile == _last_player_cell:
+		return
+	_last_player_cell = tile
+	refresh_reach()
+
+
+## Recomputes the lit side of every decorated room from the hero's position. Safe to
+## call by hand (tests, a teleport).
+func refresh_reach() -> void:
+	if _player == null or not is_instance_valid(_player):
+		_player = get_node_or_null(PLAYER_PATH) as Node2D
+	for entry: Dictionary in _entries:
+		var start := Vector2i(-1, -1)
+		if _player != null:
+			var layer: TileMapLayer = entry["layer"]
+			var local := layer.to_local(_player.global_position)
+			var map := layer.local_to_map(local)
+			start = map
+		_update_reach(entry, start)
+
+
+## The hero's tile in the world, used only to detect that it moved.
+func _player_tile() -> Vector2i:
+	if _player == null:
+		return Vector2i(2147483647, 2147483647)
+	var size := float(TILE_FALLBACK)
+	var entry_size := 0
+	if not _entries.is_empty():
+		entry_size = (_entries[0].get("tile_size", Vector2i(TILE_FALLBACK, TILE_FALLBACK)) as Vector2i).x
+		if entry_size > 0:
+			size = float(entry_size)
+	return Vector2i(
+		floori(_player.global_position.x / size),
+		floori(_player.global_position.y / size)
+	)
+
+
 ## Adds (or refreshes) the highlight quad of every loaded room. Safe to call
 ## repeatedly; the world session re-bakes terrain on each start. A room that lost
 ## its solids loses its quad in the same pass, so a re-baked room never keeps a
 ## stale outline.
 func decorate_rooms() -> void:
-	_decorated_rooms.clear()
+	_entries.clear()
+	# Force the next frame to redo the reach fill against the rebuilt rooms.
+	_last_player_cell = Vector2i(2147483647, 2147483647)
 	var rooms := _resolve_rooms_root()
 	if rooms == null:
 		return
 	for room: Node in rooms.get_children():
 		if _decorate_room(room):
-			_decorated_rooms.append(room)
+			pass
 		elif room is Node:
 			_clear_room(room)
 
@@ -87,7 +151,7 @@ func get_highlight_for_room(room: Node) -> MeshInstance2D:
 
 
 func get_decorated_room_count() -> int:
-	return _decorated_rooms.size()
+	return _entries.size()
 
 
 ## Builds the silhouette of one solid layer, one texel per pixel of the layer's
@@ -257,17 +321,152 @@ func _decorate_room(room: Node) -> bool:
 		quad.z_index = draw_order
 		quad.z_as_relative = true
 		terrain.add_child(quad)
-	_sync_quad(quad, layer, used)
+	var entry := _entry_for(room)
+	if entry.is_empty():
+		entry = _make_entry(room, layer, used)
+		_entries.append(entry)
+	else:
+		# A re-baked room keeps its terrain node: rebuild the baked data, keep the quad.
+		var rebuilt := _make_entry(room, layer, used)
+		entry["used"] = rebuilt["used"]
+		entry["tile_size"] = rebuilt["tile_size"]
+		entry["solid"] = rebuilt["solid"]
+		entry["mask"] = rebuilt["mask"]
+		entry["image"] = rebuilt["image"]
+		entry["texture"] = rebuilt["texture"]
+	_sync_quad(quad, entry)
 	return true
 
 
-func _sync_quad(quad: MeshInstance2D, layer: TileMapLayer, used: Rect2i) -> void:
+## The entry of one room, or an empty dictionary when it is not decorated yet.
+func _entry_for(room: Node) -> Dictionary:
+	for entry: Dictionary in _entries:
+		if entry.get("room") == room:
+			return entry
+	return {}
+
+
+## Bakes the per-room data: the pixel silhouette, the tile grid used by the fill,
+## and the reachability image the shader samples.
+func _make_entry(room: Node, layer: TileMapLayer, used: Rect2i) -> Dictionary:
 	var tile_size := _tile_size(layer)
 	var mask := build_mask(layer)
+	var reach_image := Image.create(used.size.x, used.size.y, false, Image.FORMAT_R8)
+	# Start lit: until the first fill runs (a world without a player, an editor
+	# preview) the outline behaves as a plain rim instead of going black.
+	reach_image.fill(Color(1.0, 1.0, 1.0, 1.0))
+	var entry := {
+		"room": room,
+		"layer": layer,
+		"used": used,
+		"tile_size": tile_size,
+		"solid": _build_solid_grid(layer, used),
+		"mask": mask,
+		"image": reach_image,
+		"texture": ImageTexture.create_from_image(reach_image),
+		"reach": PackedByteArray(),
+		"has_reach": false,
+	}
+	return entry
+
+
+## One byte per tile of the used rect: 1 when the tile has a collision shape. The
+## reachability fill walks the zeros.
+func _build_solid_grid(layer: TileMapLayer, used: Rect2i) -> PackedByteArray:
+	var grid := PackedByteArray()
+	grid.resize(used.size.x * used.size.y)
+	grid.fill(0)
+	for cell: Vector2i in layer.get_used_cells():
+		var local := cell - used.position
+		if local.x < 0 or local.y < 0 or local.x >= used.size.x or local.y >= used.size.y:
+			continue
+		var data := layer.get_cell_tile_data(cell)
+		if data == null or data.get_collision_polygons_count(0) == 0:
+			continue
+		grid[local.y * used.size.x + local.x] = 1
+	return grid
+
+
+## Flood fills the open air the hero can reach from `start_cell` (in the layer's
+## cell space) and hands the result to the shader. Anything the fill cannot reach -## a closed room, a hollow inside a wall -is left dark.
+func _update_reach(entry: Dictionary, start_cell: Vector2i) -> void:
+	var used: Rect2i = entry["used"]
+	var image: Image = entry["image"]
+	var reach := compute_reach(entry, start_cell)
+	entry["reach"] = reach
+	entry["has_reach"] = true
+	var size := used.size
+	for row in size.y:
+		for column in size.x:
+			var inside := reach[row * size.x + column] != 0
+			image.set_pixel(column, row, Color(1.0, 1.0, 1.0, 1.0) if inside else Color(0.0, 0.0, 0.0, 1.0))
+	(entry["texture"] as ImageTexture).update(image)
+
+
+## Reachable open tiles from `start_cell`, one byte per tile of the used rect.
+## Public so a test can check the flood without a renderer.
+func compute_reach(entry: Dictionary, start_cell: Vector2i) -> PackedByteArray:
+	var used: Rect2i = entry["used"]
+	var solid: PackedByteArray = entry["solid"]
+	var size := used.size
+	var reach := PackedByteArray()
+	reach.resize(size.x * size.y)
+	reach.fill(0)
+	if size.x <= 0 or size.y <= 0:
+		return reach
+	var start := start_cell - used.position
+	start = _nearest_open(solid, size, start)
+	if start.x < 0:
+		return reach
+	var queue: Array[Vector2i] = [start]
+	reach[start.y * size.x + start.x] = 1
+	var head := 0
+	while head < queue.size():
+		var cell: Vector2i = queue[head]
+		head += 1
+		for step: Vector2i in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+			var neighbour := cell + step
+			if neighbour.x < 0 or neighbour.y < 0 or neighbour.x >= size.x or neighbour.y >= size.y:
+				continue
+			var index := neighbour.y * size.x + neighbour.x
+			if reach[index] != 0 or solid[index] != 0:
+				continue
+			reach[index] = 1
+			queue.append(neighbour)
+	return reach
+
+
+## The tile itself when it is open, else the closest open tile within a couple of
+## cells (the hero can stand a pixel inside a wall while landing). Vector2i(-1, -1)
+## when there is none, which leaves the room dark.
+func _nearest_open(solid: PackedByteArray, size: Vector2i, cell: Vector2i) -> Vector2i:
+	var clamped := Vector2i(clampi(cell.x, 0, size.x - 1), clampi(cell.y, 0, size.y - 1))
+	if solid[clamped.y * size.x + clamped.x] == 0:
+		return clamped
+	for radius in range(1, 3):
+		for offset_y in range(-radius, radius + 1):
+			for offset_x in range(-radius, radius + 1):
+				var candidate := clamped + Vector2i(offset_x, offset_y)
+				if candidate.x < 0 or candidate.y < 0 or candidate.x >= size.x or candidate.y >= size.y:
+					continue
+				if solid[candidate.y * size.x + candidate.x] == 0:
+					return candidate
+	return Vector2i(-1, -1)
+
+
+func _sync_quad(quad: MeshInstance2D, entry: Dictionary) -> void:
+	var layer: TileMapLayer = entry["layer"]
+	var used: Rect2i = entry["used"]
+	var tile_size: Vector2i = entry["tile_size"]
+	var mask: Image = entry["mask"]
 	var material := ShaderMaterial.new()
 	material.shader = HIGHLIGHT_SHADER
 	material.set_shader_parameter("mask_texture", ImageTexture.create_from_image(mask))
 	material.set_shader_parameter("mask_pixels", Vector2(mask.get_width(), mask.get_height()))
+	material.set_shader_parameter("reach_texture", entry["texture"])
+	material.set_shader_parameter("reach_cells", Vector2(used.size))
+	material.set_shader_parameter("tile_pixels", float(tile_size.x))
+	material.set_shader_parameter("require_reach", 1.0 if hero_side_only else 0.0)
 	material.set_shader_parameter("rim_color", rim_color)
 	material.set_shader_parameter("rim_strength", rim_strength)
 	material.set_shader_parameter("rim_width", rim_width)
@@ -287,11 +486,8 @@ func _sync_quad(quad: MeshInstance2D, layer: TileMapLayer, used: Rect2i) -> void
 
 ## Push the exported tuning values onto every built quad (live editing).
 func apply_parameters() -> void:
-	var rooms := _resolve_rooms_root()
-	if rooms == null:
-		return
-	for room: Node in rooms.get_children():
-		var quad := get_highlight_for_room(room)
+	for entry: Dictionary in _entries:
+		var quad := get_highlight_for_room(entry["room"])
 		if quad == null or quad.material == null:
 			continue
 		var material := quad.material as ShaderMaterial
@@ -301,6 +497,7 @@ func apply_parameters() -> void:
 		material.set_shader_parameter("rim_softness", rim_softness)
 		material.set_shader_parameter("rim_grain", rim_grain)
 		material.set_shader_parameter("inside", 1.0 if rim_inside else 0.0)
+		material.set_shader_parameter("require_reach", 1.0 if hero_side_only else 0.0)
 
 
 func _resolve_rooms_root() -> Node:

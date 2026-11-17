@@ -18,6 +18,12 @@ shader_type canvas_item;
 uniform sampler2D mask_texture : filter_nearest, repeat_disable;
 // Mask size in pixels.
 uniform vec2 mask_pixels = vec2(320.0, 184.0);
+// One texel per tile: 1 where the hero can reach that air, 0 where it cannot.
+uniform sampler2D reach_texture : filter_nearest, repeat_disable;
+uniform vec2 reach_cells = vec2(40.0, 23.0);
+uniform float tile_pixels = 8.0;
+// 1 only lights the side of a wall that faces air the hero can reach.
+uniform float require_reach = 1.0;
 uniform vec4 rim_color : source_color = vec4(0.72, 0.94, 1.0, 1.0);
 uniform float rim_strength = 0.85;
 // How many pixels deep the outline reaches in from the silhouette edge.
@@ -36,6 +42,19 @@ float solid_at(vec2 pixel) {
 	return texture(mask_texture, (floor(pixel) + 0.5) / mask_pixels).r;
 }
 
+// Is this pixel's tile air the hero can reach? A sealed pocket answers 0, which is
+// what keeps the inside of a closed room dark.
+float reachable_at(vec2 pixel) {
+	if (require_reach < 0.5) {
+		return 1.0;
+	}
+	vec2 tile = floor(pixel / tile_pixels);
+	if (tile.x < 0.0 || tile.y < 0.0 || tile.x >= reach_cells.x || tile.y >= reach_cells.y) {
+		return 0.0;
+	}
+	return texture(reach_texture, (tile + 0.5) / reach_cells).r;
+}
+
 float hash21(vec2 p) {
 	p = fract(p * vec2(123.34, 456.21));
 	p += dot(p, p + 45.32);
@@ -43,7 +62,9 @@ float hash21(vec2 p) {
 }
 
 // Steps along the four axes until `target` is found, and returns that distance.
-// `target` is 0.0 to look for air, 1.0 to look for solid.
+// `target` is 0.0 to look for air, 1.0 to look for solid. For the air case the
+// first air pixel must also be reachable: otherwise this side of the wall is dark,
+// because the hero cannot get to that pocket.
 float distance_to(float target, vec2 pixel) {
 	float best = rim_width + 1.0;
 	for (int axis = 0; axis < 4; axis++) {
@@ -59,8 +80,12 @@ float distance_to(float target, vec2 pixel) {
 			if (float(step) > rim_width) {
 				break;
 			}
-			float sample_at = solid_at(pixel + direction * float(step));
+			vec2 sample_position = pixel + direction * float(step);
+			float sample_at = solid_at(sample_position);
 			if (abs(sample_at - target) < 0.5) {
+				if (target < 0.5 && reachable_at(sample_position) < 0.5) {
+					break;
+				}
 				best = min(best, float(step));
 				break;
 			}
@@ -78,6 +103,10 @@ void fragment() {
 	vec4 result = vec4(0.0);
 	if (lit) {
 		float distance = inside > 0.5 ? distance_to(0.0, pixel) : distance_to(1.0, pixel);
+		if (inside < 0.5 && reachable_at(pixel) < 0.5) {
+			// The outside variant lights air, so the air itself has to be reachable.
+			distance = rim_width + 1.0;
+		}
 		if (distance <= rim_width) {
 			float fade = 1.0 - clamp((distance - 1.0) / max(rim_width, 1.0), 0.0, 1.0);
 			fade = mix(1.0, fade, clamp(rim_softness, 0.0, 1.0));
