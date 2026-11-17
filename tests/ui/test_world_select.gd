@@ -17,10 +17,16 @@ func _assert_catalog(failures: Array[String]) -> void:
 		failures.append("world catalog resource is missing")
 		return
 	var worlds := catalog.get_worlds()
-	if worlds.size() != 3:
-		failures.append("world catalog must expose both project worlds and the test world")
+	if worlds.size() != 4:
+		failures.append("world catalog must expose the project worlds"
+			+ " and the test and loop worlds")
 		return
-	if worlds[0].world_id != "the_world" or worlds[1].world_id != "main_world" or worlds[2].world_id != "test_world":
+	if (
+		worlds[0].world_id != "the_world"
+		or worlds[1].world_id != "main_world"
+		or worlds[2].world_id != "test_world"
+		or worlds[3].world_id != "loop_world"
+	):
 		failures.append("world catalog order or ids changed")
 	for world: WorldData in worlds:
 		if world.display_name.is_empty():
@@ -41,7 +47,7 @@ func _assert_selection_ui(failures: Array[String]) -> void:
 		ui.queue_free()
 		return
 	var rows := list.find_children("WorldRow_*", "HBoxContainer", true, false)
-	if rows.size() != 3:
+	if rows.size() != 4:
 		failures.append("world selection did not build one row per world")
 		ui.queue_free()
 		return

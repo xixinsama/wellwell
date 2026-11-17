@@ -117,7 +117,10 @@ void fragment() {
 	color += light_sum * 0.22;
 	float alpha = clamp(opacity * (base_alpha + light_alpha * min(lit, 1.5)), 0.0, 0.92);
 	float dither = bayer4(world);
-	alpha = floor(alpha * 8.0 + dither) / 8.0;
+	// 32 steps instead of 8: at the 4x pixel scale the 1/8 steps read as a
+	// screen-door pattern over the backdrop; finer steps keep the banding
+	// guard without the visible stipple.
+	alpha = floor(alpha * 32.0 + dither) / 32.0;
 	if (alpha <= 0.02) {
 		discard;
 	}

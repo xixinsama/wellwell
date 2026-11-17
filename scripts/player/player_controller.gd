@@ -33,6 +33,7 @@ var _sensors: RefCounted = CHARACTER_SENSORS.new()
 var _input_source: RefCounted = PLAYER_INPUT_SOURCE.new()
 var _world_velocity := Vector2.ZERO
 var _has_motion_sample := false
+var _ability_motion_active := false
 
 @onready var sprite_root: Node2D = $SpriteRoot
 @onready var _ability_loadout: Node = get_node_or_null("AbilityLoadout")
@@ -40,6 +41,7 @@ var _has_motion_sample := false
 @onready var _ladder_motion: Node = get_node_or_null("LadderMotion")
 @onready var _water_motion: Node = get_node_or_null("WaterMotion")
 @onready var _hero_animation: Node = get_node_or_null("SpriteRoot/HeroAnimation")
+@onready var _one_way_piercer: Node = get_node_or_null("OneWayDashPiercer")
 
 
 func _ready() -> void:
@@ -50,6 +52,8 @@ func _ready() -> void:
     if spawn_position == Vector2.ZERO:
         spawn_position = global_position
     _input_source.set("additional_actions", Array([&"dash"], TYPE_STRING_NAME, &"", null))
+    if _one_way_piercer != null:
+        _one_way_piercer.call("configure", self)
     if _ladder_motion != null and _ladder_motion.has_signal("climb_animation_requested"):
         _ladder_motion.connect("climb_animation_requested", _on_climb_animation_requested)
     if _water_motion != null and _water_motion.has_signal("swim_animation_requested"):
@@ -105,6 +109,8 @@ func set_control_locked(value: bool) -> void:
             _ladder_motion.call("reset")
         if _water_motion != null:
             _water_motion.call("reset")
+        if _one_way_piercer != null:
+            _one_way_piercer.call("clear")
         if _hero_animation != null:
             _hero_animation.call("reset")
 
@@ -153,7 +159,9 @@ func _physics_process(delta: float) -> void:
         _motion_effects.call("play_jump")
     velocity = _movement_context.velocity
     _update_facing(intent.move_axis)
+    _update_dash_recharge()
     _apply_ability_motion(intent)
+    _update_one_way_piercing()
     _recover_visual(delta)
 
     move_and_slide()
@@ -177,6 +185,7 @@ func _physics_process(delta: float) -> void:
 
 func _apply_ability_motion(intent: RefCounted) -> bool:
     if _ability_loadout == null:
+        _ability_motion_active = false
         return false
     var motion: Dictionary = _ability_loadout.call(
         "get_motion_override",
@@ -185,15 +194,37 @@ func _apply_ability_motion(intent: RefCounted) -> bool:
         facing
     )
     if not bool(motion.get("active", false)):
+        _ability_motion_active = false
         return false
     velocity = Vector2(motion.get("velocity", velocity))
     _movement_context.velocity = velocity
+    _ability_motion_active = true
     return true
+
+
+## The Dash recharges like a jump: touching the ground refills it, and swimming
+## refills it every frame, so dashes are unlimited in water.
+func _update_dash_recharge() -> void:
+    if _ability_loadout == null or not _ability_loadout.has_method("update_dash_recharge"):
+        return
+    var in_water := _water_motion != null and bool(_water_motion.call("is_in_water"))
+    _ability_loadout.call("update_dash_recharge", is_on_floor() or in_water)
+
+
+## Dashes that travel in the direction a one-way surface blocks pass through it
+## (down through a floor platform, sideways through a vertical one). The
+## game-specific piercer component owns that rule.
+func _update_one_way_piercing() -> void:
+    if _one_way_piercer == null:
+        return
+    _one_way_piercer.call("update", _ability_motion_active, velocity)
 
 
 func respawn_at(pos: Vector2) -> void:
     if _motion_effects != null:
         _motion_effects.call("clear_effects")
+    if _one_way_piercer != null:
+        _one_way_piercer.call("clear")
     if _hero_animation != null:
         _hero_animation.call("reset")
     _has_motion_sample = false

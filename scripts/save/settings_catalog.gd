@@ -210,6 +210,14 @@ static func _build_definitions() -> void:
 			],
 			"SETTINGS_DESC_FPS"
 		),
+		SettingsDefinition.toggle(
+			&"crt_enabled",
+			VIDEO,
+			"SETTINGS_CRT",
+			true,
+			"CrtToggle",
+			"SETTINGS_DESC_CRT"
+		),
 		SettingsDefinition.action(
 			&"input_mapping",
 			CONTROLS,

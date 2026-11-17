@@ -61,6 +61,8 @@ SETTINGS_FPS_60,60 FPS,60 FPS
 SETTINGS_FPS_120,120 FPS,120 FPS
 SETTINGS_FPS_144,144 FPS,144 FPS
 SETTINGS_DESC_FPS,Render and physics share the same rate,绘制帧与物理帧使用同一数值
+SETTINGS_CRT,CRT Filter,CRT 滤镜
+SETTINGS_DESC_CRT,Scanlines and phosphor glow over the whole screen,全屏扫描线与荧光光晕，亮部保持明亮
 SETTINGS_INPUT_MAPPING,Input Mapping,按键设置
 SETTINGS_INPUT_MAPPING_OPEN,Configure,配置
 SETTINGS_DESC_INPUT_MAPPING,Open the key mapping page,打开按键映射页面
@@ -95,3 +97,9 @@ WORLD_SELECT_ENTER,Enter,进入
 WORLD_SELECT_EMPTY,No worlds configured,没有配置世界
 SETTINGS_ATMOSPHERE,Gas Simulation,气体模拟
 SETTINGS_DESC_ATMOSPHERE,Toggle the three drifting gas layers in the air,开关空气中三层不同密度的流动气体
+MAP_TITLE,World Map,世界地图
+MAP_STYLE_PRECISE,Precise,精准
+MAP_STYLE_GRID,Grid,网格
+MAP_HINT,Tab switch style / M or Esc close / Wheel zoom,按 Tab 切换样式 / M 或 Esc 关闭 / 滚轮缩放
+MAP_LEGEND_PRECISE,Solid / One-way / Glass / Ladder / Crumble - only explored cells are drawn,实心 / 单向 / 玻璃 / 梯子 / 崩塌 - 只画已探索的格子
+MAP_LEGEND_GRID,Brightness = how much of the room has been explored,亮度 = 该房间的已探索比例

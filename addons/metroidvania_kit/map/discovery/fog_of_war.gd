@@ -68,6 +68,7 @@ var _dirty := true
 var _blockers: Dictionary[Vector2i, bool] = {}
 var _one_way_cells: Dictionary[Vector2i, bool] = {}
 var _blockers_dirty := true
+var _exploration_version := 0
 var _focus_zone: Node
 var _focus_cells: Dictionary[Vector2i, bool] = {}
 var _focus_light_cells: Dictionary[Vector2i, bool] = {}
@@ -127,10 +128,14 @@ func cell_to_id(cell: Vector2i) -> String:
 
 
 func load_explored_cells(cell_ids: Array[String]) -> void:
+	var added := false
 	for cell_id: String in cell_ids:
 		var parsed: Variant = _id_to_cell(cell_id)
-		if parsed != null:
+		if parsed != null and not _explored_cells.has(parsed):
 			_explored_cells[parsed] = true
+			added = true
+	if added:
+		_exploration_version += 1
 	queue_redraw()
 
 
@@ -159,6 +164,21 @@ func get_revealed_zones() -> Array[String]:
 
 func is_cell_explored(cell: Vector2i) -> bool:
 	return _explored_cells.has(cell)
+
+
+## Live exploration of the loaded room, as stable "room:x,y" ids. The persistence
+## bridge owns the union of every visited room; this covers the current room when
+## no bridge is bound (for example in a preview or a test world run).
+func get_explored_cell_ids() -> Array[String]:
+	var result: Array[String] = []
+	for cell: Vector2i in _explored_cells:
+		result.append(cell_to_id(cell))
+	result.sort()
+	return result
+
+
+func get_exploration_version() -> int:
+	return _exploration_version
 
 
 func is_cell_lit(cell: Vector2i) -> bool:
@@ -248,6 +268,7 @@ func clear_room() -> void:
 	_last_origin_cell = Vector2i(2147483647, 2147483647)
 	_last_view_bounds = Rect2i()
 	_last_zone_signature = ""
+	_exploration_version += 1
 	_dirty = true
 	_blockers_dirty = true
 	queue_redraw()
@@ -352,6 +373,7 @@ func _reveal(origin: Vector2i, bounds: Rect2i, blockers: Dictionary, one_way: Di
 		if not _is_inside_map(cell) or _explored_cells.has(cell):
 			continue
 		_explored_cells[cell] = true
+		_exploration_version += 1
 		var distance := Vector2(cell - origin).length() / distance_scale
 		_ripple[cell] = now + distance * reveal_stagger_seconds
 		_ripple_end = maxf(_ripple_end, _ripple[cell] + reveal_seconds)
@@ -569,6 +591,7 @@ func _collect_zone_cells() -> void:
 			if _explored_cells.has(cell):
 				continue
 			_explored_cells[cell] = true
+			_exploration_version += 1
 			_ripple[cell] = now
 			_ripple_end = maxf(_ripple_end, now + reveal_seconds)
 			if save_manager != null and save_manager.has_method("mark_cell_explored"):
@@ -624,11 +647,15 @@ func _add_solid_layer(layer: TileMapLayer) -> void:
 			continue
 		var has_solid := false
 		var has_one_way := false
-		for index in tile_data.get_collision_polygons_count(0):
-			if tile_data.is_collision_polygon_one_way(0, index):
-				has_one_way = true
-			else:
-				has_solid = true
+		var physics_layers := 1
+		if layer.tile_set != null:
+			physics_layers = layer.tile_set.get_physics_layers_count()
+		for physics_layer: int in physics_layers:
+			for index in tile_data.get_collision_polygons_count(physics_layer):
+				if tile_data.is_collision_polygon_one_way(physics_layer, index):
+					has_one_way = true
+				else:
+					has_solid = true
 		if not has_solid and not has_one_way:
 			continue
 		var cell := world_to_cell(layer.to_global(layer.map_to_local(tile_cell)))

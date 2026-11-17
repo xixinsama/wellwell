@@ -62,7 +62,7 @@ func get_motion_override(
 		context.set("actor", get_parent())
 		context.set("environment", environment)
 		context.set("data", {
-			"direction": Vector2(float(intent.get("move_axis")), 0.0),
+			"direction": Vector2(float(intent.get("move_axis")), float(intent.get("vertical_axis"))),
 			"facing": facing,
 		})
 		controller.call("try_activate", DASH_ID, context)
@@ -73,6 +73,20 @@ func get_motion_override(
 		"active": true,
 		"velocity": runtime.call("get_velocity_override"),
 	}
+
+
+## Restores the Dash charge count. The controller calls this every physics frame
+## while the player touches the ground or swims, so water makes the dash
+## effectively unlimited while the Dash runtime still owns the count.
+func update_dash_recharge(can_recharge: bool) -> void:
+	if not can_recharge:
+		return
+	var controller := _get_controller()
+	if controller == null:
+		return
+	var runtime := controller.call("get_runtime", DASH_ID) as RefCounted
+	if runtime != null and runtime.has_method("refill"):
+		runtime.call("refill")
 
 
 func _register_definition(definition: Resource) -> StringName:

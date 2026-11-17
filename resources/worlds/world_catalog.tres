@@ -5,7 +5,8 @@
 [ext_resource type="Resource" uid="uid://qwahurn8urga" path="res://resources/worlds/the_world.tres" id="2_the_world"]
 [ext_resource type="Resource" uid="uid://chjbbce5mh3kv" path="res://resources/worlds/main_world.tres" id="3_main_world"]
 [ext_resource type="Resource" uid="uid://dwqawum01a0gc" path="res://resources/worlds/test_world.tres" id="4_test_world"]
+[ext_resource type="Resource" path="res://resources/worlds/loop_world.tres" id="5_loop_world"]
 
 [resource]
 script = ExtResource("1_catalog")
-worlds = Array[ExtResource("2_6y0bp")]([ExtResource("2_the_world"), ExtResource("3_main_world"), ExtResource("4_test_world")])
+worlds = Array[ExtResource("2_6y0bp")]([ExtResource("2_the_world"), ExtResource("3_main_world"), ExtResource("4_test_world"), ExtResource("5_loop_world")])

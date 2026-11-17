@@ -5,6 +5,11 @@ extends Control
 ## fog zones and crumble tiles after baking the source rooms.
 
 const SAVE_SNAPSHOT := preload("res://addons/platformer_kit/save/save_snapshot.gd")
+const PROGRESSION_CONTEXT := preload("res://addons/metroidvania_kit/progression/progression_context.gd")
+const MAP_DISCOVERY := preload("res://addons/metroidvania_kit/map/discovery/map_discovery.gd")
+const MARKER_REGISTRY := preload("res://addons/metroidvania_kit/map/markers/marker_registry.gd")
+const WORLD_STATE := preload("res://addons/metroidvania_kit/world_state/metroidvania_world_state.gd")
+const FAST_TRAVEL_REGISTRY := preload("res://addons/metroidvania_kit/fast_travel/fast_travel_registry.gd")
 
 ## Optional room id to start in instead of the world's own start room. Used by
 ## the gas lab runner, which reuses the same test world.
@@ -34,6 +39,7 @@ func _ready() -> void:
 		world_root.call("register_room_extension", atmosphere)
 	if world_root.has_method("bind_settings_source"):
 		world_root.call("bind_settings_source", GlobalSettings)
+	_wire_persistence_bridge(fog)
 	var snapshot: RefCounted = SAVE_SNAPSHOT.new()
 	snapshot.slot = 0
 	var world: WorldData = world_root.get("world_data") as WorldData
@@ -48,3 +54,23 @@ func _ready() -> void:
 	var started := bool(world_root.call("start_selected_snapshot", snapshot, world))
 	if not started:
 		push_error("test world start failed: %s" % [world_root.call("get_last_start_errors")])
+
+
+## The runner has no save file, but the exploration bridge still accumulates every
+## visited room in memory. Without it the map would forget rooms after a
+## transition, because the fog only holds the loaded room.
+func _wire_persistence_bridge(fog: Node) -> void:
+	var bridge := world_root.get_node_or_null("MetroidvaniaPersistenceBridge")
+	if bridge == null or fog == null:
+		return
+	bridge.call(
+		"configure",
+		PROGRESSION_CONTEXT.new(),
+		MAP_DISCOVERY.new(),
+		MARKER_REGISTRY.new(),
+		WORLD_STATE.new(),
+		FAST_TRAVEL_REGISTRY.new(),
+		fog
+	)
+	if world_root.has_method("bind_persistence_source"):
+		world_root.call("bind_persistence_source", bridge)

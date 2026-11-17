@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="RoomData" format=3 uid="uid://umaka2tjqhup"]
+
+[ext_resource type="Script" path="res://addons/platformer_kit/world/data/room_data.gd" id="1_lxb1f"]
+
+[resource]
+script = ExtResource("1_lxb1f")
+room_id = "loop_entry"
+display_name = "入口竖井 · Entry Shaft"
+scene_path = "res://scenes/rooms/generated/loop_entry/runtime.tscn"
+source_scene_path = "res://scenes/levels/loop/loop_entry.tscn"
+source_fingerprint = "9686784497acbb7ca8c268dfb84244228873e4ffa222bf6ff3974e4f7f3389e8"
+terrain_scene_path = "res://scenes/rooms/generated/loop_entry/terrain.tscn"
+entrance_ids = PackedStringArray("east")
+spawn_ids = PackedStringArray("checkpoint", "start")
+entity_ids = PackedStringArray()
+tags = PackedStringArray()

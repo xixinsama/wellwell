@@ -1,0 +1,112 @@
+[gd_scene format=3 uid="uid://dmds0k4xdsnbx"]
+
+[ext_resource type="Script" path="res://addons/platformer_kit/world/entities/spawn_point.gd" id="1_t5wvt"]
+[ext_resource type="Script" path="res://scripts/world/killzone.gd" id="2_4gbpd"]
+[ext_resource type="PackedScene" path="res://addons/platformer_kit/world/entities/save_point.tscn" id="3_ni6kr"]
+[ext_resource type="Script" path="res://addons/platformer_kit/world/entities/save_point.gd" id="4_2del7"]
+[ext_resource type="Script" path="res://addons/platformer_kit/interaction/interactable.gd" id="5_mbxem"]
+[ext_resource type="Script" path="res://addons/platformer_kit/platforms/platform_body_2d.gd" id="6_o5crb"]
+[ext_resource type="Script" path="res://addons/platformer_kit/platforms/components/conveyor_surface_component_2d.gd" id="7_p6wdi"]
+[ext_resource type="Script" path="res://addons/platformer_kit/world/entities/room_entrance.gd" id="8_l7kd7"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_b8ej1"]
+size = Vector2(80, 32)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape_activation"]
+size = Vector2(16, 20)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape_interaction"]
+size = Vector2(32, 28)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_453u7"]
+size = Vector2(64, 8)
+
+[node name="RoomRuntimeContent" type="Node2D" unique_id=1333257620]
+
+[node name="Entities" type="Node2D" parent="." unique_id=1271821157]
+
+[node name="StartSpawn" type="Marker2D" parent="Entities" unique_id=1160111604]
+script = ExtResource("1_t5wvt")
+
+[node name="PitKillzone" type="Area2D" parent="Entities" unique_id=350060471]
+position = Vector2(88, 136)
+collision_layer = 0
+collision_mask = 2
+script = ExtResource("2_4gbpd")
+
+[node name="_CollisionShape2D_13" type="CollisionShape2D" parent="Entities/PitKillzone" unique_id=1143250174]
+position = Vector2(40, 16)
+shape = SubResource("RectangleShape2D_b8ej1")
+
+[node name="FromGallery" type="Marker2D" parent="Entities" unique_id=2120547103]
+position = Vector2(288, 64)
+script = ExtResource("1_t5wvt")
+spawn_id = "from_gallery"
+
+[node name="CheckpointD" type="Node2D" parent="Entities" unique_id=939447865 instance=ExtResource("3_ni6kr")]
+position = Vector2(272, 64)
+script = ExtResource("4_2del7")
+entity_id = "save_cp_d"
+
+[node name="VisualRoot" type="Node2D" parent="Entities/CheckpointD" unique_id=1854276615]
+
+[node name="Polygon2D" type="Polygon2D" parent="Entities/CheckpointD/VisualRoot" unique_id=509490264]
+position = Vector2(0, -4)
+polygon = PackedVector2Array(-4, -4, 4, -4, 4, 0, 0, 0, -4, 0, -4, 4, 8, 4, 8, -4, 8, -8, 0, -8, 0, -12, 8, -12, 8, -16, -4, -16)
+
+[node name="ActivationArea" type="Area2D" parent="Entities/CheckpointD" unique_id=1201975166]
+position = Vector2(0, -16)
+collision_layer = 0
+collision_mask = 2
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Entities/CheckpointD/ActivationArea" unique_id=927462723]
+position = Vector2(0, 6)
+shape = SubResource("RectangleShape_activation")
+
+[node name="Interactable" type="Area2D" parent="Entities/CheckpointD" unique_id=602600738]
+position = Vector2(0, -16)
+collision_layer = 4
+collision_mask = 0
+script = ExtResource("5_mbxem")
+interaction_id = &"save_point"
+interaction_priority = 20
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Entities/CheckpointD/Interactable" unique_id=1270620948]
+position = Vector2(0, 2)
+shape = SubResource("RectangleShape_interaction")
+
+[node name="SpawnPoint" type="Marker2D" parent="Entities/CheckpointD" unique_id=1888059450]
+script = ExtResource("1_t5wvt")
+spawn_id = "checkpoint"
+
+[node name="BeltRelay" type="AnimatableBody2D" parent="Entities" unique_id=906300273]
+position = Vector2(160, 64)
+script = ExtResource("6_o5crb")
+
+[node name="ConveyorSurface" type="Node" parent="Entities/BeltRelay" unique_id=1915292761]
+script = ExtResource("7_p6wdi")
+surface_velocity = Vector2(70, 0)
+
+[node name="_CollisionShape2D_14" type="CollisionShape2D" parent="Entities/BeltRelay" unique_id=424700356]
+position = Vector2(32, 4)
+shape = SubResource("RectangleShape2D_453u7")
+
+[node name="Visual" type="Polygon2D" parent="Entities/BeltRelay" unique_id=1962064107]
+color = Color(0.36, 0.3, 0.2, 1)
+polygon = PackedVector2Array(0, 0, 64, 0, 64, 8, 0, 8)
+
+[node name="Cap" type="Polygon2D" parent="Entities/BeltRelay" unique_id=629110144]
+color = Color(0.88, 0.7, 0.32, 1)
+polygon = PackedVector2Array(0, 0, 64, 0, 64, 2, 0, 2)
+
+[node name="EastExit" type="Node2D" parent="Entities" unique_id=78867298]
+position = Vector2(304, 32)
+script = ExtResource("8_l7kd7")
+entity_id = "east"
+
+[node name="SouthExit" type="Node2D" parent="Entities" unique_id=1939873407]
+position = Vector2(40, 168)
+script = ExtResource("8_l7kd7")
+entity_id = "south"
+
+[node name="Foreground" type="Node2D" parent="." unique_id=1095841432]

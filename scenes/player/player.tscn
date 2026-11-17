@@ -11,6 +11,7 @@
 [ext_resource type="Resource" path="res://resources/player/hero_sprite_frames.tres" id="9_hero_frames"]
 
 [ext_resource type="Script" path="res://game/player/player_water_motion.gd" id="10_water_motion"]
+[ext_resource type="Script" path="res://game/player/one_way_dash_piercer.gd" id="11_piercer"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_gmlin"]
 size = Vector2(6, 6)
@@ -73,3 +74,6 @@ script = ExtResource("7_ladder_motion")
 
 [node name="WaterMotion" type="Node2D" parent="."]
 script = ExtResource("10_water_motion")
+
+[node name="OneWayDashPiercer" type="Node" parent="."]
+script = ExtResource("11_piercer")

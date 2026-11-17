@@ -17,6 +17,24 @@ rules and the branch/worktree policy.
   movement and sight while closed.
 - `scripts/world/crumble_runtime.gd`: drives the crumble tiles painted in
   `SolidTiles` for the active room.
+- `scripts/world/backdrop_field.gd` + `scripts/shaders/backdrop_drift.gdshader`:
+  the room backdrop plate. One 320x180 `assets/images/backdrop_well.png` plate is
+  dropped into every room's `Background` container (which draws before
+  `Terrain`), so it sits behind the background tilemap layer and scrolls with
+  the camera. Every tilemap layer stays crisp and untouched; the shader only
+  softens the plate and slides each scanline sideways on a short wavelength, so
+  the plate reads as moving air. `background_tilemap_alpha` (default 1.0) is the
+  escape hatch for a room whose background layer is a flat fill that would hide
+  the plate. Regenerate the art with `art-src/gen_backdrop.lua` (Aseprite batch).
+- `scripts/ui/crt_overlay.gd` + `scripts/shaders/crt_screen.gdshader`: the
+  topmost canvas layer, a screen-space CRT finish (scanlines, slot mask, edge
+  colour split, phosphor glow). Shading is only multiplied into non-bright
+  pixels and glow is added, so highlights keep their brightness. Switched by the
+  `crt_enabled` video setting.
+- `addons/metroidvania_kit/map/`: generated map model, terrain snapshots,
+  exploration conversion, and the precise/grid renderers, full map and minimap.
+- `game/map/map_host.gd`: HUD host that builds the map for the running world and
+  binds the minimap and full map.
 - `addons/fluid_kit/runtime/water/`: `WaterField` room extension, the `WaterSimulation`
   column fluid, authored `WaterBasin` / `WaterGate` markers and the surface /
   waterfall shaders.
@@ -27,6 +45,9 @@ rules and the branch/worktree policy.
   effects, gas trail).
 - `game/player/player_water_motion.gd` + `game/water/effects/water_splash.gd`:
   buoyancy/swimming composition and the PixelFX splash.
+- `game/player/one_way_dash_piercer.gd`: player component that lets a cardinal
+  dash cross a one-way surface travelling in the direction it blocks (tile
+  one-ways on the `one_way` layer, node one-ways by collision exception).
 - `game/`: project-specific composition and authored map data.
 - `resources/worlds/test_world.tres`: exploration test world (water hall with two
   pools, gas lab, gas trail room, fog zones, glass, crumble platforms, two-screen

@@ -44,9 +44,14 @@ func run() -> Array[String]:
 	var player_source := FileAccess.get_file_as_string("res://scripts/player/player_controller.gd")
 	var motor_step := player_source.find("_motor.call(\"step\"")
 	var ability_step := player_source.find("_apply_ability_motion(intent)")
+	var recharge_step := player_source.find("_update_dash_recharge()")
 	var slide_step := player_source.find("move_and_slide()")
 	if motor_step < 0 or ability_step <= motor_step or slide_step <= ability_step:
 		failures.append("PlayerController does not apply ability motion between Motor and move_and_slide")
+	if recharge_step < 0 or recharge_step >= ability_step:
+		failures.append("PlayerController does not recharge the Dash before applying ability motion")
+	if not player_source.contains("is_in_water") or not player_source.contains("is_on_floor() or in_water"):
+		failures.append("PlayerController does not recharge the Dash on ground and in water")
 	var debug_state: Dictionary = player.call("get_debug_state")
 	for key: String in ["relative_velocity", "platform_velocity", "world_velocity"]:
 		if not debug_state.has(key) or not debug_state[key] is Vector2:

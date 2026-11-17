@@ -14,6 +14,8 @@ func run() -> Array[String]:
 		return ["reference player ability loadout is missing"]
 	_assert_progression_and_runtime_stay_synchronized(failures)
 	_assert_dash_motion_override(failures)
+	_assert_eight_way_motion_override(failures)
+	_assert_dash_charge_recharge(failures)
 	if not InputMap.has_action(&"dash"):
 		failures.append("reference game has no dash input action")
 	return failures
@@ -62,6 +64,77 @@ func _assert_dash_motion_override(failures: Array[String]) -> void:
 	var neutral_result: Dictionary = loadout.call("get_motion_override", INTENT.new(), ENVIRONMENT.new(), 1)
 	if not neutral_result.is_empty():
 		failures.append("player loadout overrode motion while Dash was inactive")
+	loadout.free()
+
+
+func _assert_eight_way_motion_override(failures: Array[String]) -> void:
+	var fixture := _make_loadout()
+	var loadout: Node = fixture[0]
+	var controller: Node = fixture[1]
+	loadout.call("grant_ability_definition", DEFAULT_DASH)
+	var diagonal := Vector2(1, -1).normalized()
+	var cases := [
+		[Vector2(0, -1), Vector2(0, -1)],
+		[Vector2(0, 1), Vector2(0, 1)],
+		[Vector2(1, -1), diagonal],
+		[Vector2(-1, 1), -diagonal],
+		[Vector2.ZERO, Vector2(1, 0)],
+	]
+	for entry: Array in cases:
+		var intent: RefCounted = INTENT.new()
+		intent.call("press_action", &"dash")
+		var input: Vector2 = entry[0]
+		intent.set("move_axis", input.x)
+		intent.set("vertical_axis", input.y)
+		var result: Dictionary = loadout.call("get_motion_override", intent, ENVIRONMENT.new(), 1)
+		var expected: Vector2 = entry[1] * float(DEFAULT_DASH.dash_speed)
+		if not bool(result.get("active", false)):
+			failures.append("player loadout did not activate an eight-way Dash for %s" % [input])
+		elif not Vector2(result.get("velocity", Vector2.ZERO)).is_equal_approx(expected):
+			failures.append(
+				"eight-way Dash input %s produced %s instead of %s"
+				% [input, result.get("velocity"), expected]
+			)
+		controller.call("cancel", &"dash")
+		controller.call("tick", float(DEFAULT_DASH.cooldown_seconds))
+		loadout.call("update_dash_recharge", true)
+	loadout.free()
+
+
+func _assert_dash_charge_recharge(failures: Array[String]) -> void:
+	var fixture := _make_loadout()
+	var loadout: Node = fixture[0]
+	var controller: Node = fixture[1]
+	loadout.call("grant_ability_definition", DEFAULT_DASH)
+	var runtime: RefCounted = controller.call("get_runtime", &"dash")
+	if runtime == null:
+		failures.append("player loadout did not install a Dash runtime")
+		loadout.free()
+		return
+	var intent: RefCounted = INTENT.new()
+	intent.call("press_action", &"dash")
+	intent.set("move_axis", 1.0)
+	var result: Dictionary = loadout.call("get_motion_override", intent, ENVIRONMENT.new(), 1)
+	if not bool(result.get("active", false)) or int(runtime.call("get_charges")) != 0:
+		failures.append("player Dash did not spend its charge on the first dash")
+	controller.call("cancel", &"dash")
+	controller.call("tick", float(DEFAULT_DASH.cooldown_seconds))
+	loadout.call("update_dash_recharge", false)
+	var air_intent: RefCounted = INTENT.new()
+	air_intent.call("press_action", &"dash")
+	air_intent.set("move_axis", -1.0)
+	var air_result: Dictionary = loadout.call("get_motion_override", air_intent, ENVIRONMENT.new(), 1)
+	if bool(air_result.get("active", false)):
+		failures.append("player Dash activated in mid-air with no charge left")
+	# The controller calls this every frame while grounded or swimming, which is
+	# how water makes the dash unlimited.
+	loadout.call("update_dash_recharge", true)
+	if int(runtime.call("get_charges")) != int(DEFAULT_DASH.get("max_charges")):
+		failures.append("Dash recharge did not restore the charge count")
+	var grounded_result: Dictionary = loadout.call("get_motion_override", air_intent, ENVIRONMENT.new(), 1)
+	if not bool(grounded_result.get("active", false)):
+		failures.append("Dash could not activate after a recharge")
+	controller.call("cancel", &"dash")
 	loadout.free()
 
 

@@ -17,6 +17,7 @@ var _adapter: RefCounted = SAVE_ADAPTER.new()
 var _explored_cells: Dictionary[String, bool] = {}
 var _explored_chunks: Dictionary[String, bool] = {}
 var _revealed_zones: Dictionary[String, bool] = {}
+var _fog_version := 0
 
 
 func _exit_tree() -> void:
@@ -63,6 +64,7 @@ func mark_cell_explored(cell_id: String) -> bool:
 	if cell_id.is_empty() or _explored_cells.has(cell_id):
 		return false
 	_explored_cells[cell_id] = true
+	_fog_version += 1
 	_queue_commit()
 	return true
 
@@ -71,6 +73,7 @@ func mark_chunk_explored(chunk_id: String) -> bool:
 	if chunk_id.is_empty() or _explored_chunks.has(chunk_id):
 		return false
 	_explored_chunks[chunk_id] = true
+	_fog_version += 1
 	_queue_commit()
 	return true
 
@@ -93,8 +96,15 @@ func mark_zone_revealed(zone_id: String) -> bool:
 	if zone_id.is_empty() or _revealed_zones.has(zone_id):
 		return false
 	_revealed_zones[zone_id] = true
+	_fog_version += 1
 	_queue_commit()
 	return true
+
+
+## Monotonic counter the minimap watches so it only re-parses exploration when
+## something actually changed.
+func get_fog_version() -> int:
+	return _fog_version
 
 
 func get_revealed_zones() -> Array[String]:
@@ -127,6 +137,7 @@ func _restore(snapshot: RefCounted) -> bool:
 		_explored_cells.clear()
 		_explored_chunks.clear()
 		_revealed_zones.clear()
+		_fog_version += 1
 		_sync_fog()
 		state_restored.emit()
 		return true
@@ -138,6 +149,7 @@ func _restore(snapshot: RefCounted) -> bool:
 	_explored_cells = parsed_fog["cells"]
 	_explored_chunks = parsed_fog["chunks"]
 	_revealed_zones = parsed_fog["zones"]
+	_fog_version += 1
 	_sync_fog()
 	state_restored.emit()
 	return true

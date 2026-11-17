@@ -56,7 +56,35 @@ Platform behavior is composed under `PlatformBody2D`: use
 `WaypointMotionComponent2D`, `FallMotionComponent2D`,
 `RiderTriggerComponent2D`, and `ConveyorSurfaceComponent2D` independently or
 together. Native one-way platforms only require
-`CollisionShape2D.one_way_collision`; no framework script is needed.
+`CollisionShape2D.one_way_collision`; set `one_way_collision_direction` when the
+platform must block a side other than down.
+
+## Dash and One-Way Platforms
+
+- The supplied Dash lives in `addons/platformer_abilities/abilities/dash/`.
+  `DashAbilityDefinition.eight_directional` reads the vertical input too, and
+  `direction_deadzone` / `direction_snap_degrees` keep the eight directions
+  crisp. All Dash tuning stays in `default_dash.tres`.
+- `DashAbilityDefinition.max_charges` stores dashes like a jump count (0 =
+  unlimited). The ability runtime owns the count and exposes `refill()`; the
+  reference player calls `PlayerAbilityLoadout.update_dash_recharge()` from its
+  controller while grounded or swimming, which is what makes water unlimited.
+- Piercing is a game mechanic, not an addon feature:
+  `game/player/one_way_dash_piercer.gd` is a child of the player scene and owns
+  the rule. A dash crosses a one-way surface only when it travels in the
+  direction that surface blocks; diagonal dashes never cross.
+- Tile one-way platforms are painted in `SolidTiles` and live on physics layer 5
+  (`one_way`). Godot tile collision has no per-tile one-way direction, so every
+  tile one-way blocks downward; a downward dash drops the layer mask bit and the
+  piercer restores it when the dash ends or the body leaves the platform.
+  Because the mask is per layer, keep solid tiles on the `world` layer.
+- A vertical or upward-facing one-way platform must be a body (for example a
+  `StaticBody2D`) with `CollisionShape2D.one_way_collision` and
+  `one_way_collision_direction` set to the direction it blocks (Godot 4.7+).
+  Matching cardinal dashes add a temporary collision exception for that body, so
+  never mix a solid shape and a pierceable one-way shape on the same body.
+- The fog and map scanners classify one-way tiles by walking every TileSet
+  physics layer, so new one-way layers stay supported without scanner changes.
 
 Configure `WaypointMotionComponent2D.waypoints` as offsets from the platform's
 authored position. Point zero must be `Vector2.ZERO`. Choose `PING_PONG` for
@@ -240,6 +268,39 @@ guide. In short:
   `godot --headless --path . -s res://tools/build_water_room.gd`. The room is
   generated rather than inherited from the template, so change the generator for
   layout edits.
+
+## Map and Minimap
+
+See `docs/map.md`. The map is generated, never authored:
+
+- `MapDefinitionBuilder.from_world(world)` builds rooms and links from the
+  `WorldData` the game is running, so the map follows room placement and size.
+- `RoomTerrainSnapshot` scans a baked room's terrain once (cached by file time)
+  to know each cell's kind for the precise map.
+- `MapExploration` converts the fog's `room:x,y` ids into per-room local cells;
+  `MapExplorationSource` merges the persistence bridge (all visited rooms) with
+  the fog (the loaded room).
+- `MapPreciseRenderer` paints explored cells only; unvisited rooms stay dark
+  plates. `MapGridRenderer` draws one block per room with brightness equal to
+  its exploration ratio.
+- `MapScreen` (full map) and `MapMinimap` are created by `game/map/map_host.gd`,
+  which is added to the HUD in `scenes/app/main.tscn` and the test world runner.
+- Controls: `M` or left stick click toggles the map, `Tab` / `Y` switches style,
+  `Esc` closes, the wheel zooms. Input actions `map_toggle` and `map_style`.
+
+## The Loop Cistern World
+
+See `docs/loop-world.md`. A four-room ring built from the template: a crumbling
+bridge over a pool, falling platforms with a swimmable low road, a
+rider-triggered elevator, two conveyors, a dash pickup and a dash gap that drops
+back into the starting room.
+
+- `scenes/levels/loop/*.tscn` are the editable source rooms; bake them before
+  running the world.
+- `scenes/levels/loop/loop_runner.tscn` starts the world directly with the debug
+  HUD and overlay enabled.
+- The elevator is `ElevatorMotionComponent2D` (rider-triggered, returns by
+  itself); pair it with a rider trigger whose `trigger_once` is false.
 
 ## World Editor Workbench
 

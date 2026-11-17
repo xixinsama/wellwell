@@ -36,14 +36,29 @@ func activate(_actor: Node = null) -> bool:
 	if spawn == null:
 		return false
 	var spawn_id := String(spawn.get("spawn_id"))
-	if not set_respawn_state(spawn_id, spawn.global_position):
+	var spawn_position := spawn.global_position
+	if not set_respawn_state(spawn_id, spawn_position):
 		return false
+	_sync_respawn_position(_actor, spawn_position)
 	_activation_consumed = true
 	activated = true
 	commit_save_state()
 	_update_visual_state()
 	request_save(true)
 	return true
+
+
+## The kill zone respawns the player at its own spawn_position, which is not the
+## same field the snapshot stores. Point it at this checkpoint too, so a hazard
+## death returns to the last save point.
+func _sync_respawn_position(actor: Node, spawn_position: Vector2) -> void:
+	var target: Node = actor
+	if target == null and is_inside_tree():
+		target = get_tree().get_first_node_in_group("player")
+	if target == null or not is_instance_valid(target):
+		return
+	if "spawn_position" in target:
+		target.set("spawn_position", spawn_position)
 
 
 func get_save_state() -> Dictionary:

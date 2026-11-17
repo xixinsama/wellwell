@@ -12,7 +12,12 @@ const MAP_TRACKER := preload("res://addons/metroidvania_kit/map/runtime/map_trac
 const REVEAL_ADJACENT := preload("res://addons/metroidvania_kit/map/discovery/rules/reveal_adjacent_rooms.gd")
 const WORLD_STATE := preload("res://addons/metroidvania_kit/world_state/metroidvania_world_state.gd")
 const FAST_TRAVEL_REGISTRY := preload("res://addons/metroidvania_kit/fast_travel/fast_travel_registry.gd")
-const MAIN_MAP := preload("res://game/data/maps/main_map.tres")
+const MAP_DEFINITION_BUILDER := preload("res://addons/metroidvania_kit/map/data/map_definition_builder.gd")
+
+var _map_runtime: RefCounted
+var _map_tracker: Node
+var _map_discovery: RefCounted
+var _map_markers: RefCounted
 
 @onready var viewport_container: SubViewportContainer = $SubViewportContainer
 @onready var sub_viewport: SubViewport = $SubViewportContainer/SubViewport
@@ -48,6 +53,19 @@ func _ready() -> void:
             world_root.call("bind_persistence_source", SaveManager)
         if world_root.has_method("bind_settings_source"):
             world_root.call("bind_settings_source", GlobalSettings)
+        if world_root.has_signal("world_ready") and not world_root.is_connected("world_ready", _on_world_ready):
+            world_root.connect("world_ready", _on_world_ready)
+
+
+## The map model is rebuilt from the world the player actually started, so it can
+## never drift from the level placement or the baked terrain.
+func _on_world_ready() -> void:
+    var world_root := sub_viewport.get_node_or_null("WorldRoot")
+    if world_root == null or _map_runtime == null:
+        return
+    var definition: Resource = MAP_DEFINITION_BUILDER.from_world(world_root.get("world_data"))
+    if definition != null:
+        _map_runtime.call("configure", definition, _map_discovery, _map_markers)
 
 
 func _configure_metroidvania_runtime(world_root: Node, persistence_bridge: Node, fog: Node) -> void:
@@ -56,13 +74,19 @@ func _configure_metroidvania_runtime(world_root: Node, persistence_bridge: Node,
     var markers: RefCounted = MARKER_REGISTRY.new()
     var world_state: RefCounted = WORLD_STATE.new()
     var fast_travel: RefCounted = FAST_TRAVEL_REGISTRY.new()
-    var map_runtime: RefCounted = MAP_RUNTIME.new()
-    map_runtime.call("configure", MAIN_MAP, discovery, markers)
+    var definition: Resource = MAP_DEFINITION_BUILDER.from_world(world_root.get("world_data"))
+    if definition == null:
+        return
+    _map_discovery = discovery
+    _map_markers = markers
+    _map_runtime = MAP_RUNTIME.new()
+    _map_runtime.call("configure", definition, discovery, markers)
     var tracker: Node = MAP_TRACKER.new()
     tracker.name = "MapTracker"
     world_root.add_child(tracker)
     var rules: Array[Resource] = [REVEAL_ADJACENT.new()]
-    tracker.call("configure", map_runtime, rules)
+    tracker.call("configure", _map_runtime, rules)
+    _map_tracker = tracker
     var world_runtime := world_root.get_node_or_null("WorldRuntime")
     if world_runtime != null and world_runtime.has_signal("current_room_changed"):
         world_runtime.connect("current_room_changed", func(room_id: String) -> void:

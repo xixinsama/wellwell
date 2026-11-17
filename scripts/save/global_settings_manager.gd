@@ -120,6 +120,14 @@ func set_atmosphere_enabled(enabled: bool) -> void:
     set_value(&"atmosphere_enabled", enabled)
 
 
+func is_crt_enabled() -> bool:
+    return bool(get_value(&"crt_enabled"))
+
+
+func set_crt_enabled(enabled: bool) -> void:
+    set_value(&"crt_enabled", enabled)
+
+
 func is_one_way_drop_enabled() -> bool:
     return bool(get_value(&"one_way_drop_enabled"))
 

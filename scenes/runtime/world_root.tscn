@@ -13,7 +13,8 @@
 [ext_resource type="Script" uid="uid://dleqflojm4oba" path="res://addons/fluid_kit/runtime/water/water_field.gd" id="10_water"]
 [ext_resource type="Script" uid="uid://fqwahtimacjq" path="res://addons/fluid_kit/runtime/gas/atmosphere.gd" id="11_atmosphere"]
 [ext_resource type="PackedScene" path="res://game/water/effects/water_splash_pixels.tscn" id="12_splash"]
-[ext_resource type="Script" path="res://addons/fluid_kit/runtime/water/water_grid.gd" id="13_grid"]
+[ext_resource type="Script" uid="uid://ucenmxbdpetr" path="res://addons/fluid_kit/runtime/water/water_grid.gd" id="13_grid"]
+[ext_resource type="Script" uid="uid://dxuog2of6kyji" path="res://scripts/world/backdrop_field.gd" id="14_backdrop"]
 
 [node name="WorldRoot" type="Node2D" unique_id=1531965248]
 script = ExtResource("1_session")
@@ -22,6 +23,9 @@ debug_hud_path = NodePath("../../../HUD/DebugHud")
 
 [node name="TerrainRoot" type="Node2D" parent="." unique_id=398323376]
 script = ExtResource("5_terrain")
+
+[node name="BackdropField" type="Node2D" parent="." unique_id=1856933694]
+script = ExtResource("14_backdrop")
 
 [node name="WorldRuntime" type="Node2D" parent="." unique_id=2137384709]
 script = ExtResource("6_runtime")
@@ -42,9 +46,8 @@ player_path = NodePath("../Player")
 script = ExtResource("10_water")
 splash_scene = ExtResource("12_splash")
 
-[node name="WaterGrid" type="Node2D" parent="."]
+[node name="WaterGrid" type="Node2D" parent="." unique_id=362845169]
 script = ExtResource("13_grid")
-cell_pixels = 4
 splash_scene = ExtResource("12_splash")
 
 [node name="Atmosphere" type="Node2D" parent="." unique_id=1286727046]
