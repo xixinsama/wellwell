@@ -45,7 +45,7 @@ uniform float ripple_limit = 6.0;
 // Room light map (see LightField). The surface mirrors the light that reaches it:
 // a bright band right under the surface plus a drifting sparkle, so a lantern
 // next to a pool shows up in the water.
-uniform sampler2D light_tex : filter_linear, repeat_disable;
+uniform sampler2D light_tex : filter_nearest, repeat_disable;
 uniform vec2 light_pixels = vec2(320.0, 180.0);
 uniform float light_gain = 1.0;
 uniform float reflection_strength = 0.8;
@@ -175,18 +175,25 @@ void fragment() {
 					color += clamp(caustic, 0.0, 1.0) * caustic_strength * (1.0 - t * 0.5);
 				}
 			}
-			// Reflection: the body mirrors the light, strongest right under the
-			// surface and fading with depth, with a pixel sparkle on top.
+			// Reflection: a *surface* highlight, not a glow filling the body. The
+			// crest pixel takes the light, then a couple of hard rows under it,
+			// thinning out with depth and scattered per pixel, so it stays pixel
+			// art instead of a smooth gradient inside the rectangle.
 			float lit = light_at(world);
-			if (lit > 0.01) {
-				float under = exp(-below_surface / 10.0);
-				color += mix(shallow_color.rgb, crest_color.rgb, 0.65)
-					* lit * under * reflection_strength;
-				float sparkle = step(
-					0.74, value_noise(vec2(world.x * 0.9, world.y * 0.4 + TIME * 4.0))
-				);
-				color += crest_color.rgb * sparkle * lit * 0.4 * reflection_strength;
-				alpha = clamp(alpha + lit * under * 0.16, 0.0, 1.0);
+			if (lit > 0.02) {
+				float level = clamp(lit * reflection_strength, 0.0, 1.0);
+				if (below_surface < 1.0) {
+					color = mix(color, crest_color.rgb, clamp(level * 1.7, 0.0, 1.0));
+				} else {
+					float rows = floor(below_surface);
+					float reach = 1.0 + level * 3.0;
+					float fall = clamp(1.0 - (rows - 1.0) / reach, 0.0, 1.0);
+					float stepped = floor(fall * 3.0 + 0.5) / 3.0;
+					if (hash21(floor(world)) < stepped * level) {
+						color = mix(color, crest_color.rgb, 0.7 * level);
+					}
+				}
+				alpha = clamp(alpha + level * 0.12, 0.0, 1.0);
 			}
 			result = vec4(color, alpha);
 		}

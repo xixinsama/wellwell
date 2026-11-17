@@ -26,8 +26,7 @@ viewport, so a consumer can map a room pixel to a texel with `(px + 0.5) / size`
 | 0 | terrain, water, gas |
 | 1 | terrain outline |
 | 8 | `LightShade`: multiplies the room down to `ambient + light` |
-| 9 | `LightGlow`: additive warm light |
-| 9 | `LightBloom`: additive dithered halo around bright cores |
+| 9 | `LightGlow`: additive warm light, `ScreenBloom`: additive screen-space bloom |
 | 10 | fog, player |
 
 The fog stays above the light on purpose: light may push the tendrils of the fog
@@ -116,11 +115,26 @@ hidden, so the lighting costs well under a millisecond at design resolution.
 | :--- | :--- |
 | `LightShade` | black with `alpha = 1 - (ambient + light)`, a plain brightness multiply (`dither_strength` 0 by default) |
 | `LightGlow` | additive `glow_color * light * glow_gain` |
-| `LightBloom` | gathers the map at `bloom_radius`, keeps only light above `bloom_threshold`, quantises with a 4x4 ordered dither |
+| `ScreenBloom` | screen-space bloom: threshold the bright pixels of the world viewport, blur horizontally then vertically, add back (see below) |
 | `FogOfWar` | `wobble += light * light_push_px`: the shadow recedes where it is lit, the mask itself never changes |
-| `TerrainHighlight` | rim alpha `*= clamp(light + light_floor, 0, 1)`, so unlit walls keep a faint outline |
-| `WaterField` / `WaterGrid` | the body mirrors the light under its surface (`water_reflection`), plus a pixel sparkle |
+| `TerrainHighlight` | rim alpha `*= clamp(light + light_floor, 0, 1)`, a single bright pixel (`rim_width` 1) |
+| `WaterField` / `WaterGrid` | a *surface* reflection: the crest pixel takes the light and a couple of hard dithered rows under it, no glow filling the body |
 | `Atmosphere` | the mist takes `max(authored lights, map * map_weight)`: it keeps the wide soft falloff it had and gains the lantern shape and the shadows |
+
+## Bloom
+
+`ScreenBloom` is the usual screen-space chain, not a halo of the light map:
+
+1. **bright** — read the world viewport texture, keep only pixels above
+   `threshold` (with a `knee`), and blur them horizontally in the same pass
+   (thresholding each tap is the same as thresholding once, because the blur is
+   linear, so the two passes merge into one texture read);
+2. **blur** — the vertical half of the same separable gaussian;
+3. **composite** — add the result back over the world with an ordered dither, so
+   the glow lands on the pixel grid instead of becoming a smooth gradient.
+
+Both buffers run at half resolution (`DOWNSCALE` 2), and the world texture is read
+one frame late because a viewport cannot sample itself while it is being drawn.
 
 ## Parameters
 
@@ -134,7 +148,8 @@ hidden, so the lighting costs well under a millisecond at design resolution.
 | `light_color` | warm white | lantern tint |
 | `ambient` | 0.55 | light that reaches everything, added on top of the map |
 | `glow_gain` / `glow_color` | 0.5 | the additive warm pass |
-| `bloom_strength` / `bloom_radius` / `bloom_threshold` / `bloom_levels` | 0.55 / 7 / 0.45 / 5 | the halo pass; `bloom_strength` 0 turns it off |
+| `threshold` / `knee` / `intensity` (ScreenBloom) | 0.62 / 0.12 / 1 | what blooms and how hard |
+| `radius` / `strength` / `levels` (ScreenBloom) | 6 / 0.85 / 6 | blur size, how much is added back, dither steps |
 | `dither_strength` | 0 | halftone on the shade; 0 is a plain multiply |
 | `shadow_softness` / `shadows` | 2 / on | terrain shadows |
 | `glass_tile_atlas` | `0,3` | glass: solid but transparent to light |

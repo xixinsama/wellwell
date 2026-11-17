@@ -26,7 +26,6 @@ extends Node2D
 const LIGHT_GROUP := &"fog_light"
 const FOG_SHADER: Shader = preload("res://scripts/shaders/light_overlay.gdshader")
 const GLOW_SHADER: Shader = preload("res://scripts/shaders/light_glow.gdshader")
-const BLOOM_SHADER: Shader = preload("res://scripts/shaders/light_bloom.gdshader")
 ## Half width of the radial falloff texture; PointLight2D.texture_scale is
 ## expressed in fractions of this.
 const LIGHT_TEXTURE_RADIUS := 64.0
@@ -88,16 +87,6 @@ const AUTHORED_SPILL := 0.25
 @export var shade_order := 8
 @export var glow_order := 9
 
-@export_group("Pixel Bloom")
-## Additive halo around bright light cores. 0 disables the pass.
-@export_range(0.0, 2.0, 0.01) var bloom_strength := 0.55
-## How far the halo reaches in pixels.
-@export_range(1.0, 24.0, 0.5) var bloom_radius := 7.0
-## Only light brighter than this blooms.
-@export_range(0.0, 1.0, 0.01) var bloom_threshold := 0.45
-@export var bloom_color := Color(1.0, 0.8, 0.55, 1.0)
-## Ordered dither levels of the halo; 0 is a continuous glow.
-@export_range(0.0, 32.0, 1.0) var bloom_levels := 0.0
 ## Collect authored FogLight nodes into the same map.
 @export var use_authored_lights := true
 ## Cast terrain shadows. Turning it off keeps the light but removes the occluders.
@@ -116,11 +105,9 @@ var _authored: Array[Dictionary] = []
 var _occluders: Node2D
 var _shade: Sprite2D
 var _glow: Sprite2D
-var _bloom: Sprite2D
 var _texture: Texture2D
 var _shade_material: ShaderMaterial
 var _glow_material: ShaderMaterial
-var _bloom_material: ShaderMaterial
 var _consumers: Array[Node] = []
 var _texture_ring: ImageTexture
 var _texture_spill: ImageTexture
@@ -179,7 +166,7 @@ func clear_room() -> void:
 	_room_bound = false
 	_authored.clear()
 	_consumers.clear()
-	for node: Node in [_shade, _glow, _bloom, _occluders, _viewport]:
+	for node: Node in [_shade, _glow, _occluders, _viewport]:
 		if not is_instance_valid(node):
 			continue
 		if node.get_parent() != null:
@@ -444,24 +431,13 @@ func _build_overlays() -> void:
 	_glow.material = _glow_material
 	add_child(_glow)
 
-	_bloom = Sprite2D.new()
-	_bloom.name = "LightBloom"
-	_bloom.centered = false
-	_bloom.texture = _texture
-	_bloom.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	_bloom.z_index = glow_order
-	_bloom.z_as_relative = false
-	_bloom_material = ShaderMaterial.new()
-	_bloom_material.shader = BLOOM_SHADER
-	_bloom.material = _bloom_material
-	add_child(_bloom)
 
 	_sync_overlays()
 	_paint_overlay_parameters()
 
 
 func _sync_overlays() -> void:
-	for sprite: Sprite2D in [_shade, _glow, _bloom]:
+	for sprite: Sprite2D in [_shade, _glow]:
 		if not is_instance_valid(sprite):
 			continue
 		sprite.texture = _texture
@@ -486,14 +462,6 @@ func _paint_overlay_parameters() -> void:
 		_glow_material.set_shader_parameter("glow_gain", glow_gain)
 		_glow_material.set_shader_parameter("rim_fuzz", rim_fuzz)
 		_glow_material.set_shader_parameter("rim_fuzz_scale", rim_fuzz_scale)
-	if _bloom_material != null:
-		_bloom_material.set_shader_parameter("light_tex", _texture)
-		_bloom_material.set_shader_parameter("light_pixels", Vector2(_room_pixels))
-		_bloom_material.set_shader_parameter("bloom_color", bloom_color)
-		_bloom_material.set_shader_parameter("strength", bloom_strength)
-		_bloom_material.set_shader_parameter("radius", bloom_radius)
-		_bloom_material.set_shader_parameter("threshold", bloom_threshold)
-		_bloom_material.set_shader_parameter("levels", bloom_levels)
 
 
 func _build_occluders(terrain_root: Node) -> void:

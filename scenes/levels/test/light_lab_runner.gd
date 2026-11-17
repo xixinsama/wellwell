@@ -56,6 +56,9 @@ func _ready() -> void:
 	highlight.name = "TerrainHighlight"
 	highlight.set("layer_path", NodePath("RoomContent/Terrain/SolidTiles"))
 	viewport.add_child(highlight)
+	var bloom: Node2D = (load("res://scripts/world/screen_bloom.gd") as Script).new() as Node2D
+	bloom.name = "ScreenBloom"
+	viewport.add_child(bloom)
 
 	fog.call("bind_player", player)
 	field.call("bind_player", player)
