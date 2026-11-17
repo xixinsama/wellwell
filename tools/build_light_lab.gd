@@ -21,6 +21,8 @@ const TILE := 8
 
 const ATLAS_BACKGROUND := Vector2i(0, 5)
 const ATLAS_SOLID := Vector2i(1, 0)
+## Glass: solid, but light (and sight) pass through it.
+const ATLAS_GLASS := Vector2i(0, 3)
 
 ## The slab the swinging lamp hangs over: its shadow sweeps across the floor.
 const SLAB_LEFT := 13
@@ -105,8 +107,9 @@ func _paint_terrain(root: Node) -> void:
 	_fill_block(solid, SLAB_LEFT, SLAB_RIGHT, SLAB_TOP, SLAB_BOTTOM)
 	# A pillar standing in the open floor.
 	_fill_block(solid, PILLAR_LEFT, PILLAR_RIGHT, PILLAR_TOP, PILLAR_BOTTOM)
-	# A wall next to the pool.
-	_fill_block(solid, WALL_COLUMN, WALL_COLUMN, WALL_TOP, WALL_BOTTOM)
+	# A glass wall next to the pool: it blocks the hero but not the light.
+	for y: int in range(WALL_TOP, WALL_BOTTOM + 1):
+		solid.set_cell(Vector2i(WALL_COLUMN, y), 0, ATLAS_GLASS)
 	# Pool floor and its walls.
 	_fill_block(solid, POOL_LEFT, POOL_RIGHT, POOL_FLOOR_ROW, HEIGHT_CELLS - 1)
 	_fill_block(solid, POOL_LEFT - 1, POOL_LEFT - 1, WATER_TOP_ROW, POOL_FLOOR_ROW - 1)
@@ -131,7 +134,7 @@ func _place_entities(root: Node) -> void:
 	lamp.name = "SwingingLamp"
 	lamp.position = Vector2(18.0 * TILE, (SLAB_TOP - 3) * TILE)
 	lamp.light_id = "swing"
-	lamp.radius = 58.0
+	lamp.radius = 96.0
 	lamp.energy = 1.15
 	lamp.color = Color(1.0, 0.86, 0.6)
 	lamp.swing_pixels = 26.0
@@ -145,7 +148,7 @@ func _place_entities(root: Node) -> void:
 	pool_lamp.name = "PoolLamp"
 	pool_lamp.position = Vector2((POOL_LEFT + 3) * TILE, (WATER_TOP_ROW - 3) * TILE)
 	pool_lamp.light_id = "pool"
-	pool_lamp.radius = 44.0
+	pool_lamp.radius = 72.0
 	pool_lamp.energy = 0.95
 	pool_lamp.color = Color(0.72, 0.88, 1.0)
 	pool_lamp.flicker = 0.08
@@ -156,7 +159,7 @@ func _place_entities(root: Node) -> void:
 	glow.name = "UnoccludedGlow"
 	glow.position = Vector2(6.0 * TILE, 12.0 * TILE)
 	glow.light_id = "glow"
-	glow.radius = 30.0
+	glow.radius = 34.0
 	glow.energy = 0.9
 	glow.color = Color(1.0, 0.66, 0.5)
 	glow.casts_shadows = false

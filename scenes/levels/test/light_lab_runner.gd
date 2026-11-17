@@ -16,7 +16,11 @@ const ROOM_DATA_PATH := "res://resources/rooms/generated/light_lab.tres"
 
 func _ready() -> void:
 	var room: Node = (load(ROOM_PATH) as PackedScene).instantiate()
-	viewport.add_child(room)
+	# The outline looks for the decorated rooms under TerrainRoot, like the game.
+	var rooms := Node2D.new()
+	rooms.name = "TerrainRoot"
+	viewport.add_child(rooms)
+	rooms.add_child(room)
 	# The template ships a whole preview rig (its own player, camera and fog);
 	# this scene builds that itself.
 	var preview := room.get_node_or_null("PreviewOnly")
@@ -48,13 +52,18 @@ func _ready() -> void:
 	var field: Node2D = (load("res://scripts/world/light_field.gd") as Script).new() as Node2D
 	field.name = "LightField"
 	viewport.add_child(field)
+	var highlight: Node2D = (load("res://scripts/world/terrain_highlight.gd") as Script).new() as Node2D
+	highlight.name = "TerrainHighlight"
+	highlight.set("layer_path", NodePath("RoomContent/Terrain/SolidTiles"))
+	viewport.add_child(highlight)
 
 	fog.call("bind_player", player)
 	field.call("bind_player", player)
 	# Order matters: the fog builds its mask while binding, and the field hands
-	# its map over afterwards.
+	# its map over afterwards. The outline decorates once the room is in place.
 	for extension: Node in [grid, fog, field]:
 		extension.call("bind_room_with_origin", room_data, room_content, Vector2i.ZERO)
+	highlight.call("decorate_rooms")
 
 
 func _spawn_position(room_content: Node) -> Vector2:

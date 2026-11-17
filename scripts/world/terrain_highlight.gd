@@ -28,10 +28,10 @@ const PLAYER_PATH := NodePath("../Player")
 
 ## The tile layer whose outline is highlighted.
 @export var layer_path := NodePath("Terrain/SolidTiles")
-@export var rim_color := Color(0.72, 0.94, 1.0)
-@export_range(0.0, 3.0, 0.01) var rim_strength := 0.85
-## How many pixels deep the outline reaches in from the silhouette edge.
-@export_range(1.0, 4.0, 0.5) var rim_width := 2.0
+@export var rim_color := Color(0.78, 0.96, 1.0)
+@export_range(0.0, 3.0, 0.01) var rim_strength := 1.0
+## How many pixels deep the outline is. 1 is a single bright pixel line.
+@export_range(1.0, 4.0, 0.5) var rim_width := 1.0
 ## Extra falloff inside `rim_width`. 0 is a hard pixel band, 1 fades it out.
 @export_range(0.0, 1.0, 0.01) var rim_softness := 0.6
 ## Jittered pixels, so the line does not look vector-drawn. 0 is a clean line.

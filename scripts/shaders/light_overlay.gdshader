@@ -22,10 +22,48 @@ uniform float dither_strength = 0.4;
 // lit surfaces next to it).
 uniform float bounce = 0.45;
 uniform float bounce_radius = 10.0;
+// Fuzzy rim: the lit side is pushed outwards by up to this many pixels, using a
+// dense noise offset and a maximum (never a subtraction), so light grows hair
+// instead of the darkness eating inwards. The inside of a light is untouched.
+uniform float rim_fuzz = 2.0;
+uniform float rim_fuzz_scale = 2.2;
+
+float hash21(vec2 p) {
+	p = fract(p * vec2(123.34, 456.21));
+	p += dot(p, p + 45.32);
+	return fract(p.x * p.y);
+}
+
+float noise_at(vec2 p) {
+	vec2 i = floor(p);
+	vec2 f = p - i;
+	f = f * f * (3.0 - 2.0 * f);
+	float a = hash21(i);
+	float b = hash21(i + vec2(1.0, 0.0));
+	float c = hash21(i + vec2(0.0, 1.0));
+	float d = hash21(i + vec2(1.0, 1.0));
+	return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+}
 
 float light_lum(vec2 px) {
 	vec3 light = texture(light_tex, (px + 0.5) / light_pixels).rgb;
 	return clamp(dot(light, vec3(0.3, 0.59, 0.11)), 0.0, 1.0);
+}
+
+// Light at this pixel, grown outwards by the fuzz: four offset samples taken at
+// a noise-driven direction, and only the brightest of them is kept.
+float fuzzed_light_lum(vec2 px) {
+	float own = light_lum(px);
+	if (rim_fuzz <= 0.0) {
+		return own;
+	}
+	vec2 base = px / rim_fuzz_scale;
+	for (int index = 0; index < 3; index++) {
+		float angle = noise_at(base + float(index) * 37.0) * 6.2831853;
+		float reach = (0.55 + 0.45 * noise_at(base * 1.7 + float(index) * 11.0)) * rim_fuzz;
+		own = max(own, light_lum(px + vec2(cos(angle), sin(angle)) * reach));
+	}
+	return own;
 }
 
 float bayer4(vec2 p) {
@@ -40,7 +78,7 @@ float bayer4(vec2 p) {
 
 void fragment() {
 	vec2 px = floor(UV * light_pixels);
-	float own = light_lum(px);
+	float own = fuzzed_light_lum(px);
 	float lit = own;
 	if (bounce > 0.0) {
 		// Brightest light within the bounce radius, decaying with distance.

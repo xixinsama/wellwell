@@ -46,14 +46,28 @@ lights read as a disc plus a halo instead of one smooth blob.
 
 Occluders are built from the `SolidTiles` collision shapes, merged into runs: a
 straight wall costs one occluder for its top edge, one for its bottom edge and one
-per end cap, however many tiles long it is (a 6 tile wall is 4 occluders). A light
-is only blocked when `casts_shadows` is on, and the occluders are room-local, so a
-room placed away from chunk `(0, 0)` keeps its shadows on the room.
+per end cap, however many tiles long it is (a 6 tile wall is 4 occluders). The
+cells painted with `glass_tile_atlas` (atlas `0,3` by default) are skipped: glass
+has collision but passes light, exactly like it passes sight in the fog.
+
+Shadows are cast per light by the engine's 2D shadow map, so a shadow reaches as
+far as its light does. That is why each light is built with a **reach**: the
+lantern is a 9 px core, a 26 px halo and a dim `reach_radius` spill, and every
+authored light gets a spill at `AUTHORED_REACH` times its radius. The spill is
+what makes the shadow of a wall run across the room instead of stopping a few
+pixels behind it, and why most of the space ends up lit.
 
 `shadow_bounce` softens the result: the shade pass reads the brightest light
 within `bounce_radius` and lets a share of it bleed into the shadow. A cast
-shadow is therefore dark deep inside and lighter towards its silhouette, where the
-lit surface next to it reflects.
+shadow is therefore dark deep inside and lighter towards its silhouette.
+
+## The fuzzy rim
+
+Lights themselves stay clean: the falloff is a round `GradientTexture2D` with no
+noise or dither in it. The fuzz is added on the lit side only, in the shade and
+glow passes: each pixel takes a few samples at a noise-driven offset and keeps the
+brightest, so light grows hair outward by up to `rim_fuzz` pixels and the dark
+side never eats inwards. `rim_fuzz_scale` is the hair size (smaller is denser).
 
 ## Authored lights
 
@@ -84,10 +98,17 @@ godot --headless --path . -s res://tools/build_light_lab.gd
 ```
 
 It has a swinging lamp over a slab (its shadow sweeps the floor), a second lamp
-over a pool cut by a wall, a lamp that ignores walls, six fireflies of four
-glowing pixels each, and grid water in the pool. Open
-`scenes/levels/test/light_lab_runner.tscn` to walk around in it: the runner binds
-the light field, the fog and the water to the room in code.
+over a pool behind a **glass** wall (the light passes through), a lamp that
+ignores walls entirely, six fireflies of four glowing pixels each, and grid water
+in the pool. The runner also builds the terrain outline, so the 1 px rim is lit
+only where the light reaches. Open `scenes/levels/test/light_lab_runner.tscn` to
+walk around in it: the runner binds the light field, the fog, the water and the
+outline to the room in code.
+
+Measured on that room (322x182 viewport, 28 occluders, 3 lantern lights, two
+2-light lamps, a glow lamp, six fireflies, grid water, fog and the outline):
+**1.25 ms per frame** with the whole stack, 1.19 ms with the light overlays
+hidden, so the lighting costs well under a millisecond at design resolution.
 
 ## Consumers
 
@@ -116,8 +137,10 @@ the light field, the fog and the water to the room in code.
 | `bloom_strength` / `bloom_radius` / `bloom_threshold` / `bloom_levels` | 0.55 / 7 / 0.45 / 5 | the halo pass; `bloom_strength` 0 turns it off |
 | `dither_strength` | 0 | halftone on the shade; 0 is a plain multiply |
 | `shadow_softness` / `shadows` | 2 / on | terrain shadows |
+| `glass_tile_atlas` | `0,3` | glass: solid but transparent to light |
+| `reach_radius` / `reach_energy` | 170 / 0.35 | the lantern's room-scale spill: long shadows, lit corners |
 | `shadow_bounce` / `bounce_radius` | 0.45 / 10 | light bleeding into the shadow |
-| `rim_jitter` | 0.045 | how far the rim of a light wobbles, as a share of its radius |
+| `rim_fuzz` / `rim_fuzz_scale` | 2 / 2.2 | outward-only hair on the lit rim, and its size in pixels |
 | `use_authored_lights` | on | collect every `FogLight` in the room |
 | `shade_order` / `glow_order` | 8 / 9 | draw order of the two overlays |
 

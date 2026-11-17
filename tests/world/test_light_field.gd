@@ -66,10 +66,11 @@ func _assert_binding_builds_the_field(failures: Array[String]) -> void:
 			failures.append("light viewport is not the room size")
 		if not viewport.render_target_update_mode == SubViewport.UPDATE_ALWAYS:
 			failures.append("light viewport does not repaint every frame")
-		# Two rings for the lantern: one small bright core and one large halo.
+		# Three rings for the lantern: the small core, the halo and the dim spill
+		# that reaches across the room so its shadows are long.
 		var lights := viewport.get_node_or_null("Lights")
-		if lights == null or lights.get_child_count() != 2:
-			failures.append("lantern is not built from exactly two lights")
+		if lights == null or lights.get_child_count() != 3:
+			failures.append("lantern is not built from exactly three lights")
 		else:
 			for child: Node in lights.get_children():
 				if not (child is PointLight2D):

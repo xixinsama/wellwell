@@ -35,6 +35,11 @@ const LIGHT_TEXTURE_RADIUS := 64.0
 const OCCLUDER_RUN_LIMIT := 160
 ## Share of a light texture that stays at full brightness before the falloff.
 const PLATEAU := 0.42
+## Authored lights are built as a visible ring plus a dim spill that reaches
+## `AUTHORED_REACH` times further, which is what makes their cast shadows long
+## enough to cross the room.
+const AUTHORED_REACH := 3.2
+const AUTHORED_SPILL := 0.25
 
 @export var player_path: NodePath
 @export_group("Lantern")
@@ -49,9 +54,19 @@ const PLATEAU := 0.42
 @export_range(0.4, 4.0, 0.05) var falloff_power := 1.7
 ## Softness of the terrain shadows.
 @export_range(0.0, 10.0, 0.5) var shadow_softness := 2.0
-## How far the rim of every light wobbles, as a share of its radius. 0 is a
-## perfect circle.
-@export_range(0.0, 0.2, 0.005) var rim_jitter := 0.045
+## Atlas cell of the glass tile: it has collision but lets light through, like it
+## lets sight through in the fog.
+@export var glass_tile_atlas := Vector2i(0, 3)
+## Room-scale light under the lantern. The two rings are the visible lamp; this
+## dim light reaches across the room, which is what makes the cast shadows long
+## and lifts the far corners instead of leaving them black.
+@export_range(0.0, 400.0, 5.0) var reach_radius := 170.0
+@export_range(0.0, 1.0, 0.01) var reach_energy := 0.35
+## Fuzzy rim: how far the lit side is pushed outwards in pixels (0 = a clean
+## circle). Only ever adds light, so the dark side never eats inwards.
+@export_range(0.0, 6.0, 0.1) var rim_fuzz := 2.0
+## Size of one hair in pixels; smaller is denser.
+@export_range(0.5, 8.0, 0.1) var rim_fuzz_scale := 2.2
 
 @export_group("Room Light")
 ## Light that reaches everything, added on top of the light map.
@@ -82,7 +97,7 @@ const PLATEAU := 0.42
 @export_range(0.0, 1.0, 0.01) var bloom_threshold := 0.45
 @export var bloom_color := Color(1.0, 0.8, 0.55, 1.0)
 ## Ordered dither levels of the halo; 0 is a continuous glow.
-@export_range(0.0, 32.0, 1.0) var bloom_levels := 5.0
+@export_range(0.0, 32.0, 1.0) var bloom_levels := 0.0
 ## Collect authored FogLight nodes into the same map.
 @export var use_authored_lights := true
 ## Cast terrain shadows. Turning it off keeps the light but removes the occluders.
@@ -96,6 +111,7 @@ var _viewport: SubViewport
 var _canvas_root: Node2D
 var _core_light: PointLight2D
 var _halo_light: PointLight2D
+var _reach_light: PointLight2D
 var _authored: Array[Dictionary] = []
 var _occluders: Node2D
 var _shade: Sprite2D
@@ -106,8 +122,10 @@ var _shade_material: ShaderMaterial
 var _glow_material: ShaderMaterial
 var _bloom_material: ShaderMaterial
 var _consumers: Array[Node] = []
-var _rim_textures: Array[ImageTexture] = []
-var _rim_index := -1
+var _texture_ring: ImageTexture
+var _texture_spill: ImageTexture
+
+
 var _start_time := 0.0
 
 
@@ -174,6 +192,7 @@ func clear_room() -> void:
 	_viewport = null
 	_core_light = null
 	_halo_light = null
+	_reach_light = null
 	_texture = null
 	_room_pixels = Vector2i.ZERO
 
@@ -243,14 +262,15 @@ func _build_viewport() -> void:
 
 
 func _build_lantern() -> void:
-	_core_light = _make_light(core_radius, core_energy, light_color)
-	_halo_light = _make_light(halo_radius, halo_energy, light_color)
+	_core_light = _make_light(core_radius, core_energy, light_color, false)
+	_halo_light = _make_light(halo_radius, halo_energy, light_color, false)
+	_reach_light = _make_light(reach_radius, reach_energy, light_color, true)
 	_update_lantern()
 
 
-func _make_light(radius: float, energy: float, colour: Color) -> PointLight2D:
+func _make_light(radius: float, energy: float, colour: Color, spill: bool) -> PointLight2D:
 	var light := PointLight2D.new()
-	light.texture = _light_texture()
+	light.texture = _light_texture(spill)
 	light.texture_scale = maxf(radius, 1.0) / LIGHT_TEXTURE_RADIUS
 	light.energy = energy
 	light.color = colour
@@ -261,70 +281,64 @@ func _make_light(radius: float, energy: float, colour: Color) -> PointLight2D:
 	return light
 
 
-## Rotates through a few pre-built rims, so neighbouring lights do not share the
-## same wobble but nothing is baked per light.
-func _light_texture() -> ImageTexture:
-	if _rim_textures.is_empty():
-		for seed_angle: float in [0.7, 2.3, 4.1]:
-			_rim_textures.append(_radial_texture(seed_angle))
-	_rim_index = (_rim_index + 1) % _rim_textures.size()
-	return _rim_textures[_rim_index]
+func _light_texture(spill: bool) -> ImageTexture:
+	if spill:
+		if _texture_spill == null:
+			_texture_spill = _radial_texture(0.0, 1.25)
+		return _texture_spill
+	if _texture_ring == null:
+		_texture_ring = _radial_texture(PLATEAU, falloff_power)
+	return _texture_ring
 
 
-## Procedural radial falloff, so the plugin ships no light textures.
+## Round radial falloff built as a GradientTexture2D, so the lamp itself is a
+## clean circle: all of the fuzz happens later, on the lit side only.
 ##
-## The profile plateaus over the first `PLATEAU` of the radius and then falls off
-## with `falloff_power`, which is what makes the lantern rings read as a disc plus
-## a halo instead of one smooth gradient. The rim is then pushed in and out by a
-## few smooth sine lobes around the angle, so the circle is never a perfect circle.
-func _radial_texture(seed_angle: float) -> ImageTexture:
-	var size := int(LIGHT_TEXTURE_RADIUS * 2.0)
-	var centre := float(LIGHT_TEXTURE_RADIUS)
-	var bytes := PackedByteArray()
-	bytes.resize(size * size * 4)
-	for y: int in size:
-		for x: int in size:
-			var dx := float(x) + 0.5 - centre
-			var dy := float(y) + 0.5 - centre
-			var angle := atan2(dy, dx)
-			var radius := sqrt(dx * dx + dy * dy) / centre
-			var jitter := (
-				sin(angle * 3.0 + seed_angle) * 0.62
-				+ sin(angle * 7.0 + seed_angle * 2.3) * 0.28
-				+ sin(angle * 13.0 + seed_angle * 3.7) * 0.14
-			) * rim_jitter
-			radius += jitter
-			var alpha := 0.0
-			if radius <= PLATEAU:
-				alpha = 1.0
-			elif radius < 1.0:
-				alpha = pow((1.0 - radius) / (1.0 - PLATEAU), falloff_power)
-			var index := (y * size + x) * 4
-			bytes[index] = 255
-			bytes[index + 1] = 255
-			bytes[index + 2] = 255
-			bytes[index + 3] = int(clampf(alpha, 0.0, 1.0) * 255.0)
-	var image := Image.create_from_data(size, size, false, Image.FORMAT_RGBA8, bytes)
-	return ImageTexture.create_from_image(image)
+## A plateau followed by `plateau`-relative falloff makes the lantern read as a
+## bright disc plus a halo; the spill profile has no plateau at all, so it is one
+## long dim gradient that reaches across the room.
+func _radial_texture(plateau_value: float, power: float) -> ImageTexture:
+	var stops := 12
+	var offsets := PackedFloat32Array()
+	var colors := PackedColorArray()
+	for index: int in stops:
+		var t := float(index) / float(stops - 1)
+		var alpha := 1.0
+		if t > plateau_value:
+			var span := maxf(1.0 - plateau_value, 0.001)
+			alpha = pow(clampf(1.0 - (t - plateau_value) / span, 0.0, 1.0), power)
+		offsets.append(t)
+		colors.append(Color(1.0, 1.0, 1.0, alpha))
+	var gradient := Gradient.new()
+	gradient.offsets = offsets
+	gradient.colors = colors
+	var texture := GradientTexture2D.new()
+	texture.gradient = gradient
+	texture.width = int(LIGHT_TEXTURE_RADIUS * 2.0)
+	texture.height = int(LIGHT_TEXTURE_RADIUS * 2.0)
+	texture.fill = GradientTexture2D.FILL_RADIAL
+	texture.fill_from = Vector2(0.5, 0.5)
+	texture.fill_to = Vector2(1.0, 0.5)
+	return ImageTexture.create_from_image(texture.get_image())
 
 
 func _update_lantern() -> void:
-	if _core_light == null or _halo_light == null:
+	if _core_light == null or _halo_light == null or _reach_light == null:
 		return
 	var local := Vector2.ZERO
 	if is_instance_valid(_player):
 		local = _player.global_position - Vector2(_room_origin_pixels)
 		local = Vector2(local.round())
-	_core_light.position = local
-	_halo_light.position = local
+	for light: PointLight2D in [_core_light, _halo_light, _reach_light]:
+		light.position = local
+		light.color = light_color
+		light.shadow_enabled = shadows
 	_core_light.texture_scale = maxf(core_radius, 1.0) / LIGHT_TEXTURE_RADIUS
 	_halo_light.texture_scale = maxf(halo_radius, 1.0) / LIGHT_TEXTURE_RADIUS
+	_reach_light.texture_scale = maxf(reach_radius, 1.0) / LIGHT_TEXTURE_RADIUS
 	_core_light.energy = core_energy
 	_halo_light.energy = halo_energy
-	_core_light.color = light_color
-	_halo_light.color = light_color
-	_core_light.shadow_enabled = shadows
-	_halo_light.shadow_enabled = shadows
+	_reach_light.energy = reach_energy
 
 
 ## Collects the authored lights into the field: RoomLight drives the whole light
@@ -345,11 +359,21 @@ func _collect_authored_lights() -> void:
 			var energy := float(light_node.get("energy")) if "energy" in light_node else 1.0
 			var colour: Color = light_node.get("color") if "color" in light_node else light_color
 			var casts := bool(light_node.get("casts_shadows")) if "casts_shadows" in light_node else true
-			var light := _make_light(radius, energy, Color(colour.r, colour.g, colour.b, 1.0))
-			light.shadow_enabled = shadows and casts
+			var radii := [radius, radius * AUTHORED_REACH]
+			var energies := [energy, energy * AUTHORED_SPILL]
+			var lights: Array[PointLight2D] = []
+			for index: int in 2:
+				var light := _make_light(
+					float(radii[index]),
+					float(energies[index]),
+					Color(colour.r, colour.g, colour.b, 1.0),
+					index == 1
+				)
+				light.shadow_enabled = shadows and casts
+				lights.append(light)
 			_authored.append({
 				"node": light_node,
-				"light": light,
+				"lights": lights,
 				"base_energy": energy,
 				"radius": radius,
 			})
@@ -361,22 +385,38 @@ func _update_authored_lights() -> void:
 	var now := float(Time.get_ticks_msec()) / 1000.0 - _start_time
 	for entry: Dictionary in _authored:
 		var node: Node = entry["node"]
-		var light: PointLight2D = entry["light"]
-		if not is_instance_valid(node) or not is_instance_valid(light):
+		var lights: Array = entry["lights"]
+		if not is_instance_valid(node) or lights.is_empty():
 			continue
 		if node.has_method("get_light_state"):
 			var state: Dictionary = node.call("get_light_state", now)
-			light.position = Vector2(state["position"]) - Vector2(_room_origin_pixels)
-			light.energy = float(state["energy"])
-			light.color = Color(state["color"])
-			light.texture_scale = maxf(float(state["radius"]), 1.0) / LIGHT_TEXTURE_RADIUS
+			var position := Vector2(state["position"]) - Vector2(_room_origin_pixels)
+			var ring: PointLight2D = lights[0]
+			var spill: PointLight2D = lights[1]
+			ring.position = position
+			spill.position = position
+			ring.energy = float(state["energy"])
+			spill.energy = float(state["energy"]) * AUTHORED_SPILL
+			ring.color = Color(state["color"])
+			spill.color = Color(state["color"])
+			ring.texture_scale = maxf(float(state["radius"]), 1.0) / LIGHT_TEXTURE_RADIUS
+			spill.texture_scale = (
+				maxf(float(state["radius"]) * AUTHORED_REACH, 1.0) / LIGHT_TEXTURE_RADIUS
+			)
 			continue
-		light.position = (node as Node2D).global_position - Vector2(_room_origin_pixels)
+		var plain_position := (node as Node2D).global_position - Vector2(_room_origin_pixels)
+		var value := float(entry["base_energy"])
+		var colour: Variant = null
 		if node.has_method("get_energy_at"):
-			light.energy = float(node.call("get_energy_at", now))
+			value = float(node.call("get_energy_at", now))
 		elif node.has_method("get_light_color"):
-			light.energy = float(entry["base_energy"])
-			light.color = node.call("get_light_color")
+			colour = node.call("get_light_color")
+		for index: int in lights.size():
+			var light: PointLight2D = lights[index]
+			light.position = plain_position
+			light.energy = value * (1.0 if index == 0 else AUTHORED_SPILL)
+			if colour != null:
+				light.color = Color(colour)
 
 
 func _build_overlays() -> void:
@@ -436,12 +476,16 @@ func _paint_overlay_parameters() -> void:
 		_shade_material.set_shader_parameter("dither_strength", dither_strength)
 		_shade_material.set_shader_parameter("bounce", shadow_bounce)
 		_shade_material.set_shader_parameter("bounce_radius", bounce_radius)
+		_shade_material.set_shader_parameter("rim_fuzz", rim_fuzz)
+		_shade_material.set_shader_parameter("rim_fuzz_scale", rim_fuzz_scale)
 		_shade_material.set_shader_parameter("shade_color", Color(0.0, 0.0, 0.0, 1.0))
 	if _glow_material != null:
 		_glow_material.set_shader_parameter("light_tex", _texture)
 		_glow_material.set_shader_parameter("light_pixels", Vector2(_room_pixels))
 		_glow_material.set_shader_parameter("glow_color", glow_color)
 		_glow_material.set_shader_parameter("glow_gain", glow_gain)
+		_glow_material.set_shader_parameter("rim_fuzz", rim_fuzz)
+		_glow_material.set_shader_parameter("rim_fuzz_scale", rim_fuzz_scale)
 	if _bloom_material != null:
 		_bloom_material.set_shader_parameter("light_tex", _texture)
 		_bloom_material.set_shader_parameter("light_pixels", Vector2(_room_pixels))
@@ -461,6 +505,10 @@ func _build_occluders(terrain_root: Node) -> void:
 		return
 	var solid := {}
 	for cell: Vector2i in layer.get_used_cells():
+		# Glass has collision but passes light, exactly like it passes sight in the
+		# fog, so it is never an occluder.
+		if layer.get_cell_atlas_coords(cell) == glass_tile_atlas:
+			continue
 		var data := layer.get_cell_tile_data(cell)
 		if data == null:
 			continue
