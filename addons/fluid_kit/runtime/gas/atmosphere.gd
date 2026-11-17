@@ -63,7 +63,12 @@ const MAX_VENTS := 4
 @export_range(0.0, 2.0, 0.01) var gas_refill := 0.35
 ## Horizontal wind in pixels per second, plus a small lift. The main
 ## "how fast does the gas blow across the room" knob.
-@export var gas_wind := Vector2(7.0, -1.5)
+@export var gas_wind := Vector2(20.0, -2.5)
+## How much the wind gusts, as a share of `gas_wind`. 0 is a steady draught.
+@export_range(0.0, 1.0, 0.01) var wind_gust := 0.55
+@export_range(0.02, 2.0, 0.01) var wind_gust_speed := 0.18
+## Vertical bob added to the gust, so the mist rolls instead of sliding.
+@export_range(0.0, 30.0, 0.5) var wind_lift := 4.0
 ## Radius in pixels around the hero where gas is pushed aside and thinned.
 @export_range(8.0, 96.0, 1.0) var push_radius := 34.0
 @export_range(0.0, 3.0, 0.01) var push_strength := 1.4
@@ -72,8 +77,8 @@ const MAX_VENTS := 4
 @export var heavy_color := Color(1.0, 0.3, 0.08, 1.0)
 @export var neutral_color := Color(0.1, 0.82, 1.0, 1.0)
 @export var light_color := Color(1.0, 0.95, 0.18, 1.0)
-@export var gas_alpha := Vector3(0.5, 0.42, 0.4)
-@export_range(0.0, 2.0, 0.01) var base_alpha := 0.6
+@export var gas_alpha := Vector3(0.62, 0.5, 0.48)
+@export_range(0.0, 2.0, 0.01) var base_alpha := 0.78
 @export_range(0.0, 3.0, 0.01) var light_alpha := 0.9
 @export_range(0.0, 1.0, 0.01) var noise_amount := 0.45
 @export var lit_color := Color(1.0, 0.9, 0.72, 1.0)
@@ -362,6 +367,14 @@ func _process(delta: float) -> void:
 		player_velocity = _player.get("velocity") if _player is CharacterBody2D else Vector2.ZERO
 	var started := Time.get_ticks_usec()
 	if _gas != null:
+		# Gusts: the draught breathes, so the mist visibly rolls and calms instead
+		# of sliding at a constant speed.
+		if wind_gust > 0.0:
+			var phase := _time * wind_gust_speed * TAU
+			var gust := 1.0 + wind_gust * (
+				sin(phase) * 0.62 + sin(phase * 2.37 + 1.7) * 0.38
+			)
+			_gas.set("wind", gas_wind * gust + Vector2(0.0, sin(phase * 0.7) * wind_lift))
 		# The gas field is room-local, the player is in world space.
 		_gas.step(_step_interval, player_position - _room_rect.position, player_velocity)
 		if _material != null:

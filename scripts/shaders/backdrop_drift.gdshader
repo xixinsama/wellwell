@@ -22,6 +22,20 @@ uniform float sway_speed : hint_range(0.0, 3.0) = 0.35;
 uniform vec4 tint : source_color = vec4(0.62, 0.9, 1.0, 1.0);
 uniform float brightness : hint_range(0.0, 3.0) = 2.5;
 uniform float vignette : hint_range(0.0, 1.5) = 0.22;
+// Ordered-dither posterise of the final plate, so the backdrop reads as pixel
+// art with banded, stepped colour instead of a smooth blurred photo.
+uniform float dither_strength : hint_range(0.0, 1.0) = 0.75;
+uniform float dither_levels : hint_range(2.0, 32.0) = 5.0;
+
+float bayer4(vec2 p) {
+	vec2 q = floor(mod(p, 4.0));
+	float inner = mod(3.0 * mod(q.y, 2.0) + 2.0 * mod(q.x, 2.0), 4.0);
+	float outer = mod(
+		3.0 * floor(mod(q.y, 4.0) * 0.5) + 2.0 * floor(mod(q.x, 4.0) * 0.5),
+		4.0
+	);
+	return (4.0 * inner + outer + 0.5) / 16.0;
+}
 
 void fragment() {
 	float rows = 1.0 / TEXTURE_PIXEL_SIZE.y;
@@ -51,5 +65,13 @@ void fragment() {
 	float falloff = clamp(1.0 - vignette * dot(centered, centered) * 2.4, 0.0, 1.0);
 	col.rgb *= falloff;
 	col.rgb *= tint.rgb * brightness;
+	if (dither_strength > 0.0) {
+		// Step the colour on the design pixel grid, then let the dither pick the
+		// neighbouring step per pixel: banding without a smooth gradient.
+		vec2 screen_px = floor(UV * vec2(320.0, 180.0));
+		float noise = bayer4(screen_px);
+		vec3 stepped = floor(col.rgb * dither_levels + noise) / dither_levels;
+		col.rgb = mix(col.rgb, stepped, clamp(dither_strength, 0.0, 1.0));
+	}
 	COLOR = vec4(col.rgb, 1.0);
 }

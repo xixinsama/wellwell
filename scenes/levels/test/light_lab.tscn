@@ -24,6 +24,7 @@
 [ext_resource type="Script" path="res://addons/fluid_kit/runtime/water/water_grid.gd" id="22_udu1v"]
 [ext_resource type="PackedScene" path="res://addons/platformer_debug/runtime/debug_hud.tscn" id="23_vpsj4"]
 [ext_resource type="Script" path="res://addons/platformer_debug/runtime/debug_hud.gd" id="24_tumfb"]
+[ext_resource type="Script" path="res://addons/fluid_kit/runtime/gas/gas_vent.gd" id="25_gasvent"]
 
 [node name="RoomAuthoringRoot" type="Node2D" unique_id=1018949667]
 script = ExtResource("1_trluc")
@@ -181,6 +182,22 @@ position = Vector2(248, 120)
 script = ExtResource("7_7pbym")
 size_cells = Vector2i(7, 4)
 region_id = "pool"
+
+[node name="RightVent" type="Node2D" parent="RoomContent/Entities" unique_id=1275274015]
+position = Vector2(150, 92)
+script = ExtResource("25_gasvent")
+channel = 1
+direction = Vector2(1, -0.12)
+radius = 26.0
+rate = 3.6
+jet_speed = 420.0
+vent_id = "lab_right"
+
+[node name="DarkPocket" type="Node2D" parent="RoomContent/Entities" unique_id=1275274016]
+position = Vector2(216, 0)
+script = ExtResource("8_7au1x")
+size_cells = Vector2i(14, 23)
+zone_id = "lab_dark_pocket"
 
 [node name="LabLight" type="Node2D" parent="RoomContent/Entities" unique_id=1275274014]
 script = ExtResource("8_7au1x")

@@ -30,6 +30,10 @@ const ROOMS_PATH := NodePath("../TerrainRoot")
 @export var tint := Color(0.62, 0.9, 1.0)
 @export_range(0.0, 3.0, 0.01) var brightness := 2.5
 @export_range(0.0, 1.5, 0.01) var vignette := 0.22
+## Ordered-dither posterise of the plate, so the backdrop is banded pixel art
+## instead of a smooth blurred photo.
+@export_range(0.0, 1.0, 0.01) var dither_strength := 0.75
+@export_range(2.0, 32.0, 1.0) var dither_levels := 5.0
 ## Alpha kept by the room's background tilemap. 1 = untouched and crisp.
 @export_range(0.0, 1.0, 0.01) var background_tilemap_alpha := 1.0
 
@@ -152,6 +156,8 @@ func _apply_parameters() -> void:
 	_plate_material.set_shader_parameter("tint", tint)
 	_plate_material.set_shader_parameter("brightness", brightness)
 	_plate_material.set_shader_parameter("vignette", vignette)
+	_plate_material.set_shader_parameter("dither_strength", dither_strength)
+	_plate_material.set_shader_parameter("dither_levels", dither_levels)
 
 
 ## Push the exported tuning values onto the shared plate material at runtime.

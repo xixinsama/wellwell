@@ -20,6 +20,9 @@ const WORLD_PATH := "res://resources/worlds/test_world.tres"
 const ROOM_PLACEMENT := preload("res://addons/platformer_kit/world/data/world_room_placement_data.gd")
 ## Free chunk of the test world next to the existing demo rooms.
 const ORIGIN_CHUNK := Vector2i(3, 0)
+## Rewriting the source scene throws away hand edits made in the editor, so it is
+## opt-in: with this false the tool only re-bakes whatever scene is on disk.
+const FORCE_REWRITE := false
 const WIDTH_CELLS := 40
 const HEIGHT_CELLS := 23
 const TILE := 8
@@ -65,6 +68,19 @@ func _run() -> void:
 	_place_entities(root)
 	_place_preview(root)
 
+	if FileAccess.file_exists(SOURCE_PATH) and not FORCE_REWRITE:
+		print("source scene exists, keeping the hand edits: %s" % SOURCE_PATH)
+		var existing: Node = (load(SOURCE_PATH) as PackedScene).instantiate()
+		var bake_only: Dictionary = ROOM_BAKER.new().bake(existing, SOURCE_PATH)
+		existing.free()
+		if not bake_only.get("ok", false):
+			push_error("room bake failed: %s" % str(bake_only.get("errors", [])))
+			quit(1)
+			return
+		print("re-baked from the existing scene: %s" % str(bake_only.get("outputs", {})))
+		_register_in_world()
+		quit(0)
+		return
 	var packed := PackedScene.new()
 	var pack_error := packed.pack(root)
 	if pack_error != OK:
