@@ -17,6 +17,16 @@ uniform vec2 light_pixels = vec2(320.0, 180.0);
 uniform float ambient = 0.55;
 uniform vec4 shade_color : source_color = vec4(0.0, 0.0, 0.0, 1.0);
 uniform float dither_strength = 0.4;
+// Bounce: light bleeding a few pixels into the shadow, so a cast shadow is dark
+// deep inside and lighter towards its silhouette (the light reflecting off the
+// lit surfaces next to it).
+uniform float bounce = 0.45;
+uniform float bounce_radius = 10.0;
+
+float light_lum(vec2 px) {
+	vec3 light = texture(light_tex, (px + 0.5) / light_pixels).rgb;
+	return clamp(dot(light, vec3(0.3, 0.59, 0.11)), 0.0, 1.0);
+}
 
 float bayer4(vec2 p) {
 	vec2 q = floor(mod(p, 4.0));
@@ -30,9 +40,20 @@ float bayer4(vec2 p) {
 
 void fragment() {
 	vec2 px = floor(UV * light_pixels);
-	vec2 uv = (px + 0.5) / light_pixels;
-	vec3 light = texture(light_tex, uv).rgb;
-	float lit = clamp(dot(light, vec3(0.3, 0.59, 0.11)) + ambient, 0.0, 1.0);
+	float own = light_lum(px);
+	float lit = own;
+	if (bounce > 0.0) {
+		// Brightest light within the bounce radius, decaying with distance.
+		float bleed = 0.0;
+		for (int index = 0; index < 8; index++) {
+			float angle = float(index) * 0.7853982;
+			vec2 direction = vec2(cos(angle), sin(angle));
+			bleed = max(bleed, light_lum(px + direction * bounce_radius) * 0.55);
+			bleed = max(bleed, light_lum(px + direction * bounce_radius * 0.5) * 0.8);
+		}
+		lit = max(lit, bleed * bounce);
+	}
+	lit = clamp(lit + ambient, 0.0, 1.0);
 
 	float dark = 1.0 - lit;
 	float band = 1.0 - abs(dark * 2.0 - 1.0);

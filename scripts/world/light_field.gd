@@ -49,6 +49,9 @@ const PLATEAU := 0.42
 @export_range(0.4, 4.0, 0.05) var falloff_power := 1.7
 ## Softness of the terrain shadows.
 @export_range(0.0, 10.0, 0.5) var shadow_softness := 2.0
+## How far the rim of every light wobbles, as a share of its radius. 0 is a
+## perfect circle.
+@export_range(0.0, 0.2, 0.005) var rim_jitter := 0.045
 
 @export_group("Room Light")
 ## Light that reaches everything, added on top of the light map.
@@ -59,6 +62,12 @@ const PLATEAU := 0.42
 ## Dither amount on the shade falloff. 0 keeps the shade a plain brightness
 ## multiply; anything above turns the unlit area into a halftone pattern.
 @export_range(0.0, 1.0, 0.01) var dither_strength := 0.0
+@export_group("Shadow Bounce")
+## Share of the light next to a shadow that bleeds into it, so a cast shadow is
+## dark deep inside and lighter near its silhouette.
+@export_range(0.0, 1.0, 0.01) var shadow_bounce := 0.45
+## How far the bounce reaches in pixels.
+@export_range(1.0, 40.0, 0.5) var bounce_radius := 10.0
 ## Draw order of the two overlay quads. The fog sits at 10, so both stay below it
 ## or the shadow would cover the unexplored area.
 @export var shade_order := 8
@@ -97,6 +106,8 @@ var _shade_material: ShaderMaterial
 var _glow_material: ShaderMaterial
 var _bloom_material: ShaderMaterial
 var _consumers: Array[Node] = []
+var _rim_textures: Array[ImageTexture] = []
+var _rim_index := -1
 var _start_time := 0.0
 
 
@@ -239,7 +250,7 @@ func _build_lantern() -> void:
 
 func _make_light(radius: float, energy: float, colour: Color) -> PointLight2D:
 	var light := PointLight2D.new()
-	light.texture = _radial_texture()
+	light.texture = _light_texture()
 	light.texture_scale = maxf(radius, 1.0) / LIGHT_TEXTURE_RADIUS
 	light.energy = energy
 	light.color = colour
@@ -250,32 +261,51 @@ func _make_light(radius: float, energy: float, colour: Color) -> PointLight2D:
 	return light
 
 
-## Procedural radial falloff, so the plugin ships no light textures. The first
-## 42% of the radius is a plateau and the rest fades with `falloff_power`, which
-## is what makes the two lantern rings read as a disc plus a halo instead of as
-## one smooth gradient.
-func _radial_texture() -> GradientTexture2D:
-	var gradient := Gradient.new()
-	var stops := 9
-	var offsets := PackedFloat32Array()
-	var colors := PackedColorArray()
-	for index: int in stops:
-		var t := float(index) / float(stops - 1)
-		var alpha := 1.0
-		if t > PLATEAU:
-			alpha = pow(clampf(1.0 - (t - PLATEAU) / (1.0 - PLATEAU), 0.0, 1.0), falloff_power)
-		offsets.append(t)
-		colors.append(Color(1.0, 1.0, 1.0, alpha))
-	gradient.offsets = offsets
-	gradient.colors = colors
-	var texture := GradientTexture2D.new()
-	texture.gradient = gradient
-	texture.width = int(LIGHT_TEXTURE_RADIUS * 2.0)
-	texture.height = int(LIGHT_TEXTURE_RADIUS * 2.0)
-	texture.fill = GradientTexture2D.FILL_RADIAL
-	texture.fill_from = Vector2(0.5, 0.5)
-	texture.fill_to = Vector2(1.0, 0.5)
-	return texture
+## Rotates through a few pre-built rims, so neighbouring lights do not share the
+## same wobble but nothing is baked per light.
+func _light_texture() -> ImageTexture:
+	if _rim_textures.is_empty():
+		for seed_angle: float in [0.7, 2.3, 4.1]:
+			_rim_textures.append(_radial_texture(seed_angle))
+	_rim_index = (_rim_index + 1) % _rim_textures.size()
+	return _rim_textures[_rim_index]
+
+
+## Procedural radial falloff, so the plugin ships no light textures.
+##
+## The profile plateaus over the first `PLATEAU` of the radius and then falls off
+## with `falloff_power`, which is what makes the lantern rings read as a disc plus
+## a halo instead of one smooth gradient. The rim is then pushed in and out by a
+## few smooth sine lobes around the angle, so the circle is never a perfect circle.
+func _radial_texture(seed_angle: float) -> ImageTexture:
+	var size := int(LIGHT_TEXTURE_RADIUS * 2.0)
+	var centre := float(LIGHT_TEXTURE_RADIUS)
+	var bytes := PackedByteArray()
+	bytes.resize(size * size * 4)
+	for y: int in size:
+		for x: int in size:
+			var dx := float(x) + 0.5 - centre
+			var dy := float(y) + 0.5 - centre
+			var angle := atan2(dy, dx)
+			var radius := sqrt(dx * dx + dy * dy) / centre
+			var jitter := (
+				sin(angle * 3.0 + seed_angle) * 0.62
+				+ sin(angle * 7.0 + seed_angle * 2.3) * 0.28
+				+ sin(angle * 13.0 + seed_angle * 3.7) * 0.14
+			) * rim_jitter
+			radius += jitter
+			var alpha := 0.0
+			if radius <= PLATEAU:
+				alpha = 1.0
+			elif radius < 1.0:
+				alpha = pow((1.0 - radius) / (1.0 - PLATEAU), falloff_power)
+			var index := (y * size + x) * 4
+			bytes[index] = 255
+			bytes[index + 1] = 255
+			bytes[index + 2] = 255
+			bytes[index + 3] = int(clampf(alpha, 0.0, 1.0) * 255.0)
+	var image := Image.create_from_data(size, size, false, Image.FORMAT_RGBA8, bytes)
+	return ImageTexture.create_from_image(image)
 
 
 func _update_lantern() -> void:
@@ -297,22 +327,32 @@ func _update_lantern() -> void:
 	_halo_light.shadow_enabled = shadows
 
 
+## Collects the authored lights into the field: RoomLight drives the whole light
+## (motion, energy, shadows), the older FogLight keeps the mist's own falloff.
 func _collect_authored_lights() -> void:
 	_authored.clear()
 	if not use_authored_lights or not is_inside_tree():
 		return
 	var room_rect := Rect2(Vector2(_room_origin_pixels), Vector2(_room_pixels))
-	for node: Node in get_tree().get_nodes_in_group(LIGHT_GROUP):
-		if not is_instance_valid(node) or not (node is Node2D):
-			continue
-		var light_node := node as Node2D
-		if not room_rect.has_point(light_node.global_position):
-			continue
-		var radius := float(light_node.get("radius")) if "radius" in light_node else 64.0
-		var energy := float(light_node.get("energy")) if "energy" in light_node else 1.0
-		var colour: Color = light_node.get("color") if "color" in light_node else light_color
-		var light := _make_light(radius, energy, Color(colour.r, colour.g, colour.b, 1.0))
-		_authored.append({"node": light_node, "light": light, "base_energy": energy})
+	for group: StringName in [&"room_light", LIGHT_GROUP]:
+		for node: Node in get_tree().get_nodes_in_group(group):
+			if not is_instance_valid(node) or not (node is Node2D):
+				continue
+			var light_node := node as Node2D
+			if not room_rect.has_point(light_node.global_position):
+				continue
+			var radius := float(light_node.get("radius")) if "radius" in light_node else 64.0
+			var energy := float(light_node.get("energy")) if "energy" in light_node else 1.0
+			var colour: Color = light_node.get("color") if "color" in light_node else light_color
+			var casts := bool(light_node.get("casts_shadows")) if "casts_shadows" in light_node else true
+			var light := _make_light(radius, energy, Color(colour.r, colour.g, colour.b, 1.0))
+			light.shadow_enabled = shadows and casts
+			_authored.append({
+				"node": light_node,
+				"light": light,
+				"base_energy": energy,
+				"radius": radius,
+			})
 
 
 func _update_authored_lights() -> void:
@@ -324,11 +364,19 @@ func _update_authored_lights() -> void:
 		var light: PointLight2D = entry["light"]
 		if not is_instance_valid(node) or not is_instance_valid(light):
 			continue
+		if node.has_method("get_light_state"):
+			var state: Dictionary = node.call("get_light_state", now)
+			light.position = Vector2(state["position"]) - Vector2(_room_origin_pixels)
+			light.energy = float(state["energy"])
+			light.color = Color(state["color"])
+			light.texture_scale = maxf(float(state["radius"]), 1.0) / LIGHT_TEXTURE_RADIUS
+			continue
 		light.position = (node as Node2D).global_position - Vector2(_room_origin_pixels)
 		if node.has_method("get_energy_at"):
 			light.energy = float(node.call("get_energy_at", now))
 		elif node.has_method("get_light_color"):
 			light.energy = float(entry["base_energy"])
+			light.color = node.call("get_light_color")
 
 
 func _build_overlays() -> void:
@@ -386,6 +434,8 @@ func _paint_overlay_parameters() -> void:
 		_shade_material.set_shader_parameter("light_pixels", Vector2(_room_pixels))
 		_shade_material.set_shader_parameter("ambient", ambient)
 		_shade_material.set_shader_parameter("dither_strength", dither_strength)
+		_shade_material.set_shader_parameter("bounce", shadow_bounce)
+		_shade_material.set_shader_parameter("bounce_radius", bounce_radius)
 		_shade_material.set_shader_parameter("shade_color", Color(0.0, 0.0, 0.0, 1.0))
 	if _glow_material != null:
 		_glow_material.set_shader_parameter("light_tex", _texture)
@@ -422,13 +472,16 @@ func _build_occluders(terrain_root: Node) -> void:
 				break
 		if blocks:
 			solid[cell] = true
-	_emit_occluders(solid, layer, Vector2(_room_origin_pixels))
+	# Cells are room-local: the room's own node is what the lights are measured
+	# from, so only the layer's offset inside the room survives.
+	var offset := layer.global_position - (terrain_root as Node2D).global_position
+	_emit_occluders(solid, layer, offset)
 
 
 ## Turns the solid map into long occluder runs: one segment per straight edge
 ## where a solid cell touches open air, so a wall costs one occluder instead of
-## one per tile.
-func _emit_occluders(solid: Dictionary, layer: TileMapLayer, origin: Vector2) -> void:
+## one per tile. `offset` moves the room-local cell grid onto the layer.
+func _emit_occluders(solid: Dictionary, layer: TileMapLayer, offset: Vector2) -> void:
 	var cell := float(layer.tile_set.tile_size.x) if layer.tile_set != null else 8.0
 	if cell <= 0.0:
 		cell = 8.0
@@ -455,10 +508,10 @@ func _emit_occluders(solid: Dictionary, layer: TileMapLayer, origin: Vector2) ->
 				if value == span_end + int(cell) and (span_end - span_start) < OCCLUDER_RUN_LIMIT:
 					span_end = value
 					continue
-				_push_occluder(axis, float(line_key), float(span_start), float(span_end + int(cell)), origin)
+				_push_occluder(axis, float(line_key), float(span_start), float(span_end + int(cell)), offset)
 				span_start = value
 				span_end = value
-			_push_occluder(axis, float(line_key), float(span_start), float(span_end + int(cell)), origin)
+			_push_occluder(axis, float(line_key), float(span_start), float(span_end + int(cell)), offset)
 
 
 func _record_edge(runs: Dictionary, axis: String, line: float, start: float) -> void:
@@ -469,12 +522,16 @@ func _record_edge(runs: Dictionary, axis: String, line: float, start: float) -> 
 	(lines[key] as Array).append(int(round(start)))
 
 
-func _push_occluder(axis: String, line: float, from: float, to: float, origin: Vector2) -> void:
+func _push_occluder(axis: String, line: float, from: float, to: float, offset: Vector2) -> void:
 	var shape := OccluderPolygon2D.new()
 	if axis == "h":
-		shape.polygon = PackedVector2Array([Vector2(from, line) - origin, Vector2(to, line) - origin])
+		shape.polygon = PackedVector2Array([
+			Vector2(from, line) + offset, Vector2(to, line) + offset
+		])
 	else:
-		shape.polygon = PackedVector2Array([Vector2(line, from) - origin, Vector2(line, to) - origin])
+		shape.polygon = PackedVector2Array([
+			Vector2(line, from) + offset, Vector2(line, to) + offset
+		])
 	shape.closed = false
 	shape.cull_mode = OccluderPolygon2D.CULL_DISABLED
 	var occluder := LightOccluder2D.new()

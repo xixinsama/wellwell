@@ -46,8 +46,48 @@ lights read as a disc plus a halo instead of one smooth blob.
 
 Occluders are built from the `SolidTiles` collision shapes, merged into runs: a
 straight wall costs one occluder for its top edge, one for its bottom edge and one
-per end cap, however many tiles long it is (a 6 tile wall is 4 occluders). On
-`room_03_00` the whole room is 75 occluders.
+per end cap, however many tiles long it is (a 6 tile wall is 4 occluders). A light
+is only blocked when `casts_shadows` is on, and the occluders are room-local, so a
+room placed away from chunk `(0, 0)` keeps its shadows on the room.
+
+`shadow_bounce` softens the result: the shade pass reads the brightest light
+within `bounce_radius` and lets a share of it bleed into the shadow. A cast
+shadow is therefore dark deep inside and lighter towards its silhouette, where the
+lit surface next to it reflects.
+
+## Authored lights
+
+`RoomLight` (`scripts/world/room_light.gd`) is the light source to place:
+
+| Property | Meaning |
+| :--- | :--- |
+| `radius` / `energy` / `color` | size, brightness and tint |
+| `swing_pixels` / `swing_speed` / `swing_axis` | pendulum motion (the swinging lamp) |
+| `wander_pixels` / `wander_speed` | drifting, for fireflies |
+| `flicker` / `flicker_speed` | energy wobble |
+| `casts_shadows` | turn off for a light that ignores walls (fireflies, a halo) |
+
+The older `FogLight` nodes are still collected, because the mist uses their wide
+soft falloff.
+
+Every light rims are procedural (`_radial_texture`): the circle is pushed in and
+out by `rim_jitter` (4.5% of the radius by default) so no light is a perfect
+circle.
+
+## The demo room
+
+`scenes/levels/test/light_lab.tscn`, built by
+`tools/build_light_lab.gd`:
+
+```
+godot --headless --path . -s res://tools/build_light_lab.gd
+```
+
+It has a swinging lamp over a slab (its shadow sweeps the floor), a second lamp
+over a pool cut by a wall, a lamp that ignores walls, six fireflies of four
+glowing pixels each, and grid water in the pool. Open
+`scenes/levels/test/light_lab_runner.tscn` to walk around in it: the runner binds
+the light field, the fog and the water to the room in code.
 
 ## Consumers
 
@@ -76,6 +116,8 @@ per end cap, however many tiles long it is (a 6 tile wall is 4 occluders). On
 | `bloom_strength` / `bloom_radius` / `bloom_threshold` / `bloom_levels` | 0.55 / 7 / 0.45 / 5 | the halo pass; `bloom_strength` 0 turns it off |
 | `dither_strength` | 0 | halftone on the shade; 0 is a plain multiply |
 | `shadow_softness` / `shadows` | 2 / on | terrain shadows |
+| `shadow_bounce` / `bounce_radius` | 0.45 / 10 | light bleeding into the shadow |
+| `rim_jitter` | 0.045 | how far the rim of a light wobbles, as a share of its radius |
 | `use_authored_lights` | on | collect every `FogLight` in the room |
 | `shade_order` / `glow_order` | 8 / 9 | draw order of the two overlays |
 

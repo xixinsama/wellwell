@@ -19,6 +19,7 @@ func run() -> Array[String]:
 	var failures: Array[String] = []
 	_assert_binding_builds_the_field(failures)
 	_assert_occluders_merge_into_runs(failures)
+	_assert_occluders_stay_room_local(failures)
 	_assert_consumers_receive_the_map(failures)
 	_assert_rebinding_replaces_the_field(failures)
 	return failures
@@ -100,6 +101,40 @@ func _assert_occluders_merge_into_runs(failures: Array[String]) -> void:
 		)
 	rig["root"].free()
 
+
+func _assert_occluders_stay_room_local(failures: Array[String]) -> void:
+	# A room placed away from chunk (0, 0) used to shift its occluders by the room
+	# origin, which pushed every shadow off the map.
+	var rig := _make_rig()
+	var layer: TileMapLayer = rig["layer"]
+	for x: int in range(2, 8):
+		layer.set_cell(Vector2i(x, 4), 0, Vector2i.ZERO)
+	var field: Node2D = LIGHT_FIELD.new() as Node2D
+	rig["root"].add_child(field)
+	field.call(
+		"bind_room_with_origin", _make_room(Vector2i.ONE), rig["room"], Vector2i(1, 2)
+	)
+	var occluders := field.get_node_or_null("LightViewport/LightOccluders")
+	if occluders == null or occluders.get_child_count() == 0:
+		failures.append("room placed away from the origin built no occluders")
+	else:
+		var room_size := field.call("get_light_pixels") as Vector2i
+		for child: Node in occluders.get_children():
+			var occluder := child as LightOccluder2D
+			if occluder == null or occluder.occluder == null:
+				failures.append("occluder node has no polygon")
+				break
+			for point: Vector2 in occluder.occluder.polygon:
+				if point.x < -8.0 or point.y < -8.0:
+					failures.append(
+						"occluder at %s is outside the room: it was shifted by the room origin"
+						% str(point)
+					)
+					break
+				if point.x > float(room_size.x) + 8.0 or point.y > float(room_size.y) + 8.0:
+					failures.append("occluder at %s is past the room bounds" % str(point))
+					break
+	rig["root"].free()
 
 func _assert_consumers_receive_the_map(failures: Array[String]) -> void:
 	var rig := _make_rig()

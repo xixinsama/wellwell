@@ -1,0 +1,137 @@
+[gd_scene format=3 uid="uid://v87gj8t6a50j"]
+
+[ext_resource type="Script" path="res://addons/platformer_kit/world/entities/spawn_point.gd" id="1_x4dpx"]
+[ext_resource type="Script" path="res://scripts/world/room_light.gd" id="2_ai8pr"]
+[ext_resource type="Script" path="res://addons/fluid_kit/runtime/water/fluid_region.gd" id="3_iyjjq"]
+[ext_resource type="Script" path="res://scripts/world/fog_zone.gd" id="4_c6jex"]
+
+[node name="RoomRuntimeContent" type="Node2D" unique_id=570437017]
+
+[node name="Entities" type="Node2D" parent="." unique_id=1128871234]
+
+[node name="StartSpawn" type="Marker2D" parent="Entities" unique_id=844262062]
+position = Vector2(24, 144)
+script = ExtResource("1_x4dpx")
+
+[node name="SwingingLamp" type="Node2D" parent="Entities" unique_id=418993074]
+position = Vector2(144, 40)
+script = ExtResource("2_ai8pr")
+light_id = "swing"
+radius = 58.0
+energy = 1.15
+color = Color(1, 0.86, 0.6, 1)
+swing_pixels = 26.0
+swing_speed = 0.22
+flicker = 0.12
+flicker_speed = 5.0
+
+[node name="PoolLamp" type="Node2D" parent="Entities" unique_id=1337907029]
+position = Vector2(264, 96)
+script = ExtResource("2_ai8pr")
+light_id = "pool"
+radius = 44.0
+energy = 0.95
+color = Color(0.72, 0.88, 1, 1)
+flicker = 0.08
+
+[node name="UnoccludedGlow" type="Node2D" parent="Entities" unique_id=1013214081]
+position = Vector2(48, 96)
+script = ExtResource("2_ai8pr")
+light_id = "glow"
+radius = 30.0
+energy = 0.9
+color = Color(1, 0.66, 0.5, 1)
+flicker = 0.25
+flicker_speed = 7.0
+casts_shadows = false
+
+[node name="Firefly0" type="Node2D" parent="Entities" unique_id=1220580485]
+position = Vector2(40, 32)
+script = ExtResource("2_ai8pr")
+light_id = "firefly0"
+radius = 3.0
+energy = 2.6
+color = Color(1, 0.95, 0.55, 1)
+wander_pixels = 22.0
+wander_speed = 0.12
+flicker = 0.45
+flicker_speed = 3.0
+casts_shadows = false
+
+[node name="Firefly1" type="Node2D" parent="Entities" unique_id=939891117]
+position = Vector2(88, 72)
+script = ExtResource("2_ai8pr")
+light_id = "firefly1"
+radius = 3.0
+energy = 2.6
+color = Color(1, 0.95, 0.55, 1)
+wander_pixels = 22.0
+wander_speed = 0.15
+flicker = 0.45
+flicker_speed = 4.0
+casts_shadows = false
+
+[node name="Firefly2" type="Node2D" parent="Entities" unique_id=1789885476]
+position = Vector2(136, 112)
+script = ExtResource("2_ai8pr")
+light_id = "firefly2"
+radius = 3.0
+energy = 2.6
+color = Color(1, 0.95, 0.55, 1)
+wander_pixels = 22.0
+wander_speed = 0.18
+flicker = 0.45
+flicker_speed = 5.0
+casts_shadows = false
+
+[node name="Firefly3" type="Node2D" parent="Entities" unique_id=1042403950]
+position = Vector2(184, 56)
+script = ExtResource("2_ai8pr")
+light_id = "firefly3"
+radius = 3.0
+energy = 2.6
+color = Color(1, 0.95, 0.55, 1)
+wander_pixels = 22.0
+wander_speed = 0.21
+flicker = 0.45
+casts_shadows = false
+
+[node name="Firefly4" type="Node2D" parent="Entities" unique_id=574854054]
+position = Vector2(232, 96)
+script = ExtResource("2_ai8pr")
+light_id = "firefly4"
+radius = 3.0
+energy = 2.6
+color = Color(1, 0.95, 0.55, 1)
+wander_pixels = 22.0
+wander_speed = 0.24
+flicker = 0.45
+flicker_speed = 7.0
+casts_shadows = false
+
+[node name="Firefly5" type="Node2D" parent="Entities" unique_id=2067757383]
+position = Vector2(40, 40)
+script = ExtResource("2_ai8pr")
+light_id = "firefly5"
+radius = 3.0
+energy = 2.6
+color = Color(1, 0.95, 0.55, 1)
+wander_pixels = 22.0
+wander_speed = 0.27
+flicker = 0.45
+flicker_speed = 8.0
+casts_shadows = false
+
+[node name="PoolFluid" type="Node2D" parent="Entities" unique_id=793530149]
+position = Vector2(248, 120)
+script = ExtResource("3_iyjjq")
+size_cells = Vector2i(7, 4)
+region_id = "pool"
+
+[node name="LabLight" type="Node2D" parent="Entities" unique_id=558722776]
+script = ExtResource("4_c6jex")
+mode = 1
+size_cells = Vector2i(40, 23)
+zone_id = "light_lab_lit"
+
+[node name="Foreground" type="Node2D" parent="." unique_id=990766579]
