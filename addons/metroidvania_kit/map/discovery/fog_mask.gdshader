@@ -65,9 +65,46 @@ uniform sampler2D light_tex : filter_linear, repeat_disable;
 uniform vec2 light_pixels = vec2(320.0, 180.0);
 uniform float light_push_px = 10.0;
 uniform float light_gain = 1.0;
+// --- focus ----------------------------------------------------------------
+// focus_room spotlight. It is a shader term and not a mask channel on purpose:
+// the bubble is centred on the hero body and follows it every frame, so baking
+// it into the mask would cost one fill_rect per cell per frame.
+uniform vec2 focus_center_px = vec2(-99999.0, -99999.0);
+// x, y, w, h of the authored zone in mask pixels; the zone itself stays lit.
+uniform vec4 focus_rect_px = vec4(-99999.0, -99999.0, 0.0, 0.0);
+uniform float focus_strength = 0.0;
+uniform float focus_alpha = 0.0;
+uniform float focus_radius_px = 34.0;
+uniform float focus_falloff_px = 34.0;
 // Test hook: 1 draws the sign of the distance field, 2 draws the two bilinear
 // fields as colour and 3 draws the final shape, so captures can be measured.
 uniform float debug_view = 0.0;
+
+// Distance from a pixel to a rectangle, zero inside it.
+float rect_outside(vec2 p, vec4 rect) {
+	vec2 half_size = rect.zw * 0.5;
+	vec2 delta = abs(p - (rect.xy + half_size)) - half_size;
+	return length(max(delta, vec2(0.0)));
+}
+
+// The spotlight: the lit stage is the authored zone plus a bubble around the
+// hero, and everything else fades to focus_alpha over focus_falloff_px. The
+// bubble starts wide and closes onto the hero while the fade runs in, which is
+// the "the room closes in around you" beat. Nothing here can open a fogged
+// cell: the shader only adds darkness, and the final alpha is a max().
+float focus_at(vec2 px) {
+	if (focus_strength <= 0.001 || focus_alpha <= 0.001 || focus_rect_px.z <= 0.0) {
+		return 0.0;
+	}
+	float strength = clamp(focus_strength, 0.0, 1.0);
+	float radius = mix(focus_radius_px * 2.6, focus_radius_px, strength);
+	float lit_distance = min(
+		rect_outside(px, focus_rect_px),
+		max(length(px - focus_center_px) - radius, 0.0)
+	);
+	float ramp = smoothstep(0.0, max(focus_falloff_px, 1.0), lit_distance);
+	return ramp * strength * focus_alpha;
+}
 
 float hash21(vec2 p) {
 	p = fract(p * vec2(123.34, 456.21));
@@ -124,6 +161,7 @@ float cell_distance(vec2 cell_pos) {
 
 void fragment() {
 	vec2 px = floor(UV * mask_pixels);
+	float focus_amount = focus_at(px);
 	vec4 centre = texture(mask_tex, (px + 0.5) / mask_pixels);
 
 	// Cell-space position of this fragment, measured so integer values land on
@@ -132,7 +170,8 @@ void fragment() {
 	// Positive inside the fog, negative inside the revealed area.
 	float distance_px = (cell_distance(cell_pos) - 0.5) * 2.0 * distance_range;
 
-	if (debug_view < 0.5 && centre.r <= 0.0 && distance_px < -distance_range * 0.98) {
+	if (debug_view < 0.5 && centre.r <= 0.0 && distance_px < -distance_range * 0.98
+			&& focus_amount <= 0.001) {
 		COLOR = vec4(0.0);
 	} else {
 		float t = animate ? TIME : 0.0;
@@ -190,8 +229,14 @@ void fragment() {
 			vec2 edge_dist = min(in_cell, cell_pixels - in_cell);
 			flash_amount *= 1.0 - step(1.0, min(edge_dist.x, edge_dist.y));
 		}
-		float out_alpha = max(fog_amount, flash_amount);
-		vec3 rgb = mix(fog_color.rgb, flash_color.rgb, step(fog_amount, flash_amount));
+		float out_alpha = max(max(fog_amount, flash_amount), focus_amount);
+		// The dip only wins when it is the strongest term; a pixel that holds
+		// nothing but the focus spotlight must stay `fog_color`, otherwise a
+		// step(0, 0) would paint it with the white flash colour.
+		vec3 rgb = fog_color.rgb;
+		if (flash_amount > 0.0 && flash_amount >= max(fog_amount, focus_amount)) {
+			rgb = flash_color.rgb;
+		}
 		if (debug_view > 0.5 && debug_view < 1.5) {
 			COLOR = vec4(step(0.0, distance_px), step(0.0, -distance_px), 0.0, 1.0);
 		} else if (debug_view > 1.5 && debug_view < 2.5) {

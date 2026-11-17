@@ -58,6 +58,12 @@ const RIPPLE_SLOTS := 3
 ## Seconds a ripple stays in the list. The amplitude is gone before this, it only
 ## keeps the slot busy.
 const RIPPLE_LIFE := 2.0
+## A ripple carries at least this many cells, so an impact in a narrow stream or a
+## one-column ledge is a local bump instead of a one-pixel spike.
+const RIPPLE_MIN_REACH_CELLS := 8
+## Two column surfaces further apart than this (in cells) are different bodies: the
+## pool under a waterfall must not carry the ripple of the pool above it.
+const RIPPLE_BODY_TOLERANCE_CELLS := 2.5
 
 var _sim: GridWater
 var _room_rect := Rect2()
@@ -82,6 +88,10 @@ var _uploads := 0
 var _region_volume := 0.0
 var _region_cells := 0
 var _ripples: Array[Vector4] = []
+## 1/e reach in px of the ripple in the same slot of `_ripples`: how far that swell
+## carries. Kept next to the ripple list instead of inside the vector because the
+## shader already uses all four components of it.
+var _ripple_reach: Array[float] = []
 
 
 func _ready() -> void:
@@ -266,11 +276,14 @@ func _notify_splash(point: Vector2, impact_speed: float) -> void:
 
 
 ## Records a visual ripple at `point`. Older ripples are dropped once the list is
-## full, and `_update_ripples` ages them out.
+## full, and `_update_ripples` ages them out. The reach is measured from the water
+## the impact landed in, so the swell covers that body and nothing else.
 func _add_ripple(point: Vector2, energy: float) -> void:
 	_ripples.push_front(Vector4(point.x, point.y, 0.0, 0.55 + energy))
+	_ripple_reach.push_front(_measure_ripple_reach(point, point.y))
 	while _ripples.size() > RIPPLE_SLOTS:
 		_ripples.pop_back()
+		_ripple_reach.pop_back()
 	_apply_ripples()
 
 
@@ -285,6 +298,7 @@ func _update_ripples(delta: float) -> void:
 		changed = true
 	while not _ripples.is_empty() and _ripples.back().z > RIPPLE_LIFE:
 		_ripples.pop_back()
+		_ripple_reach.pop_back()
 	if changed:
 		_apply_ripples()
 
@@ -294,15 +308,69 @@ func _apply_ripples() -> void:
 		return
 	for slot in RIPPLE_SLOTS:
 		var value := Vector4.ZERO
+		var reach := 0.0
 		if slot < _ripples.size():
 			var ripple := _ripples[slot]
 			value = Vector4(ripple.x, ripple.y, ripple.z, ripple.w)
+			reach = _ripple_reach[slot]
 		_material.set_shader_parameter("ripple_%d" % slot, value)
+		_material.set_shader_parameter("ripple_reach_%d" % slot, reach)
 
 
 func _clear_ripples() -> void:
 	_ripples.clear()
+	_ripple_reach.clear()
 	_apply_ripples()
+
+
+## 1/e reach in px of the ripple in `index`, 0 when the slot is free. Handy for
+## tests and for the debug HUD: this is how far a landing actually carries.
+func get_ripple_reach(index: int) -> float:
+	if index < 0 or index >= _ripple_reach.size():
+		return 0.0
+	return _ripple_reach[index]
+
+
+## Half-width of the water body the impact landed in, in px.
+##
+## The ripple is drawn by the shader, so its horizontal size has to come from the
+## simulation: a landing in the corner of a 220 px puddle has to carry across the
+## whole puddle, while the same landing in a narrow stream has to stay local. Walking
+## the surface outwards from the impact column by column and stopping at the first
+## cell that is dry, a different pool or a drop gives that size, instead of one
+## constant that is wrong for every body but the one it was tuned on. The walk is
+## contiguous on purpose: probing at a growing distance would step over a dry gap and
+## claim the water on its other side.
+func _measure_ripple_reach(point: Vector2, surface_y: float) -> float:
+	var step := maxf(float(cell_pixels), 1.0)
+	var tolerance := RIPPLE_BODY_TOLERANCE_CELLS * step
+	var column := int(floor((point.x - _room_rect.position.x) / step))
+	var farthest := 0
+	for direction: int in [-1, 1]:
+		var index := column
+		while true:
+			var next := index + direction
+			if next < 0 or next >= _sim.width:
+				break
+			var probe_x := _room_rect.position.x + (float(next) + 0.5) * step
+			if not _is_same_surface(probe_x, surface_y, tolerance):
+				break
+			index = next
+			farthest = maxi(farthest, absi(next - column))
+	return maxf(RIPPLE_MIN_REACH_CELLS * step, float(farthest) * step)
+
+
+## True when `world_x` holds water at (about) `surface_y`: the same body, so the
+## ripple may cross into that column.
+func _is_same_surface(world_x: float, surface_y: float, tolerance: float) -> bool:
+	if _sim == null:
+		return false
+	if world_x < _room_rect.position.x or world_x > _room_rect.end.x:
+		return false
+	var other := _sim.surface_y_at(Vector2(world_x, surface_y + 0.5))
+	if other == INF:
+		return false
+	return absf(other - surface_y) <= tolerance
 
 
 ## Adds water to the room at a point: a source, a wave or a debug probe. The

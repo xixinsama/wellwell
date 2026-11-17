@@ -130,6 +130,12 @@ func _bind_atmosphere(selected_backend: int) -> Dictionary:
 	var atmosphere := ATMOSPHERE.new() as Node2D
 	add_child(atmosphere)
 	atmosphere.set("backend", selected_backend)
+	# A room starts gas-free on purpose (only GasVent nozzles put gas into it), so
+	# seed a density here: these tests are about which backend simulates the field,
+	# not about how much gas a new room begins with.
+	atmosphere.set("ambient_density", 0.5)
+	atmosphere.set("gas_ambient", Vector3(0.3, 0.25, 0.3))
+	atmosphere.set("gas_refill", 0.35)
 	var room: Resource = ROOM_DATA.new()
 	var bound := bool(atmosphere.call("bind_room_with_origin", room, terrain, Vector2i.ZERO))
 	return {"atmosphere": atmosphere, "terrain": terrain, "bound": bound}

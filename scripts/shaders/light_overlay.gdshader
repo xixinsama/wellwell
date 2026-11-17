@@ -10,6 +10,21 @@ render_mode blend_mix, unshaded;
 //
 // The dither only bites where the shade is mid-way, so fully lit and fully dark
 // pixels stay clean and the falloff reads as pixel art instead of a gradient.
+//
+// Relief (optional) makes the surface orientation matter:
+//
+// - the light *direction* is the local gradient of the light map: it points from
+//   the shadow towards the source, normalised over `relief_radius_px` pixels;
+// - the surface normal comes either from the authored normal buffer (NormalField,
+//   r = x / g = y / b = z, flat = (128,128,255)) or from the screen luminance
+//   (a band-passed sobel, see derived_normal());
+// - `ndl` lifts pixels whose normal faces the source and sinks pixels whose
+//   normal faces away, scaled by `relief_strength` and masked by how much light
+//   the map already delivers at that pixel.
+//
+// Only the map's own light is reshaped: the ambient floor and the shadow bounce
+// are added afterwards, so a dark side never gains light and the lit core cannot
+// stack past white.
 
 uniform sampler2D light_tex : filter_linear, repeat_disable;
 // Size of the light map in pixels; the quad covers exactly the same rectangle.
@@ -27,6 +42,24 @@ uniform float bounce_radius = 10.0;
 // instead of the darkness eating inwards. The inside of a light is untouched.
 uniform float rim_fuzz = 2.0;
 uniform float rim_fuzz_scale = 2.2;
+
+// Relief. `normal_mode` is 0 flat, 1 derived from the screen, 2 authored.
+uniform sampler2D normal_tex : filter_nearest, repeat_disable;
+uniform vec2 normal_pixels = vec2(320.0, 180.0);
+uniform float normal_mode = 1.0;
+uniform float relief_strength = 0.35;
+uniform float relief_radius_px = 2.0;
+uniform float relief_softness = 0.0;
+// The world viewport as it is just before the shade is drawn (terrain, backdrop,
+// outline). Only read in derived normal mode. canvas_item shaders have no
+// SCREEN_PIXEL_SIZE, so the viewport size is handed over by LightField.
+uniform sampler2D screen_tex : hint_screen_texture, filter_nearest, repeat_disable;
+uniform vec2 screen_pixels = vec2(320.0, 180.0);
+
+// How much the luminance slope of one screen pixel tilts the derived normal. The
+// gradient below is a *difference of differences*, so its magnitude is a fraction
+// of a luminance step; this brings the usual 1 px art edge to a useful tilt.
+const float DERIVED_NORMAL_SCALE = 8.0;
 
 float hash21(vec2 p) {
 	p = fract(p * vec2(123.34, 456.21));
@@ -76,10 +109,80 @@ float bayer4(vec2 p) {
 	return (4.0 * inner + outer + 0.5) / 16.0;
 }
 
+float screen_lum(vec2 uv) {
+	return clamp(dot(texture(screen_tex, uv).rgb, vec3(0.3, 0.59, 0.11)), 0.0, 1.0);
+}
+
+vec2 screen_gradient(vec2 uv, vec2 step_uv) {
+	return vec2(
+		screen_lum(uv + vec2(step_uv.x, 0.0)) - screen_lum(uv - vec2(step_uv.x, 0.0)),
+		screen_lum(uv + vec2(0.0, step_uv.y)) - screen_lum(uv - vec2(0.0, step_uv.y))
+	);
+}
+
+// Screen-space normal from the luminance of the world below the shade.
+//
+// A plain sobel of the raw screen is dominated by the light falloff itself, which
+// is the same field the light direction is measured from: the dot product would
+// come out near +1 over the whole lit room and the relief would read as a uniform
+// brightness lift. Subtracting the gradient measured `relief_radius_px` away (a
+// band-pass, still a couple of taps at design resolution) keeps only the slopes
+// the art itself has, so flat falloff stays flat and brick edges, rims and
+// texture get a direction. Brightness is treated as height, so the normal is the
+// negative slope of the detail: the flank of a raised pixel that faces the lamp
+// catches the light, which is what reads as relief instead of as a dent.
+vec3 derived_normal(vec2 screen_uv) {
+	vec2 pixel = 1.0 / max(screen_pixels, vec2(1.0));
+	vec2 fine_step = pixel;
+	vec2 coarse_step = pixel * max(relief_radius_px, 2.0);
+	vec2 detail = screen_gradient(screen_uv, fine_step) - screen_gradient(screen_uv, coarse_step);
+	return normalize(vec3(-detail * DERIVED_NORMAL_SCALE, 1.0));
+}
+
+// Relief factor in -relief_strength .. +relief_strength for this pixel. `own` is
+// the (fuzzed) light the map delivers here; it masks the effect, so a pixel with
+// no light cannot gain any and the fog edge keeps its darkness.
+float relief_factor(vec2 px, vec2 screen_uv, float own) {
+	if (normal_mode < 0.5 || relief_strength <= 0.0) {
+		return 0.0;
+	}
+	vec3 normal = vec3(0.0, 0.0, 1.0);
+	if (normal_mode > 1.5) {
+		vec3 authored = texture(normal_tex, (px + 0.5) / normal_pixels).rgb * 2.0 - 1.0;
+		normal = normalize(authored);
+	} else {
+		normal = derived_normal(screen_uv);
+	}
+	float step_px = max(relief_radius_px, 1.0);
+	vec2 gradient = vec2(
+		light_lum(px + vec2(step_px, 0.0)) - light_lum(px - vec2(step_px, 0.0)),
+		light_lum(px + vec2(0.0, step_px)) - light_lum(px - vec2(0.0, step_px))
+	);
+	float magnitude = length(gradient);
+	if (magnitude < 0.002) {
+		// A flat part of the light map has no direction to offer; leave it alone
+		// instead of amplifying sampling noise.
+		return 0.0;
+	}
+	// The map's gradient points from the shadow towards the source. Light travels
+	// the other way, and a surface whose normal faces the source catches more of
+	// it, hence the two negations.
+	vec2 light_dir = -gradient / magnitude;
+	float ndl = dot(normal.xy, -light_dir);
+	// Softness narrows the effect towards the steep faces instead of letting
+	// every gentle slope shift the whole room's brightness.
+	ndl = sign(ndl) * pow(abs(ndl), 1.0 + clamp(relief_softness, 0.0, 1.0) * 2.0);
+	float mask = smoothstep(0.02, 0.35, own);
+	return clamp(ndl * relief_strength * mask, -1.0, 1.0);
+}
+
 void fragment() {
 	vec2 px = floor(UV * light_pixels);
 	float own = fuzzed_light_lum(px);
-	float lit = own;
+	// Only the map's contribution is reshaped: ambient and bounce are added below
+	// and keep their old behaviour, which is also what keeps the mean in place.
+	float relief = relief_factor(px, SCREEN_UV, own);
+	float lit = clamp(own * (1.0 + relief), 0.0, 1.0);
 	if (bounce > 0.0) {
 		// Brightest light within the bounce radius, decaying with distance.
 		float bleed = 0.0;

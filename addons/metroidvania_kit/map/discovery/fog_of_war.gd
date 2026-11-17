@@ -92,6 +92,29 @@ const MASK_DISTANCE_PIXELS := 32.0
 ## Multiplier on the light map before it pushes the edge.
 @export_range(0.0, 2.0, 0.01) var light_gain := 1.0
 
+@export_group("Fog Zone Fade")
+## How long a dark zone takes to dissolve once the hero walks into it, in
+## seconds. Without this the whole rectangle switched off in one frame, which
+## reads as a teleport instead of a reveal.
+@export_range(0.0, 3.0, 0.05) var zone_reveal_seconds := 0.9
+## Extra delay per cell of distance from the hero, in seconds. The fog peels away
+## from the hero outwards instead of fading as one block.
+@export_range(0.0, 0.2, 0.005) var zone_reveal_stagger := 0.02
+## How long a restore_on_exit zone takes to close again, in seconds.
+@export_range(0.0, 3.0, 0.05) var zone_restore_seconds := 0.8
+## Extra delay per cell, counted inwards from the zone border, so the darkness
+## creeps back in from the edges and swallows the exit point last.
+@export_range(0.0, 0.2, 0.005) var zone_restore_stagger := 0.02
+
+@export_group("Fog Focus")
+## Radius in pixels of the lit bubble around the hero while a focus_room zone is
+## active. The authored zone itself always stays lit; this only matters when the
+## zone is smaller than the hero's neighbourhood.
+@export_range(8.0, 160.0, 1.0) var focus_radius_px := 34.0
+## Width in pixels of the ramp from lit to fully dark. This is what turns the
+## focus into a gradient instead of a black frame around the zone.
+@export_range(4.0, 200.0, 1.0) var focus_falloff_px := 34.0
+
 var currently_visible: Dictionary[Vector2i, bool] = {}
 
 var _explored_cells: Dictionary[Vector2i, bool] = {}
@@ -139,6 +162,13 @@ var _focus_start := 0.0
 var _focus_release := -1.0
 var _focus_seconds := 0.35
 var _focus_alpha := 0.92
+## Rectangle of the active focus zone in mask pixels, for the shader spotlight.
+var _focus_rect_px := Rect2()
+var _focus_center_px := Vector2.ZERO
+## Active per-zone fades, keyed by the zone's instance id. Each entry holds the
+## cells to repaint, the opacity the fade starts from and ends at, and the timing
+## that staggers the cells, so a dark zone dissolves like a wave.
+var _zone_fades: Dictionary[int, Dictionary] = {}
 
 
 func _ready() -> void:
@@ -158,6 +188,7 @@ func _process(_delta: float) -> void:
 		return
 	var now := _now()
 	_settle_finished_focus(now)
+	_update_focus_uniforms(now)
 	var origin := _current_player_cell()
 	var view := _view_bounds_cells()
 	var zone_signature := _zone_overlap_signature()
@@ -168,16 +199,12 @@ func _process(_delta: float) -> void:
 
 
 ## The shader animates on its own; the mask only has to be repainted while a
-## reveal wave is still evaporating or the focus spotlight is still fading in
-## or out. A settled room repaints nothing at all.
-func _mask_animating(now: float) -> bool:
+## reveal wave or a zone fade is still in flight. A settled room repaints nothing
+## at all, and the focus spotlight is a shader uniform that costs no repaint.
+func _mask_animating(_unused_now: float) -> bool:
 	if not _ripple.is_empty():
 		return true
-	if _focus_zone != null and now - _focus_start < _focus_seconds:
-		return true
-	if _focus_release >= 0.0 and now - _focus_release < _focus_seconds:
-		return true
-	return false
+	return not _zone_fades.is_empty()
 
 
 func _settle_finished_focus(now: float) -> void:
@@ -347,6 +374,7 @@ func clear_room() -> void:
 	_light_cells.clear()
 	_revealed_zones.clear()
 	_ripple.clear()
+	_zone_fades.clear()
 	_clear_focus()
 	_release_mask()
 	_last_origin_cell = Vector2i(2147483647, 2147483647)
@@ -397,6 +425,7 @@ func set_room_chunks(room_origin_chunk: Vector2i, room_size_chunks: Vector2i) ->
 	_last_view_bounds = Rect2i()
 	_explored_cells.clear()
 	_ripple.clear()
+	_zone_fades.clear()
 	_clear_focus()
 	_dirty = true
 	queue_redraw()
@@ -502,29 +531,46 @@ func _ripple_flash(cell: Vector2i, now: float) -> float:
 	return clampf(1.0 - elapsed / reveal_flash_seconds, 0.0, 1.0)
 
 
-## Extra darkness the focus spotlight adds on top of an already lit cell.
-func _focus_alpha_at(cell: Vector2i, now: float) -> float:
-	if _focus_cells.is_empty() and _focus_zone == null:
-		return 0.0
-	if _focus_cells.has(cell) or not is_cell_lit(cell):
-		return 0.0
-	var strength := _focus_strength(now)
-	if strength <= 0.0:
-		return 0.0
-	var distance := Vector2(cell - _focus_center).length()
-	var far := 1.0 - clampf(distance / maxf(_focus_max_distance, 1.0), 0.0, 1.0)
-	var local := clampf((strength - far * 0.55) / 0.45, 0.0, 1.0)
-	if local <= 0.0:
-		return 0.0
-	return local * _focus_alpha
-
-
 func _focus_strength(now: float) -> float:
 	if _focus_zone != null:
 		return clampf((now - _focus_start) / maxf(_focus_seconds, 0.01), 0.0, 1.0)
 	if _focus_release < 0.0:
 		return 0.0
 	return clampf(1.0 - (now - _focus_release) / maxf(_focus_seconds, 0.01), 0.0, 1.0)
+
+
+## Pushes the live spotlight state to the mask shader. The bubble is centred on
+## the hero body and recomputed every frame, so the darkness follows the player
+## instead of staying where the focus started. This is four uniform writes per
+## frame; painting the same thing into the mask would be one rect per cell.
+func _update_focus_uniforms(now: float) -> void:
+	if _mask_material == null:
+		return
+	var strength := 0.0
+	if _focus_zone != null or _focus_release >= 0.0:
+		strength = _focus_strength(now)
+	if strength > 0.0 and is_instance_valid(_player):
+		_focus_center_px = (
+			_hero_world_rect(_player.global_position).get_center()
+			- Vector2(get_mask_origin_pixels())
+		)
+	_mask_material.set_shader_parameter("focus_strength", strength)
+	_mask_material.set_shader_parameter("focus_alpha", _focus_alpha if strength > 0.0 else 0.0)
+	_mask_material.set_shader_parameter(
+		"focus_rect_px", _focus_rect_vector() if strength > 0.0 else Vector4.ZERO
+	)
+	_mask_material.set_shader_parameter("focus_center_px", _focus_center_px)
+	_mask_material.set_shader_parameter("focus_radius_px", focus_radius_px)
+	_mask_material.set_shader_parameter("focus_falloff_px", focus_falloff_px)
+
+
+## Rect2 is not a legal shader uniform type, so the zone rectangle is handed over
+## as explicit x, y, w, h.
+func _focus_rect_vector() -> Vector4:
+	return Vector4(
+		_focus_rect_px.position.x, _focus_rect_px.position.y,
+		_focus_rect_px.size.x, _focus_rect_px.size.y
+	)
 
 
 func _start_focus(zone: Node, cells: Dictionary[Vector2i, bool], seconds: float, alpha: float) -> void:
@@ -534,10 +580,12 @@ func _start_focus(zone: Node, cells: Dictionary[Vector2i, bool], seconds: float,
 	_focus_cells = cells
 	_focus_center = _current_player_cell() if is_instance_valid(_player) else _cells_center(cells)
 	_focus_max_distance = _max_cell_distance(_focus_center, cells)
+	_focus_rect_px = _cells_mask_rect(cells)
 	_focus_start = _now()
 	_focus_release = -1.0
 	_focus_seconds = maxf(seconds, 0.01)
 	_focus_alpha = clampf(alpha, 0.0, 1.0)
+	_update_focus_uniforms(_focus_start)
 	queue_redraw()
 
 
@@ -546,6 +594,7 @@ func _release_focus() -> void:
 		return
 	_focus_zone = null
 	_focus_release = _now()
+	_update_focus_uniforms(_focus_release)
 	queue_redraw()
 
 
@@ -555,6 +604,28 @@ func _clear_focus() -> void:
 	_focus_center = Vector2i.ZERO
 	_focus_max_distance = 1.0
 	_focus_release = -1.0
+	_focus_rect_px = Rect2()
+	if _mask_material != null:
+		_mask_material.set_shader_parameter("focus_strength", 0.0)
+		_mask_material.set_shader_parameter("focus_alpha", 0.0)
+		_mask_material.set_shader_parameter("focus_rect_px", Vector4.ZERO)
+
+
+## Mask-local pixel rectangle of a set of cells, for the shader spotlight and for
+## the falloff that keeps the authored zone itself lit.
+func _cells_mask_rect(cells: Dictionary[Vector2i, bool]) -> Rect2:
+	if cells.is_empty():
+		return Rect2()
+	var from := Vector2i(1073741824, 1073741824)
+	var to := Vector2i(-1073741824, -1073741824)
+	for cell: Vector2i in cells:
+		from = Vector2i(mini(from.x, cell.x), mini(from.y, cell.y))
+		to = Vector2i(maxi(to.x, cell.x), maxi(to.y, cell.y))
+	var origin := get_mask_origin_pixels()
+	return Rect2(
+		Vector2(from * cell_size - origin),
+		Vector2((to + Vector2i.ONE) * cell_size - origin) - Vector2(from * cell_size - origin)
+	)
 
 
 func _cells_center(cells: Dictionary[Vector2i, bool]) -> Vector2i:
@@ -638,6 +709,7 @@ func _collect_zone_cells() -> void:
 		var reveal_on_enter := bool(node.get("reveal_on_enter")) if "reveal_on_enter" in node else false
 		var restore_on_exit := bool(node.get("restore_on_exit")) if "restore_on_exit" in node else false
 		var revealed := bool(node.get("revealed")) if "revealed" in node else false
+		var was_revealed := revealed
 		if reveal_on_enter and overlaps and not revealed:
 			revealed = true
 			if node.has_method("set_revealed"):
@@ -652,6 +724,10 @@ func _collect_zone_cells() -> void:
 			revealed = false
 			if node.has_method("set_revealed"):
 				node.call("set_revealed", false)
+		if revealed != was_revealed:
+			# The switch just happened: fade the block in or out instead of
+			# flipping it, staggered away from (or towards) the hero.
+			_start_zone_fade(node, zone_cells, revealed, now)
 		if not revealed:
 			for cell: Vector2i in zone_cells:
 				_dark_cells[cell] = true
@@ -968,7 +1044,11 @@ func _mask_index_to_cell(index: int) -> Vector2i:
 
 
 ## Overlays the reveal wave (fog evaporating from the hero outwards, which the
-## shader turns into a ragged receding front) and the focus spotlight.
+## shader turns into a ragged receding front) and the authored zone fades.
+##
+## The focus spotlight is not painted here any more: it follows the hero every
+## frame, so it lives in the shader (see `focus_at()` in fog_mask.gdshader) and a
+## repaint of the whole room per frame is avoided.
 func _apply_mask_animation(now: float) -> void:
 	var finished: Array[Vector2i] = []
 	for cell: Vector2i in _ripple:
@@ -981,19 +1061,73 @@ func _apply_mask_animation(now: float) -> void:
 		_ripple.erase(cell)
 		_write_mask_cell(cell, 1.0 if not is_cell_lit(cell) else 0.0, 0.0)
 
-	if _focus_cells.is_empty() and _focus_zone == null:
+	if _zone_fades.is_empty():
 		return
-	var room := _room_cell_rect()
-	for y: int in range(room.position.y, room.end.y):
-		for x: int in range(room.position.x, room.end.x):
-			var cell := Vector2i(x, y)
-			var focus := _focus_alpha_at(cell, now)
-			if focus <= 0.0:
-				continue
-			var rect := _mask_cell_rect(cell)
-			if rect.size.x <= 0 or rect.size.y <= 0:
-				continue
-			_mask_image.fill_rect(rect, Color(0.0, _mask_cell_distance(cell), 0.0, clampf(focus, 0.0, 1.0)))
+	var done: Array[int] = []
+	for zone_id: int in _zone_fades:
+		var fade: Dictionary = _zone_fades[zone_id]
+		var cells: Dictionary = fade["cells"]
+		for cell: Vector2i in cells:
+			var alpha := _fade_value(fade, cell, now)
+			if now >= float(fade["end"]):
+				alpha = float(fade["to"])
+			_write_mask_cell(cell, alpha, 0.0)
+		if now >= float(fade["end"]):
+			done.append(zone_id)
+	for zone_id: int in done:
+		_zone_fades.erase(zone_id)
+
+
+## Starts (or restarts) the fade of one authored zone. When a fade is already
+## running for the same zone the current opacity is picked up, so a hero that
+## bounces in and out of the zone never makes the fog jump.
+func _start_zone_fade(zone: Node, cells: Dictionary[Vector2i, bool], revealed: bool, now: float) -> void:
+	var seconds := zone_reveal_seconds if revealed else zone_restore_seconds
+	var stagger := zone_reveal_stagger if revealed else zone_restore_stagger
+	var default_from := 1.0 if revealed else 0.0
+	var from := default_from
+	var zone_id := zone.get_instance_id()
+	if _zone_fades.has(zone_id):
+		var running: Dictionary = _zone_fades[zone_id]
+		for cell: Vector2i in running["cells"]:
+			from = _fade_value(running, cell, now)
+			break
+	var center := _current_player_cell()
+	var reach := _max_cell_distance(center, cells)
+	var span := maxf(seconds, 0.0) + stagger * reach
+	if span <= 0.0:
+		_zone_fades.erase(zone_id)
+		return
+	_zone_fades[zone_id] = {
+		"cells": cells,
+		"from": from,
+		"to": 0.0 if revealed else 1.0,
+		"start": now,
+		"seconds": maxf(seconds, 0.001),
+		"stagger": stagger,
+		# A revealed zone evaporates away from the hero; a restored one closes in
+		# from its border, so the last thing to go dark is where the hero left.
+		"center": center,
+		"reach": reach,
+		"inward": not revealed,
+		"end": now + span,
+	}
+
+
+## Smooth opacity of one cell of a fade: every cell waits for its own distance
+## based delay, then eases with a smoothstep so the wave has no hard front.
+func _fade_value(fade: Dictionary, cell: Vector2i, now: float) -> float:
+	var delay := _fade_delay(fade, cell)
+	var t := clampf((now - float(fade["start"]) - delay) / maxf(float(fade["seconds"]), 0.001), 0.0, 1.0)
+	var eased := t * t * (3.0 - 2.0 * t)
+	return lerpf(float(fade["from"]), float(fade["to"]), eased)
+
+
+func _fade_delay(fade: Dictionary, cell: Vector2i) -> float:
+	var distance := Vector2(cell - (fade["center"] as Vector2i)).length()
+	if bool(fade["inward"]):
+		distance = maxf(float(fade["reach"]) - distance, 0.0)
+	return distance * float(fade["stagger"])
 
 
 func _write_mask_cell(cell: Vector2i, alpha: float, flash: float) -> void:
@@ -1074,6 +1208,7 @@ func _apply_mask_shader_parameters() -> void:
 		"light_push_px", light_push_px if _light_texture != null else 0.0
 	)
 	_mask_material.set_shader_parameter("light_gain", light_gain)
+	_update_focus_uniforms(_now())
 
 
 ## Drops the mask and the quad texture, for example on a room switch.

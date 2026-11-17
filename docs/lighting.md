@@ -68,6 +68,63 @@ glow passes: each pixel takes a few samples at a noise-driven offset and keeps t
 brightest, so light grows hair outward by up to `rim_fuzz` pixels and the dark
 side never eats inwards. `rim_fuzz_scale` is the hair size (smaller is denser).
 
+## Normals and relief
+
+The light map only knows *how much* light a pixel gets, not which way the surface
+faces: every wall and floor is shaded the same regardless of orientation. Relief
+adds that direction back without touching the light map:
+
+- **light direction** is the local gradient of the light map itself, a central
+  difference over `relief_radius_px` pixels. The map rises towards its sources,
+  so its gradient points from the shadow towards the lamp; a surface whose normal
+  faces that way catches more light, one that faces away catches less. No Camera2D
+  position, light list or second render pass is needed: the direction is already
+  in the texture every consumer samples.
+- **surface normal** comes from one of two sources, selected by
+  `relief_normal_mode`.
+
+### Derived normals (default, zero authoring)
+
+`relief_normal_mode = 1` reads the world as it is just before the shade is drawn
+(`hint_screen_texture`) and runs a small sobel on its luminance. The raw
+gradient of the screen would mostly read the light falloff itself, which is the
+same field the light direction comes from: the two would cancel into a uniform
+brightness lift. The shader therefore subtracts the gradient measured
+`relief_radius_px` away, keeping only the slopes the art has (brick edges, rims,
+pixel detail). Brightness is treated as height, so the flank of a raised pixel
+that faces the lamp brightens and the opposite flank darkens. Every existing
+room gets this immediately; there is nothing to author.
+
+### Authored normals (preferred when present)
+
+Add a `TileMapLayer` named `NormalTiles` under `RoomContent/Terrain` (the baker
+keeps it, and the runtime terrain puts it under `Terrain`) whose tiles are plain
+RGB vectors: `r = x`, `g = y`, `b = z`, flat = `(128, 128, 255)`. Turn the layer
+invisible (the eye icon) so the room does not draw the normals; `NormalField`
+warns if it is visible but never mutates the owner's node.
+
+`NormalField` (`scripts/world/normal_field.gd`) clones the layer into a
+room-sized `SubViewport` (`tile_set` + `tile_map_data` copied, the authored node
+is untouched), clears it to the flat normal and renders **once** per room, then
+switches itself to `UPDATE_DISABLED`: a static room pays nothing per frame for
+it. Set `relief_normal_mode = 2` to use the buffer; a room without a
+`NormalTiles` layer falls back to the derived path instead of losing relief.
+The buffer is handed to both overlay materials through
+`LightField.set_normal_field()` (the normal-map twin of `set_light_field()`), and
+the two field nodes can bind in either order. Removing the `NormalField` node
+from `world_root.tscn` is a supported configuration: flat or derived lighting
+keeps working.
+
+### Cost
+
+Both modes only run in the shade and glow fragments: derived normals add eight
+screen taps, authored normals one texture fetch, and both add four light-map taps
+for the gradient. On the light lab at 322x182 the whole world viewport measures
+0.16-0.19 ms of GPU time, with no measurable difference between flat and derived
+modes (the measurements are within run-to-run noise); the biggest measured wall
+difference for authored normals was +0.10 ms per frame, well under the 0.4 ms
+budget. The one-shot authored buffer costs nothing after its first frame.
+
 ## Authored lights
 
 `RoomLight` (`scripts/world/room_light.gd`) is the light source to place:
@@ -156,6 +213,10 @@ one frame late because a viewport cannot sample itself while it is being drawn.
 | `reach_radius` / `reach_energy` | 170 / 0.35 | the lantern's room-scale spill: long shadows, lit corners |
 | `shadow_bounce` / `bounce_radius` | 0.45 / 10 | light bleeding into the shadow |
 | `rim_fuzz` / `rim_fuzz_scale` | 2 / 2.2 | outward-only hair on the lit rim, and its size in pixels |
+| `relief_normal_mode` | 1 | 0 flat (old look), 1 derived from the screen, 2 authored `NormalTiles` (falls back to 1) |
+| `relief_strength` | 0.35 | how hard a facing/away normal lifts/sinks the light; 0 turns relief off |
+| `relief_radius_px` | 2 | step of the light-map gradient, and of the derived normal's band-pass |
+| `relief_softness` | 0.3 | pushes the effect towards the steep faces instead of every gentle slope |
 | `use_authored_lights` | on | collect every `FogLight` in the room |
 | `shade_order` / `glow_order` | 8 / 9 | draw order of the two overlays |
 
@@ -169,3 +230,13 @@ one frame late because a viewport cannot sample itself while it is being drawn.
 the occluder run merging, the hand-off of the map to the fog and the outline, and
 room switching / clearing. Measured on `room_03_00` with the default ambient, the
 dark part of the room keeps 58% of its brightness and the lit part keeps 100%.
+
+`tests/world/test_normal_field.gd` covers the normal field: binding with and
+without an authored `NormalTiles` layer, the clone keeping the authored cells,
+atlas and tile set (and the authored node staying untouched), the hand-off and
+the uniforms on both overlay materials, the authored -> derived fallback, both
+binding orders and room rebinding. On the light lab with the animated systems
+frozen, derived normals change 14.3% of the world pixels while keeping the mean
+luminance within 0.05%, and authored normals change 2.5% of the pixels (only the
+solid tiles carry normals) with the mean within 0.03%; the dark half of the map
+does not move at all.

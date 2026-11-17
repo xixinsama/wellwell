@@ -170,6 +170,8 @@ d   = advect(d, u) + 源/汇     三层密度作为被动标量
 
 所有参数都在 `WorldRoot/Atmosphere`（模板预览里是 `PreviewOnly/Atmosphere`）：
 
+**默认房间里没有气体**：`gas_ambient = (0, 0, 0)`、`gas_refill = 0`，`Atmosphere` 绑定时只铺一层空场，整间房的"雾蒙蒙"效果已经去掉。可见的气体由 `GasVent` 喷嘴喷出（实测 light_lab：喷口 60px 内密度 0.7–1.0，全屏只有 ~7% 的格子密度够到可见阈值）。想要旧的雾感，给房间放一个 `GasField` 标记并把 `ambient` 调回 (0.28, 0.22, 0.32)，或者直接改 `gas_ambient`。
+
 | 参数 | 默认 | 作用 |
 | :--- | :--- | :--- |
 | `sim_hz` | 30 | **每秒步进次数（整体速度总开关）**，10–60 |
@@ -178,10 +180,10 @@ d   = advect(d, u) + 源/汇     三层密度作为被动标量
 | `gas_buoyancy` | (240, 0, 300) | 重/轻气体的浮力加速度（px/s²） |
 | `gas_dissipation` | 0.4 | 速度耗散（1/s），越大羽流越快平息 |
 | `gas_viscosity` | 0.0 | **粘滞系数**（1/s）：气体越"稠"，羽流越缓、越圆滑；显式扩散，超过 ~10 会像糖浆 |
-| `gas_decay` | 0.0 | **指数消散**（1/s），0.5 ≈ 1.4s 半衰期；配合 `GasField.ambient = 0` 做出逐渐消失的尾迹 |
+| `gas_decay` | 0.12 | **指数消散**（1/s），0.5 ≈ 1.4s 半衰期；喷口气体靠它慢慢散掉而不是积成雾 |
 | `gas_diffusion` | 0.25 | 密度扩散 |
-| `gas_refill` | 0.35 | 回填速度（越小尾迹留得越久） |
-| `gas_ambient` | (0.28, 0.22, 0.32) | 三层气体的环境密度，越低越"通透" |
+| `gas_refill` | 0.0 | 回填速度（把密度拉回 `gas_ambient`；只有非零 ambient 时才有意义） |
+| `gas_ambient` | (0, 0, 0) | 三层气体的环境密度；**默认 0 = 房间里没有气体雾**，只留 `GasVent` 喷嘴喷出的气体 |
 | `push_radius` | 34 | **hero 推开气体的半径，单位 px**（房间局部像素） |
 | `push_strength` | 1.4 | hero 推力强度 |
 | `heavy_color` / `neutral_color` / `light_color` | 锈红 / 亮青 / 亮黄 | 三层气体颜色 |

@@ -26,6 +26,13 @@ extends Node2D
 const LIGHT_GROUP := &"fog_light"
 const FOG_SHADER: Shader = preload("res://scripts/shaders/light_overlay.gdshader")
 const GLOW_SHADER: Shader = preload("res://scripts/shaders/light_glow.gdshader")
+## Relief normal sources, mirrored by the shader's `normal_mode` uniform.
+const RELIEF_FLAT := 0
+const RELIEF_DERIVED := 1
+const RELIEF_AUTHORED := 2
+## Flat normal, used as the fallback sampler contents so a mode change never
+## leaves the shader with an unbound sampler.
+const FLAT_NORMAL_COLOR := Color(0.5, 0.5, 1.0, 1.0)
 ## Half width of the radial falloff texture; PointLight2D.texture_scale is
 ## expressed in fractions of this.
 const LIGHT_TEXTURE_RADIUS := 64.0
@@ -92,6 +99,24 @@ const AUTHORED_SPILL := 0.25
 ## Cast terrain shadows. Turning it off keeps the light but removes the occluders.
 @export var shadows := true
 
+@export_group("Relief")
+## Where the shade/glow passes get their surface normals:
+## 0 = flat (exactly the old look), 1 = derive from the screen luminance, so every
+## existing room gets relief with zero authoring, 2 = sample the authored
+## NormalField buffer (falls back to 1 when the room has no NormalTiles layer).
+@export_enum("Flat:0", "Derived:1", "Authored:2") var relief_normal_mode := 1
+## How hard the relief pushes: lit-facing pixels gain, away-facing pixels lose,
+## as a fraction of the light the map already delivers. 0 disables the feature
+## even when a normal source is present.
+@export_range(0.0, 1.0, 0.01) var relief_strength := 0.35
+## Step of the light-map gradient, in pixels: the distance over which the light
+## direction is measured. One pixel is noisy on a dithered falloff, several
+## pixels read as a broad, soft light direction.
+@export_range(1, 8, 1) var relief_radius_px := 2
+## Softens the terminator: 0 keeps a linear dot product, 1 only moves the steep
+## faces, which keeps the relief from reading as a uniform brightness change.
+@export_range(0.0, 1.0, 0.01) var relief_softness := 0.3
+
 var _room_pixels := Vector2i.ZERO
 var _room_origin_pixels := Vector2i.ZERO
 var _room_bound := false
@@ -111,6 +136,13 @@ var _glow_material: ShaderMaterial
 var _consumers: Array[Node] = []
 var _texture_ring: ImageTexture
 var _texture_spill: ImageTexture
+## Authored normal buffer handed over by NormalField (null when the room has none).
+## The pixels/origin pair lets the shade reject a buffer from the previous room
+## instead of lighting this room with stale normals for a frame.
+var _normal_texture: Texture2D
+var _normal_pixels := Vector2i.ZERO
+var _normal_origin := Vector2i.ZERO
+var _flat_normal_image: ImageTexture
 
 
 var _start_time := 0.0
@@ -159,6 +191,7 @@ func bind_room_with_origin(room_data: Variant, terrain_root: Node, origin_chunk:
 		_build_occluders(terrain_root)
 	_collect_authored_lights()
 	_bind_consumers()
+	_adopt_normal_field()
 	return true
 
 
@@ -199,6 +232,25 @@ func get_ambient() -> float:
 
 func is_room_bound() -> bool:
 	return _room_bound
+
+
+## Hand-off from NormalField: the room's authored normal buffer, or null when the
+## room has no `NormalTiles` layer. This is the normal-map twin of the
+## `set_light_field` hand-off every consumer implements, and it repaints the
+## shade/glow uniforms immediately, so binding order between the two fields does
+## not matter.
+func set_normal_field(texture: Texture2D, pixels: Vector2i, origin_pixels: Vector2i) -> void:
+	_normal_texture = texture
+	_normal_pixels = pixels
+	_normal_origin = origin_pixels
+	_paint_overlay_parameters()
+
+
+## Mode the shaders actually use: authored normals are preferred when a matching
+## buffer exists, and otherwise Auto/Derived behaves as derived. Exposed for the
+## tests and the debug HUD; the shaders receive the same value as a uniform.
+func get_effective_normal_mode() -> int:
+	return _effective_normal_mode()
 
 
 ## Luminance of the light map at a world position, in 0..1 (ambient excluded).
@@ -445,6 +497,11 @@ func _sync_overlays() -> void:
 
 
 func _paint_overlay_parameters() -> void:
+	var normal_mode := _effective_normal_mode()
+	var normal_texture: Texture2D = _flat_normal_texture()
+	if normal_mode == RELIEF_AUTHORED and _normal_texture != null:
+		normal_texture = _normal_texture
+	var screen_pixels := _screen_pixels()
 	if _shade_material != null:
 		_shade_material.set_shader_parameter("light_tex", _texture)
 		_shade_material.set_shader_parameter("light_pixels", Vector2(_room_pixels))
@@ -455,6 +512,13 @@ func _paint_overlay_parameters() -> void:
 		_shade_material.set_shader_parameter("rim_fuzz", rim_fuzz)
 		_shade_material.set_shader_parameter("rim_fuzz_scale", rim_fuzz_scale)
 		_shade_material.set_shader_parameter("shade_color", Color(0.0, 0.0, 0.0, 1.0))
+		_shade_material.set_shader_parameter("normal_mode", float(normal_mode))
+		_shade_material.set_shader_parameter("normal_tex", normal_texture)
+		_shade_material.set_shader_parameter("normal_pixels", Vector2(_room_pixels))
+		_shade_material.set_shader_parameter("relief_strength", relief_strength)
+		_shade_material.set_shader_parameter("relief_radius_px", float(relief_radius_px))
+		_shade_material.set_shader_parameter("relief_softness", relief_softness)
+		_shade_material.set_shader_parameter("screen_pixels", screen_pixels)
 	if _glow_material != null:
 		_glow_material.set_shader_parameter("light_tex", _texture)
 		_glow_material.set_shader_parameter("light_pixels", Vector2(_room_pixels))
@@ -462,6 +526,69 @@ func _paint_overlay_parameters() -> void:
 		_glow_material.set_shader_parameter("glow_gain", glow_gain)
 		_glow_material.set_shader_parameter("rim_fuzz", rim_fuzz)
 		_glow_material.set_shader_parameter("rim_fuzz_scale", rim_fuzz_scale)
+		_glow_material.set_shader_parameter("normal_mode", float(normal_mode))
+		_glow_material.set_shader_parameter("normal_tex", normal_texture)
+		_glow_material.set_shader_parameter("normal_pixels", Vector2(_room_pixels))
+		_glow_material.set_shader_parameter("relief_strength", relief_strength)
+		_glow_material.set_shader_parameter("relief_radius_px", float(relief_radius_px))
+		_glow_material.set_shader_parameter("relief_softness", relief_softness)
+		_glow_material.set_shader_parameter("screen_pixels", screen_pixels)
+
+
+## Mode actually handed to the shader. Authored normal data from the previous room
+## (or a missing NormalField) never wins over a valid derived fallback.
+func _effective_normal_mode() -> int:
+	if relief_strength <= 0.0 or relief_normal_mode == RELIEF_FLAT:
+		return RELIEF_FLAT
+	if relief_normal_mode == RELIEF_AUTHORED:
+		var matches_room := (
+			_normal_texture != null
+			and _normal_pixels == _room_pixels
+			and _normal_origin == _room_origin_pixels
+		)
+		return RELIEF_AUTHORED if matches_room else RELIEF_DERIVED
+	return RELIEF_DERIVED
+
+
+## Size of the viewport the shade is drawn into. The glow/shade shaders need it to
+## step one screen pixel in the derived-normal sobel; canvas_item shaders have no
+## SCREEN_PIXEL_SIZE built-in.
+func _screen_pixels() -> Vector2:
+	var viewport := get_viewport()
+	if viewport == null:
+		return Vector2(_room_pixels)
+	var size := viewport.get_visible_rect().size
+	return Vector2(maxf(size.x, 1.0), maxf(size.y, 1.0))
+
+
+## A one-texel flat normal keeps the `normal_tex` sampler valid in every mode,
+## instead of relying on a null texture being accepted by the renderer.
+func _flat_normal_texture() -> ImageTexture:
+	if _flat_normal_image == null:
+		var image := Image.create(1, 1, false, Image.FORMAT_RGBA8)
+		image.fill(FLAT_NORMAL_COLOR)
+		_flat_normal_image = ImageTexture.create_from_image(image)
+	return _flat_normal_image
+
+
+## Picks up a NormalField that bound the same room before this field did, so the
+## hand-off works whichever room extension is registered first.
+func _adopt_normal_field() -> void:
+	if not is_inside_tree():
+		return
+	for node: Node in get_tree().get_nodes_in_group(&"normal_field"):
+		if not is_instance_valid(node) or not node.has_method("get_normal_texture"):
+			continue
+		if not bool(node.call("has_normal_map")):
+			continue
+		var pixels: Vector2i = node.call("get_normal_pixels")
+		var origin: Vector2i = _room_origin_pixels
+		if node.has_method("get_normal_origin"):
+			origin = node.call("get_normal_origin")
+		if pixels != _room_pixels or origin != _room_origin_pixels:
+			continue
+		set_normal_field(node.call("get_normal_texture"), pixels, origin)
+		return
 
 
 func _build_occluders(terrain_root: Node) -> void:

@@ -86,7 +86,6 @@ It is a rectangle in cells, positioned in room pixels.
 | `focus_room` | Dark only: while inside, darken the rest of the room |
 | `focus_seconds` | focus fade in/out time (0.35 s default) |
 | `focus_alpha` | how dark the rest of the room gets (0.92 default) |
-
 - **Light zone**: lights its cells even when they are sealed behind solid walls.
   The cells are recorded as explored.
 - **Zone membership uses the hero body**, not the feet point: the fog tests the
@@ -99,14 +98,24 @@ It is a rectangle in cells, positioned in room pixels.
   - **Fully outside** is required for `restore_on_exit`; while the hero still
     overlaps the zone it stays lit and only goes dark after a complete exit.
 - **Dark zone + reveal_on_enter**: lights the zone and persists that it was seen.
+- **Zone fades**: a dark zone never switches on or off in one frame. Entering
+  dissolves it with a per-cell wave that travels from the hero outwards, leaving
+  fades back in as the darkness that creeps back in from the zone border. The
+  wave is driven by `zone_reveal_seconds` / `zone_reveal_stagger` and
+  `zone_restore_seconds` / `zone_restore_stagger` on `FogOfWar` (0.9 + 0.02 and
+  0.8 + 0.02 by default, so a 5-cell radius takes ~1 s). The fade is written into
+  the mask, so the tendrils keep eating into it while it moves.
 - **restore_on_exit**: the zone goes black again when the player is completely
   outside. Explored cells are **not** removed, so the map keeps showing the
   area. This is the "attention returns to the main path" effect.
-- **focus_room**: the "dark room focus". While the hero is completely inside,
-  the rest of the room fades to dark, closing in towards the player; the zone
-  itself stays lit. Light zones dim too, so the focus wins. Leaving (including
-  stepping onto the boundary) releases the focus and restores the normal reveal
-  (combine with `restore_on_exit` to also re-darken the zone).
+- **focus_room**: the "dark room focus". While the hero is completely inside, the
+  rest of the room fades to dark and the authored zone stays lit natively. The
+  spotlight is a **shader term** (see below), so the lit bubble is centred on the
+  hero body and follows it every frame instead of sitting where the focus
+  started; the darkness ramps in over `focus_falloff_px` (34 px) and the bubble
+  starts wide and closes onto the hero while `focus_seconds` runs. Leaving
+  (including stepping onto the boundary) releases the focus and restores the
+  normal reveal (combine with `restore_on_exit` to also re-darken the zone).
 - Light wins over dark if the two overlap.
 - `revealed` (currently lit) and `seen` (ever lit) are runtime state; the editor
   draws the rectangle with `D`/`L`, plus `R` for restore, `F` for focus and `*`
@@ -127,7 +136,7 @@ The mask holds one texel block per cell, three channels:
 
 | Channel | Contents |
 | :--- | :--- |
-| alpha | fog opacity of the cell: 1 = fog, 0 = revealed, in between while it evaporates or is dimmed by a focus zone |
+| alpha | fog opacity of the cell: 1 = fog, 0 = revealed, in between while it evaporates or while an authored zone fades |
 | red | reveal flash, drawn as a 1 px outline inside the cell for a moment |
 | green | signed distance to the border, encoded around 0.5 (the reach is `MASK_DISTANCE_PIXELS`, 32 px) |
 
@@ -144,16 +153,35 @@ layers to the cut:
    flight, so the last pixels break into hard 1 px chunks while the fog interior
    stays clean.
 
-A cell that is fogged, fading or dimmed always keeps exactly its own opacity, so
-the reveal wave and the focus spotlight stay truthful; only a fully revealed cell
-can be covered by a tongue, and that one is solid at the cut and thins out
-towards its tip.
+A cell that is fogged or fading always keeps exactly its own opacity, so the
+reveal wave and the zone fades stay truthful; only a fully revealed cell can be
+covered by a tongue, and that one is solid at the cut and thins out towards its
+tip.
 
 The mask is only rewritten when the revealed set changes, while a reveal wave is
-evaporating, or while the focus spotlight fades. Everything else is animated by
-the shader from `TIME`, so a settled room uploads nothing.
+evaporating, or while an authored zone fade is in flight. Everything else is
+animated by the shader from `TIME`, so a settled room uploads nothing.
 
-### Edge parameters (`FogOfWar`)
+### The focus spotlight lives in the shader
+
+`focus_room` darkens the rest of the room, and it used to be painted into the
+mask — one `fill_rect` per cell of the whole room, every frame, which is why it
+could not follow the hero and had no gradient worth the name. It is now four
+uniforms (`focus_center_px`, `focus_rect_px`, `focus_strength`, `focus_alpha`,
+plus `focus_radius_px` / `focus_falloff_px` on `FogOfWar`) and one `focus_at()`
+function in `fog_mask.gdshader`:
+
+    lit distance = min(distance outside the authored zone rect,
+                       distance from the hero body - the bubble radius)
+    alpha        = smoothstep(0, falloff, lit distance) * strength * focus_alpha
+
+The zone itself is therefore lit for free, the darkness ramps in over the falloff
+so there is no rectangular seam, and the bubble closes onto the hero as
+`focus_seconds` runs. Cost: no mask repaint at all. A 320×180 lab room measured
+inside the pocket 204, and 196 / 138 / 60 / 18 / 16 at 10 / 20 / 30 / 40 px
+outside it (falloff 34 px, `focus_alpha` 0.92).
+
+### `FogOfWar` parameters
 
 | Property | Default | Meaning |
 | :--- | :--- | :--- |
@@ -168,6 +196,12 @@ the shader from `TIME`, so a settled room uploads nothing.
 | `breath_speed` | 0.16 | swell speed |
 | `dither_strength` | 0.6 | blend towards the ordered dither, 0 to 1 |
 | `dither_scale` | 1 | size of one dither cell in pixels |
+| `zone_reveal_seconds` | 0.9 | how long a dark zone takes to dissolve after the hero enters |
+| `zone_reveal_stagger` | 0.02 | extra delay per cell of distance from the hero |
+| `zone_restore_seconds` | 0.8 | how long a `restore_on_exit` zone takes to close again |
+| `zone_restore_stagger` | 0.02 | extra delay per cell, counted inwards from the border |
+| `focus_radius_px` | 34 | lit bubble around the hero while a focus zone is active |
+| `focus_falloff_px` | 34 | width of the lit → dark ramp of the focus spotlight |
 
 Set `tendril_pixels`, `breath_pixels` and `dither_strength` to 0 to get the old
 cell-aligned border back.

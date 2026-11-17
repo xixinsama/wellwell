@@ -18,6 +18,7 @@
 [ext_resource type="Script" uid="uid://dy45jy15p3gpe" path="res://scripts/world/terrain_highlight.gd" id="15_highlight"]
 [ext_resource type="Script" uid="uid://d10q7hvrp01va" path="res://scripts/world/light_field.gd" id="16_light"]
 [ext_resource type="Script" uid="uid://cgs4fckq1mcre" path="res://scripts/world/screen_bloom.gd" id="17_bloom"]
+[ext_resource type="Script" uid="uid://hmuy3srqjmbi" path="res://scripts/world/normal_field.gd" id="18_normal"]
 
 [node name="WorldRoot" type="Node2D" unique_id=1531965248]
 script = ExtResource("1_session")
@@ -68,6 +69,9 @@ script = ExtResource("17_bloom")
 [node name="LightField" type="Node2D" parent="." unique_id=394850553]
 script = ExtResource("16_light")
 player_path = NodePath("../Player")
+
+[node name="NormalField" type="Node2D" parent="."]
+script = ExtResource("18_normal")
 
 [node name="FogOfWar" type="Node2D" parent="." unique_id=896215342]
 z_index = 10

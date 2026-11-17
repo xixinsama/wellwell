@@ -37,6 +37,12 @@ uniform float caustic_strength = 0.14;
 uniform vec4 ripple_0 = vec4(0.0);
 uniform vec4 ripple_1 = vec4(0.0);
 uniform vec4 ripple_2 = vec4(0.0);
+// How far each ripple carries, in px: the 1/e distance of its swell. WaterGrid
+// measures the water body the impact landed in and hands its half-width over, so
+// one landing moves the *whole* body instead of a patch around the impact point.
+uniform float ripple_reach_0 = 24.0;
+uniform float ripple_reach_1 = 24.0;
+uniform float ripple_reach_2 = 24.0;
 uniform float ripple_amplitude = 3.6;
 uniform float ripple_speed = 64.0;
 uniform float ripple_damping = 1.1;
@@ -80,31 +86,38 @@ float light_at(vec2 world) {
 
 // Height of the water surface from one impact.
 //
-// The peak sits exactly on the impact point and the wave travels outwards from
-// there: the ring front moves at `speed` px/s, the envelope falls off with
-// distance (so the neighbours are quieter than the landing point) and the whole
-// thing fades in about a second. Purely visual - the body never moves.
+// The landing sends a ring train outwards: the pattern is a cosine of how far the
+// crest has travelled (`speed` px/s), so the rings visibly leave the impact point,
+// and the train fades out at `ripple_damping` per second. Purely visual - the body
+// never moves.
+//
+// The amplitude must not die next to the impact. This ripple is the only thing that
+// moves the surface of a settled pool, so an envelope that is gone after a cell or
+// two does not read as a quiet ripple: it reads as a hard vertical edge through the
+// middle of one pool, with half of the same body wobbling and the other half frozen
+// flat (the old `exp(-distance / (18 + 22 * w))` envelope plus a +-25 px Gaussian on
+// the ring front dropped below one rendered pixel about 40 px from the landing).
+// `reach` is therefore the measured half-width of the water body the impact landed
+// in (WaterGrid measures it from the simulation), which keeps the swell inside its
+// own body and above the one pixel that makes it visible everywhere in that body.
 //
 // The ripple is a point on *one* surface, so it also decays with the vertical
 // distance to that surface: a pool above or below the impact is a different body
 // and must not wobble when the hero jumps somewhere else.
-float ripple_offset(vec4 ripple, float world_x, float world_y) {
+float ripple_offset(vec4 ripple, float reach, float world_x, float world_y) {
 	if (ripple.w <= 0.001) {
 		return 0.0;
 	}
-	float age = ripple.z;
 	float vertical = exp(-abs(world_y - ripple.y) / 5.0);
 	if (vertical < 0.01) {
 		return 0.0;
 	}
 	float distance = abs(world_x - ripple.x);
-	float width = 18.0 + 22.0 * ripple.w;
-	float envelope = exp(-distance / width);
-	float front = ripple_speed * age;
-	float ring = exp(-pow((distance - front) / (10.0 + 10.0 * ripple.w), 2.0));
+	float envelope = exp(-distance / max(reach, 1.0));
+	float front = ripple_speed * ripple.z;
 	float wave = cos((distance - front) * 0.8);
-	float decay = exp(-age * ripple_damping);
-	return wave * ring * envelope * decay * vertical * ripple.w * ripple_amplitude;
+	float decay = exp(-ripple.z * ripple_damping);
+	return wave * envelope * decay * vertical * ripple.w * ripple_amplitude;
 }
 
 void fragment() {
@@ -144,9 +157,9 @@ void fragment() {
 		// belongs to.
 		if (cell.g < 0.002) {
 			float surface_world_y = field_origin.y + index.y * cell_pixels + surface;
-			float ripple = ripple_offset(ripple_0, world.x, surface_world_y)
-				+ ripple_offset(ripple_1, world.x, surface_world_y)
-				+ ripple_offset(ripple_2, world.x, surface_world_y);
+			float ripple = ripple_offset(ripple_0, ripple_reach_0, world.x, surface_world_y)
+				+ ripple_offset(ripple_1, ripple_reach_1, world.x, surface_world_y)
+				+ ripple_offset(ripple_2, ripple_reach_2, world.x, surface_world_y);
 			surface -= clamp(ripple, -ripple_limit, ripple_limit);
 		}
 		float water_top = clamp(surface, 0.0, cell_pixels);

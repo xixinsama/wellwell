@@ -18,6 +18,10 @@ extends Node2D
 ## The hero pushes the gas aside and leaves a wake; up to four point lights (the
 ## hero lantern plus authored FogLight nodes) brighten it. This node draws above
 ## the hero and below FogOfWar, so unexplored cells stay covered.
+##
+## The field starts empty on purpose: a room-wide veil of gas looks like a second
+## fog layer. Visible gas is authored with `GasVent` nozzles (a hard, fast jet) and
+## with `GasField` markers in rooms that want the haze back.
 
 enum Backend { AUTO, GPU, CPU }
 
@@ -48,7 +52,11 @@ const MAX_VENTS := 4
 @export_range(10.0, 60.0, 1.0) var sim_hz := 30.0
 ## Average density each of the three gases tries to keep in the room
 ## (x = heavy, y = neutral, z = light).
-@export var gas_ambient := Vector3(0.28, 0.22, 0.32)
+##
+## Zero by default: a room-wide veil of gas reads as fog, and the rooms use
+## authored GasVent nozzles for visible gas instead. A recipe that wants the old
+## haze adds a GasField marker (or raises this back to 0.25, 0.2, 0.3).
+@export var gas_ambient := Vector3.ZERO
 ## Navier-Stokes: buoyancy acceleration per unit density, in px/s^2, and the\r
 ## velocity dissipation per second.
 @export var gas_buoyancy := Vector3(240.0, 0.0, 300.0)
@@ -57,10 +65,14 @@ const MAX_VENTS := 4
 @export_range(4, 64, 1) var pressure_iterations := 16
 ## Kinematic viscosity in 1/s: how much the gas drags on itself.
 @export_range(0.0, 20.0, 0.01) var gas_viscosity := 0.0
-## Exponential gas fade per second (0 = the gas never fades on its own).
-@export_range(0.0, 3.0, 0.05) var gas_decay := 0.0
+## Exponential gas fade per second (0 = the gas never fades on its own). With no
+## ambient gas to fall back on, vent jets need a little decay or they pile up in
+## a closed room and turn back into fog.
+@export_range(0.0, 3.0, 0.05) var gas_decay := 0.12
 @export_range(0.0, 1.0, 0.01) var gas_diffusion := 0.25
-@export_range(0.0, 2.0, 0.01) var gas_refill := 0.35
+## Pulls the field back towards `gas_ambient` every step. Only useful together
+## with a non-zero ambient, so it is off by default.
+@export_range(0.0, 2.0, 0.01) var gas_refill := 0.0
 ## Horizontal wind in pixels per second, plus a small lift. The main
 ## "how fast does the gas blow across the room" knob.
 @export var gas_wind := Vector2(20.0, -2.5)
@@ -73,7 +85,7 @@ const MAX_VENTS := 4
 @export_range(8.0, 96.0, 1.0) var push_radius := 34.0
 @export_range(0.0, 3.0, 0.01) var push_strength := 1.4
 
-@export_range(0.0, 1.0, 0.01) var ambient_density := 0.55
+@export_range(0.0, 1.0, 0.01) var ambient_density := 0.0
 @export var heavy_color := Color(1.0, 0.3, 0.08, 1.0)
 @export var neutral_color := Color(0.1, 0.82, 1.0, 1.0)
 @export var light_color := Color(1.0, 0.95, 0.18, 1.0)

@@ -111,6 +111,8 @@ func run() -> Array[String]:
 	_assert_mask_reveal_wave_animates(failures)
 	_assert_mask_quad_follows_room(failures)
 	_assert_saved_exploration_updates_mask(failures)
+	_assert_zone_fade_is_gradual(failures)
+	_assert_focus_spotlight_reaches_the_shader(failures)
 	return failures
 
 
@@ -660,6 +662,122 @@ func _assert_saved_exploration_updates_mask(failures: Array[String]) -> void:
 	if mask == null or mask.get_pixel(20, 4).a != 0.0:
 		failures.append("saved fog exploration was not transparent in the mask")
 	fog.free()
+
+
+## A dark zone has to dissolve, not switch off: the mask has to show in-between
+## opacity for a moment after the hero enters, and it has to ramp back up (never
+## jump straight to opaque) after a restore_on_exit exit.
+func _assert_zone_fade_is_gradual(failures: Array[String]) -> void:
+	var root := Node2D.new()
+	var player := Node2D.new()
+	player.position = Vector2(52.0, 12.0)
+	root.add_child(player)
+	var terrain := _make_terrain({})
+	root.add_child(terrain)
+	var zone := _make_zone(root, DARK_MODE, Vector2i(1, 1), Vector2i(4, 4), "fade_zone")
+	zone.set("restore_on_exit", true)
+	var fog: Node2D = FOG_OF_WAR.new() as Node2D
+	fog.cell_size = Vector2i(8, 8)
+	fog.chunk_size_pixels = Vector2i(320, 180)
+	fog.zone_reveal_seconds = 0.9
+	fog.zone_reveal_stagger = 0.02
+	fog.zone_restore_seconds = 0.8
+	fog.zone_restore_stagger = 0.02
+	fog.call("bind_player", player)
+	root.add_child(fog)
+	add_child(root)
+	var room: Resource = _make_room("fade_room", Vector2i.ZERO, Vector2i(1, 1))
+	fog.call("bind_room", room, terrain, Vector2i.ZERO)
+	var inside := Vector2i(2, 2)
+	if fog.get_mask_image().get_pixel(20, 20).a < 0.9:
+		failures.append("unrevealed dark zone was not opaque before the hero entered")
+	var opened_at := float(Time.get_ticks_msec()) / 1000.0
+	player.position = Vector2(24.0, 24.0)
+	fog.call("bind_player", player)
+	fog.call("reveal_from_player")
+	fog.call("_update_mask_image", opened_at + 0.45)
+	var opening: float = fog.get_mask_image().get_pixel(20, 20).a
+	if opening <= 0.15 or opening >= 0.85:
+		failures.append("dark zone did not fade in, opacity jumped to %.3f" % opening)
+	if not bool(fog.call("_mask_animating", opened_at + 0.45)):
+		failures.append("fog stopped animating while the zone fade was in flight")
+	fog.call("_update_mask_image", opened_at + 100.0)
+	if fog.get_mask_image().get_pixel(20, 20).a > 0.05:
+		failures.append("dark zone never finished fading in")
+	if bool(fog.call("_mask_animating", opened_at + 100.0)):
+		failures.append("fog kept animating after the zone fade settled")
+
+	var closed_at := float(Time.get_ticks_msec()) / 1000.0
+	player.position = Vector2(52.0, 12.0)
+	fog.call("bind_player", player)
+	fog.call("reveal_from_player")
+	if fog.is_cell_lit(inside):
+		failures.append("restore zone did not re-darken after the hero left")
+	fog.call("_update_mask_image", closed_at)
+	var closing: float = fog.get_mask_image().get_pixel(20, 20).a
+	if closing > 0.5:
+		failures.append("restored zone snapped back to opaque (%.3f) instead of closing" % closing)
+	fog.call("_update_mask_image", closed_at + 100.0)
+	if fog.get_mask_image().get_pixel(20, 20).a < 0.95:
+		failures.append("restored zone never became opaque again")
+	zone.free()
+	root.free()
+
+
+## The focus spotlight is a shader term now, because it follows the hero every
+## frame. What the mask material must receive: the zone rectangle, a strength that
+## ramps up, and a centre that tracks the player.
+func _assert_focus_spotlight_reaches_the_shader(failures: Array[String]) -> void:
+	var root := Node2D.new()
+	var player := Node2D.new()
+	player.position = Vector2(52.0, 12.0)
+	root.add_child(player)
+	var terrain := _make_terrain({})
+	root.add_child(terrain)
+	var zone := _make_zone(root, DARK_MODE, Vector2i(1, 1), Vector2i(4, 4), "spotlight_zone")
+	zone.set("focus_room", true)
+	zone.set("focus_seconds", 0.05)
+	zone.set("focus_alpha", 0.9)
+	var fog: Node2D = FOG_OF_WAR.new() as Node2D
+	fog.cell_size = Vector2i(8, 8)
+	fog.chunk_size_pixels = Vector2i(320, 180)
+	fog.focus_radius_px = 30.0
+	fog.focus_falloff_px = 26.0
+	fog.call("bind_player", player)
+	root.add_child(fog)
+	add_child(root)
+	var room: Resource = _make_room("spotlight_room", Vector2i.ZERO, Vector2i(1, 1))
+	fog.call("bind_room", room, terrain, Vector2i.ZERO)
+	player.position = Vector2(24.0, 24.0)
+	fog.call("bind_player", player)
+	fog.call("reveal_from_player")
+	fog.call("_update_mask_image")
+	OS.delay_msec(90)
+	fog.call("_process", 0.016)
+	var quad := fog.get_node_or_null("FogMask") as Sprite2D
+	if quad == null or not (quad.material is ShaderMaterial):
+		failures.append("fog mask material missing, the spotlight cannot be shaded")
+		zone.free()
+		root.free()
+		return
+	var material := quad.material as ShaderMaterial
+	var strength := float(material.get_shader_parameter("focus_strength"))
+	if strength <= 0.5:
+		failures.append("focus strength did not ramp up (%.3f)" % strength)
+	var rect: Vector4 = material.get_shader_parameter("focus_rect_px")
+	if rect.z <= 0.0 or rect.w <= 0.0:
+		failures.append("focus zone rectangle never reached the shader")
+	var first_center: Vector2 = material.get_shader_parameter("focus_center_px")
+	player.position = Vector2(32.0, 24.0)
+	fog.call("bind_player", player)
+	fog.call("_process", 0.016)
+	var moved_center: Vector2 = material.get_shader_parameter("focus_center_px")
+	if is_equal_approx(first_center.x, moved_center.x):
+		failures.append("focus spotlight did not follow the hero")
+	if float(material.get_shader_parameter("focus_falloff_px")) <= 0.0:
+		failures.append("focus falloff never reached the shader, so it cannot be a gradient")
+	zone.free()
+	root.free()
 
 
 func _make_room(room_id: String, _origin_chunk: Vector2i, size: Vector2i = Vector2i.ONE) -> Resource:

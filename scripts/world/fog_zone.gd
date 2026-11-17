@@ -31,7 +31,9 @@ const CELL_PIXELS := 8
 @export var restore_on_exit := false
 ## DARK only: while the player is inside, darken the rest of the room.
 @export var focus_room := false
-@export_range(0.05, 2.0, 0.05) var focus_seconds := 0.35
+## Fade in/out time of the room spotlight. It doubles as the "the room closes in"
+## beat, so it is slow enough to read as a gradient instead of a blink.
+@export_range(0.05, 2.0, 0.05) var focus_seconds := 0.55
 @export_range(0.0, 1.0, 0.01) var focus_alpha := 0.92
 
 var revealed := false
