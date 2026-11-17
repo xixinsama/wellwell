@@ -130,9 +130,13 @@ flip/transpose flags), because `NormalField` clones a room layer by copying raw
 `tile_map_data`: cells and alternative ids are never remapped.
 
 `NormalField.normal_tileset` (`world_root.tscn`) points at it and
-`source_layer_names` (default `SolidTiles`) says which terrain layers to mirror, so
-a room that never authored normals gets them from its own solid cells; a room that
-does carry a `NormalTiles` layer keeps priority.
+`source_layer_names (default ["BackTiles", "SolidTiles"]) says which terrain
+layers to mirror and in which order. Both are listed: the background tiles carry
+their own normal map (they are half of what a room shows) and are cloned first,
+while the solid tiles are the walls and are cloned after them, so a wall wins
+wherever both paint the same cell. That is how a room that never authored normals
+gets them from the tiles it already has; a room that does carry a `NormalTiles`
+layer keeps priority.
 
 Re-bake after adding or repainting tiles. The tool bakes every tile of the PNG, so
 a new tile (like the spike added at `0:8`) needs no script change, and it only

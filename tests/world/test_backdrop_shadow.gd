@@ -4,8 +4,8 @@ extends Node
 ##
 ## The silhouette itself is rendered on the GPU, so a headless run can only see the
 ## wiring: which layer was picked up, where the quad was parented, what the shader
-## received, and where the shadow points relative to the nearest light. The blur
-## and the actual darkening are covered by the windowed captures in the notes.
+## received, and the one global offset direction. The blur and the actual darkening
+## are covered by the windowed captures in the notes.
 
 const BACKDROP_SHADOW: Script = preload("res://scripts/world/backdrop_shadow.gd")
 const ROOM_DATA: Script = preload("res://addons/platformer_kit/world/data/room_data.gd")
@@ -16,7 +16,7 @@ const TILE := 8
 func run() -> Array[String]:
 	var failures: Array[String] = []
 	_assert_room_without_background_tiles(failures)
-	_assert_shadow_follows_the_nearest_light(failures)
+	_assert_fixed_offset(failures)
 	_assert_shadow_sits_between_plate_and_tiles(failures)
 	_assert_clear_room_drops_the_shadow(failures)
 	return failures
@@ -36,18 +36,13 @@ func _assert_room_without_background_tiles(failures: Array[String]) -> void:
 	rig["root"].free()
 
 
-func _assert_shadow_follows_the_nearest_light(failures: Array[String]) -> void:
+## The offset is fixed now: down and to the left, 10 px, independent of any light.
+## `(-1.6, 1)` is about 148 degrees, which is the "light comes from the top right"
+## lean the art uses.
+func _assert_fixed_offset(failures: Array[String]) -> void:
 	var rig := _make_rig({Vector2i(2, 6): true, Vector2i(3, 6): true})
-	var player := Node2D.new()
-	player.global_position = Vector2(60.0, 80.0)
-	rig["root"].add_child(player)
-	var light := Node2D.new()
-	light.global_position = Vector2(120.0, 80.0)
-	light.add_to_group(&"room_light")
-	rig["root"].add_child(light)
 	var shadow: Node2D = BACKDROP_SHADOW.new() as Node2D
 	rig["root"].add_child(shadow)
-	shadow.call("bind_player", player)
 	shadow.call("bind_room_with_origin", _make_room(), rig["room"], Vector2i.ZERO)
 	if not bool(shadow.call("has_shadow")):
 		failures.append("BackdropShadow did not build a shadow from the background layer")
@@ -55,20 +50,23 @@ func _assert_shadow_follows_the_nearest_light(failures: Array[String]) -> void:
 		rig["root"].free()
 		return
 	var offset: Vector2 = shadow.call("get_shadow_offset")
-	if offset.length() <= 0.0:
-		failures.append("BackdropShadow did not offset the shadow away from the light")
-	elif offset.x >= 0.0:
-		failures.append("shadow was pushed towards the light instead of away (%s)" % str(offset))
-	if offset.length() > float(shadow.get("max_offset_px")) + 0.001:
-		failures.append("shadow offset %.2f exceeded max_offset_px" % offset.length())
-	if (shadow.call("get_light_position") as Vector2).distance_to(light.global_position) > 0.001:
-		failures.append("BackdropShadow did not pick up the nearest room light")
-	# Moving the light to the other side has to flip the shadow.
-	light.global_position = Vector2(0.0, 80.0)
+	if not is_equal_approx(offset.length(), 10.0):
+		failures.append("shadow offset is %.2f px, expected the fixed 10 px" % offset.length())
+	if offset.x >= 0.0 or offset.y <= 0.0:
+		failures.append("shadow should lean down-left, got %s" % str(offset))
+	var expected := Vector2(-1.6, 1.0).normalized() * 10.0
+	if offset.distance_to(expected) > 0.01:
+		failures.append("shadow direction drifted from (-1.6, 1): %s vs %s" % [str(offset), str(expected)])
+	# A light next to the room must not move it any more (the old behaviour).
+	var light := Node2D.new()
+	light.global_position = Vector2(300.0, 90.0)
+	light.add_to_group(&"room_light")
+	rig["root"].add_child(light)
 	shadow.call("_process", 0.016)
-	var flipped: Vector2 = shadow.call("get_shadow_offset")
-	if flipped.x <= 0.0:
-		failures.append("shadow did not flip when the light moved to the other side")
+	shadow.call("_process", 0.016)
+	if (shadow.call("get_shadow_offset") as Vector2).distance_to(offset) > 0.001:
+		failures.append("a nearby light still moves the shadow")
+	light.free()
 	shadow.free()
 	rig["root"].free()
 
@@ -106,6 +104,11 @@ func _assert_shadow_sits_between_plate_and_tiles(failures: Array[String]) -> voi
 				failures.append("shadow shader got the wrong mask size")
 			if float(material.get_shader_parameter("strength")) <= 0.0:
 				failures.append("shadow shader got no strength")
+			if material.get_shader_parameter("offset_px") != shadow.call("get_shadow_offset"):
+				failures.append("shadow shader did not receive the offset")
+			var tint: Color = material.get_shader_parameter("shadow_tint")
+			if tint.r + tint.g + tint.b > 0.05:
+				failures.append("shadow tint is not black (%s)" % str(tint))
 	shadow.free()
 	rig["root"].free()
 

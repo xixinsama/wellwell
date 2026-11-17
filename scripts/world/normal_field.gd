@@ -56,10 +56,13 @@ const CHUNK_PIXELS := Vector2i(320, 180)
 ## `scripts/tools/bake_tileset_normals.gd`; this is its TileSet.
 @export var normal_tileset: TileSet
 ## Terrain layers cloned with `normal_tileset` when the room has no authored
-## `NormalTiles` layer. `SolidTiles` is the collision layer, so walls, floors and
-## slopes get relief; add `BackTiles` to light the decorative background too, in
-## the order they should be drawn.
-@export var source_layer_names: Array[String] = ["SolidTiles"]
+## `NormalTiles` layer, in the order they are drawn.
+##
+## Both tile layers are listed: the background tiles carry their own normal map
+## (they are half of what the room shows) and the solid tiles are the walls, which
+## occlude them. A later name draws over an earlier one, so the walls stay on top of
+## the background instead of the room scene's node order deciding it.
+@export var source_layer_names: Array[String] = ["BackTiles", "SolidTiles"]
 
 var _room_pixels := Vector2i.ZERO
 var _room_origin_pixels := Vector2i.ZERO
@@ -68,6 +71,9 @@ var _has_map := false
 var _texture: Texture2D
 var _viewport: SubViewport
 var _clone: TileMapLayer
+## Every clone in the buffer, in draw order. A room merges its background tiles and
+## its solid tiles, so the buffer is not a single layer any more.
+var _clones: Array[TileMapLayer] = []
 ## Terrain the current room was bound with, kept so a TileSet assigned after the
 ## binding can rebuild the buffer without waiting for the next room.
 var _terrain_root: Node
@@ -171,6 +177,7 @@ func clear_room() -> void:
 	set_process(false)
 	_texture = null
 	_clone = null
+	_clones.clear()
 	_missing_tiles.clear()
 	_terrain_root = null
 	if is_instance_valid(_viewport):
@@ -226,8 +233,17 @@ func refresh() -> void:
 		set_process(true)
 
 
+## The topmost cloned layer: the one whose normals win, which for a room with a
+## background and a wall layer is the wall layer. Single-layer rooms get that layer.
 func get_buffer_layer() -> TileMapLayer:
 	return _clone
+
+
+## Every cloned layer, in draw order (the last one is on top). The buffer is a merge
+## of the background and the solid tiles, so a caller that wants to check what the
+## buffer covers has to look at all of them.
+func get_buffer_layers() -> Array[TileMapLayer]:
+	return _clones.duplicate()
 
 
 ## Accepts the same room pattern as LightField, with the authoring-scene nesting
@@ -250,6 +266,11 @@ func _find_layers_named(terrain_root: Node, wanted: Array[String]) -> Array[Tile
 	if wanted.is_empty():
 		return layers
 	_collect_layers(terrain_root, wanted, layers)
+	# Sort by the requested order: the clones are added in array order, so this is
+	# what decides that the background normals sit underneath the walls.
+	layers.sort_custom(func(left: TileMapLayer, right: TileMapLayer) -> bool:
+		return wanted.find(String(left.name)) < wanted.find(String(right.name))
+	)
 	return layers
 
 
@@ -333,8 +354,10 @@ func _build_buffer(
 			offset = terrain_2d.to_local(layer.global_position)
 		clone.position = offset
 		_viewport.add_child(clone)
-		if _clone == null:
-			_clone = clone
+		_clones.append(clone)
+		# The last layer added is the one drawn on top, which is what "the buffer
+		# layer" means for anyone inspecting it.
+		_clone = clone
 	if check_tiles and not _missing_tiles.is_empty():
 		push_warning(
 			"NormalField: %d cell(s) have no tile in %s (%s); those pixels stay flat"

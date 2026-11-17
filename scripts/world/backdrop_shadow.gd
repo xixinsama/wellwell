@@ -11,36 +11,36 @@ extends Node2D
 ## the plate read as a surface *behind* the tiles instead of a flat image in a
 ## different layer.
 ##
-## The offset follows the nearest light: the quad pushes the silhouette away from
-## it (`follow_ratio` of the light distance, capped by `max_offset_px`). With no
-## authored light in the room, the hero's own lantern is the light, so the shadow
-## still reacts while walking.
+## The offset is **fixed**: every room's background shadow leans the same way
+## (`offset_direction`, towards the lower left by default) by `offset_px`. An
+## earlier version moved it away from the nearest light every frame; the cost was
+## already below the measurement noise, but a shadow that re-aims while a lamp
+## swings reads as the backdrop wobbling, and one global direction matches the rest
+## of the art's lighting.
 ##
 ## Room-extension contract: `bind_room_with_origin()` is called by the world
 ## session with the same arguments LightField gets, so the shadow is rebuilt once
-## per room and costs nothing per frame except the uniform update.
+## per room and costs nothing per frame after that.
 
 const GROUP := &"backdrop_shadow"
 const MASK_SHADER: Shader = preload("res://scripts/shaders/backdrop_shadow_mask.gdshader")
 const SHADOW_SHADER: Shader = preload("res://scripts/shaders/backdrop_shadow.gdshader")
 const QUAD_NAME := "BackdropTileShadow"
 const CHUNK_PIXELS := Vector2i(320, 180)
-## Authored room lights; they are the only things bright enough to move a shadow.
-const LIGHT_GROUPS: Array[StringName] = [&"room_light", &"fog_light"]
 
 @export var layer_path := NodePath("Terrain/BackTiles")
+## Direction the shadow leans, in screen pixels: (-1.6, 1) is roughly 150 degrees,
+## i.e. down and to the left. Only the direction matters, it is normalised.
+@export var offset_direction := Vector2(-1.6, 1.0)
+## How far the shadow is pushed, in pixels.
+@export_range(0.0, 40.0, 0.5) var offset_px := 10.0
 ## How much the plate darkens where the shadow lands.
 @export_range(0.0, 1.0, 0.01) var strength := 0.7
 ## Soft edge of the shadow, in pixels.
 @export_range(0.0, 12.0, 0.1) var blur_px := 3.0
-## Upper bound of the displacement, in pixels. Small on purpose: the backdrop
-## shadow is a parallax-ish hint, not a second copy of the tiles.
-@export_range(0.0, 24.0, 0.1) var max_offset_px := 8.0
-## Share of the light distance that becomes shadow displacement (kept under 1 so
-## a far lamp does not throw the plate's shadow across the room).
-@export_range(0.0, 1.0, 0.05) var follow_ratio := 0.5
-## Multiplier colour of the darkest shadow pixel (bluish keeps it from going grey).
-@export var shadow_tint := Color(0.52, 0.6, 0.78)
+## Multiplier colour of the darkest shadow pixel. Black is a real shadow; a tinted
+## value reads as coloured glass instead.
+@export var shadow_tint := Color(0.0, 0.0, 0.0)
 
 var _room_pixels := Vector2i.ZERO
 var _room_origin_pixels := Vector2i.ZERO
@@ -49,9 +49,7 @@ var _viewport: SubViewport
 var _mask_texture: Texture2D
 var _quad: Sprite2D
 var _material: ShaderMaterial
-var _player: Node2D
 var _offset := Vector2.ZERO
-var _light_position := Vector2.INF
 var _disable_frames_left := 0
 
 
@@ -62,10 +60,6 @@ func _ready() -> void:
 	var world := get_parent()
 	if world != null and world.has_method("register_room_extension"):
 		world.call("register_room_extension", self)
-
-
-func bind_player(player: Node2D) -> void:
-	_player = player
 
 
 func bind_room(room_data: Variant, terrain_root: Node, origin_chunk: Variant = null) -> bool:
@@ -92,8 +86,8 @@ func bind_room_with_origin(room_data: Variant, terrain_root: Node, origin_chunk:
 	var layer := _find_layer(terrain_root)
 	if layer != null:
 		_build_mask(layer, terrain_root)
+	_compute_offset()
 	_build_quad(terrain_root)
-	_update_offset()
 	return true
 
 
@@ -103,7 +97,6 @@ func clear_room() -> void:
 	set_process(false)
 	_mask_texture = null
 	_offset = Vector2.ZERO
-	_light_position = Vector2.INF
 	if _viewport != null and is_instance_valid(_viewport):
 		if _viewport.get_parent() != null:
 			_viewport.get_parent().remove_child(_viewport)
@@ -122,11 +115,6 @@ func clear_room() -> void:
 ## Current shadow displacement in room pixels, for tests and the debug HUD.
 func get_shadow_offset() -> Vector2:
 	return _offset
-
-
-## World position of the light the shadow currently follows; INF when there is none.
-func get_light_position() -> Vector2:
-	return _light_position
 
 
 func has_shadow() -> bool:
@@ -153,56 +141,25 @@ func get_room_pixels() -> Vector2i:
 
 
 func _process(_delta: float) -> void:
-	if _disable_frames_left > 0:
-		_disable_frames_left -= 1
-		if _disable_frames_left == 0 and _viewport != null and is_instance_valid(_viewport):
-			# The silhouette never changes inside a room, so the extra pass is
-			# switched off after it has been drawn once.
-			_viewport.render_target_update_mode = SubViewport.UPDATE_DISABLED
-	_update_offset()
-
-
-## Moves the silhouette away from the nearest light and hands the offset to the
-## shader. The whole layer is pushed as one, which is enough for a hint shadow and
-## costs one uniform write per frame.
-func _update_offset() -> void:
-	if _material == null:
+	if _disable_frames_left <= 0:
 		return
-	var anchor := Vector2(_room_origin_pixels) + Vector2(_room_pixels) * 0.5
-	if is_instance_valid(_player):
-		anchor = _player.global_position
-	var light := _nearest_light()
-	_light_position = light
-	var offset := Vector2.ZERO
-	if light != Vector2.INF:
-		# Push *away* from the light, but only partly and never far: the backdrop
-		# is not a lit surface, it is a hint that the tiles sit in front of it.
-		var away := anchor - light
-		if away.length_squared() > 0.0001:
-			offset = away.normalized() * minf(away.length() * follow_ratio, max_offset_px)
-	_offset = offset
-	_material.set_shader_parameter("offset_px", offset)
+	_disable_frames_left -= 1
+	if _disable_frames_left == 0 and _viewport != null and is_instance_valid(_viewport):
+		# The silhouette never changes inside a room, so the extra pass is switched
+		# off after it has been drawn once.
+		_viewport.render_target_update_mode = SubViewport.UPDATE_DISABLED
 
 
-func _nearest_light() -> Vector2:
-	var best := Vector2.INF
-	var best_distance := INF
-	for group: StringName in LIGHT_GROUPS:
-		for node: Node in get_tree().get_nodes_in_group(group):
-			if not is_instance_valid(node) or not node is Node2D:
-				continue
-			var light := (node as Node2D).global_position
-			var distance := light.distance_squared_to(
-				_player.global_position if is_instance_valid(_player) else Vector2(_room_origin_pixels)
-			)
-			if distance < best_distance:
-				best_distance = distance
-				best = light
-	if best == Vector2.INF and is_instance_valid(_player):
-		# The hero carries the lantern, so a room without authored lights still
-		# has a light to push the shadow away from.
-		best = _player.global_position + Vector2(0.0, -6.0)
-	return best
+## The one global shadow direction. No light is consulted on purpose: a shadow that
+## re-aims while a lamp swings reads as the backdrop wobbling, and the art direction
+## leans one way anyway.
+func _compute_offset() -> void:
+	var direction := offset_direction
+	if direction.length_squared() <= 0.000001:
+		direction = Vector2(-1.6, 1.0)
+	_offset = direction.normalized() * maxf(offset_px, 0.0)
+	if _material != null:
+		_material.set_shader_parameter("offset_px", _offset)
 
 
 func _find_layer(terrain_root: Node) -> TileMapLayer:
@@ -276,6 +233,7 @@ func _build_quad(terrain_root: Node) -> void:
 func apply_parameters() -> void:
 	if _material == null:
 		return
+	_compute_offset()
 	_material.set_shader_parameter("blur_px", blur_px)
 	_material.set_shader_parameter("strength", strength)
 	_material.set_shader_parameter("shadow_tint", shadow_tint)

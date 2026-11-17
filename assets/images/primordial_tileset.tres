@@ -1,8 +1,0 @@
-[gd_resource type="CanvasTexture" format=3 uid="uid://bvrg2uh5rsta0"]
-
-[ext_resource type="Texture2D" uid="uid://dsoxqwftqjuyo" path="res://assets/images/primordial_tileset.png" id="1_w8do8"]
-[ext_resource type="Texture2D" uid="uid://ben637dt3fcon" path="res://assets/images/primordial_tileset_normal.png" id="2_x1wjh"]
-
-[resource]
-diffuse_texture = ExtResource("1_w8do8")
-normal_texture = ExtResource("2_x1wjh")

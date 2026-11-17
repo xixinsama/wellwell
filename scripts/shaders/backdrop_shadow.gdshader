@@ -19,17 +19,16 @@ render_mode blend_mul, unshaded;
 
 uniform sampler2D mask_tex : filter_linear, repeat_disable;
 uniform vec2 mask_pixels = vec2(320.0, 180.0);
-// Shadow displacement in mask pixels. The backdrop shadow keeps it small (a
-// fraction of the light distance) so the plate reads as a shadow, not a second
-// copy of the tiles.
+// Shadow displacement in mask pixels. Fixed per project: one global direction, so
+// the shadow never changes shape while a lamp swings.
 uniform vec2 offset_px = vec2(0.0);
 // Radius of the soft edge, in mask pixels.
 uniform float blur_px = 2.5;
 // How strongly the shadow darkens the plate, 0..1.
 uniform float strength = 0.55;
-// The multiplier colour of the darkest part. A slightly cool tint keeps the plate
-// from turning grey-muddy against the warm gas veil.
-uniform vec4 shadow_tint : source_color = vec4(0.52, 0.6, 0.78, 1.0);
+// Multiplier colour of the darkest pixel. Black makes a real shadow; a tint reads
+// as coloured glass over the plate.
+uniform vec4 shadow_tint : source_color = vec4(0.0, 0.0, 0.0, 1.0);
 
 // Golden-angle disc: 16 taps in two rings, so the blur is round instead of a
 // cross, which is what keeps an 8 px tile shadow from looking like a plus sign.

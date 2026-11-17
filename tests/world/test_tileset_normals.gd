@@ -274,14 +274,24 @@ func _assert_a_real_room_lights_through_the_tileset(failures: Array[String]) -> 
 		return
 	if clone.tile_set != tileset:
 		failures.append("the cloned layer does not use the normal tileset")
-	if clone.tile_map_data != solid.tile_map_data:
-		failures.append("the cloned layer does not copy the solid layer's tile_map_data")
 	var solid_cells := solid.get_used_cells()
-	if clone.get_used_cells().size() != solid_cells.size():
+	var back := _find_layer(terrain, "BackTiles")
+	var merged := _merged_cells([back, solid])
+	var buffered := {}
+	for entry: Variant in (field.call("get_buffer_layers") as Array):
+		for cell: Vector2i in (entry as TileMapLayer).get_used_cells():
+			buffered[cell] = true
+	if buffered.size() != merged.size():
 		failures.append(
-			"the normal clone has %d cells, the solid layer has %d"
-			% [clone.get_used_cells().size(), solid_cells.size()]
+			"the normal buffer has %d cells, the layers it merges have %d unique cells"
+			% [buffered.size(), merged.size()]
 		)
+	# A wall and a background tile may paint the same cell; the wall is what the
+	# player sees, so its normal is the one the buffer must carry.
+	for cell: Vector2i in solid_cells:
+		if clone.get_cell_atlas_coords(cell) != solid.get_cell_atlas_coords(cell):
+			failures.append("a wall does not win over the background tile at %s" % str(cell))
+			break
 	# Every cell of the room has to resolve in the normal tileset: a coordinate or
 	# an alternative the baker missed would render as the flat clear colour, i.e. a
 	# silent hole in the relief.
@@ -342,6 +352,8 @@ func _assert_every_baked_room_resolves(failures: Array[String]) -> void:
 			root.free()
 			continue
 		checked += 1
+		var back := _find_layer(terrain, "BackTiles")
+		var merged := _merged_cells([back, solid])
 		var field: Node2D = NORMAL_FIELD.new() as Node2D
 		field.set("normal_tileset", tileset)
 		root.add_child(field)
@@ -352,8 +364,11 @@ func _assert_every_baked_room_resolves(failures: Array[String]) -> void:
 		if not bool(field.call("has_normal_map")):
 			broken.append("%s has no normal map" % directory)
 		else:
-			var clone := field.call("get_buffer_layer") as TileMapLayer
-			if clone == null or clone.get_used_cells().size() != solid.get_used_cells().size():
+			var buffered := {}
+			for entry: Variant in (field.call("get_buffer_layers") as Array):
+				for cell: Vector2i in (entry as TileMapLayer).get_used_cells():
+					buffered[cell] = true
+			if buffered.size() != merged.size():
 				broken.append("%s does not clone the same cells" % directory)
 			var missing := field.call("get_missing_normal_tiles") as Array
 			if not missing.is_empty():
@@ -403,6 +418,20 @@ func _find_layer(node: Node, wanted: String) -> TileMapLayer:
 		if found != null:
 			return found
 	return null
+
+
+## Cells a normal buffer is built from: the listed layers merged in draw order, a
+## later layer winning where two paint the same cell (`null` entries are skipped).
+## The background tiles carry normals too, so the buffer is a merge, not a copy.
+func _merged_cells(layers: Array) -> Dictionary:
+	var merged := {}
+	for entry: Variant in layers:
+		var layer := entry as TileMapLayer
+		if layer == null:
+			continue
+		for cell: Vector2i in layer.get_used_cells():
+			merged[cell] = layer.get_cell_atlas_coords(cell)
+	return merged
 
 
 ## Reads the PNG bytes, not the imported texture: the bake has to be judged on the

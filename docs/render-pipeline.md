@@ -46,7 +46,7 @@ WorldRoot (Node2D, 整个世界的容器)
 | # | 步骤 | 谁做的 | 输出到哪 |
 | :--- | :--- | :--- | :--- |
 | 1 | **光照图**：黑底 + 3 个加色 PointLight（提灯核/晕/溢出）+ 每个房间灯 2 层 + 遮挡体阴影，渲进 320×180 子视口 | `LightField` | `LightViewport` 纹理，每帧更新 |
-| 2 | **法线缓冲**：把 `SolidTiles`（或手画 `NormalTiles`）用**法线图集**克隆进子视口，渲一次就 `UPDATE_DISABLED` | `NormalField` | `NormalViewport` 纹理，换房才重渲 |
+| 2 | **法线缓冲**：把 `BackTiles` + `SolidTiles`（或手画 `NormalTiles`）用**法线图集**克隆进子视口（背景在下、墙在上），渲一次就 `UPDATE_DISABLED` | `NormalField` | `NormalViewport` 纹理，换房才重渲 |
 | 3 | **背景投影剪影**：`BackTiles` 克隆进子视口，画成白色剪影，渲一次 | `BackdropShadow` | `ShadowViewport` 纹理 |
 | 4 | 房间内容照常画：背景板（漂移+对比度抖动）、背景投影、瓦片、实心瓦片、细节瓦片、实体、玩家、水、水花 | Godot 2D | 主视口 |
 | 5 | **描边**：瓦片边缘、被光照图门控的 1px rim | `TerrainHighlight` | 主视口 z 1 |
@@ -181,7 +181,7 @@ FogOfWar mask(CPU) ──纹理──→ FogMask（片元生成边缘）──�
 | 效果 | 代码 | 可调参数 |
 | :--- | :--- | :--- |
 | 抖动背景板（只在有渐变处抖） | `scripts/shaders/backdrop_drift.gdshader` | `BackdropField.dither_strength / dither_levels` |
-| 背景瓦片投影 | `scripts/world/backdrop_shadow.gd` + `backdrop_shadow*.gdshader` | `strength / blur_px / follow_ratio / max_offset_px` |
+| 背景瓦片投影（固定朝左下 10 px、纯黑） | `scripts/world/backdrop_shadow.gd` + `backdrop_shadow*.gdshader` | `offset_direction / offset_px / strength / blur_px / shadow_tint` |
 | 法线贴图（图集 + 烘焙工具） | `assets/images/primordial_tileset_normal.png`、`scripts/tools/bake_tileset_normals.gd` | 工具顶部常量；`LightField.relief_*` |
 | 光照浮雕 | `scripts/shaders/light_overlay.gdshader`、`light_glow.gdshader` | `relief_normal_mode / relief_strength / authored_relief_gain` |
 | 迷雾渐隐（暗区进出） | `addons/metroidvania_kit/map/discovery/fog_of_war.gd` | `zone_reveal_seconds / zone_reveal_stagger / zone_restore_*` |
