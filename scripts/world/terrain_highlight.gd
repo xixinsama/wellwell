@@ -129,9 +129,7 @@ func build_mask(layer: TileMapLayer) -> Image:
 		var polygons := data.get_collision_polygons_count(0)
 		if polygons > 0:
 			for index in polygons:
-				_fill_polygon(
-					mask, local, tile_size, data.get_collision_polygon_points(0, index), data
-				)
+				_fill_polygon(mask, local, tile_size, data.get_collision_polygon_points(0, index))
 			continue
 		if solid_needs_collision:
 			# A tile without a collision shape is decoration: leave it out.
@@ -140,28 +138,24 @@ func build_mask(layer: TileMapLayer) -> Image:
 	return mask
 
 
-## Fills one collision polygon into the mask with a scanline, honouring the cell's
-## flips. Points are in tile-local pixels centred on zero.
+## Fills one collision polygon into the mask with a scanline. Points are in
+## tile-local pixels centred on zero.
+##
+## The points are used as they come: an alternative tile stores its collision
+## already in its own orientation (the editor bakes the flip into the shape), so
+## re-applying `flip_h` / `flip_v` / `transpose` here would rotate the mask back to
+## the base tile's shape -that is exactly what made an alternative slope outline
+## like the original tile.
 func _fill_polygon(
-	mask: Image, origin: Vector2i, tile_size: Vector2i, points: PackedVector2Array, data: TileData
+	mask: Image, origin: Vector2i, tile_size: Vector2i, points: PackedVector2Array
 ) -> void:
 	if points.size() < 3:
 		return
-	var flip_h := bool(data.get("flip_h")) if data.get("flip_h") != null else false
-	var flip_v := bool(data.get("flip_v")) if data.get("flip_v") != null else false
-	var transpose := bool(data.get("transpose")) if data.get("transpose") != null else false
 	var half := Vector2(tile_size) * 0.5
 	var transformed := PackedVector2Array()
 	transformed.resize(points.size())
 	for index in points.size():
-		var point := points[index]
-		if transpose:
-			point = Vector2(point.y, point.x)
-		if flip_h:
-			point.x = -point.x
-		if flip_v:
-			point.y = -point.y
-		transformed[index] = point + half
+		transformed[index] = points[index] + half
 	var lowest := INF
 	var highest := -INF
 	for point: Vector2 in transformed:
@@ -179,8 +173,12 @@ func _fill_polygon(
 				crossings.append(a.x + t * (b.x - a.x))
 		crossings.sort()
 		for index in range(0, crossings.size() - 1, 2):
-			var from := clampi(ceili(crossings[index]), 0, tile_size.x)
-			var to := clampi(floori(crossings[index + 1]), 0, tile_size.x)
+			# A pixel is covered when the shape reaches its centre; the half pixel
+			# bias also keeps the boundary pixel of a diagonal, which is how the tile
+			# art itself is drawn (a slope tile is one pixel wider per row than a
+			# strict centre test gives).
+			var from := clampi(ceili(crossings[index] - 0.5), 0, tile_size.x)
+			var to := clampi(floori(crossings[index + 1] + 0.5), 0, tile_size.x)
 			for column in range(from, to):
 				mask.set_pixel(origin.x + column, origin.y + row, white)
 

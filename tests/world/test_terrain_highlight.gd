@@ -17,8 +17,68 @@ func run() -> Array[String]:
 	_assert_mask_matches_tiles(failures)
 	_assert_slope_is_a_diagonal(failures)
 	_assert_tiles_without_collision_are_skipped(failures)
+	_assert_alternative_uses_its_own_shape(failures)
 	_assert_empty_room_is_skipped(failures)
 	return failures
+
+
+## An alternative tile stores its collision in its own orientation, so the mask has
+## to use those points as they come. Re-applying the alternative's flip flags put
+## the base tile's shape back: an alternative slope outlined like the original.
+func _assert_alternative_uses_its_own_shape(failures: Array[String]) -> void:
+	var image := Image.create(TILE * 2, TILE, false, Image.FORMAT_RGBA8)
+	image.fill(Color(1.0, 1.0, 1.0, 1.0))
+	var source := TileSetAtlasSource.new()
+	source.texture = ImageTexture.create_from_image(image)
+	source.texture_region_size = Vector2i(TILE, TILE)
+	var coords := Vector2i.ZERO
+	source.create_tile(coords)
+	var tile_set := TileSet.new()
+	tile_set.tile_size = Vector2i(TILE, TILE)
+	tile_set.add_physics_layer()
+	tile_set.add_source(source, 0)
+	# Base tile: the left half. Alternative: the right half, exactly what the editor
+	# stores when a tile is flipped, plus the flip flag it records with it.
+	var base := source.get_tile_data(coords, 0)
+	base.add_collision_polygon(0)
+	base.set_collision_polygon_points(0, 0, PackedVector2Array([
+		Vector2(-4.0, -4.0), Vector2(0.0, -4.0), Vector2(0.0, 4.0), Vector2(-4.0, 4.0)
+	]))
+	var alternative_id := source.create_alternative_tile(coords, -1)
+	var alternative := source.get_tile_data(coords, alternative_id)
+	if alternative == null:
+		failures.append("could not create an alternative tile")
+		return
+	if alternative.get_collision_polygons_count(0) == 0:
+		alternative.add_collision_polygon(0)
+	alternative.set_collision_polygon_points(0, 0, PackedVector2Array([
+		Vector2(0.0, -4.0), Vector2(4.0, -4.0), Vector2(4.0, 4.0), Vector2(0.0, 4.0)
+	]))
+	alternative.set("flip_h", true)
+	var rooms := Node2D.new()
+	rooms.name = "TerrainRoot"
+	add_child(rooms)
+	var room := Node2D.new()
+	room.name = "synthetic"
+	rooms.add_child(room)
+	var terrain := Node2D.new()
+	terrain.name = "Terrain"
+	room.add_child(terrain)
+	var layer := TileMapLayer.new()
+	layer.name = "SolidTiles"
+	layer.tile_set = tile_set
+	terrain.add_child(layer)
+	layer.set_cell(Vector2i.ZERO, 0, coords, alternative_id)
+	var highlight := HIGHLIGHT.new() as Node2D
+	highlight.name = "TerrainHighlight"
+	add_child(highlight)
+	var mask: Image = highlight.call("build_mask", layer)
+	# The alternative is the right half: its right side is solid, its left is open.
+	if mask.get_pixel(6, 4).r <= 0.5:
+		failures.append("the alternative tile's own shape was not masked")
+	if mask.get_pixel(1, 4).r > 0.5:
+		failures.append("the mask used the base tile's shape for an alternative")
+	_cleanup({"rooms": rooms, "highlight": highlight})
 
 
 func _assert_mask_matches_tiles(failures: Array[String]) -> void:
@@ -90,23 +150,24 @@ func _assert_slope_is_a_diagonal(failures: Array[String]) -> void:
 		Vector2(-4.0, -4.0), Vector2(4.0, 4.0), Vector2(-4.0, 4.0)
 	]), true)
 	var mask: Image = rig["mask"]
-	# The triangle keeps the bottom-left half, so the filled area is 1 + 2 + ... + 7
-	# pixels: a full cell would be 64 and an empty one 0.
+	# The triangle keeps the bottom-left half. The art reaches one pixel further than
+	# a strict centre test per row (the boundary pixel is drawn), so the covered area
+	# is 1 + 2 + ... + 8 pixels: a full cell would be 64 and an empty one 0.
 	var opaque := 0
 	for y in TILE:
 		for x in TILE:
 			if mask.get_pixel(x, y).r > 0.5:
 				opaque += 1
-	if opaque != 28:
-		failures.append("the slope tile covers %d pixels instead of 28" % opaque)
+	if opaque != 36:
+		failures.append("the slope tile covers %d pixels instead of 36" % opaque)
+	if mask.get_pixel(0, 0).r <= 0.5:
+		failures.append("the slope tile is open at its filled corner")
 	if mask.get_pixel(0, 7).r <= 0.5:
 		failures.append("the slope tile is open at the bottom-left corner")
-	if mask.get_pixel(0, 6).r <= 0.5:
-		failures.append("the slope tile is open along its tall edge")
+	if mask.get_pixel(7, 7).r <= 0.5:
+		failures.append("the slope tile is open at the bottom-right corner")
 	if mask.get_pixel(7, 0).r > 0.5:
 		failures.append("the slope tile is solid at its empty corner")
-	if mask.get_pixel(6, 6).r > 0.5:
-		failures.append("the slope tile is solid outside the diagonal")
 	_cleanup(rig)
 
 
