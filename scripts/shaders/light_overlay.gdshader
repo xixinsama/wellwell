@@ -50,6 +50,22 @@ uniform float normal_mode = 1.0;
 uniform float relief_strength = 0.35;
 uniform float relief_radius_px = 2.0;
 uniform float relief_softness = 0.0;
+// Radius of the normal high-pass, in pixels. A baked normal atlas describes a
+// *tilted* surface (a bevel around every tile), not only its edges. Shading that
+// tilt directly makes a flat wall look like a dome, and because the light direction
+// inside a lamp's circle is radial, the dome reads as a glass ball hanging in the
+// light. Subtracting the local average normal leaves only the variation (edges,
+// bevels, chips), so a wall stays flat.
+uniform float relief_average_px = 4.0;
+// Opt-in lens: one authored light can bend the light like a convex glass ball.
+// Kept as a feature because that accidental look was worth having on one lamp.
+uniform vec2 lens_center_px = vec2(-99999.0, -99999.0);
+uniform float lens_radius_px = 0.0;
+uniform float lens_strength = 0.0;
+// Reference direction the ball is lit from, in screen pixels (up and to the right,
+// matching the art's light). The ball's own normals are dotted with this, which is
+// what makes a bright crescent and a dark crescent instead of a flat bright disc.
+uniform vec2 lens_light_dir = vec2(1.6, -1.0);
 // The world viewport as it is just before the shade is drawn (terrain, backdrop,
 // outline). Only read in derived normal mode. canvas_item shaders have no
 // SCREEN_PIXEL_SIZE, so the viewport size is handed over by LightField.
@@ -139,6 +155,22 @@ vec3 derived_normal(vec2 screen_uv) {
 	return normalize(vec3(-detail * DERIVED_NORMAL_SCALE, 1.0));
 }
 
+// Local average of the authored normal. Sampled with four cardinal taps at
+// `relief_average_px`, which is wide enough to include a whole tile bevel, so a
+// tiled wall's own tilt cancels out and only deviations survive.
+vec3 averaged_authored_normal(vec2 px) {
+	vec2 step_px = vec2(max(relief_average_px, 1.0));
+	vec3 total = texture(normal_tex, (px + 0.5) / normal_pixels).rgb * 2.0 - 1.0;
+	vec3 sum = total;
+	for (int index = 0; index < 4; index++) {
+		float angle = float(index) * 1.5707963;
+		vec2 offset = vec2(cos(angle), sin(angle)) * step_px;
+		vec2 uv = clamp(px + offset + 0.5, vec2(0.0), normal_pixels - vec2(1.0)) / normal_pixels;
+		sum += texture(normal_tex, uv).rgb * 2.0 - 1.0;
+	}
+	return sum * 0.2;
+}
+
 // Relief factor in -relief_strength .. +relief_strength for this pixel. `own` is
 // the (fuzzed) light the map delivers here; it masks the effect, so a pixel with
 // no light cannot gain any and the fog edge keeps its darkness.
@@ -146,12 +178,15 @@ float relief_factor(vec2 px, vec2 screen_uv, float own) {
 	if (normal_mode < 0.5 || relief_strength <= 0.0) {
 		return 0.0;
 	}
-	vec3 normal = vec3(0.0, 0.0, 1.0);
+	vec2 normal_xy = vec2(0.0);
 	if (normal_mode > 1.5) {
 		vec3 authored = texture(normal_tex, (px + 0.5) / normal_pixels).rgb * 2.0 - 1.0;
-		normal = normalize(authored);
+		vec3 coarse = averaged_authored_normal(px);
+		// High-pass, then rescale: the deviation is a fraction of the full tilt,
+		// so without the scale the relief would collapse to nothing.
+		normal_xy = (authored - coarse).xy * DERIVED_NORMAL_SCALE;
 	} else {
-		normal = derived_normal(screen_uv);
+		normal_xy = derived_normal(screen_uv).xy;
 	}
 	float step_px = max(relief_radius_px, 1.0);
 	vec2 gradient = vec2(
@@ -168,13 +203,39 @@ float relief_factor(vec2 px, vec2 screen_uv, float own) {
 	// the other way, and a surface whose normal faces the source catches more of
 	// it, hence the two negations.
 	vec2 light_dir = -gradient / magnitude;
-	float ndl = dot(normal.xy, -light_dir);
+	float ndl = dot(normal_xy, -light_dir);
 	// Softness narrows the effect towards the steep faces instead of letting
 	// every gentle slope shift the whole room's brightness.
 	ndl = sign(ndl) * pow(abs(ndl), 1.0 + clamp(relief_softness, 0.0, 1.0) * 2.0);
 	float mask = smoothstep(0.02, 0.35, own);
 	return clamp(ndl * relief_strength * mask, -1.0, 1.0);
 }
+
+// The opt-in glass ball: inside `lens_radius_px` of the chosen lamp, treat the
+// surface as a sphere and shade it with the same light direction the relief uses,
+// so one lamp bends the light into a convex, refracting bubble instead of lighting
+// a flat wall. Only that light's own circle is affected.
+float lens_factor(vec2 px, float own) {
+	if (lens_strength <= 0.0 || lens_radius_px <= 0.0) {
+		return 0.0;
+	}
+	vec2 delta = (px - lens_center_px) / lens_radius_px;
+	float radius_squared = dot(delta, delta);
+	if (radius_squared >= 1.0) {
+		return 0.0;
+	}
+	// Sphere normal: xy bends outward towards the rim, z falls to 0 there.
+	vec3 sphere = vec3(delta, sqrt(max(0.0, 1.0 - radius_squared)));
+	// Lit from a fixed reference direction, not from the light map's gradient: the
+	// gradient inside a lamp points straight at its centre, so dotting with it would
+	// only brighten the whole disc equally (a flat white blob, not a ball).
+	vec2 reference = normalize(lens_light_dir + vec2(0.0001));
+	float ndl = dot(sphere.xy, reference);
+	// A hard, darker glass edge: the rim of a sphere turns away from the light.
+	float rim = smoothstep(0.78, 1.0, radius_squared);
+	return (ndl * 0.8 - rim * 0.45) * lens_strength * smoothstep(0.02, 0.35, own);
+}
+
 
 void fragment() {
 	vec2 px = floor(UV * light_pixels);
@@ -195,6 +256,10 @@ void fragment() {
 		lit = max(lit, bleed * bounce);
 	}
 	lit = clamp(lit + ambient, 0.0, 1.0);
+	// The lens has to bite into the *final* lit value: inside a lamp the light plus
+	// the ambient floor already clamps to 1, so any modulation before the add would
+	// be swallowed and the ball would be invisible in its own light.
+	lit = clamp(lit * (1.0 + lens_factor(px, own)), 0.0, 1.0);
 
 	float dark = 1.0 - lit;
 	float band = 1.0 - abs(dark * 2.0 - 1.0);

@@ -35,6 +35,16 @@ const EDITOR_PREVIEW := Color(1.0, 0.86, 0.55, 0.85)
 ## Whether walls block this light. Fireflies and other "glow through walls"
 ## lights turn this off.
 @export var casts_shadows := true
+## Bend the light like a convex glass ball inside this lamp's circle.
+##
+## 0 keeps the lamp ordinary. A positive radius makes the shade pass treat the
+## surface as a sphere around this light (using the light map's own gradient as the
+## light direction), which reads as a refracting bubble sitting in the lamp rather
+## than a flat pool of light. Only one lamp can have it at a time.
+@export_range(0.0, 160.0, 1.0) var lens_radius := 0.0
+## How hard the bubble bends, as a share of the light it is applied to. 0 disables
+## it even when `lens_radius` is set.
+@export_range(0.0, 2.0, 0.01) var lens_strength := 0.0
 
 
 func _ready() -> void:

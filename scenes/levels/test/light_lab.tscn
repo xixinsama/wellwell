@@ -82,6 +82,8 @@ light_id = "pool"
 radius = 72.0
 energy = 0.95
 color = Color(0.72, 0.88, 1, 1)
+lens_radius = 58.0
+lens_strength = 1.0
 flicker = 0.08
 
 [node name="UnoccludedGlow" type="Node2D" parent="RoomContent/Entities" unique_id=1962231160]

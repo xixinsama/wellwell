@@ -116,6 +116,10 @@ const AUTHORED_SPILL := 0.25
 ## Softens the terminator: 0 keeps a linear dot product, 1 only moves the steep
 ## faces, which keeps the relief from reading as a uniform brightness change.
 @export_range(0.0, 1.0, 0.01) var relief_softness := 0.3
+## Radius of the normal high-pass, in pixels: subtract the local average normal so a
+## flat but *tilted* wall (every baked tile bevel) does not shade like a dome. Bigger
+## values keep the bevels of large blocks, smaller ones keep more per-tile detail.
+@export_range(1.0, 16.0, 0.5) var relief_average_px := 4.0
 ## Extra gain applied to `relief_strength` in authored mode.
 ##
 ## A baked normal atlas describes the art's real bevels (about 20-45° on this
@@ -124,7 +128,7 @@ const AUTHORED_SPILL := 0.25
 ## measured, it moved less than one 8-bit level. This multiplier puts the two
 ## modes in the same visual range, so switching between them is a change of shape,
 ## not of intensity.
-@export_range(1.0, 6.0, 0.05) var authored_relief_gain := 2.6
+@export_range(1.0, 6.0, 0.05) var authored_relief_gain := 1.4
 
 var _room_pixels := Vector2i.ZERO
 var _room_origin_pixels := Vector2i.ZERO
@@ -432,13 +436,61 @@ func _collect_authored_lights() -> void:
 				"lights": lights,
 				"base_energy": energy,
 				"radius": radius,
+				"lens_radius": float(light_node.get("lens_radius")) if "lens_radius" in light_node else 0.0,
+				"lens_strength": float(light_node.get("lens_strength")) if "lens_strength" in light_node else 0.0,
 			})
+
+
+## The one authored lamp that carries the glass-ball lens, if any. Only the first
+## match is used: the shade pass has a single lens slot on purpose, so the effect
+## stays a deliberate accent instead of a property of every light.
+func _lens_light() -> Dictionary:
+	for entry: Dictionary in _authored:
+		if float(entry.get("lens_radius", 0.0)) <= 0.0 or float(entry.get("lens_strength", 0.0)) <= 0.0:
+			continue
+		var node := entry.get("node") as Node2D
+		if node == null or not is_instance_valid(node):
+			continue
+		return entry
+	return {}
+
+
+## Pushes the lens slot every frame: the lens lamp is only known after the authored
+## lights are collected, which happens after the overlays are built, so a one-shot
+## push at bind time would leave the slot empty.
+func _apply_lens_uniforms() -> void:
+	if _shade_material == null:
+		return
+	_shade_material.set_shader_parameter("relief_average_px", relief_average_px)
+	var lens := _lens_light()
+	if lens.is_empty():
+		_shade_material.set_shader_parameter("lens_strength", 0.0)
+		_shade_material.set_shader_parameter("lens_radius_px", 0.0)
+		return
+	var node := lens["node"] as Node2D
+	if not is_instance_valid(node):
+		_shade_material.set_shader_parameter("lens_strength", 0.0)
+		return
+	_shade_material.set_shader_parameter(
+		"lens_center_px", node.global_position - Vector2(_room_origin_pixels)
+	)
+	_shade_material.set_shader_parameter("lens_radius_px", float(lens["lens_radius"]))
+	_shade_material.set_shader_parameter("lens_strength", float(lens["lens_strength"]))
 
 
 func _update_authored_lights() -> void:
 	if _authored.is_empty():
 		return
 	var now := float(Time.get_ticks_msec()) / 1000.0 - _start_time
+	var lens := _lens_light()
+	if not lens.is_empty() and _shade_material != null:
+		# A swinging lens lamp has to drag its bubble with it.
+		var lens_node := lens["node"] as Node2D
+		if is_instance_valid(lens_node):
+			_shade_material.set_shader_parameter(
+				"lens_center_px", lens_node.global_position - Vector2(_room_origin_pixels)
+			)
+	_apply_lens_uniforms()
 	for entry: Dictionary in _authored:
 		var node: Node = entry["node"]
 		var lights: Array = entry["lights"]
@@ -538,7 +590,20 @@ func _paint_overlay_parameters() -> void:
 		_shade_material.set_shader_parameter("relief_strength", strength)
 		_shade_material.set_shader_parameter("relief_radius_px", float(relief_radius_px))
 		_shade_material.set_shader_parameter("relief_softness", relief_softness)
+		_shade_material.set_shader_parameter("relief_average_px", relief_average_px)
 		_shade_material.set_shader_parameter("screen_pixels", screen_pixels)
+		var lens := _lens_light()
+		if lens.is_empty():
+			_shade_material.set_shader_parameter("lens_strength", 0.0)
+			_shade_material.set_shader_parameter("lens_radius_px", 0.0)
+		else:
+			var node := lens["node"] as Node2D
+			_shade_material.set_shader_parameter(
+				"lens_center_px", node.global_position - Vector2(_room_origin_pixels)
+			)
+			_shade_material.set_shader_parameter("lens_radius_px", float(lens["lens_radius"]))
+			_shade_material.set_shader_parameter("lens_strength", float(lens["lens_strength"]))
+	_apply_lens_uniforms()
 	if _glow_material != null:
 		_glow_material.set_shader_parameter("light_tex", _texture)
 		_glow_material.set_shader_parameter("light_pixels", Vector2(_room_pixels))

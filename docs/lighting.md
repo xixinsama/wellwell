@@ -313,3 +313,33 @@ frozen, derived normals change 14.3% of the world pixels while keeping the mean
 luminance within 0.05%, and authored normals change 2.5% of the pixels (only the
 solid tiles carry normals) with the mean within 0.03%; the dark half of the map
 does not move at all.
+
+## 光晕里的"玻璃球"：成因、修法、以及保留的那一个
+
+前几轮给光照加法线浮雕时，lab 里出现了一个意外效果：光圈内部看起来像有一个立体的、
+会折射的玻璃球，球的一半亮一半暗。
+
+**成因**：浮雕用的光方向是"光照图的梯度"。在一个灯的光圈内部，梯度处处指向灯心，
+也就是**径向**的。而烘焙法线图给每个瓦片都描了一圈倒角（silhouette bevel），
+这些倒角的法线又都朝瓦片外侧——两者一乘，整个光圈里就出现了一圈圈沿径向排布的明暗，
+读起来就是穹顶/玻璃球。当时为了让手绘法线"看得出来"把 `authored_relief_gain` 抬到了
+2.6，等于把这个图案又放大了近三倍。
+
+**修法**（现在就绪）：
+
+1. light_overlay.gdshader 在 authored 模式下先做**法线高通**：减去
+   `relief_average_px`（默认 4 px）邻域内的平均法线，只保留"这块面相对周围凸起/凹陷"的部分。
+   一面平墙（哪怕它整块是斜的）不再被当成穹顶来着色；瓦片边缘、倒角、缺口仍然有立体感。
+2. `authored_relief_gain` 从 2.6 降到 **1.4**，浮雕回归正常强度。
+
+**保留的那一个**：`RoomLight` 新增 `lens_radius` / `lens_strength`，
+`LightField` 会把**第一个**带这两个参数的灯送进 shade pass 的单一 lens 槽：
+
+   球面法线 = vec3((p - center)/radius, sqrt(1 - r²))
+   明暗     = dot(球面法线.xy, 固定光向 (1.6, -1)) * 0.8 - 边缘暗化
+   最终     = lit * (1 + 明暗 * lens_strength)
+
+注意它作用在 `lit` **加上环境光之后**：光圈中心本来就饱和到 1，早一步调制会被 clampa 吃掉，
+球就看不见了。lab 里已经把 `PoolLamp` 设成 `lens_radius = 58`、`lens_strength = 1.0`，
+实测下半球 **−41 / 255**、正下方 **−29 / 255**，而上半球、灯心、边缘都是 0 变化 ——
+就是一个只压暗不曝光的玻璃球。想给别的灯也加，改那个灯的这两个数；同一时刻只有一盏生效。
