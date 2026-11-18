@@ -412,10 +412,13 @@ way to A/B a kernel: the field itself has to be identical between the captures.
 
 ## Performance and limits
 
-- Gas: ~0.06 ms of CPU per step for 20 GPU passes on an 80x45 grid (the frame time
-  of the light lab with every system on is unchanged at 2.2 ms); the 120 fps
-  frame budget (8.3 ms) makes it drop ~1% of frames, 60 fps is flat. Water: a
-  sleeping pool costs nothing; the surface upload is capped at 60 Hz.
+- Gas: ~0.06 ms of CPU per step for 20 GPU passes on an 80x45 grid. The whole gas
+  layer, including the volumetric pass and the blue-noise sample, costs less than
+  the run-to-run noise of a frame: hiding `Atmosphere` on the light lab measures
+  1.162 against 1.165 ms/frame uncapped, and on the gas lab (dense plumes) 1.100
+  against 1.096. The 120 fps frame budget (8.3 ms) makes it drop ~1% of frames,
+  60 fps is flat. Water: a sleeping pool costs nothing; the surface upload is
+  capped at 60 Hz.
 - Grid water: a 320x180 room with the whole room in motion costs about 0.9 ms per
   60 Hz step at 8 px cells and 1.6 ms at 4 px cells (four times the cells, two
   inner steps, two leveling sweeps). Measured end to end in `water_grid`: p95
