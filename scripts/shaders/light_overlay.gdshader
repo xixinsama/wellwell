@@ -231,9 +231,14 @@ float lens_factor(vec2 px, float own) {
 	// only brighten the whole disc equally (a flat white blob, not a ball).
 	vec2 reference = normalize(lens_light_dir + vec2(0.0001));
 	float ndl = dot(sphere.xy, reference);
-	// A hard, darker glass edge: the rim of a sphere turns away from the light.
+	// Fade the whole term out towards the rim. The old version had a hard cut at
+	// radius_squared == 1, which drew a visible vertical edge where the circle's
+	// chord is steepest (measured: a column discontinuity of 27/255 at room x=206,
+	// the leftmost point of a 58 px ball, which reads as a seam in the mist).
+	float fade = 1.0 - smoothstep(0.72, 1.0, radius_squared);
+	// A darker glass edge: the rim of a sphere turns away from the light.
 	float rim = smoothstep(0.78, 1.0, radius_squared);
-	return (ndl * 0.8 - rim * 0.45) * lens_strength * smoothstep(0.02, 0.35, own);
+	return (ndl * 0.8 - rim * 0.45) * lens_strength * fade * smoothstep(0.02, 0.35, own);
 }
 
 
