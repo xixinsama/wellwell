@@ -6,6 +6,14 @@ shader_type canvas_item;
 // thins the gas where the body passes.
 //
 //   R = heavy gas (sinks), G = neutral (drifts), B = light gas (rises)
+//
+// The alpha channel stays 1.0 on purpose. These passes render into a transparent
+// SubViewport, so the canvas blend PMULTIPLIES the colour by the written alpha: a
+// buffer written with alpha = 0.5 comes back with half the density, and because the
+// buffers ping-pong that halves the field *every step* (measured: the field's mean
+// density collapsed from 0.022 to 0.0004 over 172 steps). Anything that needs a
+// fourth channel has to live where alpha is 1.0, see the velocity field's blue
+// channel (gas_velocity.gdshader).
 
 uniform sampler2D density_texture : filter_linear, repeat_disable;
 uniform sampler2D velocity_texture : filter_linear, repeat_disable;

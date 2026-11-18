@@ -6,6 +6,11 @@ All notable Platformer Kit changes are recorded here. The project follows Semant
 
 ### Added
 
+- Gas solver: vorticity confinement (`Atmosphere.gas_vorticity`), so the plumes keep their curls instead of being smoothed away by the trace-back. Measured on the light lab: curl energy falls 40% over 0.8 s without it and rises 16% at 10.
+- Gas detail tracer: the mist's wisp pattern is a passive scalar advected by the flow (velocity field's blue channel) instead of screen-space noise, so the texture belongs to the gas.
+- Gas volume shading: the density is marched towards the key light for self-shadowing, gated by the layer's own opacity so a faint veil does not lose brightness.
+- Blue-noise stylised threshold for the mist (`resources/textures/blue_noise_64.png` + `scripts/tools/bake_blue_noise.gd`): the fade is grain instead of an ordered lattice. Measured on one gas state: lattice energy 15.7% → 0.12%, mean opacity −1.1%.
+- `scripts/tools/gas_diagnostic.gd`: captures the density field, the velocity/tracer field and the mist's own opacity for one gas state, with `--stipple` and `--uniform` to A/B settings against identical gas.
 - Reusable contact/interaction checkpoints with nested respawn points and immediate persistence requests.
 - Persistent generic ability pickups and a data-driven Dash definition/runtime.
 - Reference-player ability loadout synchronized with Metroidvania progression and save restoration.
@@ -17,8 +22,14 @@ All notable Platformer Kit changes are recorded here. The project follows Semant
 
 ### Changed
 
+- The gas simulation domain no longer depends on the room: the cell is always 4 world pixels and the grid ceiling is 512 cells, so a larger room gets more cells instead of a coarser field.
 - Replaced two-point platform motion with paused multi-waypoint `PING_PONG` and `CYCLE` routes.
 - Routed entity save requests through room and world runtimes instead of direct singleton access.
+
+### Fixed
+
+- The fading mist read as a regular grid of dots that resolves into vertical dashed bars on the 4x screen: the ordered dither was a lattice, not a mistake in its balance. The shipped kernel is a blue-noise tile now.
+- The gas detail tracer was briefly stored in the density field's alpha channel, which a transparent viewport premultiplies, so the gas lost half its density every step (measured: field mean 0.022 to 0.0004 over 172 steps).
 
 ### Removed
 

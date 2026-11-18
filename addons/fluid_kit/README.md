@@ -216,18 +216,72 @@ Per fixed step (`sim_hz`, 10..60):
    one-shot blast and the trail emitter;
 2. viscosity: velocity diffusion towards the four neighbours (`gas_viscosity`,
    1/s, explicit and clamped to stay stable);
-3. divergence of the intermediate velocity (backward difference);
-4. pressure Poisson solve: `laplacian(p) = divergence`, `pressure_iterations`
+3. **vorticity confinement** (`gas_vorticity`): the trace-back averages the field
+   every step, which is what makes a plume smear into a soft blob. The confinement
+   force `ε·(N × ω)` pushes each vortex inwards along the gradient of `|curl|`, so
+   the small eddies survive. Measured on the light lab over 0.8 s: curl energy
+   `0.348 → 0.210` (−40%) with it off, `0.347 → 0.404` (+16%) at 10;
+4. divergence of the intermediate velocity (backward difference);
+5. pressure Poisson solve: `laplacian(p) = divergence`, `pressure_iterations`
    Jacobi passes, warm started from the previous step;
-5. projection: `u = u* - grad(p)` (forward difference, the exact adjoint of the
+6. projection: `u = u* - grad(p)` (forward difference, the exact adjoint of the
    divergence, so the discrete divergence is zero);
-6. the three densities are advected by the projected velocity, then diffused,
+7. the three densities are advected by the projected velocity, then diffused,
    refilled towards the room ambient, injected by vents/emitters, faded by
    `gas_decay` and thinned around the player.
 
 The gas is a passive scalar set on a divergence-free field: it cannot pile up,
-only swirl and fade. `GAS_FIELD_CELL` is 4 px and the grid is capped at 80x45 per
-room; the whole pipeline is 20 GPU passes (16 pressure + 4) on HDR viewports.
+only swirl and fade.
+
+### The detail tracer
+
+The wisp pattern used to be a screen-space noise multiplied over the mist, which is
+why the gas read as a texture sliding across the room. It is now the gas's own
+detail: the **blue channel of the velocity field** carries a passive scalar that is
+traced back with the velocity and stirred where the dye is thick
+(`detail_refresh`, `detail_hz`). The mist samples it (`detail_amount`,
+`detail_contrast`), so the strokes stretch, curl and dissolve with the gas.
+
+It is deliberately *not* stored in the density field's alpha channel: those passes
+render into a transparent `SubViewport`, and the canvas blend premultiplies the
+colour by the written alpha, so a buffer written with `alpha = 0.5` comes back with
+half the density — and because they ping-pong, that halves the gas every step.
+Measured: the field's mean density fell from `0.022` to `0.0004` over 172 steps when
+the tracer lived in the alpha channel. The velocity passes write `alpha = 1.0`, so
+their blue channel is free.
+
+### Volumetric shading and the stylised threshold
+
+The mist is drawn by one quad with two extra pieces of work per pixel:
+
+* **self-shadowing** (`volume_shadow`, `volume_weight`): the density is marched
+  towards the key light (the hero lantern) in six taps, and
+  `transmittance = exp(-Σρ·k)` darkens the air that has more gas between it and the
+  lamp. The term is gated by the layer's own opacity, so a nearly transparent veil
+  (which is optically thin) does not lose brightness — measured on the light lab,
+  faint gas changed by −4.6% while a dense puff got 43% darker and gained a depth
+  gradient;
+* **the stylised threshold** (`stipple_mode`, `stipple_steps`): the opacity is
+  quantised into steps, and which step a pixel lands on is decided by a per-pixel
+  threshold. The shipped kernel is a 64×64 tiling blue-noise tile
+  (`resources/textures/blue_noise_64.png`, baked by
+  `scripts/tools/bake_blue_noise.gd`), because an ordered Bayer tile is a *lattice*:
+  at the opacity a fading mist passes through, the tile becomes a 2×2 checkerboard
+  and every column of the 4× screen turns into a dashed line. Measured on one gas
+  state: lattice energy 15.7% → 0.12%, exactly-one-pixel vertical runs 79.5% → 55.7%,
+  mean opacity −1.1%. `stipple_mode` 0 keeps the ordered tile and 2 uses white noise,
+  for A/B captures; `--stipple=0,1,2` on the diagnostic tool does exactly that.
+
+### The simulation domain
+
+The cell is always `FIELD_CELL_SIZE` (4 world px) and the grid ceiling is 512 cells,
+so a bigger room gets *more cells*, not coarser ones. The field's origin is the room
+origin, which is always a multiple of the world chunk (320×180) and therefore of the
+cell, so the field never changes scale or phase because the camera moved: the gas
+belongs to the world, not to the view. That is deliberate — a view-anchored field
+would make the mist swim when the camera scrolls and would throw gas away at the
+edge of the screen. The whole pipeline is 20 GPU passes (16 pressure + 4) on HDR
+viewports.
 
 ## Gas backends (`Atmosphere.backend`)
 
@@ -251,6 +305,11 @@ re-enabling resumes instead of rebuilding.
 | `sim_hz` | 30 | Steps per second; the master speed knob. |
 | `pressure_iterations` | 16 | Jacobi iterations of the pressure solve. |
 | `gas_viscosity` | 0.0 | Kinematic viscosity (1/s): thicker gas, calmer plumes. |
+| `gas_vorticity` | 10.0 | Vorticity confinement strength: scales the small eddies the trace-back smooths away. 0 = plain dissipative solver. |
+| `detail_amount` | 1.0 | How much the advected detail tracer modulates the mist. 0 = smooth field. |
+| `detail_refresh` / `detail_hz` | 4.0 / 6.0 | How fast fresh detail is stirred in, and how often its source noise is re-drawn. |
+| `stipple_mode` / `stipple_steps` | 1 / 32 | Stylised threshold kernel (0 ordered, 1 blue noise, 2 white noise) and how many opacity steps. |
+| `volume_shadow` / `volume_weight` | 0.9 / 0.55 | Depth of the raymarched self-shadow, and how much of it is applied. |
 | `gas_wind` | (7, -1.5) | Constant drift in px/s, added on top of the solved field. |
 | `gas_buoyancy` | (240, 0, 300) | Heavy/light buoyancy acceleration (px/s²). |
 | `gas_dissipation` | 0.4 | Velocity damping per second. |
@@ -261,7 +320,7 @@ re-enabling resumes instead of rebuilding.
 | `push_radius` / `push_strength` | 34 / 1.4 | Player disturbance radius (px) and strength. |
 | `gas_alpha` | (0.5, 0.42, 0.4) | Per-channel opacity. |
 | `base_alpha` / `light_alpha` | 0.6 / 0.9 | Opacity without/with light. |
-| `noise_amount` | 0.45 | Wispy noise strength. |
+| `noise_amount` | 0.45 | Wispy detail strength (it modulates the advected tracer; the CPU fallback uses screen-space noise instead). |
 | `heavy_color` / `neutral_color` / `light_color` | rust / cyan / yellow | Channel colours. |
 | `player_light_radius` / `energy` | 74 / 1.0 | Player lantern. |
 
@@ -326,14 +385,35 @@ godot --headless --path . -s res://tests/run_test_script.gd -- res://tests/world
 godot --headless --path . -s res://tests/run_test_script.gd -- res://tests/world/test_atmosphere_fog.gd
 godot --headless --path . -s res://tests/run_test_script.gd -- res://tests/world/test_atmosphere_settings.gd
 godot --headless --path . -s res://tests/run_test_script.gd -- res://tests/world/test_water_room_contract.gd
+godot --headless --path . -s res://tests/run_test_script.gd -- res://tests/world/test_gas_solver.gd
 ```
 
-All five also run in `tests/runtime_suite.gd`. Headless has no `RenderingDevice`,
-so the gas falls back to the CPU `FogGrid` and the same tests cover that path.
+All of them also run in `tests/runtime_suite.gd`. Headless has no `RenderingDevice`,
+so the gas falls back to the CPU `FogGrid` and the same tests cover that path — which
+is also why the GPU solver's own rules are checked structurally (shader data layout,
+uniform plumbing, resolution policy) rather than by running the shaders.
+
+### Measuring the gas
+
+`scripts/tools/gas_diagnostic.gd` captures the inputs and the output of the mist for
+the same gas state, which is how every number above was obtained:
+
+```powershell
+godot --path . --resolution 1280x720 -s res://scripts/tools/gas_diagnostic.gd -- \
+  --scene res://scenes/levels/test/gas_lab_runner.tscn --out C:/tmp/gas \
+  --settle 4 --frames 3 --interval 0.4 --stipple=0,1,2 --uniform=vorticity=10
+```
+
+It writes the raw 80×45 density field, the projected velocity (RG) with the detail
+tracer (B), the mist's opacity as its own transparent capture, the window frame with
+and without the CRT pass, and `info.txt` with the exported tuning. `--stipple` and
+`--uniform` repeat the same gas state under several settings, which is the only fair
+way to A/B a kernel: the field itself has to be identical between the captures.
 
 ## Performance and limits
 
-- Gas: ~0.06 ms of CPU per step for 20 GPU passes on an 80x45 grid; the 120 fps
+- Gas: ~0.06 ms of CPU per step for 20 GPU passes on an 80x45 grid (the frame time
+  of the light lab with every system on is unchanged at 2.2 ms); the 120 fps
   frame budget (8.3 ms) makes it drop ~1% of frames, 60 fps is flat. Water: a
   sleeping pool costs nothing; the surface upload is capped at 60 Hz.
 - Grid water: a 320x180 room with the whole room in motion costs about 0.9 ms per

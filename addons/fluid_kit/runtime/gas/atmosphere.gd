@@ -39,6 +39,8 @@ const ATMOSPHERE_GROUP := &"atmosphere"
 const MAX_LIGHTS := 4
 const MAX_STATIC_LIGHTS := 3
 const MAX_VENTS := 4
+## 64x64 tiling blue-noise threshold, baked by scripts/tools/bake_blue_noise.gd.
+const STIPPLE_TEXTURE := "res://resources/textures/blue_noise_64.png"
 
 ## Which gas implementation this node binds for the next room. AUTO keeps the
 ## historical behaviour (GPU when a RenderingDevice exists, CPU otherwise), GPU
@@ -65,6 +67,25 @@ const MAX_VENTS := 4
 @export_range(4, 64, 1) var pressure_iterations := 16
 ## Kinematic viscosity in 1/s: how much the gas drags on itself.
 @export_range(0.0, 20.0, 0.01) var gas_viscosity := 0.0
+## Vorticity confinement. The stable-fluids trace-back averages the velocity every
+## step, which erases the small eddies a plume is made of; this force pushes each
+## vortex inwards along the gradient of |curl| and re-sharpens them, so the mist
+## keeps curls instead of turning into a smooth smear. 0 is the plain solver.
+@export_range(0.0, 40.0, 0.5) var gas_vorticity := 10.0
+## How strongly the field's own advected detail channel modulates the mist. The
+## detail is a passive scalar carried by the flow (see gas_density.gdshader), so it
+## stretches with the gas; 0 leaves the field perfectly smooth.
+@export_range(0.0, 1.0, 0.01) var detail_amount := 1.0
+@export_range(0.0, 8.0, 0.05) var detail_refresh := 4.0
+@export_range(1.0, 30.0, 0.5) var detail_hz := 6.0
+## Stylised threshold: 0 = 4x4 ordered Bayer tile, 1 = 64x64 blue-noise tile,
+## 2 = white noise. Only useful for A/B captures; 1 is the shipped look.
+@export_range(0, 2, 1) var stipple_mode := 1
+@export_range(2.0, 64.0, 1.0) var stipple_steps := 32.0
+## Volumetric self-shadowing strength: how much gas between a pixel and the key
+## light darkens that pixel. 0 disables the extra taps.
+@export_range(0.0, 4.0, 0.05) var volume_shadow := 0.9
+@export_range(0.0, 1.0, 0.01) var volume_weight := 0.55
 ## Exponential gas fade per second (0 = the gas never fades on its own). With no
 ## ambient gas to fall back on, vent jets need a little decay or they pile up in
 ## a closed room and turn back into fog.
@@ -391,6 +412,9 @@ func _process(delta: float) -> void:
 		_gas.step(_step_interval, player_position - _room_rect.position, player_velocity)
 		if _material != null:
 			_material.set_shader_parameter("gas_texture", _gas.get_texture())
+			# The tracer lives in the velocity field, which ping-pongs, so the
+			# sampler has to be re-bound after every step.
+			_material.set_shader_parameter("detail_tex", _gas.get_velocity_texture())
 	else:
 		_grid.step(_step_interval, player_position, player_velocity)
 		_upload_density()
@@ -479,6 +503,9 @@ func _create_gas_sim(ambient: Vector3, decay: float, diffusion: float, refill: f
 	gas.set("buoyancy", gas_buoyancy)
 	gas.set("dissipation", gas_dissipation)
 	gas.set("viscosity", gas_viscosity)
+	gas.set("vorticity", gas_vorticity)
+	gas.set("detail_refresh", detail_refresh)
+	gas.set("detail_hz", detail_hz)
 	gas.set("pressure_iterations", pressure_iterations)
 	gas.set("diffusion", diffusion)
 	gas.set("refill", refill)
@@ -655,6 +682,20 @@ func _build_render() -> void:
 	_material.set_shader_parameter("light_alpha", light_alpha)
 	_material.set_shader_parameter("noise_amount", noise_amount)
 	_material.set_shader_parameter("lit_tint", lit_color)
+	_material.set_shader_parameter("volume_shadow", volume_shadow)
+	_material.set_shader_parameter("volume_weight", volume_weight)
+	# The stylised threshold. The blue-noise tile is the shipped kernel; a build that
+	# is missing the asset falls back to the ordered tile rather than silently
+	# sampling an unbound sampler (which reads white and would lighten every level).
+	var stipple: Texture2D = null
+	if stipple_mode > 0 and ResourceLoader.exists(STIPPLE_TEXTURE):
+		stipple = load(STIPPLE_TEXTURE) as Texture2D
+	_material.set_shader_parameter("stipple_tex", stipple)
+	_material.set_shader_parameter("stipple_mode", float(stipple_mode) if stipple != null else 0.0)
+	_material.set_shader_parameter("stipple_steps", stipple_steps)
+	# The CPU fog grid has no detail tracer, so it must not read one: the shader
+	# falls back to its screen-space noise in that case.
+	_material.set_shader_parameter("detail_amount", detail_amount if _gas != null else 0.0)
 	_apply_light_field()
 
 	var solid_bytes := PackedByteArray()
@@ -666,6 +707,9 @@ func _build_render() -> void:
 
 	if _gas != null:
 		_material.set_shader_parameter("gas_texture", _gas.get_texture())
+		# Bind the tracer immediately: an unbound sampler reads white, which would
+		# make the first frames' wisp a constant 1.0 and the mist 45% too bright.
+		_material.set_shader_parameter("detail_tex", _gas.get_velocity_texture())
 	else:
 		_density_image = Image.create(_columns, _rows, false, Image.FORMAT_RGB8)
 		_density_image.fill(Color(0.0, 0.0, 0.0, 1.0))
@@ -753,3 +797,12 @@ func _update_lights() -> void:
 			Vector4(position.x, position.y, float(slot["radius"]), float(slot["energy"]))
 		)
 		_material.set_shader_parameter(color_name, slot["color"])
+	# The volume pass marches towards the key light, which in this game is the
+	# hero's lantern; `slots` puts it first, so it is the one that shapes the depth
+	# of the cloud. No light means no direction, so the pass switches itself off.
+	var volume := Vector4(-9999.0, -9999.0, 0.0, 0.0)
+	if volume_shadow > 0.0 and not slots.is_empty():
+		var key: Dictionary = slots[0]
+		var key_position: Vector2 = key["position"]
+		volume = Vector4(key_position.x, key_position.y, 1.0, 0.0)
+	_material.set_shader_parameter("volume_light", volume)

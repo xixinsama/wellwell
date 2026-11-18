@@ -45,11 +45,59 @@ uniform vec2 emitter_velocity = vec2(0.0);
 // Kinematic viscosity in 1/s: blends each velocity cell towards its four
 // neighbours. 0 = inviscid, higher = thicker, calmer gas.
 uniform float viscosity = 0.0;
+// Vorticity confinement (Fedkiw et al. 2001; GPU Gems 38). The semi-Lagrangian
+// step is stable but *dissipative*: every step it averages, so the small curls
+// that make smoke look like smoke are smoothed away and the mist ends up as a
+// soft veil with no structure of its own. Confinement adds back a force that
+// pushes the flow towards the centre of each vortex (along the gradient of the
+// vorticity magnitude, crossed with the vorticity), which re-sharpens the curls
+// without adding energy to the large scales.
+//
+//   w     = curl(u) = dv/dx - du/dy
+//   N     = normalize(grad |w|)
+//   force = epsilon * (N.y, -N.x) * w        (N x w in 2D)
+//
+// The scale is not physical: it is a modelling knob in "cells per second", tuned
+// like the buoyancy. 0 restores the plain dissipative solver.
+uniform float vorticity = 0.0;
+// The blue channel of this field carries the gas's *detail tracer*: a passive
+// scalar that is advected exactly like the velocity and refreshed where the dye is
+// thick. The render shader uses it as the wisp pattern, so the mist's texture is
+// the gas's own stretched structure instead of a noise texture scrolling over the
+// screen. It lives here rather than in the density field because these passes write
+// alpha = 1.0: a transparent SubViewport premultiplies the colour by the written
+// alpha, so a fourth piece of data in the density field's alpha would silently
+// halve the dye every step.
+uniform float detail_retention = 1.0;
+uniform float detail_refresh = 1.6;
+uniform float detail_hz = 6.0;
 uniform bool initialize = false;
+
+float hash21(vec2 p) {
+	p = fract(p * vec2(123.34, 456.21));
+	p += dot(p, p + 45.32);
+	return fract(p.x * p.y);
+}
+
+// Detail source: white noise in world cells, re-drawn `detail_hz` times a second.
+// Stepping in time rather than scrolling keeps the blotches from crawling; the
+// advection below is what makes them move.
+float detail_source(vec2 world, float step_index) {
+	return hash21(floor(world / cell_size) + vec2(step_index * 37.0, step_index * 71.0));
+}
 
 float solid_at(vec2 fuv) {
 	vec2 mask_uv = fuv * (field_size / (8.0 * max(mask_cell_count, vec2(1.0))));
 	return texture(mask_texture, clamp(mask_uv, vec2(0.0), vec2(1.0))).r;
+}
+
+// Scalar curl of the velocity at a cell, as a central difference in cell units.
+float curl_at(vec2 fuv, vec2 texel) {
+	float v_right = texture(velocity_texture, clamp(fuv + vec2(texel.x, 0.0), vec2(0.0), vec2(1.0))).g;
+	float v_left = texture(velocity_texture, clamp(fuv - vec2(texel.x, 0.0), vec2(0.0), vec2(1.0))).g;
+	float u_down = texture(velocity_texture, clamp(fuv + vec2(0.0, texel.y), vec2(0.0), vec2(1.0))).r;
+	float u_up = texture(velocity_texture, clamp(fuv - vec2(0.0, texel.y), vec2(0.0), vec2(1.0))).r;
+	return 0.5 * ((v_right - v_left) - (u_down - u_up));
 }
 
 void add_vent(vec4 vent, vec4 info, vec2 world, inout vec2 velocity) {
@@ -67,13 +115,15 @@ void add_vent(vec4 vent, vec4 info, vec2 world, inout vec2 velocity) {
 void fragment() {
 	vec2 fuv = UV;
 	vec2 velocity = vec2(0.0);
+	float detail = 0.5;
 	if (!initialize && solid_at(fuv) < 0.5) {
 		vec2 texel = vec2(1.0 / grid_size.x, 1.0 / grid_size.y);
-		vec2 current = texture(velocity_texture, fuv).rg;
+		vec4 advected = texture(velocity_texture, fuv);
 		// Semi-Lagrangian: follow the flow backwards and take the value there.
-		vec2 back = fuv - current * delta / grid_size;
-		velocity = texture(velocity_texture, clamp(back, vec2(0.0), vec2(1.0))).rg;
-		velocity *= max(0.0, 1.0 - dissipation * delta);
+		vec2 back = fuv - advected.rg * delta / grid_size;
+		vec4 traced = texture(velocity_texture, clamp(back, vec2(0.0), vec2(1.0)));
+		velocity = traced.rg * max(0.0, 1.0 - dissipation * delta);
+		detail = mix(0.5, traced.b, clamp(detail_retention, 0.0, 1.0));
 
 		vec3 density = texture(density_texture, fuv).rgb;
 		velocity.y += buoyancy_heavy * density.r * delta;
@@ -119,6 +169,29 @@ void fragment() {
 			velocity = mix(velocity, neighbors, clamp(viscosity * delta, 0.0, 0.2));
 		}
 
+		if (vorticity > 0.0) {
+			// Re-inject the small scales the trace-back just averaged away. Read the
+			// curvature of the *current* field (before this step's forces), so the
+			// confinement follows the vortices that already exist instead of the
+			// impulses injected this frame.
+			float w_centre = curl_at(fuv, texel);
+			float w_left = curl_at(fuv - vec2(texel.x, 0.0), texel);
+			float w_right = curl_at(fuv + vec2(texel.x, 0.0), texel);
+			float w_up = curl_at(fuv - vec2(0.0, texel.y), texel);
+			float w_down = curl_at(fuv + vec2(0.0, texel.y), texel);
+			vec2 gradient = vec2(
+				0.5 * (abs(w_right) - abs(w_left)),
+				0.5 * (abs(w_down) - abs(w_up))
+			);
+			float magnitude = length(gradient);
+			if (magnitude > 1e-5 && abs(w_centre) > 1e-5) {
+				vec2 direction = gradient / magnitude;
+				// N x w, with w pointing out of the plane.
+				vec2 confinement = vec2(direction.y, -direction.x) * w_centre;
+				velocity += confinement * vorticity * delta;
+			}
+		}
+
 		if (emitter.w > 0.0) {
 			float falloff = 1.0 - clamp(distance(world, emitter.xy) / max(emitter.z, 1.0), 0.0, 1.0);
 			falloff *= falloff;
@@ -126,6 +199,17 @@ void fragment() {
 			// trail lags behind the traveller instead of following it.
 			velocity = mix(velocity, emitter_velocity / cell_size, falloff * 0.85);
 		}
+
+		// Stir fresh detail into the cells that hold gas. The source is world noise
+		// re-drawn a few times a second; from here on it is a passive scalar and only
+		// the trace-back moves it, so the strokes it leaves follow the flow. The rate
+		// is deliberately not gated by how thick the gas is: a thin veil needs its
+		// texture as much as a dense puff, and where there is no gas the mist is
+		// discarded before the pattern is ever visible.
+		float stir = clamp(detail_refresh * delta, 0.0, 0.6);
+		if (stir > 0.0) {
+			detail = mix(detail, detail_source(world, floor(TIME * detail_hz)), stir);
+		}
 	}
-	COLOR = vec4(velocity, 0.0, 1.0);
+	COLOR = vec4(velocity, clamp(detail, 0.0, 1.0), 1.0);
 }

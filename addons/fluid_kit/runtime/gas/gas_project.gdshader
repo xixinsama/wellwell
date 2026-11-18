@@ -29,12 +29,17 @@ float solid_at(vec2 fuv) {
 void fragment() {
 	vec2 fuv = UV;
 	vec2 velocity = vec2(0.0);
+	float detail = 0.5;
 	if (!initialize && solid_at(fuv) < 0.5) {
 		vec2 texel = vec2(1.0 / grid_size.x, 1.0 / grid_size.y);
 		float p_center = texture(pressure_texture, fuv).r;
 		float p_right = solid_at(fuv + vec2(texel.x, 0.0)) > 0.5 ? p_center : texture(pressure_texture, fuv + vec2(texel.x, 0.0)).r;
 		float p_down = solid_at(fuv + vec2(0.0, texel.y)) > 0.5 ? p_center : texture(pressure_texture, fuv + vec2(0.0, texel.y)).r;
-		velocity = texture(velocity_texture, fuv).rg - vec2(p_right - p_center, p_down - p_center);
+		vec4 middle = texture(velocity_texture, fuv);
+		velocity = middle.rg - vec2(p_right - p_center, p_down - p_center);
+		// The projection only touches the velocity; the detail tracer in the blue
+		// channel is carried through unchanged.
+		detail = middle.b;
 	}
-	COLOR = vec4(velocity, 0.0, 1.0);
+	COLOR = vec4(velocity, clamp(detail, 0.0, 1.0), 1.0);
 }

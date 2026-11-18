@@ -112,6 +112,8 @@ const TESTS: Array[Script] = [
 	preload("res://tests/world/test_atmosphere_settings.gd"),
 	preload("res://tests/world/test_gas_backend.gd"),
 	preload("res://tests/world/test_gas_dither_seam.gd"),
+	preload("res://tests/world/test_blue_noise.gd"),
+	preload("res://tests/world/test_gas_solver.gd"),
 	preload("res://tests/world/test_water_buoyancy.gd"),
 	preload("res://tests/world/test_water_room_contract.gd"),
 	preload("res://tests/world/test_normal_field.gd"),

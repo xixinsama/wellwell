@@ -50,6 +50,7 @@ WorldRoot (Node2D, 整个世界的容器)
 | 3 | **背景投影剪影**：`BackTiles` 克隆进子视口，画成白色剪影，渲一次 | `BackdropShadow` | `ShadowViewport` 纹理 |
 | 4 | 房间内容照常画：背景板（漂移+对比度抖动）、背景投影、瓦片、实心瓦片、细节瓦片、实体、玩家、水、水花 | Godot 2D | 主视口 |
 | 5 | **描边**：瓦片边缘、被光照图门控的 1px rim | `TerrainHighlight` | 主视口 z 1 |
+| 5.5 | **气体**：整房间一张 quad；不透明度 = 三层密度 × 光照，按 blue-noise 阈值量化成 32 级；颜色额外朝主光源做 6 次体积自遮挡 | `Atmosphere/GasLayer` | 主视口 z 5 |
 | 6 | **暗部**：有时法线浮雕；`alpha = 1 - (光 + 环境光 + 阴影回弹)`，像素抖动 | `LightShade` | 主视口 z 8 |
 | 7 | **高光**：光图亮的地方加色，边缘向内收 1–2px | `LightGlow` | 主视口 z 9 |
 | 8 | **泛光**：阈值+水平模糊 → 垂直模糊（都是半分辨率）→ 抖动加色合成 | `ScreenBloom` | 主视口 z 9 |
@@ -188,6 +189,10 @@ FogOfWar mask(CPU) ──纹理──→ FogMask（片元生成边缘）──�
 | 迷雾聚光灯 | `fog_mask.gdshader` 的 `focus_at()` | `focus_radius_px / focus_falloff_px`、`FogZone.focus_*` |
 | 前景灰尘 | `scripts/world/dust_field.gd` | `count / drift / sway_* / alpha / unlit_alpha` |
 | 气体去雾（只留喷口） | `addons/fluid_kit/runtime/gas/atmosphere.gd` | `gas_ambient / gas_refill / gas_decay` |
+| 气体卷曲（涡量约束） | `gas_velocity.gdshader` 的 `curl_at()` / `GasSim.vorticity` | `Atmosphere.gas_vorticity` |
+| 气体细纹跟着流体走 | `gas_velocity.gdshader` 的蓝通道 tracer、`fog_layer.gdshader` 的 `detail_*` | `detail_amount / detail_contrast / detail_refresh / detail_hz` |
+| 气体体积自遮挡 | `fog_layer.gdshader` 的 `volume_*` | `volume_shadow / volume_weight / volume_step_px` |
+| 气体淡化用蓝噪声阈值 | `resources/textures/blue_noise_64.png`（`scripts/tools/bake_blue_noise.gd` 生成） | `stipple_mode / stipple_steps` |
 | 水体波纹覆盖整条水 | `water_grid.gd(shader)` / `water_field.gd(shader)` | 自动测量；`ripple_*` |
 | 屏幕泛光 | `scripts/world/screen_bloom.gd` + `bloom_*.gdshader` | `threshold / intensity / radius` |
 | CRT | `scenes/ui/crt_overlay.tscn` + `crt_screen.gdshader` | `GlobalSettings.crt_enabled` |
@@ -201,3 +206,15 @@ FogOfWar mask(CPU) ──纹理──→ FogMask（片元生成边缘）──�
   格子跨过阈值那一刻触须整块出现/消失 → 闪烁。现在按 `1 - 不透明度` 线性淡入，
   没有阈值跳变。
 - 同方向的淡入淡出**不会**被重复启动（贴着区域边缘来回走时不会重置波形）。
+
+## 9. 气体那层的两条坑（都是量出来的）
+
+- **有向抖动仍然是"格子"**：4×4 Bayer 的每一列是平衡的（这点早修过了），但雾淡到
+  一半覆盖率时，它点亮的就是一张 2×2 棋盘格 —— 4× 放大后每一列都变成竖虚线，
+  于是"点阵"看起来就是"竖条"。实测：同一份气体状态下，抖动的高频能量有 15.7%
+  压在周期 2/4 的格点上，放大后竖直游程有 79.5% 正好是一个设计像素。换成 64×64
+  蓝噪声贴图后是 0.12% 和 55.7%，平均不透明度只差 −1.1%。
+- **别把第四个数塞进密度纹理的 alpha**：那几个 SubViewport 是透明的，canvas 会
+  **预乘**写入的 alpha，而密度缓冲是乒乓的 —— 写在 alpha 里的细节会把气体**每步**
+  砍一半。实测 172 步内平均密度从 0.022 掉到 0.0004。细节只好放进速度场（写
+  alpha = 1.0）的蓝通道，见 `addons/fluid_kit/README.md` 的 "The detail tracer"。

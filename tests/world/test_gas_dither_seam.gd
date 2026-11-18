@@ -37,6 +37,17 @@ extends Node
 ## Not covered: pixels, the GPU solver itself, and the *horizontal* (row) balance of
 ## the kernel. Row balance is a property the ordered dither shares with the other
 ## dithers in the project and is not the seam that was reported.
+##
+## A balanced ordered kernel is still a *lattice*, and that turned out to be the rest
+## of the artefact: at the opacity a fading mist passes through, the tile lit by the
+## level underneath is a regular 2x2 checkerboard, so on the 4x screen every column
+## is a dashed line and the fade reads as a woven grid (measured on the same gas
+## state: 15.7% of the stipple's high-pass energy sat on the period-2/period-4
+## lattice peaks, and 79.5% of the upscaled vertical runs were exactly one design
+## pixel). The shipped kernel is therefore the blue-noise tile - see
+## tests/world/test_blue_noise.gd for the tile and tests/world/test_gas_solver.gd for
+## the wiring. This test still guards the ordered kernel because `stipple_mode = 0`
+## keeps it available for A/B captures.
 
 const FOG_SHADER_PATH := "res://addons/fluid_kit/runtime/gas/fog_layer.gdshader"
 const TILE := 4

@@ -21,7 +21,13 @@ const DENSITY_SHADER := preload("res://addons/fluid_kit/runtime/gas/gas_density.
 const COPY_SHADER := preload("res://addons/fluid_kit/runtime/gas/gas_copy.gdshader")
 
 const FIELD_CELL_SIZE := 4.0
-const MAX_CELLS := 160
+## Hard ceiling on the grid, not a resolution policy: the cell is always
+## `FIELD_CELL_SIZE` world pixels, so a bigger room gets more cells rather than
+## coarser ones. That keeps the simulation's texel density independent of where the
+## room sits in the world (and of what the camera happens to show), which is the
+## property "camera relative" is really about: the field must not change scale or
+## phase because the view moved.
+const MAX_CELLS := 512
 ## How long a one-shot blast keeps pushing before it fades out.
 const IMPULSE_SECONDS := 0.18
 
@@ -40,6 +46,20 @@ var push_strength := 1.4
 var decay := 0.0
 ## Kinematic viscosity in 1/s (velocity diffusion).
 var viscosity := 0.0
+## Vorticity confinement strength. The trace-back step averages the field every
+## step, so without this the curls of a plume are smoothed into a soft blob; the
+## confinement force pushes each vortex inwards along the gradient of |curl| and
+## keeps the small scales alive. In the same units the velocity is stored in (cells
+## per second), so a value around `FIELD_CELL_SIZE` is a strong setting.
+var vorticity := 0.0
+## Share of the detail channel kept per step, and how fast fresh detail is stirred
+## into cells that hold gas (see gas_velocity.gdshader). The retention is just below
+## 1 on purpose: a passive scalar that is traced back with clamped boundary sampling
+## slowly loses its neutral level, and a mist whose detail drifts to 0 is a mist that
+## renders dimmer than its density says. Relaxing to neutral bounds that drift.
+var detail_retention := 0.99
+var detail_refresh := 4.0
+var detail_hz := 6.0
 var vents: Array[Dictionary] = []
 
 var _velocity: Array[SubViewport] = []
@@ -110,6 +130,10 @@ func setup(field_size: Vector2, solid_mask: PackedByteArray, mask_columns: int, 
 	_apply_common(_mid_material)
 	_mid_material.set_shader_parameter("dissipation", dissipation)
 	_mid_material.set_shader_parameter("viscosity", viscosity)
+	_mid_material.set_shader_parameter("vorticity", vorticity)
+	_mid_material.set_shader_parameter("detail_retention", detail_retention)
+	_mid_material.set_shader_parameter("detail_refresh", detail_refresh)
+	_mid_material.set_shader_parameter("detail_hz", detail_hz)
 	_mid_material.set_shader_parameter("buoyancy_heavy", buoyancy.x / FIELD_CELL_SIZE)
 	_mid_material.set_shader_parameter("buoyancy_light", buoyancy.z / FIELD_CELL_SIZE)
 	_mid_material.set_shader_parameter("push_radius", push_radius)
@@ -165,11 +189,21 @@ func setup(field_size: Vector2, solid_mask: PackedByteArray, mask_columns: int, 
 	_density_materials[0].set_shader_parameter("density_texture", _density[1].get_texture())
 	_density_materials[1].set_shader_parameter("density_texture", _density[0].get_texture())
 
-	# Seed both density buffers with the ambient gas; velocity starts at rest.
+	# Seed both density buffers with the ambient gas; velocity starts at rest. The
+	# velocity buffers also carry the detail tracer in their blue channel, and a
+	# frame buffer is cleared to zero, so they are seeded through the projection's
+	# initialize branch: without that the tracer starts at 0 instead of neutral and
+	# the mist renders dimmer than the density says (measured: mean tracer 0.20
+	# instead of 0.50, gas alpha 7% low).
 	for index: int in 2:
 		_density_materials[index].set_shader_parameter("initialize", true)
 		_density[index].render_target_update_mode = SubViewport.UPDATE_ONCE
+	for index: int in 2:
+		_project_materials[index].set_shader_parameter("initialize", true)
+		_velocity[index].render_target_update_mode = SubViewport.UPDATE_ONCE
 	for material: ShaderMaterial in _density_materials:
+		material.set_shader_parameter("initialize", false)
+	for material: ShaderMaterial in _project_materials:
 		material.set_shader_parameter("initialize", false)
 
 	_front_velocity = 0
@@ -316,6 +350,14 @@ func get_texture() -> Texture2D:
 	if not _initialized or _density.is_empty():
 		return null
 	return _density[_front_density].get_texture()
+
+
+## The projected velocity field: RG is the velocity in cells per second, B is the
+## detail tracer the mist is textured with (see gas_velocity.gdshader).
+func get_velocity_texture() -> Texture2D:
+	if not _initialized or _velocity.is_empty():
+		return null
+	return _velocity[_front_velocity].get_texture()
 
 
 ## Replaces the solid mask (for example to include a water body) without
