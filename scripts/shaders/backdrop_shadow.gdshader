@@ -23,13 +23,26 @@ render_mode blend_mul, unshaded;
 
 uniform sampler2D mask_tex : filter_linear, repeat_disable;
 uniform vec2 mask_pixels = vec2(320.0, 180.0);
+// The room light map (see LightField). A shadow is cast *by* light, so the shadow
+// only exists where the plate is lit: gating the darkening with this map is both
+// physically right and what keeps it from painting black bands through the dark
+// parts of the room, where it would steal attention without adding depth.
+uniform sampler2D light_tex : filter_linear, repeat_disable;
+uniform vec2 light_pixels = vec2(320.0, 180.0);
+// Below `light_floor` there is no shadow at all, above `light_ceil` it is at full
+// strength; in between it fades in with the light.
+uniform float light_floor = 0.06;
+uniform float light_ceil = 0.5;
 // Shadow displacement in mask pixels. Fixed per project: one global direction, so
 // the shadow never changes shape while a lamp swings.
 uniform vec2 offset_px = vec2(0.0);
 // Radius of the soft edge, in mask pixels.
 uniform float blur_px = 3.0;
-// How strongly the shadow darkens the plate, 0..1.
+// How strongly the shadow darkens a fully lit plate, 0..1.
 uniform float strength = 0.85;
+// Hard ceiling on the darkening, even where the plate is brightest. The shadow is
+// there for depth, not to become the subject of the picture.
+uniform float max_darkness = 0.5;
 // Multiplier colour of the darkest pixel. Black makes a real shadow; a tint reads
 // as coloured glass over the plate.
 uniform vec4 shadow_tint : source_color = vec4(0.0, 0.0, 0.0, 1.0);
@@ -68,7 +81,12 @@ void fragment() {
 		// The tile edge is 1 px wide in the mask, so fade the exclusion over that
 		// pixel instead of stepping: a hard edge would ring along every tile.
 		float free = 1.0 - smoothstep(0.05, 0.75, tile);
-		float amount = clamp(coverage * strength, 0.0, 1.0) * free;
+		float light = dot(
+			texture(light_tex, (floor(UV * light_pixels) + 0.5) / light_pixels).rgb,
+			vec3(0.3, 0.59, 0.11)
+		);
+		float lit = smoothstep(light_floor, light_ceil, light);
+		float amount = min(coverage * strength * free * lit, max_darkness);
 		if (amount < 0.004) {
 			COLOR = vec4(1.0);
 		} else {

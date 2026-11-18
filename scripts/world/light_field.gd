@@ -773,7 +773,7 @@ func _bind_consumers() -> void:
 	if not is_inside_tree():
 		return
 	for group: StringName in [
-		&"fog_of_war", &"terrain_highlight", &"water_field", &"atmosphere"
+		&"fog_of_war", &"terrain_highlight", &"water_field", &"atmosphere", &"backdrop_shadow"
 	]:
 		for node: Node in get_tree().get_nodes_in_group(group):
 			if not is_instance_valid(node) or not node.has_method("set_light_field"):

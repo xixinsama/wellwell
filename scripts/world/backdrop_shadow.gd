@@ -42,8 +42,16 @@ const QUAD_Z := 10
 @export var offset_direction := Vector2(-1.6, 1.0)
 ## How far the shadow is pushed, in pixels.
 @export_range(0.0, 40.0, 0.5) var offset_px := 10.0
-## How much the plate darkens where the shadow lands.
+## How much the plate darkens where the shadow lands, before the light gate and the
+## `max_darkness` ceiling.
 @export_range(0.0, 1.0, 0.01) var strength := 0.85
+## Hard ceiling on the darkening. The shadow exists for depth; it must not become the
+## subject of the picture, so even on a bright plate it never removes more than this.
+@export_range(0.0, 1.0, 0.01) var max_darkness := 0.5
+## The shadow is cast *by* light, so it is gated by the room light map: nothing below
+## `light_floor`, full strength above `light_ceil`.
+@export_range(0.0, 1.0, 0.01) var light_floor := 0.06
+@export_range(0.0, 1.0, 0.01) var light_ceil := 0.5
 ## Soft edge of the shadow, in pixels.
 @export_range(0.0, 12.0, 0.1) var blur_px := 3.0
 ## Multiplier colour of the darkest shadow pixel. Black is a real shadow; a tinted
@@ -57,6 +65,9 @@ var _mask_texture: Texture2D
 var _quad: Sprite2D
 var _material: ShaderMaterial
 var _offset := Vector2.ZERO
+## Room light map handed over by LightField; the shadow is gated by it.
+var _light_texture: Texture2D
+var _light_pixels := Vector2i.ZERO
 
 
 func _ready() -> void:
@@ -220,8 +231,10 @@ func _build_quad(terrain_root: Node) -> void:
 	_material.set_shader_parameter("mask_pixels", Vector2(_room_pixels))
 	_material.set_shader_parameter("blur_px", blur_px)
 	_material.set_shader_parameter("strength", strength)
+	_material.set_shader_parameter("max_darkness", max_darkness)
 	_material.set_shader_parameter("shadow_tint", shadow_tint)
 	_material.set_shader_parameter("offset_px", _offset)
+	_apply_light_field()
 	_quad = Sprite2D.new()
 	_quad.name = QUAD_NAME
 	_quad.centered = false
@@ -243,5 +256,29 @@ func apply_parameters() -> void:
 	_compute_offset()
 	_material.set_shader_parameter("blur_px", blur_px)
 	_material.set_shader_parameter("strength", strength)
+	_material.set_shader_parameter("max_darkness", max_darkness)
+	_material.set_shader_parameter("light_floor", light_floor)
+	_material.set_shader_parameter("light_ceil", light_ceil)
 	_material.set_shader_parameter("shadow_tint", shadow_tint)
 	_material.set_shader_parameter("mask_pixels", Vector2(_room_pixels))
+	_apply_light_field()
+
+
+## Hand-off from LightField, the same contract every other consumer implements. The
+## shadow needs it so it can be gated by the light: a shadow only exists where light
+## lands, and an unlit plate must not gain black bands.
+func set_light_field(texture: Texture2D, pixels: Vector2i, _origin_pixels: Vector2i) -> void:
+	_light_texture = texture
+	_light_pixels = pixels
+	_apply_light_field()
+
+
+func _apply_light_field() -> void:
+	if _material == null:
+		return
+	_material.set_shader_parameter("light_tex", _light_texture)
+	_material.set_shader_parameter("light_pixels", Vector2(_light_pixels))
+	# An unbound sampler reads as white, which would leave the shadow ungated; with
+	# no map the gate is opened instead (the light floor/ceil still apply).
+	_material.set_shader_parameter("light_floor", 0.0 if _light_texture == null else light_floor)
+	_material.set_shader_parameter("light_ceil", 0.001 if _light_texture == null else light_ceil)
