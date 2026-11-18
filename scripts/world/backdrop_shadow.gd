@@ -1,15 +1,17 @@
 class_name BackdropShadow
 extends Node2D
 
-## Drop shadow of the background tile layer, drawn between the backdrop plate and
-## the tiles themselves.
+## Drop shadow of the background tile layer, drawn above the light shade so it keeps
+## its contrast on the backdrop plate.
 ##
 ## The room's background tile layer (`Terrain/BackTiles`) is cloned into a
 ## room-sized one-shot SubViewport, rendered as a white silhouette, and drawn as a
-## blurred, offset quad under the tiles. Because the tiles cover it afterwards, the
-## shadow only shows on the backdrop plate around the tiles, which is what makes
-## the plate read as a surface *behind* the tiles instead of a flat image in a
-## different layer.
+## blurred, offset quad. Under the light shade the shadow was invisible in practice:
+## the shade already multiplies the plate by the light map, so on a dark plate a 30%
+## shadow of nearly black is still nearly black (measured: 4022 px touched, mean
+## change 1.46/255). Above the shade it darkens the final colour instead. The quad
+## still must not touch the tiles, so the shader subtracts the un-offset silhouette
+## from its own coverage: only the plate between and around the tiles is darkened.
 ##
 ## The offset is **fixed**: every room's background shadow leans the same way
 ## (`offset_direction`, towards the lower left by default) by `offset_px`. An
@@ -27,6 +29,10 @@ const MASK_SHADER: Shader = preload("res://scripts/shaders/backdrop_shadow_mask.
 const SHADOW_SHADER: Shader = preload("res://scripts/shaders/backdrop_shadow.gdshader")
 const QUAD_NAME := "BackdropTileShadow"
 const CHUNK_PIXELS := Vector2i(320, 180)
+## Above the light shade (LightField uses 8 for the shade and 9 for the glow), below
+## the fog (10). Same z as the glow: the glow is additive light, this is a multiply,
+## and the room is drawn before the light field, so the shadow lands first.
+const QUAD_Z := 9
 
 @export var layer_path := NodePath("Terrain/BackTiles")
 ## Direction the shadow leans, in screen pixels: (-1.6, 1) is roughly 150 degrees,
@@ -35,7 +41,7 @@ const CHUNK_PIXELS := Vector2i(320, 180)
 ## How far the shadow is pushed, in pixels.
 @export_range(0.0, 40.0, 0.5) var offset_px := 10.0
 ## How much the plate darkens where the shadow lands.
-@export_range(0.0, 1.0, 0.01) var strength := 0.7
+@export_range(0.0, 1.0, 0.01) var strength := 0.85
 ## Soft edge of the shadow, in pixels.
 @export_range(0.0, 12.0, 0.1) var blur_px := 3.0
 ## Multiplier colour of the darkest shadow pixel. Black is a real shadow; a tinted
@@ -220,7 +226,8 @@ func _build_quad(terrain_root: Node) -> void:
 	_quad.name = QUAD_NAME
 	_quad.centered = false
 	_quad.position = Vector2.ZERO
-	_quad.z_index = 0
+	_quad.z_index = QUAD_Z
+	_quad.z_as_relative = false
 	_quad.texture = _mask_texture
 	_quad.material = _material
 	# The shader blurs the silhouette itself; keep the sampling smooth so the

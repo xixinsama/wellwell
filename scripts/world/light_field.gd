@@ -119,7 +119,7 @@ const AUTHORED_SPILL := 0.25
 ## Radius of the normal high-pass, in pixels: subtract the local average normal so a
 ## flat but *tilted* wall (every baked tile bevel) does not shade like a dome. Bigger
 ## values keep the bevels of large blocks, smaller ones keep more per-tile detail.
-@export_range(1.0, 16.0, 0.5) var relief_average_px := 4.0
+@export_range(1.0, 16.0, 0.5) var relief_average_px := 6.0
 ## Extra gain applied to `relief_strength` in authored mode.
 ##
 ## A baked normal atlas describes the art's real bevels (about 20-45° on this
@@ -128,7 +128,7 @@ const AUTHORED_SPILL := 0.25
 ## measured, it moved less than one 8-bit level. This multiplier puts the two
 ## modes in the same visual range, so switching between them is a change of shape,
 ## not of intensity.
-@export_range(1.0, 6.0, 0.05) var authored_relief_gain := 1.4
+@export_range(1.0, 6.0, 0.05) var authored_relief_gain := 2.0
 
 var _room_pixels := Vector2i.ZERO
 var _room_origin_pixels := Vector2i.ZERO
