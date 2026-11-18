@@ -635,7 +635,10 @@ func _apply_light_field() -> void:
 	_material.set_shader_parameter("map_gain", 1.0)
 	# An unbound sampler reads as white, which would light the whole mist, so the
 	# map only participates when a room actually handed one over.
-	_material.set_shader_parameter("map_weight", 1.4 if _light_texture != null else 0.0)
+	# 1.4 was tuned while the shader sampled the map with world coordinates by mistake,
+	# which clamped it to one column; now that the map is sampled room-locally the mist
+	# is genuinely lit, and 0.5 keeps its mean contribution where it was.
+	_material.set_shader_parameter("map_weight", 0.5 if _light_texture != null else 0.0)
 
 
 func _build_render() -> void:

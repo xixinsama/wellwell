@@ -133,7 +133,12 @@ void fragment() {
 	lit += light_term(world, light1, light1_color, light_sum);
 	lit += light_term(world, light2, light2_color, light_sum);
 	lit += light_term(world, light3, light3_color, light_sum);
-	vec3 map_sample = texture(light_tex, (world + 0.5) / light_pixels).rgb;
+	// The light map is bound room-local (LightField hands it over at the room's
+	// origin), so it must be sampled with the quad's own UV, not with `world`: for a
+	// room at chunk (3,0) `world` starts at 960 and the whole UV range clamped to the
+	// map's last column, which is why the mist ignored the walls' shadows.
+	vec2 map_uv = clamp(quad_uv * (field_size / max(light_pixels, vec2(1.0))), vec2(0.0), vec2(0.9999));
+	vec3 map_sample = texture(light_tex, map_uv).rgb;
 	float map_lit = clamp(dot(map_sample, vec3(0.3, 0.59, 0.11)) * map_gain, 0.0, 1.0);
 	if (map_lit > 0.0) {
 		lit = max(lit, map_lit * map_weight);

@@ -62,8 +62,8 @@ func _assert_fixed_offset(failures: Array[String]) -> void:
 	light.global_position = Vector2(300.0, 90.0)
 	light.add_to_group(&"room_light")
 	rig["root"].add_child(light)
-	shadow.call("_process", 0.016)
-	shadow.call("_process", 0.016)
+	shadow.call("apply_parameters")
+	shadow.call("apply_parameters")
 	if (shadow.call("get_shadow_offset") as Vector2).distance_to(offset) > 0.001:
 		failures.append("a nearby light still moves the shadow")
 	light.free()
