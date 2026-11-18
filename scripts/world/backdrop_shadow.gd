@@ -25,14 +25,16 @@ extends Node2D
 ## per room and costs nothing per frame after that.
 
 const GROUP := &"backdrop_shadow"
-const MASK_SHADER: Shader = preload("res://scripts/shaders/backdrop_shadow_mask.gdshader")
 const SHADOW_SHADER: Shader = preload("res://scripts/shaders/backdrop_shadow.gdshader")
 const QUAD_NAME := "BackdropTileShadow"
 const CHUNK_PIXELS := Vector2i(320, 180)
-## Above the light shade (LightField uses 8 for the shade and 9 for the glow), below
-## the fog (10). Same z as the glow: the glow is additive light, this is a multiply,
-## and the room is drawn before the light field, so the shadow lands first.
-const QUAD_Z := 9
+const TILE_PIXELS := 8
+## Above *everything additive* (the shade at 8, the glow and the bloom composite at
+## 9) and at the same level as the fog, which comes later in the tree so it still
+## covers the shadow. The order is the whole point: at z 9 the shadow was drawn
+## before the additive glow, which then re-added light on top of it and cancelled the
+## darkening (measured: -18.2/255 with the light pass off, -0.7/255 with it on).
+const QUAD_Z := 10
 
 @export var layer_path := NodePath("Terrain/BackTiles")
 ## Direction the shadow leans, in screen pixels: (-1.6, 1) is roughly 150 degrees,
@@ -51,12 +53,10 @@ const QUAD_Z := 9
 var _room_pixels := Vector2i.ZERO
 var _room_origin_pixels := Vector2i.ZERO
 var _room_bound := false
-var _viewport: SubViewport
 var _mask_texture: Texture2D
 var _quad: Sprite2D
 var _material: ShaderMaterial
 var _offset := Vector2.ZERO
-var _disable_frames_left := 0
 
 
 func _ready() -> void:
@@ -99,15 +99,8 @@ func bind_room_with_origin(room_data: Variant, terrain_root: Node, origin_chunk:
 
 func clear_room() -> void:
 	_room_bound = false
-	_disable_frames_left = 0
-	set_process(false)
 	_mask_texture = null
 	_offset = Vector2.ZERO
-	if _viewport != null and is_instance_valid(_viewport):
-		if _viewport.get_parent() != null:
-			_viewport.get_parent().remove_child(_viewport)
-		_viewport.queue_free()
-	_viewport = null
 	if _quad != null and is_instance_valid(_quad):
 		if _quad.get_parent() != null:
 			_quad.get_parent().remove_child(_quad)
@@ -146,16 +139,6 @@ func get_room_pixels() -> Vector2i:
 	return _room_pixels
 
 
-func _process(_delta: float) -> void:
-	if _disable_frames_left <= 0:
-		return
-	_disable_frames_left -= 1
-	if _disable_frames_left == 0 and _viewport != null and is_instance_valid(_viewport):
-		# The silhouette never changes inside a room, so the extra pass is switched
-		# off after it has been drawn once.
-		_viewport.render_target_update_mode = SubViewport.UPDATE_DISABLED
-
-
 ## The one global shadow direction. No light is consulted on purpose: a shadow that
 ## re-aims while a lamp swings reads as the backdrop wobbling, and the art direction
 ## leans one way anyway.
@@ -175,34 +158,51 @@ func _find_layer(terrain_root: Node) -> TileMapLayer:
 	return null
 
 
-## Renders the tile layer as a white silhouette once per room.
+## Composites the tile layer into a room-sized silhouette once per room.
+##
+## This used to be a one-shot `SubViewport` render. That version measured as
+## "draws nothing": with the light pass visible the quad changed 0 pixels even with a
+## red tint at strength 1, because a viewport switched to `UPDATE_DISABLED` does not
+## keep its content for a *sampler* either (the same trap the render inspector hit
+## when it read the masks back). Compositing the tiles into an `Image` is a few
+## hundred 8x8 blits, happens once per room, and cannot disappear.
 func _build_mask(layer: TileMapLayer, terrain_root: Node) -> void:
-	_viewport = SubViewport.new()
-	_viewport.name = "BackdropShadowViewport"
-	_viewport.size = _room_pixels
-	_viewport.transparent_bg = true
-	_viewport.disable_3d = true
-	_viewport.msaa_2d = Viewport.MSAA_DISABLED
-	_viewport.canvas_item_default_texture_filter = Viewport.DEFAULT_CANVAS_ITEM_TEXTURE_FILTER_NEAREST
-	_viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
-	add_child(_viewport)
-	_disable_frames_left = 2
-	set_process(true)
-	var clone := TileMapLayer.new()
-	clone.name = "BackdropSilhouette"
-	clone.tile_set = layer.tile_set
-	clone.tile_map_data = layer.tile_map_data
-	clone.collision_enabled = false
-	clone.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	var material := ShaderMaterial.new()
-	material.shader = MASK_SHADER
-	clone.material = material
+	var tile_set := layer.tile_set
+	if tile_set == null:
+		return
+	var image := Image.create(_room_pixels.x, _room_pixels.y, false, Image.FORMAT_RGBA8)
+	image.fill(Color(0.0, 0.0, 0.0, 0.0))
 	var terrain_2d := terrain_root as Node2D
-	clone.position = (
-		terrain_2d.to_local(layer.global_position) if terrain_2d != null else layer.position
-	)
-	_viewport.add_child(clone)
-	_mask_texture = _viewport.get_texture()
+	var layer_offset := Vector2i(layer.position)
+	if terrain_2d != null:
+		layer_offset = Vector2i(terrain_2d.to_local(layer.global_position))
+	var atlas_images: Dictionary[int, Image] = {}
+	for cell: Vector2i in layer.get_used_cells():
+		var source_id := layer.get_cell_source_id(cell)
+		var source := tile_set.get_source(source_id) as TileSetAtlasSource
+		if source == null or source.texture == null:
+			continue
+		var atlas := layer.get_cell_atlas_coords(cell)
+		var alternative := layer.get_cell_alternative_tile(cell)
+		if source.get_tile_data(atlas, alternative) == null:
+			continue
+		if not atlas_images.has(source_id):
+			atlas_images[source_id] = source.texture.get_image()
+		var atlas_image: Image = atlas_images[source_id]
+		if atlas_image == null:
+			continue
+		var region := source.get_tile_texture_region(atlas, 0)
+		var destination := layer_offset + cell * TILE_PIXELS
+		var tile := atlas_image.get_region(region)
+		# The silhouette only needs coverage, so alpha is normalised to 1 and the
+		# colour to white; the shadow shader reads .a and nothing else.
+		for y: int in tile.get_height():
+			for x: int in tile.get_width():
+				var alpha := tile.get_pixel(x, y).a
+				if alpha > 0.0:
+					tile.set_pixel(x, y, Color(1.0, 1.0, 1.0, maxf(alpha, 0.5)))
+		image.blit_rect(tile, Rect2i(Vector2i.ZERO, tile.get_size()), destination)
+	_mask_texture = ImageTexture.create_from_image(image)
 
 
 ## Builds the quad that draws the shadow into the room's backdrop container, so it

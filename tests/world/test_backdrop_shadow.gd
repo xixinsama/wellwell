@@ -94,9 +94,9 @@ func _assert_shadow_sits_between_plate_and_tiles(failures: Array[String]) -> voi
 		# shadow multiplied an almost-black plate and was invisible. It still must not
 		# touch the tiles, which the shader guarantees by subtracting the un-offset
 		# silhouette, so being above them in draw order is expected.
-		if quad.z_index <= 8:
-			failures.append("shadow quad is not above the light shade pass")
-		if quad.z_index >= 10:
+		if quad.z_index < 9:
+			failures.append("shadow quad is not above the additive light passes")
+		if quad.z_index > 10:
 			failures.append("shadow quad sorts above the fog")
 		if quad.texture == null:
 			failures.append("shadow quad has no silhouette texture")
