@@ -76,15 +76,16 @@ flicker = 0.12
 flicker_speed = 5.0
 
 [node name="PoolLamp" type="Node2D" parent="RoomContent/Entities" unique_id=1632350867]
-position = Vector2(264, 96)
+position = Vector2(256, 96)
 script = ExtResource("6_jr1mh")
 light_id = "pool"
-radius = 72.0
-energy = 0.95
-color = Color(0.72, 0.88, 1, 1)
-lens_radius = 58.0
-lens_strength = 1.0
-flicker = 0.08
+energy = 1.2
+color = Color(1.3945211, 0.52165645, 0.6186414, 1)
+swing_pixels = 6.0
+wander_pixels = 6.0
+flicker = 0.2
+lens_radius = 48.0
+lens_strength = 0.48
 
 [node name="UnoccludedGlow" type="Node2D" parent="RoomContent/Entities" unique_id=1962231160]
 position = Vector2(48, 96)
@@ -175,16 +176,16 @@ flicker_speed = 8.0
 casts_shadows = false
 
 [node name="PoolFluid" type="Node2D" parent="RoomContent/Entities" unique_id=1802503604]
-position = Vector2(240, 64)
+position = Vector2(240, 48)
 script = ExtResource("7_7pbym")
-size_cells = Vector2i(9, 11)
+size_cells = Vector2i(9, 13)
 region_id = "pool"
 
 [node name="RightVent" type="Node2D" parent="RoomContent/Entities" unique_id=1275274015]
 position = Vector2(40, 112)
 script = ExtResource("25_gasvent")
 channel = 0
-direction = Vector2(0.96833295, -0.24966228)
+direction = Vector2(0.968333, -0.2496623)
 radius = 60.0
 jet_speed = 1200.0
 vent_id = "lab_right"
