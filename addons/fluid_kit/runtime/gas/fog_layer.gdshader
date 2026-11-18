@@ -66,14 +66,26 @@ float value_noise(vec2 p) {
 	return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
 }
 
-// 4x4 ordered dither in [0, 1).
+// 4x4 ordered dither in [0, 1), built as M4 = 4 * M2(inner) + M2(outer), the same
+// construction the light shade, bloom, backdrop and fog dithers use.
+//
+// This exact form matters. A previous version computed the value from the low bits
+// of the position directly (x&1 * 8 + y&1 * 4 + ...), which is the Bayer matrix
+// with its bit order reversed: all eight low thresholds land in the even columns
+// and all eight high ones in the odd columns. The dither then resolves into
+// vertical stripes two world pixels wide (measured: a 15/1000 opacity difference
+// between neighbouring columns, i.e. ~8% of the gas layer where the cloud is
+// faint) instead of a dispersed 2D stipple, which reads as a seam running down the
+// gas. The recursive form keeps every column of the tile summing to the same
+// amount, so no column is systematically denser and the stripe is gone.
 float bayer4(vec2 p) {
 	vec2 q = floor(mod(p, 4.0));
-	float x = q.x;
-	float y = q.y;
-	float v = mod(x, 2.0) * 8.0 + mod(y, 2.0) * 4.0
-		+ mod(floor(x * 0.5), 2.0) * 2.0 + mod(floor(y * 0.5), 2.0);
-	return v / 16.0;
+	float inner = mod(3.0 * mod(q.y, 2.0) + 2.0 * mod(q.x, 2.0), 4.0);
+	float outer = mod(
+		3.0 * floor(mod(q.y, 4.0) * 0.5) + 2.0 * floor(mod(q.x, 4.0) * 0.5),
+		4.0
+	);
+	return (4.0 * inner + outer + 0.5) / 16.0;
 }
 
 float light_term(vec2 world, vec4 light, vec4 tint, inout vec3 sum) {
