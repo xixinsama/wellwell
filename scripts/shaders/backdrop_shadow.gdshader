@@ -39,8 +39,13 @@ uniform vec4 fill1 = vec4(0.0);
 uniform vec4 fill2 = vec4(0.0);
 uniform vec4 fill3 = vec4(0.0);
 uniform float fill_count = 0.0;
-// How much a full-strength fill light removes from the shadow, 0..1.
-uniform float fill_erase = 0.85;
+// How much a full-strength fill light removes from the shadow, 0..1. Kept small on
+// purpose: the backdrop plane is far behind the mid-ground lamps in depth, so their
+// light arrives weak and diffuse -- it lifts the shadow a little, it cannot erase it.
+uniform float fill_erase = 0.22;
+// Footprint of a fill light on the backdrop plane, as a share of its 2D radius. The
+// same depth gap: light that has to travel to the far plane covers less of it.
+uniform float fill_radius_scale = 0.55;
 uniform vec4 shadow_tint : source_color = vec4(0.0, 0.0, 0.0, 1.0);
 
 const int TAP_COUNT = 16;
@@ -55,8 +60,9 @@ float fill_at(vec2 px, vec4 light) {
 	if (light.z <= 0.5) {
 		return 0.0;
 	}
+	float reach = max(light.z * fill_radius_scale, 1.0);
 	float distance = length(px - light.xy);
-	return clamp(1.0 - distance / light.z, 0.0, 1.0) * light.w;
+	return clamp(1.0 - distance / reach, 0.0, 1.0) * light.w;
 }
 
 void fragment() {
