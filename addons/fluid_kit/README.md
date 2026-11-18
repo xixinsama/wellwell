@@ -267,10 +267,13 @@ The mist is drawn by one quad with two extra pieces of work per pixel:
   (`resources/textures/blue_noise_64.png`, baked by
   `scripts/tools/bake_blue_noise.gd`), because an ordered Bayer tile is a *lattice*:
   at the opacity a fading mist passes through, the tile becomes a 2×2 checkerboard
-  and every column of the 4× screen turns into a dashed line. Measured on one gas
-  state: lattice energy 15.7% → 0.12%, exactly-one-pixel vertical runs 79.5% → 55.7%,
-  mean opacity −1.1%. `stipple_mode` 0 keeps the ordered tile and 2 uses white noise,
-  for A/B captures; `--stipple=0,1,2` on the diagnostic tool does exactly that.
+  and every column of the 4× screen turns into a dashed line. Measured on one
+  frozen gas state per kernel (`gas_diagnostic.gd --stipple=0,1`): lattice energy
+  15.7% → 0.12% on the gas lab and 5.1% → 0.6% on the light lab, vertical runs of
+  exactly one design pixel 79.5% → 55.7%, mean opacity −1.1% (gas lab) and
+  −0.003% (light lab) — the fade keeps its thickness and loses the grid.
+  `stipple_mode` 0 keeps the ordered tile and 2 uses white noise, for A/B captures;
+  `--stipple=0,1,2` on the diagnostic tool does exactly that.
 
 ### The simulation domain
 
