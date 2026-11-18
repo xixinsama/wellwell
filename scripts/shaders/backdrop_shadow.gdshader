@@ -24,9 +24,15 @@ render_mode blend_mul, unshaded;
 
 uniform sampler2D mask_tex : filter_linear, repeat_disable;
 uniform vec2 mask_pixels = vec2(320.0, 180.0);
-// Room-local hero lantern: where the key light is and how far it reaches.
+// Room-local hero lantern: the key light sits on the hero, and its cast reaches the
+// whole room. What changes with distance is only the *amount*: a light standing on the
+// plane throws a short shadow right under itself and a long one further out, so the
+// near field is deliberately weaker and the far field is not allowed to vanish. The
+// ramp is linear over the room so its slope stays gentle.
 uniform vec2 key_pos_px = vec2(-99999.0, -99999.0);
-uniform float key_radius_px = 110.0;
+uniform float key_extent_px = 320.0;
+uniform float key_near = 0.45;
+uniform float key_far = 0.85;
 // Shadow displacement: direction is set per room from the hero's position, length is
 // `offset_px`. One global direction per frame, so the whole layer moves as one.
 uniform vec2 offset_px = vec2(0.0);
@@ -87,8 +93,9 @@ void fragment() {
 		}
 		float coverage = clamp(total / weight_sum, 0.0, 1.0);
 		float free = 1.0 - smoothstep(0.05, 0.75, tile);
-		// Key: only inside the hero's lantern, fading out towards its edge.
-		float key = 1.0 - smoothstep(key_radius_px * 0.55, key_radius_px, length(px - key_pos_px));
+		// Key: a gentle linear ramp from the hero out to the room's extent.
+		float key_distance = length(px - key_pos_px) / max(key_extent_px, 1.0);
+		float key = mix(key_near, key_far, clamp(key_distance, 0.0, 1.0));
 		// Fill: lamps brighten the shadow away instead of adding more of it.
 		float fill = 0.0;
 		if (fill_count > 0.5) { fill = max(fill, fill_at(px, fill0)); }

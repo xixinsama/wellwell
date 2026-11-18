@@ -50,11 +50,12 @@ func _assert_fixed_offset(failures: Array[String]) -> void:
 		rig["root"].free()
 		return
 	var offset: Vector2 = shadow.call("get_shadow_offset")
-	if not is_equal_approx(offset.length(), 10.0):
-		failures.append("shadow offset is %.2f px, expected the fixed 10 px" % offset.length())
+	var expected_length := float(shadow.get("offset_px"))
+	if not is_equal_approx(offset.length(), expected_length):
+		failures.append("shadow offset is %.2f px, expected offset_px %.2f" % [offset.length(), expected_length])
 	if offset.x >= 0.0 or offset.y <= 0.0:
 		failures.append("shadow should lean down-left, got %s" % str(offset))
-	var expected := Vector2(-1.6, 1.0).normalized() * 10.0
+	var expected := Vector2(-1.6, 1.0).normalized() * expected_length
 	if offset.distance_to(expected) > 0.01:
 		failures.append("shadow direction drifted from (-1.6, 1): %s vs %s" % [str(offset), str(expected)])
 	# A light next to the room must not move it any more (the old behaviour).

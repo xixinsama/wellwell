@@ -46,9 +46,15 @@ const MAX_FILL_LIGHTS := 4
 ## Fallback lean, in screen pixels, when the hero sits exactly at the room centre.
 @export var offset_direction := Vector2(-1.6, 1.0)
 ## How far the shadow is pushed, in pixels.
-@export_range(0.0, 40.0, 0.5) var offset_px := 10.0
-## How far the hero's lantern casts this shadow. The shadow only exists inside it.
-@export_range(8.0, 320.0, 1.0) var key_radius := 150.0
+@export_range(0.0, 40.0, 0.5) var offset_px := 5.0
+## The cast reaches the whole room; key_extent is the distance at which the ramp has
+## travelled its full range (0 = the room's larger side).
+@export_range(0.0, 640.0, 1.0) var key_extent := 0.0
+## Shadow amount right under the hero, and at key_extent away. Near is weaker (the
+## light stands on the plane, its shadow collapses under it) and far is not allowed to
+## get weak either; the ramp between them is linear so the slope stays gentle.
+@export_range(0.0, 1.0, 0.01) var key_near := 0.45
+@export_range(0.0, 1.0, 0.01) var key_far := 0.85
 ## How much the plate darkens where the shadow lands, before the cap.
 @export_range(0.0, 1.0, 0.01) var strength := 0.85
 ## Hard ceiling: even on a bright plate the shadow keeps more than half its value.
@@ -56,7 +62,7 @@ const MAX_FILL_LIGHTS := 4
 ## How much a lamp erases the shadow where it lights the plate. Deliberately small:
 ## in depth the backdrop plane sits far behind the mid-ground lamps, so their light
 ## reaches it weak and diffuse -- it lifts the shadow slightly and never removes it.
-@export_range(0.0, 1.0, 0.01) var fill_erase := 0.22
+@export_range(0.0, 1.0, 0.01) var fill_erase := 0.55
 ## Footprint of a fill light on the backdrop, as a share of its 2D radius: the same
 ## depth gap, light that travels further covers less of the far plane.
 @export_range(0.1, 1.5, 0.01) var fill_radius_scale := 0.55
@@ -194,7 +200,9 @@ func _update_light_relationship() -> void:
 	_offset = away.normalized() * maxf(offset_px, 0.0)
 	_material.set_shader_parameter("offset_px", _offset)
 	_material.set_shader_parameter("key_pos_px", hero - Vector2(_room_origin_pixels))
-	_material.set_shader_parameter("key_radius_px", key_radius)
+	_material.set_shader_parameter("key_extent_px", key_extent_value())
+	_material.set_shader_parameter("key_near", key_near)
+	_material.set_shader_parameter("key_far", key_far)
 	_material.set_shader_parameter("fill_erase", fill_erase)
 	_material.set_shader_parameter("fill_radius_scale", fill_radius_scale)
 	var candidates: Array[Dictionary] = []
@@ -224,6 +232,13 @@ func _update_light_relationship() -> void:
 			local.x, local.y, float(light["radius"]), float(light["energy"])
 		))
 	_material.set_shader_parameter("fill_count", float(mini(candidates.size(), MAX_FILL_LIGHTS)))
+
+
+## The ramp distance: the room's larger side unless the author overrides it.
+func key_extent_value() -> float:
+	if key_extent > 0.0:
+		return key_extent
+	return float(maxi(_room_pixels.x, _room_pixels.y))
 
 
 func _find_layer(terrain_root: Node) -> TileMapLayer:
