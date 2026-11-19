@@ -306,6 +306,25 @@ The mist is drawn by one quad with two extra pieces of work per pixel:
   `stipple_mode` 0 keeps the ordered tile and 2 uses white noise, for A/B captures;
   `--stipple=0,1,2` on the diagnostic tool does exactly that.
 
+### Recorded, not implemented
+
+Two gas *lighting* features are deliberately left out; the plan, the hook points and the
+cost arithmetic live in `docs/todo.md` under "渲染：已记录、暂不实现".
+
+* **The gas does not cast a shadow on the world.** The light map is lights plus tile
+  occluders, and the gas only ever *reads* it (`set_light_field`). Casting would be one
+  more layer inside the light viewport: `light *= exp(-density * k)` (one tap, no
+  direction) or the same six-tap march the mist already uses, towards the key light
+  (directional). The two caveats are that the mist reads that map for its own `lit`
+  (so dense gas would be darkened twice, by its own volume pass and again through the
+  map) and that it needs a darkness cap or the room goes muddy.
+* **No Tyndall shafts.** The volume march already computes `T = exp(-Σρ)`, which is the
+  *absorption* term; `1 - T` along the same ray is exactly the light scattered towards
+  the viewer, i.e. the 2D shape of a shaft. It would have to be an **additive** pass
+  (the mist's own `COLOR` is multiplied by alpha when it blends, so it cannot add
+  light), it needs a direction per light, and it needs to respect the light map's
+  shadow term so smoke behind a wall does not glow.
+
 ### The simulation domain
 
 `Atmosphere.gas_cell_pixels` is how many world pixels one cell covers (default 4) and
