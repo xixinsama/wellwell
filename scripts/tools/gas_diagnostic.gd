@@ -59,6 +59,12 @@ var _walk_point := Vector2(-9999.0, -9999.0)
 ## --press: after --warp, press and release the left button through the real input
 ## path and report whether the brush started painting.
 var _press := false
+## --cell=N: world pixels per simulation cell. Has to be set on the Atmosphere
+## *before* the scene is added to the tree, because the field is rebuilt when the
+## room binds (and cannot be resized afterwards).
+var _cell_pixels := -1.0
+## --timing: measure the uncapped frame cost at the end of the run.
+var _timing := false
 var _stipple_texture: Texture2D
 var _world: Node
 var _viewport: SubViewport
@@ -79,7 +85,15 @@ func _run() -> void:
 		push_error("gas_diagnostic: cannot load %s" % _scene_path)
 		quit(2)
 		return
-	root.add_child(scene.instantiate())
+	var instance := scene.instantiate()
+	if _cell_pixels > 0.0:
+		# The field is sized when the room binds, which happens in `_ready`, so the
+		# cell size has to be on the Atmosphere before the scene enters the tree.
+		for node: Node in _all_nodes(instance):
+			if node.has_method("bind_room_with_origin") and "gas_cell_pixels" in node:
+				node.set("gas_cell_pixels", _cell_pixels)
+				print("gas_diagnostic: cell size %.1f px" % _cell_pixels)
+	root.add_child(instance)
 	await create_timer(_settle).timeout
 	_viewport = _find_world_viewport(root)
 	_world = _find_world(_viewport)
@@ -121,7 +135,36 @@ func _run() -> void:
 					await _walk()
 				await create_timer(_interval).timeout
 	print("gas_diagnostic: wrote %d frame(s) to %s" % [_frames * _stipple_modes.size(), _out_dir])
+	if _timing:
+		await _measure_frame_ms()
 	quit(0)
+
+
+## Frame cost with the field running, uncapped and without vsync, as the mean of a
+## few passes. Used to compare resolutions: the solver's own `step_ms` only covers the
+## submit side, and the GPU work of 20 passes shows up here.
+func _measure_frame_ms() -> void:
+	var previous_fps := Engine.max_fps
+	var previous_vsync := DisplayServer.window_get_vsync_mode()
+	Engine.max_fps = 0
+	DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
+	_atmosphere.set_process(true)
+	var best := INF
+	for pass_index: int in 3:
+		await process_frame
+		await RenderingServer.frame_post_draw
+		var started := Time.get_ticks_usec()
+		for index: int in 120:
+			await process_frame
+			await RenderingServer.frame_post_draw
+		best = minf(best, float(Time.get_ticks_usec() - started) / 1000.0 / 120.0)
+	var state: Dictionary = _atmosphere.call("get_debug_state")
+	var size: Vector2i = state.get("gas", {}).get("size", Vector2i.ZERO)
+	print("gas_diagnostic: field %dx%d, %.3f ms/frame (best of 3, uncapped)" % [
+		size.x, size.y, best
+	])
+	Engine.max_fps = previous_fps
+	DisplayServer.window_set_vsync_mode(previous_vsync)
 
 
 ## Sets `--uniform=key=value` on every simulation pass that declares `key`. The
@@ -228,6 +271,10 @@ func _parse_arguments() -> void:
 		_press = true
 	if values.has("walk"):
 		_walk_point = _parse_point(String(values["walk"]))
+	if values.has("timing"):
+		_timing = true
+	if values.has("cell"):
+		_cell_pixels = String(values["cell"]).to_float()
 	if values.has("warp"):
 		_warp_point = _parse_point(String(values["warp"]))
 	if values.has("uniform"):		# --uniform=vorticity=10,detail_refresh=3 : poked into every simulation

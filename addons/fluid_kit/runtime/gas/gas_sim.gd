@@ -20,18 +20,26 @@ const PROJECT_SHADER := preload("res://addons/fluid_kit/runtime/gas/gas_project.
 const DENSITY_SHADER := preload("res://addons/fluid_kit/runtime/gas/gas_density.gdshader")
 const COPY_SHADER := preload("res://addons/fluid_kit/runtime/gas/gas_copy.gdshader")
 
-const FIELD_CELL_SIZE := 4.0
-## Hard ceiling on the grid, not a resolution policy: the cell is always
-## `FIELD_CELL_SIZE` world pixels, so a bigger room gets more cells rather than
-## coarser ones. That keeps the simulation's texel density independent of where the
-## room sits in the world (and of what the camera happens to show), which is the
-## property "camera relative" is really about: the field must not change scale or
-## phase because the view moved.
-const MAX_CELLS := 512
+const DEFAULT_CELL_SIZE := 4.0
+## Hard ceiling on the grid, not a resolution policy: the cell is `cell_size` world
+## pixels, so a bigger room gets more cells rather than coarser ones. That keeps the
+## simulation's texel density independent of where the room sits in the world (and of
+## what the camera happens to show), which is the property "camera relative" is really
+## about: the field must not change scale or phase because the view moved.
+##
+## The ceiling is high enough for a 2x2 chunk room at one pixel per cell (640x360),
+## which is the finest setting `Atmosphere.gas_cell_pixels` allows: a clamp here would
+## silently coarsen the cell instead of failing, so it only exists to stop a runaway
+## allocation.
+const MAX_CELLS := 1024
 ## How long a one-shot blast keeps pushing before it fades out.
 const IMPULSE_SECONDS := 0.18
 
 ## Tunables, written by Atmosphere before setup().
+## World pixels per simulation cell. Every force is divided by it, so the same
+## numbers describe the same *physical* behaviour at any resolution; a smaller cell
+## only means more of them, so the field carries detail down to that scale.
+var cell_size := DEFAULT_CELL_SIZE
 var ambient := Vector3(0.28, 0.22, 0.32)
 var diffusion := 0.25
 var refill := 0.35
@@ -50,7 +58,7 @@ var viscosity := 0.0
 ## step, so without this the curls of a plume are smoothed into a soft blob; the
 ## confinement force pushes each vortex inwards along the gradient of |curl| and
 ## keeps the small scales alive. In the same units the velocity is stored in (cells
-## per second), so a value around `FIELD_CELL_SIZE` is a strong setting.
+## per second), so a value around `cell_size` is a strong setting.
 var vorticity := 0.0
 ## Share of the detail channel kept per step, and how fast fresh detail is stirred
 ## into cells that hold gas (see gas_velocity.gdshader). The retention is just below
@@ -109,8 +117,8 @@ func setup(field_size: Vector2, solid_mask: PackedByteArray, mask_columns: int, 
 		return false
 	_field_size = field_size
 	_size = Vector2i(
-		clampi(int(ceil(field_size.x / FIELD_CELL_SIZE)), 1, MAX_CELLS),
-		clampi(int(ceil(field_size.y / FIELD_CELL_SIZE)), 1, MAX_CELLS)
+		clampi(int(ceil(field_size.x / cell_size)), 1, MAX_CELLS),
+		clampi(int(ceil(field_size.y / cell_size)), 1, MAX_CELLS)
 	)
 	if mask_columns <= 0 or mask_rows <= 0 or mask_columns * mask_rows != solid_mask.size():
 		return false
@@ -134,8 +142,8 @@ func setup(field_size: Vector2, solid_mask: PackedByteArray, mask_columns: int, 
 	_mid_material.set_shader_parameter("detail_retention", detail_retention)
 	_mid_material.set_shader_parameter("detail_refresh", detail_refresh)
 	_mid_material.set_shader_parameter("detail_hz", detail_hz)
-	_mid_material.set_shader_parameter("buoyancy_heavy", buoyancy.x / FIELD_CELL_SIZE)
-	_mid_material.set_shader_parameter("buoyancy_light", buoyancy.z / FIELD_CELL_SIZE)
+	_mid_material.set_shader_parameter("buoyancy_heavy", buoyancy.x / cell_size)
+	_mid_material.set_shader_parameter("buoyancy_light", buoyancy.z / cell_size)
 	_mid_material.set_shader_parameter("push_radius", push_radius)
 	_mid_material.set_shader_parameter("push_strength", push_strength)
 
@@ -179,7 +187,7 @@ func setup(field_size: Vector2, solid_mask: PackedByteArray, mask_columns: int, 
 		material.set_shader_parameter("refill", refill)
 		material.set_shader_parameter("decay", decay)
 		material.set_shader_parameter("ambient", ambient)
-		material.set_shader_parameter("wind", wind / FIELD_CELL_SIZE)
+		material.set_shader_parameter("wind", wind / cell_size)
 		material.set_shader_parameter("push_radius", push_radius)
 		material.set_shader_parameter("push_strength", push_strength)
 		material.set_shader_parameter("density_texture", null)
@@ -468,7 +476,7 @@ func _apply_common(material: ShaderMaterial) -> void:
 	material.set_shader_parameter("grid_size", Vector2(_size))
 	material.set_shader_parameter("mask_cell_count", _mask_cell_count)
 	material.set_shader_parameter("field_size", _field_size)
-	material.set_shader_parameter("cell_size", FIELD_CELL_SIZE)
+	material.set_shader_parameter("cell_size", cell_size)
 
 
 func _apply_vents(material: ShaderMaterial) -> void:

@@ -48,7 +48,7 @@ func run() -> Array[String]:
 	_assert_density_alpha_stays_opaque(density, failures)
 	_assert_tracer_rides_in_the_velocity(velocity, project, failures)
 	_assert_vorticity_confinement(velocity, sim, failures)
-	_assert_cell_size_is_fixed(sim, failures)
+	_assert_cell_size_is_fixed(sim, atmosphere, failures)
 	_assert_mist_uses_the_stipple(fog, atmosphere, failures)
 	return failures
 
@@ -110,22 +110,41 @@ func _assert_vorticity_confinement(velocity: String, sim: String, failures: Arra
 		failures.append("Atmosphere does not expose a vorticity tunable, so no room can set it")
 
 
-## The simulation domain has to be independent of the room it belongs to: a fixed
-## cell size means the gas keeps the same texel density (and the same visible scale)
-## in every room, which is what "camera relative" has to mean for a field that is not
-## thrown away when the view scrolls.
-func _assert_cell_size_is_fixed(sim: String, failures: Array[String]) -> void:
-	if not sim.contains("const FIELD_CELL_SIZE := 4.0"):
-		failures.append("GasSim no longer fixes the cell at 4 world pixels")
-	if sim.contains("ceil(field_size.y / FIELD_CELL_SIZE)") and sim.contains("clampi(int(ceil(field_size.x / FIELD_CELL_SIZE)), 1, 160)"):
-		failures.append("GasSim is back to a 160 cell ceiling, which shrinks the field instead of the cell")
+## The simulation domain has to be independent of the room *and* of the camera: the
+## cell size is a tunable (`Atmosphere.gas_cell_pixels`), every force is divided by it
+## so the same tuning means the same physical behaviour at any resolution, and the cell
+## ceiling is high enough that a fine field is not silently coarsened.
+##
+## The measured cost of going to one pixel per cell (2x2 room, 640x360 = 230400 cells)
+## is in the fluid kit README: 0.084 ms of CPU submit per step, no frame-time change,
+## 41 MB of HDR buffers. The dye does need `gas_diffusion` re-scaled with 1/cell².
+func _assert_cell_size_is_fixed(sim: String, atmosphere: String, failures: Array[String]) -> void:
+	if not sim.contains("const DEFAULT_CELL_SIZE := 4.0"):
+		failures.append("GasSim no longer has a 4 px default cell")
+	if not sim.contains("var cell_size := DEFAULT_CELL_SIZE"):
+		failures.append("GasSim has no cell_size tunable, so the resolution cannot be changed")
+	if sim.contains("ceil(field_size.x / FIELD_CELL_SIZE)"):
+		failures.append("GasSim is back to sizing the grid from a constant instead of cell_size")
+	for force: String in ["buoyancy.x / cell_size", "buoyancy.z / cell_size", "wind / cell_size"]:
+		if not sim.contains(force):
+			failures.append(
+				"`%s` is missing: a force that is not divided by the cell size makes the"
+				% force
+				+ " gas behave differently at every resolution"
+			)
+	if not sim.contains("set_shader_parameter(\"cell_size\", cell_size)"):
+		failures.append("GasSim does not hand the cell size to the shaders")
 	var ceiling := _int_between(sim, "const MAX_CELLS := ", "\n")
-	if ceiling < 256:
+	if ceiling < 1024:
 		failures.append(
-			"GasSim's cell ceiling is %d: a room wider than that would coarsen the field instead of"
+			"GasSim's cell ceiling is %d: a 640-wide field at one pixel per cell (a 2x2 room)"
 			% ceiling
-			+ "adding cells, so the gas would change scale in big rooms"
+			+ " would be clamped down to a coarser cell instead of being simulated"
 		)
+	if not atmosphere.contains("var gas_cell_pixels"):
+		failures.append("Atmosphere has no gas_cell_pixels tunable")
+	if not atmosphere.contains("gas.set(\"cell_size\", gas_cell_pixels)"):
+		failures.append("Atmosphere never gives its cell size to the solver")
 
 
 func _assert_mist_uses_the_stipple(fog: String, atmosphere: String, failures: Array[String]) -> void:

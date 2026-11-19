@@ -308,13 +308,41 @@ The mist is drawn by one quad with two extra pieces of work per pixel:
 
 ### The simulation domain
 
-The cell is always `FIELD_CELL_SIZE` (4 world px) and the grid ceiling is 512 cells,
-so a bigger room gets *more cells*, not coarser ones. The field's origin is the room
-origin, which is always a multiple of the world chunk (320×180) and therefore of the
-cell, so the field never changes scale or phase because the camera moved: the gas
-belongs to the world, not to the view. That is deliberate — a view-anchored field
-would make the mist swim when the camera scrolls and would throw gas away at the
-edge of the screen. The whole pipeline is 20 GPU passes (16 pressure + 4) on HDR
+`Atmosphere.gas_cell_pixels` is how many world pixels one cell covers (default 4) and
+the grid ceiling (`GasSim.MAX_CELLS`, 1024 per axis) is a guard rail, not a resolution
+policy: the field's origin is the room origin, which is always a multiple of the world
+chunk (320×180) and therefore of the cell, so the field never changes scale or phase
+because the camera moved. The gas belongs to the world, not to the view. That is
+deliberate — a view-anchored field would make the mist swim when the camera scrolls
+and would throw gas away at the edge of the screen.
+
+Every force in the solver is divided by the cell size, so the same tuning describes
+the same *physical* behaviour at any resolution. What does not scale on its own, and
+has to be re-tuned when `gas_cell_pixels` changes:
+
+| Parameter | How it scales | Why |
+| :--- | :--- | :--- |
+| `gas_diffusion` | ∝ 1 / cell² | it is a four-neighbour blend per step, so at 1 px it covers 1/16 of the distance it covers at 4 px. Measured with a still brush: the same gesture leaves a puff of 880 / 804 / 724 px² above 0.1 density at 4 / 2 / 1 px cells |
+| `pressure_iterations` | ↑ with the cell count | Jacobi propagates information ~√N cells, so a 640-wide field at 16 iterations enforces incompressibility only over a few cells |
+| `gas_vorticity` | roughly self-cancelling | the discrete curl grows as 1/cell while the force is applied in cells/s; measure it rather than assume |
+| `detail_hz` / `detail_refresh` | unchanged | the tracer is refreshed in *cell* space, so finer cells simply give finer grain (which is the point of going to 1 px) |
+
+Cost, measured on this machine with everything else in the room unchanged
+(`gas_diagnostic.gd --cell=N --timing`, min of two runs, uncapped):
+
+| Room | 4 px | 2 px | 1 px |
+| :--- | :--- | :--- | :--- |
+| one screen (320×180) | 80×45 = 3600 cells | 160×90 = 14400 | 320×180 = 57600 |
+| 2×2 chunks (640×360) | 160×90 = 14400 | 320×180 = 57600 | 640×360 = 230400 |
+| CPU submit per step (2×2) | 0.09 ms | 0.076 ms | 0.084 ms |
+| frame time (2×2, uncapped) | 1.55 ms | 1.79 ms | 1.45 ms |
+| HDR buffers (22 × cells × 8 B) | 2.5 MB | 10 MB | 41 MB |
+
+So on this GPU a one-pixel field is *not* the cost problem at this project's room
+sizes: 16× the cells changes nothing the frame time can resolve (the noise is ±0.15 ms
+and the room's 640×360 light map dominates), and the submit side is flat because it is
+20 uniform writes and 20 viewport kicks either way. The costs that do grow are VRAM
+(41 MB for a 2×2 room at 1 px) and the re-tuning in the table above.
 viewports.
 
 ## Gas backends (`Atmosphere.backend`)
@@ -337,6 +365,7 @@ re-enabling resumes instead of rebuilding.
 | Parameter | Default | Meaning |
 | :--- | :--- | :--- |
 | `sim_hz` | 30 | Steps per second; the master speed knob. |
+| `gas_cell_pixels` | 4 | World pixels per simulation cell. 1 resolves the mist to the pixel grid; see *The simulation domain* for what has to be re-tuned with it. |
 | `pressure_iterations` | 16 | Jacobi iterations of the pressure solve. |
 | `gas_viscosity` | 0.0 | Kinematic viscosity (1/s): thicker gas, calmer plumes. |
 | `gas_vorticity` | 10.0 | Vorticity confinement strength: scales the small eddies the trace-back smooths away. 0 = plain dissipative solver. |

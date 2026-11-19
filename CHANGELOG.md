@@ -24,6 +24,7 @@ All notable Platformer Kit changes are recorded here. The project follows Semant
 
 ### Changed
 
+- `Atmosphere.gas_cell_pixels` makes the simulation cell size a tunable (1..8 world pixels) instead of a fixed 4, and the grid ceiling went from 512 to 1024 cells per axis so a 1 px field of a 2x2 room is not silently coarsened. Measured at 1 px on a 2x2 room (640x360 = 230400 cells): 0.084 ms of CPU submit per step, no frame-time change (1.45 vs 1.55 ms uncapped), 41 MB of HDR buffers; the dye needs `gas_diffusion` re-scaled (a still puff covers 880 / 804 / 724 px2 at 4 / 2 / 1 px cells).
 - The gas simulation domain no longer depends on the room: the cell is always 4 world pixels and the grid ceiling is 512 cells, so a larger room gets more cells instead of a coarser field.
 - Replaced two-point platform motion with paused multi-waypoint `PING_PONG` and `CYCLE` routes.
 - Routed entity save requests through room and world runtimes instead of direct singleton access.

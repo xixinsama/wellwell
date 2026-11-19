@@ -65,6 +65,11 @@ const STIPPLE_TEXTURE := "res://resources/textures/blue_noise_64.png"
 @export_range(0.0, 3.0, 0.05) var gas_dissipation := 0.4
 ## Pressure Jacobi iterations per step (the Poisson solve accuracy).
 @export_range(4, 64, 1) var pressure_iterations := 16
+## World pixels per simulation cell. 4 keeps the nozzle jets and the wisp scale the
+## project tuned for; 2 or 1 resolve the plumes down to the pixel grid, at a cost that
+## grows with the square of the ratio (a one-screen room is 80x45 cells at 4 px,
+## 160x90 at 2 px and 320x180 at 1 px, and every step runs 20 passes over all of them).
+@export_range(1.0, 8.0, 1.0) var gas_cell_pixels := 4.0
 ## Kinematic viscosity in 1/s: how much the gas drags on itself.
 @export_range(0.0, 20.0, 0.01) var gas_viscosity := 0.0
 ## Vorticity confinement. The stable-fluids trace-back averages the velocity every
@@ -499,6 +504,7 @@ func _should_try_gpu() -> bool:
 func _create_gas_sim(ambient: Vector3, decay: float, diffusion: float, refill: float) -> GasSim:
 	var gas := GAS_SIM.new() as GasSim
 	gas.set("ambient", ambient)
+	gas.set("cell_size", gas_cell_pixels)
 	gas.set("decay", decay)
 	gas.set("buoyancy", gas_buoyancy)
 	gas.set("dissipation", gas_dissipation)
