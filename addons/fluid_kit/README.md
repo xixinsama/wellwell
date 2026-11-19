@@ -42,7 +42,38 @@ that anything can implement, or you can drive the fields manually.
 | `GasField` | Room marker: per-room ambient density, decay, diffusion, refill. |
 | `GasInteractor` | Attach to any entity: push (drag the gas), emit (trail) or blast. |
 | `GasTrailWalker` | Demo helper: a 1x1-cell walker that loops a square and emits a trail. |
+| `GasBrush` | Paints gas at the cursor: hold the left button to pour, right to shove, 1/2/3 for the channel. |
 | `FogLight` | Point light that brightens the gas (up to 3 static + the player light). |
+
+## Trying it in a room bigger than the screen
+
+`scenes/levels/test/gas_field_lab_runner.tscn` is a 2x2 chunk room (640x360) crossed
+by corridors, with one `GasBrush` and no other gas source. Run it and paint:
+
+| Input | Effect |
+| :--- | :--- |
+| hold left button | pours gas at the cursor; move while holding to fling it (the gas inherits the cursor's velocity) |
+| right button | a one-shot blow at the cursor: moves gas without adding any |
+| 1 / 2 / 3 | heavy (sinks) / neutral (drifts) / light (rises) |
+| mouse wheel | cycles the channel |
+
+The room exists because every other room is exactly one screen: there the camera
+never moves, so a field anchored to the room and a field anchored to the view look
+identical. Here the camera scrolls over a 160x90 cell field, which is where "the gas
+belongs to the world" becomes visible:
+
+* paint a puff, then walk to the other half of the room - the puff is still there,
+  in the same world position;
+* the gas keeps being simulated while it is off screen (measured: a puff painted
+  entirely off screen reads 0.0% of the opacity layer in the first frame and 6.4%
+  after the camera scrolls onto it);
+* the solver step costs 0.094 ms at 160x90 against 0.063 ms at the 80x45 of a
+  one-screen room, i.e. four times the cells for 1.5x the submit cost, and the whole
+  2x2 room still renders in 1.29 ms/frame uncapped.
+
+`scripts/tools/build_gas_field_lab.gd` regenerates the room and its world resource
+(it refuses to overwrite the source scene without `--force`). There is no vent and no
+ambient gas in it on purpose: everything you see there is gas you put there.
 
 ## Integration
 

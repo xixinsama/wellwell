@@ -1,0 +1,37 @@
+[gd_scene format=3 uid="uid://bjjdtr355f1p1"]
+
+[ext_resource type="Script" path="res://addons/platformer_kit/world/entities/spawn_point.gd" id="1_4dknn"]
+[ext_resource type="Script" path="res://addons/fluid_kit/runtime/gas/gas_field.gd" id="2_6xhg8"]
+[ext_resource type="Script" path="res://addons/fluid_kit/runtime/gas/gas_brush.gd" id="3_85iyd"]
+[ext_resource type="Script" path="res://scripts/world/room_light.gd" id="4_ml0p0"]
+
+[node name="RoomRuntimeContent" type="Node2D" unique_id=1465693271]
+
+[node name="Foreground" type="Node2D" parent="." unique_id=12204038]
+
+[node name="Entities" type="Node2D" parent="." unique_id=1674671126]
+
+[node name="StartSpawn" type="Marker2D" parent="Entities" unique_id=1082387570]
+position = Vector2(48, 330)
+script = ExtResource("1_4dknn")
+
+[node name="GasField" type="Node2D" parent="Entities" unique_id=428510028]
+position = Vector2(320, 180)
+script = ExtResource("2_6xhg8")
+decay = 0.22
+
+[node name="GasBrush" type="Node2D" parent="Entities" unique_id=526770610]
+position = Vector2(320, 180)
+script = ExtResource("3_85iyd")
+
+[node name="LabLight_lab_left" type="Node2D" parent="Entities" unique_id=1601572517]
+position = Vector2(96, 88)
+script = ExtResource("4_ml0p0")
+light_id = "lab_left"
+radius = 96.0
+
+[node name="LabLight_lab_right" type="Node2D" parent="Entities" unique_id=490356507]
+position = Vector2(560, 272)
+script = ExtResource("4_ml0p0")
+light_id = "lab_right"
+radius = 88.0

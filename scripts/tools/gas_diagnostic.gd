@@ -41,6 +41,24 @@ var _stipple_modes: Array[float] = [-1.0]
 var _uniform_overrides: Dictionary = {}
 ## Freeze the solver after the settle so several kernels see the same gas.
 var _freeze := true
+## --paint=x,y: pour gas from the room's GasBrush at that world position for
+## --paint-seconds, moving along a small circle so the emitted gas gets a real
+## velocity and the solver has something to advect.
+var _paint_center := Vector2(-9999.0, -9999.0)
+var _paint_seconds := 1.2
+var _paint_radius := 18.0
+## --paint-to=x,y: swipe the brush from --paint to here instead of circling.
+var _paint_to := Vector2(-9999.0, -9999.0)
+var _paint_channel := 2.0
+## --warp=x,y: move the OS cursor to that window position and report the world
+## position the brush derives from it, which is the whole screen-to-gas path.
+var _warp_point := Vector2(-9999.0, -9999.0)
+## --walk=x,y: after the first capture, move the player there so the camera shows a
+## different part of the same field.
+var _walk_point := Vector2(-9999.0, -9999.0)
+## --press: after --warp, press and release the left button through the real input
+## path and report whether the brush started painting.
+var _press := false
 var _stipple_texture: Texture2D
 var _world: Node
 var _viewport: SubViewport
@@ -82,6 +100,10 @@ func _run() -> void:
 	_write_info()
 	_dump_light()
 	_apply_uniform_overrides()
+	if _paint_center.x > -9999.0:
+		await _paint()
+	if _warp_point.x > -9999.0:
+		await _check_warp()
 	# Comparing kernels only means something on the *same* gas: the field is still
 	# evolving between captures, and a 0.6 s difference already changes the mean
 	# opacity by a few percent. Freezing the Atmosphere's `_process` stops the
@@ -95,6 +117,8 @@ func _run() -> void:
 		for index: int in _frames:
 			await _capture_frame(index, mode)
 			if index + 1 < _frames:
+				if _walk_point.x > -9999.0 and index == 0:
+					await _walk()
 				await create_timer(_interval).timeout
 	print("gas_diagnostic: wrote %d frame(s) to %s" % [_frames * _stipple_modes.size(), _out_dir])
 	quit(0)
@@ -190,6 +214,22 @@ func _parse_arguments() -> void:
 		# Freezing exists for A/B captures of one gas state; a run that is watching
 		# the gas evolve must keep stepping.
 		_freeze = _stipple_modes.size() > 1
+	if values.has("paint"):
+		_paint_center = _parse_point(String(values["paint"]))
+	if values.has("paint-seconds"):
+		_paint_seconds = maxf(String(values["paint-seconds"]).to_float(), 0.1)
+	if values.has("paint-to"):
+		_paint_to = _parse_point(String(values["paint-to"]))
+	if values.has("paint-radius"):
+		_paint_radius = maxf(String(values["paint-radius"]).to_float(), 0.0)
+	if values.has("paint-channel"):
+		_paint_channel = String(values["paint-channel"]).to_float()
+	if values.has("press"):
+		_press = true
+	if values.has("walk"):
+		_walk_point = _parse_point(String(values["walk"]))
+	if values.has("warp"):
+		_warp_point = _parse_point(String(values["warp"]))
 	if values.has("uniform"):		# --uniform=vorticity=10,detail_refresh=3 : poked into every simulation
 		# pass that declares the parameter, so a solver knob can be A/B tested
 		# without rebuilding the room.
@@ -197,6 +237,139 @@ func _parse_arguments() -> void:
 			var pair := entry.split("=", false)
 			if pair.size() == 2:
 				_uniform_overrides[pair[0].strip_edges()] = pair[1].strip_edges().to_float()
+
+
+func _parse_point(text: String) -> Vector2:
+	var parts := text.split(",", false)
+	if parts.size() != 2:
+		push_warning("gas_diagnostic: expected x,y but got `%s`" % text)
+		return Vector2(-9999.0, -9999.0)
+	return Vector2(parts[0].strip_edges().to_float(), parts[1].strip_edges().to_float())
+
+
+## Drives the room's GasBrush for a while along a circle, so the mist is made the
+## same way a player makes it (a moving emitter with a real velocity) instead of
+## being injected as a one-shot ball.
+func _paint() -> void:
+	var brush := get_first_node_in_group(&"gas_brush")
+	if brush == null:
+		push_warning("gas_diagnostic: --paint was given but the room has no GasBrush")
+		return
+	brush.set("channel", _paint_channel)
+	print("gas_diagnostic: painting at %s for %.2f s (radius %.1f)" % [
+		str(_paint_center), _paint_seconds, _paint_radius
+	])
+	var elapsed := 0.0
+	while elapsed < _paint_seconds:
+		# With `--paint-to` the brush travels in a straight line, which is what a hand
+		# does when it swipes the mouse across the room.
+		var centre := _paint_center
+		if _paint_to.x > -9999.0:
+			centre = _paint_center.lerp(_paint_to, clampf(elapsed / _paint_seconds, 0.0, 1.0))
+		var angle := elapsed * TAU * 1.5
+		var offset := Vector2(cos(angle), sin(angle)) * _paint_radius
+		var velocity := Vector2(-sin(angle), cos(angle)) * _paint_radius * TAU * 1.5
+		if _paint_to.x > -9999.0 and elapsed > 0.0:
+			velocity = (_paint_to - _paint_center) / _paint_seconds
+		brush.call("paint_at", centre + offset, velocity)
+		await process_frame
+		elapsed += 1.0 / maxf(Engine.get_frames_per_second(), 1.0)
+	brush.call("stop_painting")
+	await process_frame
+
+
+## Moves the player to a world position and lets the camera follow, which is how the
+## capture between two frames shows a *different part of the same gas field*. That is
+## the measurement behind "the gas belongs to the world, not to the screen": gas
+## painted outside the first frame's view has to turn up in the second frame.
+func _walk() -> void:
+	var player := get_first_node_in_group(&"player")
+	if player == null:
+		for child: Node in _all_nodes(_world):
+			if child is CharacterBody2D and child.has_method("get_velocity"):
+				player = child
+				break
+	if player == null or not player is Node2D:
+		push_warning("gas_diagnostic: --walk was given but no player node was found")
+		return
+	(player as Node2D).global_position = _walk_point
+	var camera := _find_camera(_world) as Camera2D
+	if camera != null:
+		camera.reset_smoothing()
+	print("gas_diagnostic: walked the player to %s" % str(_walk_point))
+	for index: int in 20:
+		await process_frame
+
+
+## Moves the OS cursor to a window position and reports the world position the brush
+## builds from it, next to the position the camera maths says it should be. This is
+## the one part of the painting path a synthetic event cannot fake: everything below
+## `get_global_mouse_position()` is Godot's own input routing.
+func _check_warp() -> void:
+	var brush := get_first_node_in_group(&"gas_brush")
+	if brush == null:
+		push_warning("gas_diagnostic: --warp was given but the room has no GasBrush")
+		return
+	Input.warp_mouse(_warp_point)
+	await process_frame
+	await process_frame
+	var actual: Vector2 = brush.call("get_cursor_world")
+	var camera := _find_camera(_world)
+	var expected := Vector2.INF
+	if camera != null:
+		expected = (camera as Camera2D).get_screen_center_position() \
+			+ (_warp_point / 4.0 - Vector2(_viewport.size) * 0.5)
+	print("gas_diagnostic: warp %s -> brush world %s, camera maths %s, delta %s" % [
+		str(_warp_point), str(actual), str(expected), str(actual - expected)
+	])
+	if not _press:
+		return
+	# Press the left button through the real input path, then read back the brush's
+	# state: this is what proves the room can actually be painted with, rather than
+	# only through `paint_at()`.
+	var press := InputEventMouseButton.new()
+	press.button_index = MOUSE_BUTTON_LEFT
+	press.pressed = true
+	press.position = _warp_point
+	press.global_position = _warp_point
+	Input.parse_input_event(press)
+	Input.flush_buffered_events()
+	await process_frame
+	await process_frame
+	print("gas_diagnostic: pressed left at %s -> brush painting=%s, world=%s" % [
+		str(_warp_point), str(brush.get("_painting")), str(brush.call("get_cursor_world"))
+	])
+	# Hold long enough for the solver to take a few steps: the emitter is only read
+	# once per simulation step, so a two frame press can inject nothing at all.
+	for index: int in 40:
+		await process_frame
+	var release := InputEventMouseButton.new()
+	release.button_index = MOUSE_BUTTON_LEFT
+	release.pressed = false
+	release.position = _warp_point
+	release.global_position = _warp_point
+	Input.parse_input_event(release)
+	Input.flush_buffered_events()
+	print("gas_diagnostic: released -> brush painting=%s" % str(brush.get("_painting")))
+	for index: int in 20:
+		await process_frame
+
+
+func _find_camera(node: Node) -> Node:
+	if node is Camera2D:
+		return node
+	for child: Node in node.get_children():
+		var found := _find_camera(child)
+		if found != null:
+			return found
+	return null
+
+
+func _all_nodes(node: Node) -> Array[Node]:
+	var result: Array[Node] = [node]
+	for child: Node in node.get_children():
+		result.append_array(_all_nodes(child))
+	return result
 
 
 func _resolve_out_dir(requested: String) -> String:
@@ -353,7 +526,7 @@ func _write_info() -> void:
 	for key: String in ["backend", "requested_backend", "fallback", "enabled", "sim_hz", "step_ms"]:
 		rows.append("%s\t%s" % [key, str(state.get(key, ""))])
 	var gas: Dictionary = state.get("gas", {})
-	for key: String in ["size", "iterations", "passes_per_step", "steps"]:
+	for key: String in ["size", "iterations", "passes_per_step", "steps", "ambient", "decay", "refill", "diffusion", "wind", "vorticity", "detail_refresh"]:
 		rows.append("gas.%s\t%s" % [key, str(gas.get(key, ""))])
 	rows.append("room_rect\t%s" % str(_atmosphere.call("get_room_rect")))
 	for property: String in [

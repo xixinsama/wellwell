@@ -421,6 +421,17 @@ func get_debug_state() -> Dictionary:
 		"steps": _steps,
 		"step_ms": _step_ms,
 		"vents": vents.size(),
+		# The values the solver is actually running with. They are not always the
+		# Atmosphere's exports: a room's GasField overrides ambient/decay/diffusion/
+		# refill at bind time, and reading the exports was how a report once described
+		# a room with different numbers than the one being simulated.
+		"ambient": ambient,
+		"decay": decay,
+		"refill": refill,
+		"diffusion": diffusion,
+		"wind": wind,
+		"vorticity": vorticity,
+		"detail_refresh": detail_refresh,
 	}
 
 
