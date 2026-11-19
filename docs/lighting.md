@@ -23,11 +23,17 @@ viewport, so a consumer can map a room pixel to a texel with `(px + 0.5) / size`
 
 | z | item |
 | :--- | :--- |
-| 0 | terrain, water, gas |
-| 1 | terrain outline |
+| -1 | backdrop plate |
+| 0 | terrain, entities, water |
+| 1 | terrain outline, water surface |
+| 3 | water splash / crumble debris |
+| 5 | gas (the mist is shaded by the pass below, it is not drawn on top of the light) |
 | 8 | `LightShade`: multiplies the room down to `ambient + light` |
-| 9 | `LightGlow`: additive warm light, `ScreenBloom`: additive screen-space bloom |
-| 10 | fog, player |
+| 9 | `LightGlow`: additive warm light, `ScreenBloom`: additive screen-space bloom, dust |
+| 10 | backdrop tile shadow, player, fog |
+
+The full stack, with every layer and who owns it, is in [art-layers.md](art-layers.md);
+this table only covers the light-related part of it.
 
 The fog stays above the light on purpose: light may push the tendrils of the fog
 back, but it must never open up an area that is still unexplored. The player

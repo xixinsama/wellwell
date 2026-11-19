@@ -110,7 +110,13 @@ func _build_room() -> Node2D:
 	var tileset := load(TILESET_PATH) as TileSet
 	var backdrop := _attach(terrain, TileMapLayer.new(), "BackTiles", tileset) as TileMapLayer
 	var solid := _attach(terrain, TileMapLayer.new(), "SolidTiles", tileset) as TileMapLayer
-	_attach(terrain, TileMapLayer.new(), "DetailTiles", tileset)
+	var detail := _attach(terrain, TileMapLayer.new(), "DetailTiles", tileset) as TileMapLayer
+	# Only SolidTiles collides. A fresh TileMapLayer defaults to collision_enabled =
+	# true, and leaving that on the two decorative layers is how a room grows an
+	# invisible wall the day someone paints a solid-looking tile into the backdrop
+	# (the template turns them off; this generator has to do it explicitly).
+	backdrop.collision_enabled = false
+	detail.collision_enabled = false
 	_paint(backdrop, solid)
 
 	var entities := _attach(content, Node2D.new(), "Entities")

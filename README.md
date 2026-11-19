@@ -53,6 +53,11 @@ without modifying the plugin.
 
 See [project structure](docs/project-structure.md) for ownership boundaries and verification commands.
 
+See [art layers](docs/art-layers.md) for the render stack from the backdrop plate upwards:
+what each layer draws, who owns it, why the systems live in `world_root.tscn` instead of
+the room template, and which "assets" (the normal atlas, the dither tile) are baked
+instead of hand-drawn.
+
 ## Controls
 
 - A / Left: move left

@@ -21,7 +21,7 @@ WorldRoot (Node2D, 整个世界的容器)
        │    └─ <room>/Terrain/TerrainHighlight z 1         (描边)
        │    └─ <room>/Entities/...           z 0          (灯、喷口、迷雾区…)
        ├─ WorldRuntime / Player             z 0 / 10
-       ├─ CrumbleRuntime 水花               z 3
+       ├─ CrumbleRuntime 坍塌碎片        z 9（水花像素 z 跟随实例化它的节点）
        ├─ WaterField / WaterGrid            z 0 + 自带 shader
        ├─ Atmosphere/GasLayer               z 5   (blend_mix, 整房间 quad)
        ├─ ScreenBloom/BloomComposite        z 9   (additive 合成)

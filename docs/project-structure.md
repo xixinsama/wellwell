@@ -3,6 +3,10 @@
 See `docs/architecture.md` for the template / mechanics / worlds dependency
 rules and the branch/worktree policy.
 
+See `docs/art-layers.md` for the rendering stack, bottom to top: what each layer
+draws, who owns it, why the systems live in `world_root.tscn` rather than in the
+room template, and which "assets" are baked or generated instead of hand-drawn.
+
 ## Runtime
 
 - `scenes/app/main.tscn`: application entry scene.

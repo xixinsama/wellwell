@@ -11,7 +11,10 @@ extends SceneTree
 ##       -- --scene res://scenes/levels/test/light_lab_runner.tscn --out C:/tmp/shots
 ##
 ## It writes, into the output directory:
-##   full.png            the frame exactly as the game shows it
+##   full.png            the world viewport as rendered (design pixels, 320x180 in the
+##                       runners): NOT what the monitor shows, because the upscale and
+##                       the CRT pass happen after it. Use gas_diagnostic's
+##                       `window_*.png` when the question involves either of those.
 ##   solo_<node>.png     one capture per top-level world node, everything else hidden
 ##   mask_<system>.png   every CPU-side mask the systems keep (fog, light, normals,
 ##                       backdrop shadow, gas, water cells)

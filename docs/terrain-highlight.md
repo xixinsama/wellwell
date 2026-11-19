@@ -37,14 +37,16 @@
 | 参数 | 默认 | 作用 |
 | :--- | :--- | :--- |
 | `layer_path` | `Terrain/SolidTiles` | 用哪一层瓦片做轮廓 |
-| `rim_color` | 淡青白 | 高光颜色 |
-| `rim_strength` | 0.85 | 亮度 |
-| `rim_width` | 2 | 从轮廓边缘往里延伸几像素 |
+| `rim_color` | 淡青白 `(0.78, 0.96, 1.0)` | 高光颜色 |
+| `rim_strength` | 1.0 | 亮度 |
+| `rim_width` | 1.0 | 从轮廓边缘往里延伸几像素（1–4，半步可调） |
 | `rim_softness` | 0.6 | 带内衰减，0 = 硬边，1 = 渐隐 |
 | `rim_grain` | 0.18 | 按像素抖动，避免看起来像矢量画的直线 |
 | `rim_inside` | true | true = 描在实心体内侧，false = 描在外侧空气里 |
 | `hero_side_only` | true | 只照亮 hero 可达的那一侧 |
 | `draw_order` | 1 | z 顺序（在地形之上、雾/水/气体之下） |
+| `light_floor` / `light_gain` | 0.55 / 1.0 | 描边被光照图门控：最暗处保留 `light_floor`，亮处乘 `light_gain` |
+| `solid_needs_collision` | true | 只把**有碰撞多边形**的瓦片当实心（梯子、贴花这类装饰瓦片不进遮罩） |
 
 ## 接线
 
