@@ -34,8 +34,6 @@ uniform vec2 cell_pixels = vec2(8.0, 8.0);
 uniform float distance_range = 64.0;
 
 // --- edge shape -----------------------------------------------------------
-// How far the noise may push the border out or in, in pixels.
-uniform float tendril_pixels = 4.0;
 // Half width of the anti-aliased cut in pixels (0 = hard pixel edge).
 uniform float edge_softness = 1.6;
 uniform float noise_scale = 13.0;
@@ -43,23 +41,47 @@ uniform float noise_grain = 3.2;
 uniform float noise_speed = 0.55;
 uniform float noise_warp = 0.65;
 
-// --- breathing / surge ----------------------------------------------------
-// The fringe is not a fixed depth: it swells and undulates, which is what makes a
-// standing shadow read as alive instead of as a hole cut into the picture.
+// --- edge placement -------------------------------------------------------
+// Where the animated border sits relative to the cell edge, in pixels, and how far
+// it may swing from there:
 //
-// Both terms only ever *add* depth, so the breathing can never pull the fringe to
-// zero and detach it from the dark mass (that is what the earlier two-signed
-// wobble did). What breathes is the *fringe*, not the whole cut.
+//   offset = edge_center_px + spatial + temporal, clamped to
+//            edge_center_px +- tendril_pixels
+//
+// Positive = the border retreats *into* the fog, which reveals more of the room
+// (that is why the centre is negative: the picture is brighter than the mask's
+// cells). Negative = the fog spills out over the revealed side. With the shipped
+// -2 px centre and 4 px swing the edge runs from -6 px (thinnest) to +2 px
+// (thickest).
+//
+// Every point of the border comes out of the same continuous band, so a retreat
+// can never create the detached patches the old tongue term did - that bug needed
+// the fringe to be grown *outwards* from an independent per-cell opacity, not a
+// cut that moves.
+//
+// This replaced a sum of five one-signed terms (base creep + grain + breath +
+// surge): that could only ever grow the fog, the depth was something you had to
+// add up in your head, and there was no way to ask for "a bit brighter".
+uniform float edge_center_px = -2.0;
+uniform float tendril_pixels = 4.0;
+// Share of the swing the coarse lobes take; the rest is left for the temporal
+// terms so the breathing can actually reach the ends of the range.
+uniform float lobe_depth = 0.75;
+
+// --- breathing / surge ----------------------------------------------------
+// The two temporal terms move the border inside that range; they are what makes a
+// standing shadow read as alive instead of as a hole cut into the picture. Both
+// are signed (they can thin or thicken the fog), and both are in pixels.
 //
 // `breath_*` is the slow whole-silhouette inhale: a sine whose phase is offset by
 // a low-frequency noise field, so the room does not pulse in unison.
-uniform float breath_pixels = 1.6;
+uniform float breath_pixels = 1.2;
 uniform float breath_scale = 46.0;
 uniform float breath_speed = 0.16;
 // `surge_*` is the finer wave that *travels along* the border, which is the "surge"
 // in the report: a swell that runs along the edge reads as movement, a swell that
 // only changes in place reads as a pulse.
-uniform float surge_pixels = 2.6;
+uniform float surge_pixels = 1.8;
 uniform float surge_scale = 15.0;
 uniform float surge_speed = 0.5;
 
@@ -212,12 +234,9 @@ void fragment() {
 		float t = animate ? TIME : 0.0;
 		vec2 drift = vec2(t * 0.31, t * 0.23) * noise_speed;
 
-		// Tendrils: domain-warped fbm decides how far the dark side creeps into the
-		// *revealed* side, between 55% and 100% of tendril_pixels. The fringe is
-		// deliberately one-signed: the old term pushed the cut in and out by the
-		// same noise, so the fringe disappeared in the low lobes (that is the
-		// "creep is broken into islands" report) and its depth was the sum of
-		// lobes, grain and swell instead of a number anyone could dial.
+		// Tendrils: domain-warped fbm gives the border its shape. The shape only
+		// decides *where in the range* the edge sits (see `edge_offset` below); it is
+		// not an independent depth any more.
 		vec2 lobe_uv = px / noise_scale;
 		vec2 warp = vec2(
 			value_noise(lobe_uv * 0.6 + drift * 0.7),
@@ -244,10 +263,44 @@ void fragment() {
 		);
 		float surge01 = (surge_coarse + 0.45 * surge_fine) / 1.45;
 
-		float fringe = tendril_pixels * (0.55 + 0.45 * clamp(lobes, 0.0, 1.0));
-		fringe += max(grain, 0.0) * 0.35 * tendril_pixels;
-		fringe += breath01 * breath_pixels;
-		fringe += surge01 * surge_pixels;
+		// Where the fog's edge sits, in pixels: the shape fills the swing, the inhale
+		// and the surge move it inside that range, and the total is clamped to
+		// `edge_center_px +- tendril_pixels` so the picture can never be dimmer than
+		// the thickest setting or brighter than the thinnest one.
+		// Positive = the fog spills out over the revealed side.
+		float spatial = (clamp(lobes, 0.0, 1.0) - 0.5) * 2.0 * (tendril_pixels * lobe_depth);
+		spatial += max(grain, 0.0) * 0.2 * tendril_pixels;
+		float temporal = (breath01 - 0.5) * 2.0 * breath_pixels
+			+ (surge01 - 0.5) * 2.0 * surge_pixels;
+		float edge_offset = clamp(
+			edge_center_px + spatial + temporal,
+			edge_center_px - tendril_pixels,
+			edge_center_px + tendril_pixels
+		);
+
+		// Thin-feature guard. A retreat may not eat *through* a thin strip of fog: a
+		// 12 px band retreating 6 px from its inner edge leaves a sliver, and a ring of
+		// such bands comes apart into separate patches (measured on test_fog_start:
+		// 2 large blobs at a -2 px centre, 9 at -6 px). The gradient of the distance
+		// field points into the fog, so two probes at 2x and 3x the retreat say whether
+		// the fog is thick enough to survive it; where it is not, the retreat is
+		// scaled away and the band stays whole. Only the inward half needs this.
+		if (edge_offset < 0.0) {
+			vec2 gradient = vec2(
+				cell_sample(cell_pos + vec2(1.0, 0.0)).g - cell.g,
+				cell_sample(cell_pos + vec2(0.0, 1.0)).g - cell.g
+			);
+			float magnitude = length(gradient);
+			if (magnitude > 1e-5) {
+				vec2 inward = gradient / magnitude;
+				float retreat_cells = -edge_offset / max(cell_pixels.y, 1.0);
+				float probe_a = cell_sample(cell_pos + inward * (2.0 * retreat_cells)).g;
+				float probe_b = cell_sample(cell_pos + inward * (3.0 * retreat_cells)).g;
+				// 0.5 is the border itself; above it is still inside the fog.
+				float survives = smoothstep(0.46, 0.54, min(probe_a, probe_b));
+				edge_offset *= survives;
+			}
+		}
 
 		// Recession, the other direction: the hero leans the mist away on every
 		// side, and the light map pushes it back further where the room is lit.
@@ -271,7 +324,11 @@ void fragment() {
 		}
 		push = min(push, max_push_px);
 
-		float wobble = push - fringe;
+		// The hero and the light add on top of the breathing, in the same direction:
+		// both of them lean the border away from the light. `wobble` is the *cut*
+		// position, which is the opposite sign of the fog edge above: a positive cut
+		// means the fog has to reach further in before it is drawn, i.e. it recedes.
+		float wobble = push - edge_offset;
 		float soft = max(edge_softness, 0.001);
 		float band = smoothstep(-soft, soft, distance_px - wobble);
 

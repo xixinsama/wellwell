@@ -56,12 +56,17 @@ const MASK_DISTANCE_PIXELS := 32.0
 @export var hero_body_rect := Rect2(-5, -10, 10, 10)
 
 @export_group("Fog Edge")
-## How far the dark side creeps into the *revealed* side, in pixels. The creep is
-## one-signed (it always grows outwards, never bites back in), because a term that
-## pushed the cut both ways made the fringe disappear in the low lobes and left
-## detached patches of fog around the border. The noise scales its depth between
-## 55% and 100% of this value, so 4 gives a 2..4 px fringe plus up to 1.4 px of fine
-## grain. Was 7, which summed lobes, grain and swell into a 17 px wobble.
+## Where the animated border sits relative to the cell edge, on average, in pixels.
+## Positive reveals more of the room by pushing the border *into* the fog; negative
+## lets the fog spill out. The default (-2) is what makes the picture read brighter
+## than the reveal mask suggests; the shipped -2 centre with the 4 px swing below
+## runs the edge from -6 px (thinnest) to +2 px (thickest).
+@export_range(-12.0, 12.0, 0.5) var edge_center_px := -2.0
+## Half the swing of the border around that centre, in pixels. Together with
+## `edge_center_px` this is the whole depth model: the lobes, the inhale and the
+## surge only decide *where inside the range* the edge sits, and the range is
+## clamped, so the picture can never be dimmer than `centre + swing` or brighter
+## than `centre - swing`.
 @export_range(0.0, 20.0, 0.5) var tendril_pixels := 4.0
 ## Anti-alias width of the cut in pixels; 0 gives a hard pixel edge.
 @export_range(0.0, 8.0, 0.1) var edge_softness := 1.6
@@ -75,20 +80,20 @@ const MASK_DISTANCE_PIXELS := 32.0
 @export_range(0.0, 2.0, 0.05) var edge_noise_warp := 0.65
 
 @export_group("Fog Breathing")
-## How far the fringe swells in the slow inhale, in pixels. It is a sine whose
-## phase is offset per region, so the room does not pulse in unison; it only ever
-## *adds* depth, so the breathing cannot detach the fringe from the dark mass.
-@export_range(0.0, 8.0, 0.5) var breath_pixels := 1.6
+## How far the slow inhale moves the border inside the swing, in pixels. Signed:
+## it thins and thickens. Phase is offset per region, so the room does not pulse in
+## unison.
+@export_range(0.0, 8.0, 0.5) var breath_pixels := 1.2
 ## Size of the swell lobes in pixels; big values move the whole silhouette.
 @export_range(8.0, 160.0, 1.0) var breath_scale := 46.0
 ## Speed of the inhale, in Hz (0.16 is one breath every ~6 s).
 @export_range(0.0, 2.0, 0.01) var breath_speed := 0.16
 
 @export_group("Fog Surge")
-## How far the travelling swell along the border reaches, in pixels. This is the
-## "涌" part: the wave has a wavelength and a direction, so the edge visibly runs
-## rather than only pulsing in place. One-signed like the breathing.
-@export_range(0.0, 8.0, 0.5) var surge_pixels := 2.6
+## How far the travelling swell moves the border inside the swing, in pixels. This
+## is the "涌" part: the wave has a wavelength and a direction, so the edge visibly
+## runs rather than only pulsing in place.
+@export_range(0.0, 8.0, 0.5) var surge_pixels := 1.8
 ## Wavelength of that swell in pixels. 12..24 reads as a wave; much larger starts
 ## to look like the breathing term and much smaller like static.
 @export_range(4.0, 64.0, 1.0) var surge_scale := 15.0
@@ -1238,6 +1243,7 @@ func _apply_mask_shader_parameters() -> void:
 	_mask_material.set_shader_parameter("cell_pixels", Vector2(cell_size))
 	_mask_material.set_shader_parameter("distance_range", MASK_DISTANCE_PIXELS)
 	_mask_material.set_shader_parameter("tendril_pixels", tendril_pixels)
+	_mask_material.set_shader_parameter("edge_center_px", edge_center_px)
 	_mask_material.set_shader_parameter("edge_softness", edge_softness)
 	_mask_material.set_shader_parameter("noise_scale", edge_noise_scale)
 	_mask_material.set_shader_parameter("noise_grain", edge_noise_grain)

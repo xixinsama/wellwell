@@ -144,43 +144,52 @@ The distance is a two-pass 3-4 chamfer transform over the cell grid, so the
 shader can sample it bilinearly between cell centres and place the cut on any
 pixel instead of on a cell edge. The opacity is interpolated the same way.
 
-**The border is built from three terms, and all three are one-signed** (each can
-only push the cut one way, so the fringe cannot break up or float away from the
-dark mass):
+**The border's depth is a range, not a sum.** Two numbers place it; everything
+else only decides where inside that range the edge sits:
 
-1. **creep** — `tendril_pixels × (0.55 + 0.45 × fbm)`, so the dark side always
-   spills 55 %..100 % of `tendril_pixels` into the *revealed* side (default 4 px:
-   a 2.2..4 px fringe, plus up to 1.4 px of fine grain and 1.5 px of swell). It
-   used to be a two-signed wobble of `±(lobes + grain + swell)` ≈ ±17 px, which is
-   why the fringe vanished in some places and left detached patches in others: the
-   fog could pull *in* as hard as it pushed out.
-2. **recess** — the border leans away from the hero: a radial term
-   (`hero_push_px`, 5 px, fading out over `hero_push_radius_px`, 44 px) plus the
-   light map term (`light_push_px`, 3 px), summed and clamped to `max_push_px`
-   (7 px). The light alone could never do this: it only moves the border where the
-   lantern actually lights a surface, so a wall or a ceiling never receded.
-3. **pixel grain** — a 4×4 ordered dither that only applies where the band is in
-   flight, so the last pixels break into hard 1 px chunks while the fog interior
-   stays clean.
+    offset = clamp(edge_center_px + shape + breath + surge,
+                   edge_center_px - tendril_pixels,
+                   edge_center_px + tendril_pixels)
 
-On top of that the fringe **breathes**, and both breathing terms are one-signed
-too (they only add depth, so the swell can never thin the fringe to zero and
-detach it):
+`edge_center_px` is where the edge sits on average (negative = pushed *into* the
+fog, which reveals more of the room and makes the picture brighter) and
+`tendril_pixels` is half the swing. The shipped `-2 / 4` therefore runs the edge
+from **-6 px (thinnest) to +2 px (thickest)**; measured on `test_fog_start` over ten
+frames the border's offset from the cell edge is min -7, max +1, mean -2.2. That
+replaced a sum of five one-signed terms that could only ever grow the fog: the
+depth was impossible to reason about and there was no way to ask for "a bit
+brighter".
 
-* `breath_*` is the slow inhale: a sine whose phase is offset by a low-frequency
+* **shape** — domain-warped fbm (the lobes) plus the fine grain, `lobe_depth` of the
+  swing (0.75).
+* **breath** — the slow inhale: a sine whose phase is offset by a low-frequency
   field, so one wall breathes a beat behind another instead of the room pulsing as
-  one block. `breath_pixels` 1.6 px, one breath every ~6 s (`breath_speed` 0.16).
-* `surge_*` is the swell that *travels along* the border (two octaves of value
-  noise translated over time), which is what turns a pulse into movement: 15 px
-  wavelength, 2.6 px deep, `surge_speed` 0.5. The second octave exists because a
+  one block. `breath_pixels` 1.2, one breath every ~6 s (`breath_speed` 0.16).
+* **surge** — the swell that *travels along* the border (two octaves of value noise
+  translated over time), which is what turns a pulse into movement: 15 px
+  wavelength, 1.8 px deep, `surge_speed` 0.5. The second octave exists because a
   single 15 px lobe leaves long flat stretches where the edge sits still and the
   breathing reads as a stutter.
+* **pixel grain** — a 4×4 ordered dither that only applies where the band is in
+  flight, so the last pixels break into hard 1 px chunks while the fog interior
+  stays clean.
 
-Measured over 4 s of a settled room (ten frames, `fog_diagnostic.gd --frames 10
---interval 0.45`): the border contour travels a median of 2 px and up to 6 px, 62 %
-of the border band moves, and the room's mean opacity oscillates between 0.287 and
-0.299 — it breathes instead of drifting. Before the two terms it was a 2 px median
-with no travel at all.
+The two temporal terms are signed (they thin and thicken); what makes the breathing
+visible is that they sweep *through* the range.
+
+**The inward half is guarded by thickness.** A retreat may not cut *through* a thin
+strip of fog, or a ring of thin bands comes apart into separate patches: measured on
+`test_fog_start`, the number of large fog blobs went from 2 to 9 when the range moved
+from `-2..+2` to `-6..+2` without a guard. The shader takes the gradient of the
+distance field (two extra cell samples), probes the field at 2x and 3x the retreat
+along it, and scales the retreat away where the fog would not survive it. A thick
+mass retreats normally; a 12 px band keeps its shape. In the loop world the fog is
+one 57k px mass, so the retreat applies at its border and the room stays a single
+blob (measured: 1 blob, 99.3 % coverage).
+
+Measured cost of the range on `test_fog_start`: fogged area 29.9 % -> 15.2 %, mean
+opacity 0.252 -> 0.151 (the picture is materially brighter), while the breathing kept
+a median 4 px / p90 6 px of contour travel over 4 s.
 
 The per-cell opacity is read **bilinearly** and then sharpened
 (`smoothstep(0.30, 0.70, body)`): the mask stores one value per cell, so reading it
@@ -227,16 +236,17 @@ outside it (falloff 34 px, `focus_alpha` 0.92).
 
 | Property | Default | Meaning |
 | :--- | :--- | :--- |
-| `tendril_pixels` | 4 | how far the dark side creeps into the revealed side (one-signed: 55..100 % of this) |
+| `edge_center_px` | -2 | where the border sits on average (- = into the fog, brighter picture) |
+| `tendril_pixels` | 4 | half the swing; with the centre above the edge runs -6..+2 px |
 | `edge_softness` | 1.6 | anti-alias width of the cut; 0 gives a hard pixel edge |
 | `edge_noise_scale` | 13 | size of the coarse lobes; smaller means busier |
 | `edge_noise_grain` | 3.2 | size of the fine grain layer |
 | `edge_noise_speed` | 0.55 | drift speed; 0 freezes the border |
 | `edge_noise_warp` | 0.65 | how strongly the lobes are bent, which turns blobs into tongues |
-| `breath_pixels` | 1.6 | depth of the slow inhale, 0..this (one-signed) |
+| `breath_pixels` | 1.2 | how far the slow inhale moves the border inside the swing |
 | `breath_scale` | 46 | size of the inhale lobes; big values move the whole silhouette |
 | `breath_speed` | 0.16 | inhale speed in Hz (~6 s per breath) |
-| `surge_pixels` | 2.6 | depth of the swell that travels along the border |
+| `surge_pixels` | 1.8 | how far the travelling swell moves the border |
 | `surge_scale` | 15 | wavelength of that swell in pixels |
 | `surge_speed` | 0.5 | how fast it travels |
 | `dither_strength` | 0.6 | blend towards the ordered dither, 0 to 1 |

@@ -118,12 +118,16 @@ func run() -> Array[String]:
 	return failures
 
 
-## The border's three rules, which are shader-only and cannot be run headless, so
-## they are checked as a contract on the source:
+## The border's rules, which are shader-only and cannot be run headless, so they are
+## checked as a contract on the source:
 ##
-##   * the creep into the revealed side is ONE-SIGNED (`tendril * (0.55 + 0.45 * n)`
-##     with n in 0..1). The old form `(lobes - 0.5) * 2 * tendril` pushed the cut in
-##     and out, so the fringe vanished in the low lobes and left detached patches;
+##   * the depth is a *range*: `edge_center_px +- tendril_pixels`, clamped, with the
+##     noise only deciding where inside it the edge sits. That replaced a sum of
+##     five one-signed terms that could only ever grow the fog, so there was no way
+##     to ask for "a bit brighter" and the depth was something you had to add up in
+##     your head;
+##   * the inward half of that range is guarded by a thickness probe, so a retreat
+##     cannot cut *through* a thin strip of fog and split a ring into patches;
 ##   * the per-cell opacity is read bilinearly (`cell_sample`), not with the nearest
 ##     `centre.a`, because one texel per cell painted every fading cell as a hard
 ##     8 px square;
@@ -137,7 +141,6 @@ func _assert_edge_is_one_sided_and_bilinear(failures: Array[String]) -> void:
 		return
 	var source := FileAccess.get_file_as_string(path)
 	for marker: String in [
-		"tendril_pixels * (0.55 + 0.45 * clamp(lobes, 0.0, 1.0))",
 		"vec4 cell_sample(vec2 cell_pos)",
 		"float body_sharp = smoothstep(0.30, 0.70, body);",
 		"float value = band * mix(1.0, body_sharp, fog_side);",
@@ -145,15 +148,17 @@ func _assert_edge_is_one_sided_and_bilinear(failures: Array[String]) -> void:
 		"push = min(push, max_push_px);",
 		"float breath01 = 0.5 + 0.5 * sin(t * breath_speed * TAU + breath_phase);",
 		"float surge01 = (surge_coarse + 0.45 * surge_fine) / 1.45;",
-		"fringe += breath01 * breath_pixels;",
-		"fringe += surge01 * surge_pixels;",
+		"(breath01 - 0.5) * 2.0 * breath_pixels",
+		"(surge01 - 0.5) * 2.0 * surge_pixels",
+		"float wobble = push - edge_offset;",
+		"float survives = smoothstep(0.46, 0.54, min(probe_a, probe_b));",
 	]:
 		if not source.contains(marker):
 			failures.append("fog border math is missing `%s`; see the comment above" % marker)
-	if source.contains("(lobes - 0.5) * 2.0 * tendril_pixels"):
-		failures.append("the creep is two-signed again, so it can drop below zero and detach")
 	if source.contains("max(centre.a, tongue"):
 		failures.append("the fog opacity is back to the nearest per-cell read (8 px squares)")
+	if not source.contains("edge_center_px - tendril_pixels"):
+		failures.append("the border range is no longer clamped to edge_center +- tendril")
 
 
 ## The recess centre is the hero body in mask pixels, and it is pushed every frame:
