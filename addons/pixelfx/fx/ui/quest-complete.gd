@@ -37,7 +37,7 @@ const ROLL := 2.08
 
 
 # the ribbon: two notched tails behind, dark folds, then the band with a lit top, stitching and rolled ends
-static func ribbon(p: Px.Painter, Rb: Array, G: Array, l: float, tails: float, t: float) -> void:
+static func ribbon(p: Px.Painter, Rb: Array, G: Array, l: float, tails: float, _t: float) -> void:
 	if l < 1.0:
 		return
 	if tails > 0.02:

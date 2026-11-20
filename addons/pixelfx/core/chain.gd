@@ -36,14 +36,14 @@ class Chained:
 	var t := 0.0
 
 	func _init(cues: Array, o: Dictionary) -> void:
-		var seed: float = o.seed if o.get("seed") != null else 1.0
+		var chain_seed: float = o.seed if o.get("seed") != null else 1.0
 		for i in cues.size():
 			var c: Dictionary = cues[i]
 			var opts := {}
 			for k in c:
 				if not (k in Px.Chain.CUE_KEYS):
 					opts[k] = c[k]
-			opts.seed = seed + i
+			opts.seed = chain_seed + i
 			list.append({
 				"fx": c.fx,
 				"t": c.t if c.get("t") != null else 0.0,

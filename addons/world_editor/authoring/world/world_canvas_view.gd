@@ -27,6 +27,11 @@ func pan_screen_delta(delta: Vector2) -> void:
     view_center_world_pixels -= delta / zoom
 
 
+## Centre the view on one world-space point, keeping the current zoom.
+func focus_world_point(world_pixels: Vector2) -> void:
+    view_center_world_pixels = world_pixels
+
+
 func fit_world_rect(rect: Rect2, viewport_size: Vector2, padding := 48.0) -> void:
     if not rect.has_area():
         reset()

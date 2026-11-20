@@ -16,8 +16,8 @@ const SQRT2 := 1.4142135623730951
 
 ## The loop time for this critter: seeds other than 1 start it at a different point in its loop, so a crowd of
 ## the same critter doesn't move in lockstep.
-static func shift(t: float, D: float, seed: float = 1.0) -> float:
-	return Px.wrap(t + (seed - 1.0) * 0.618 * D, D)
+static func shift(t: float, D: float, fx_seed: float = 1.0) -> float:
+	return Px.wrap(t + (fx_seed - 1.0) * 0.618 * D, D)
 
 
 ## A curve through keyframes [[x, value], ...] that doesn't wrap: held flat before the first and after the last.
@@ -38,8 +38,8 @@ static func curve(x: float, list: Array) -> float:
 
 ## Smooth noise in -1..1 that repeats every D seconds: F bumps a loop (a whole number), off shifts it along,
 ## so lnoise(t, D, F, r * 0.4) wobbles along a flame and still loops.
-static func lnoise(t: float, D: float, F: float, off: float = 0.0, seed: Variant = 0) -> float:
-	return Px.tileNoise((t / D) * F + off, 0.5, F, 0.0, seed)
+static func lnoise(t: float, D: float, F: float, off: float = 0.0, fx_seed: Variant = 0) -> float:
+	return Px.tileNoise((t / D) * F + off, 0.5, F, 0.0, fx_seed)
 
 
 ## A damped spring's swing after a kick: 1 at age 0, ringing at hz, dying at rate damp.
@@ -352,7 +352,7 @@ class Grid extends RefCounted:
 
 
 ## The toolkit's particle looks for particles whose state is a function of time (pure loops): begin(t), then
-## add(kind, x, y, vx, vy, age, life, color, size, flag, seed) for each one alive now, then draw(p, layer).
+## add(kind, x, y, vx, vy, age, life, color, size, flag, fx_seed) for each one alive now, then draw(p, layer).
 ## opts as for core Particles: { sparks: [head..tail], haze }.
 class Swarm extends RefCounted:
 	var ps: Px.Particles
@@ -365,10 +365,10 @@ class Swarm extends RefCounted:
 		ps.t = t
 		return self
 
-	func add(k: int, x: float, y: float, vx: float, vy: float, age: float, life: float, col: Variant = WHITE, size: float = 1.0, flag: int = 0, seed: float = 0.0) -> void:
+	func add(k: int, x: float, y: float, vx: float, vy: float, age: float, life: float, col: Variant = WHITE, size: float = 1.0, flag: int = 0, fx_seed: float = 0.0) -> void:
 		if age < 0.0 or age >= life:
 			return
-		ps.list.append({"k": k, "x": x, "y": y, "vx": vx, "vy": vy, "life": life - age, "max": life, "col": Px.hex(col) if col else 0, "size": size, "seed": seed, "delay": 0.0, "flag": flag})
+		ps.list.append({"k": k, "x": x, "y": y, "vx": vx, "vy": vy, "life": life - age, "max": life, "col": Px.hex(col) if col else 0, "size": size, "seed": fx_seed, "delay": 0.0, "flag": flag})
 
 	func draw(p: Px.Painter, layer: Variant = null) -> void:
 		ps.draw(p, layer)
@@ -412,10 +412,10 @@ static func tongue(p: Px.Painter, x: float, y: float, h: float, w: float, sx: fl
 
 ## A puff of flame k of its life left (1 new .. 0 gone), size px, cooling down heat (bright-first, 9 steps):
 ## a darker rim, a lit core, a tongue on top, light.
-static func firePuff(p: Px.Painter, x: float, y: float, k: float, size: float, seed: float, heat: Array) -> void:
+static func firePuff(p: Px.Painter, x: float, y: float, k: float, size: float, fx_seed: float, heat: Array) -> void:
 	var age := 1.0 - k
 	var n := heat.size()
-	var hot := minf(0.999, pow(age, 0.62) + fmod(seed, 1.0) * 0.1)
+	var hot := minf(0.999, pow(age, 0.62) + fmod(fx_seed, 1.0) * 0.1)
 	var idx := mini(n - 2, floori(hot * (n - 1)))
 	var r := size * (0.55 + 0.45 * minf(1.0, age * 7.0)) * (1.0 - age * 0.55)
 	var c: int = heat[idx]

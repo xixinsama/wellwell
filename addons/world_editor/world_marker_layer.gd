@@ -15,9 +15,10 @@ const TYPE_COLORS := {
     &"hazard": Color(0.90, 0.35, 0.35),
     &"switch": Color(0.70, 0.55, 0.95),
     &"reset_zone": Color(0.55, 0.60, 0.70),
+    &"door": Color(0.66, 0.61, 1.0),
     &"world_entity": Color(0.75, 0.78, 0.85),
 }
-const TYPE_LETTERS := {&"spawn": "S", &"entrance": "E"}
+const TYPE_LETTERS := {&"spawn": "S", &"entrance": "E", &"door": "D"}
 const TYPE_LABEL_KEYS := {
     &"spawn": "WE_MARKER_SPAWN",
     &"entrance": "WE_MARKER_ENTRANCE",
@@ -26,6 +27,7 @@ const TYPE_LABEL_KEYS := {
     &"hazard": "WE_MARKER_HAZARD",
     &"switch": "WE_MARKER_SWITCH",
     &"reset_zone": "WE_MARKER_RESET_ZONE",
+    &"door": "WE_MARKER_DOOR",
     &"world_entity": "WE_MARKER_ENTITY",
 }
 const MARKER_SIZE := 9.0
@@ -110,7 +112,7 @@ func _draw_tooltip(marker: Dictionary) -> void:
     var text := String(marker["label"])
     var font := ThemeDB.fallback_font
     var width := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, 11).x + 12.0
-    var position := _cursor + Vector2(12, -28)
+    var tooltip_position := _cursor + Vector2(12, -28)
     position.x = clampf(position.x, 4.0, maxf(4.0, size.x - width - 4.0))
     position.y = clampf(position.y, 4.0, maxf(4.0, size.y - 22.0))
     draw_rect(Rect2(position, Vector2(width, 18)), Color(0.08, 0.10, 0.13, 0.96), true)

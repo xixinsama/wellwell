@@ -426,7 +426,7 @@ func _report_histogram(bytes: PackedByteArray) -> int:
 	counts.fill(0)
 	for cell: int in CELL_COUNT:
 		counts[bytes[cell] >> BIN_SHIFT] += 1
-	var expected := CELL_COUNT / BIN_COUNT
+	var expected := int(CELL_COUNT / float(BIN_COUNT))
 	var deviation := 0
 	var lowest := CELL_COUNT
 	var highest := 0

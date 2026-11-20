@@ -153,8 +153,20 @@ func _pack_scene(room_content: Node, root_name: String, child_names: Array[Strin
 	}
 
 
+## Claims the duplicated room tree for the packed scene.
+##
+## `duplicate()` drops owners that point outside the copied branch and keeps the
+## ones that belong inside it, so a node that still has an owner is an internal of
+## an instanced sub-scene (a checkpoint, a door, a platform: its owner is that
+## instance). Re-owning those makes `pack()` write a second copy of the subtree
+## next to the instance, and `instantiate()` then has to reconcile both
+## descriptions — the recovery pass drops the instance's own nodes without freeing
+## them, which leaks one subtree per entity and shows as orphaned nodes in the
+## debugger at exit. Only the unowned nodes are claimed, which keeps the instance
+## root and any authored editable-children overrides intact.
 func _assign_owner_recursive(node: Node, scene_root: Node) -> void:
-	node.owner = scene_root
+	if node.owner == null:
+		node.owner = scene_root
 	for group_name: StringName in node.get_groups():
 		node.add_to_group(group_name, true)
 	for child: Node in node.get_children():

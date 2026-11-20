@@ -24,15 +24,15 @@ static var meta := {
 const D := 2.4
 const GX := 22
 const GY := 60
-# tongues: offset, base height, width, seed; the middle tallest
+# tongues: offset, base height, width, fx_seed; the middle tallest
 const TONGUES := [[-11.0, 20.0, 4.2, 1], [11.0, 22.0, 4.4, 2], [-6.0, 31.0, 5.4, 3], [6.0, 29.0, 5.2, 4], [0.0, 40.0, 6.6, 5]]
 # layers from the outside in: width share, height share, which tone (3 is the black heart)
 const LAYERS := [[1.0, 1.0, 0], [0.8, 0.88, 1], [0.54, 0.68, 2], [0.32, 0.48, 3]]
 
 
 # noise that comes back to where it started each loop: a circle through 2D noise, offset by v
-static func lnoise(t: float, v: float, seed: Variant, speed: float = 5.0) -> float:
-	return Px.noise2(cos((TAU * t) / D) * speed + v, sin((TAU * t) / D) * speed, seed)
+static func lnoise(t: float, v: float, fx_seed: Variant, speed: float = 5.0) -> float:
+	return Px.noise2(cos((TAU * t) / D) * speed + v, sin((TAU * t) / D) * speed, fx_seed)
 
 
 static func drawBack(p: Px.Painter, t: float, o: Dictionary) -> void:

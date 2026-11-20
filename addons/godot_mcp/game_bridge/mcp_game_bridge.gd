@@ -927,7 +927,9 @@ func _handle_get_runtime_state(data: Array) -> void:
 	EngineDebugger.send_message("godot_mcp:game_response", ["get_runtime_state", result])
 
 
-func _has_group_members(scene_root: Node, group_name: String) -> bool:
+## `scene_root` stays in the signature because the caller passes the searched
+## subtree root; group membership is global, so only the group name is queried.
+func _has_group_members(_scene_root: Node, group_name: String) -> bool:
 	var tree := get_tree()
 	if tree == null:
 		return false
@@ -1889,7 +1891,7 @@ func _compile_input_events(inputs: Array) -> Dictionary:
 				if i == n - 1:
 					ex = dx - chunk_x * float(n - 1)
 					ey = dy - chunk_y * float(n - 1)
-				events.append({"time": start_ms + (i * dur) / n, "phase": 1,
+				events.append({"time": start_ms + int((i * dur) / float(n)), "phase": 1,
 					"complete": (1 if i == n - 1 else 0), "kind": "look", "dx": ex, "dy": ey})
 		else:
 			var action_name: String = input.get("action_name", "")
@@ -2111,7 +2113,10 @@ func _sanitize_value(v: Variant) -> Variant:
 			return str(v).substr(0, 200)
 
 
-func _compile_report(report: Array, names: PackedStringArray, inputs: Array) -> Dictionary:
+## The argument bindings (`inputs`) are only needed at stop time, where
+## _evaluate_report() executes the compiled expressions; compiling needs the
+## names alone. The parameter is kept so both report calls share one shape.
+func _compile_report(report: Array, names: PackedStringArray, _inputs: Array) -> Dictionary:
 	# Parse each report expression in the predicate context. Returns
 	# {"error": ...} if any fails to parse, else {"report": [{src, expr}, ...]}.
 	# Deliberately NOT dry-run executed (#353): the state a report reads is

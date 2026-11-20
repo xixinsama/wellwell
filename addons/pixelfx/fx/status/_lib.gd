@@ -88,19 +88,19 @@ static func colorAt(a: Dictionary, x: int, y: int) -> int:
 
 
 ## 1D value noise in [-1, 1] whose lattice wraps every P cells.
-static func wnoise(x: float, P: float, seed: Variant = 0) -> float:
+static func wnoise(x: float, P: float, fx_seed: Variant = 0) -> float:
 	var i := floorf(x)
 	var f := x - i
 	var u := f * f * (3.0 - 2.0 * f)
-	var a := Px.rand(Px.wrap(i, P), seed)
-	var b := Px.rand(Px.wrap(i + 1.0, P), seed)
+	var a := Px.rand(Px.wrap(i, P), fx_seed)
+	var b := Px.rand(Px.wrap(i + 1.0, P), fx_seed)
 	return (a + (b - a) * u) * 2.0 - 1.0
 
 
 ## Noise of time t that repeats every D seconds, about f wiggles a second; off slides along it (ripples).
-static func tnoise(t: float, D: float, f: float, seed: Variant = 0, off: float = 0.0) -> float:
+static func tnoise(t: float, D: float, f: float, fx_seed: Variant = 0, off: float = 0.0) -> float:
 	var P := maxf(2.0, Px.round(f * D))
-	return wnoise((t / D) * P + off, P, seed)
+	return wnoise((t / D) * P + off, P, fx_seed)
 
 
 ## How far something has moved after age a, launched at speed v under acceleration g with linear drag d.
@@ -113,7 +113,7 @@ const LAYERS := [[1.0, 1.0, 6], [0.76, 0.86, 4], [0.54, 0.68, 2], [0.3, 0.42, 0]
 
 
 ## A flame tongue standing on (x, y): h tall, w half-wide at its root, its tip swept sx px sideways, filled in
-## nested layers from F (bright to dark, 9 steps). Rows ripple with noise that loops every D seconds (seed n).
+## nested layers from F (bright to dark, 9 steps). Rows ripple with noise that loops every D seconds (fx_seed n).
 static func tongue(p: Px.Painter, x: float, y: float, h: float, w: float, sx: float, F: Array, t: float, D: float, n: float, layers: Array = LAYERS) -> void:
 	if h < 1.0:
 		return

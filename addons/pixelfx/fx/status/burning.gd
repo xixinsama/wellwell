@@ -47,17 +47,17 @@ static func actorAlpha(t: float, _o: Dictionary) -> float:
 
 # the hot spots on the outline: the hair tips, a shoulder, the back, a sleeve; scorch spots near them per tick
 static var SPOTS := {}
-static func spots(a: Dictionary, seed: float) -> Dictionary:
+static func spots(a: Dictionary, fx_seed: float) -> Dictionary:
 	var s: Variant = SPOTS.get(a.mask.id)
 	if not s:
 		s = {}
 		SPOTS[a.mask.id] = s
-	if s.has(seed):
-		return s[seed]
+	if s.has(fx_seed):
+		return s[fx_seed]
 	var S := Lib.shape(a)
 	var H: int = S.h
 	var W: int = S.w
-	var R := Px.Rng.new(seed * 13.0 + 5.0)
+	var R := Px.Rng.new(fx_seed * 13.0 + 5.0)
 	var at := func(q: float, side: int) -> Array:
 		var my := Px.roundi(H * q)
 		var lr: Array = S.rows[my]
@@ -75,7 +75,7 @@ static func spots(a: Dictionary, seed: float) -> Dictionary:
 	var list := []
 	for i in list0.size():
 		var sp: Dictionary = list0[i]
-		var tongues := Px.arr(sp.n, func(j: int): return {"dx": (j - (sp.n - 1) / 2.0) * 1.6 + R.range(-0.4, 0.4), "h": sp.h * R.range(0.8, 1.2), "n": i * 17 + j * 5 + seed})
+		var tongues := Px.arr(sp.n, func(j: int): return {"dx": (j - (sp.n - 1) / 2.0) * 1.6 + R.range(-0.4, 0.4), "h": sp.h * R.range(0.8, 1.2), "n": i * 17 + j * 5 + fx_seed})
 		list.append(Px.merge(sp, {"x": a.x + sp.at[0] + 0.5, "y": a.y + sp.at[1] + 1.5, "tongues": tongues}))
 	# scorch marks: each tick chars two patches on the clothes near the spots
 	var scorch := []
@@ -92,7 +92,7 @@ static func spots(a: Dictionary, seed: float) -> Dictionary:
 			row.append({"x": a.x + xy[0] + 0.5, "y": a.y + xy[1] + 0.5, "r": R.range(3.2, 4.4)})
 		scorch.append(row)
 	var out := {"list": list, "scorch": scorch}
-	s[seed] = out
+	s[fx_seed] = out
 	return out
 
 

@@ -53,4 +53,5 @@ static var CHAIN := Px.chain([
 	{"fx": Circle, "t": 0},
 	{"fx": Meteor, "t": HIT - 0.62, "x": TX},
 ])
-static func create(o: Dictionary): return CHAIN.create(o)
+static func create(o: Dictionary):
+	return CHAIN.create(o)

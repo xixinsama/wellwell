@@ -53,9 +53,9 @@ class FakeBinding extends Node:
 	var fail_next_room_bind := false
 	var room_bounds := Rect2()
 	var camera_cleared := false
-	func bind_target(value: Node2D) -> void: bound = value
-	func bind_player(value: Node) -> void: bound = value
-	func bind_persistence_source(value: Object) -> void: persistence_source = value
+	func bind_target(_value: Node2D) -> void: bound = _value
+	func bind_player(_value: Node) -> void: bound = _value
+	func bind_persistence_source(_value: Object) -> void: persistence_source = _value
 	func clear_persistence_source() -> void: persistence_source = null
 	func bind_room(_room: Resource, _terrain: Node) -> bool:
 		if fail_next_room_bind:
@@ -63,7 +63,7 @@ class FakeBinding extends Node:
 			return false
 		return room_succeeds
 	func clear_room() -> void: clear_count += 1
-	func set_room_bounds(value: Rect2) -> void: room_bounds = value
+	func set_room_bounds(_value: Rect2) -> void: room_bounds = _value
 	func clear_room_bounds() -> void: camera_cleared = true
 
 

@@ -182,7 +182,7 @@ class Rec:
 					px.append(o.a)
 
 
-# fallen leaves lying in a band along the floor, overlapping. They never move, so they're shaded once per seed
+# fallen leaves lying in a band along the floor, overlapping. They never move, so they're shaded once per fx_seed
 # and palette and the pixels replayed
 static var LITTER := {}
 

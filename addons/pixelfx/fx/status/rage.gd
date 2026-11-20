@@ -58,16 +58,16 @@ static var MARK := [
 	Lib.bitmap(["...#.#...", "...#.#...", "..##.##..", "###...###", ".........", "###...###", "..##.##..", "...#.#...", "...#.#..."]),
 ]
 
-# cracks in the floor round the feet, worked out once per seed: jagged runs out from under each foot
+# cracks in the floor round the feet, worked out once per fx_seed: jagged runs out from under each foot
 static var CRACKS := {}
-static func cracks(a: Dictionary, seed: float) -> Array:
-	if CRACKS.has(seed):
-		return CRACKS[seed]
+static func cracks(a: Dictionary, fx_seed: float) -> Array:
+	if CRACKS.has(fx_seed):
+		return CRACKS[fx_seed]
 	var S := Lib.shape(a)
 	var flr: Array = S.rows[S.h - 1]
 	var fl: int = flr[0]
 	var fr: int = flr[1]
-	var R := Px.Rng.new(seed * 31.0 + 7.0)
+	var R := Px.Rng.new(fx_seed * 31.0 + 7.0)
 	var out := []
 	for xd: Array in [[a.x + fl + 2, -1], [a.x + fr - 1, 1], [a.x + (fl + fr) / 2.0, -1], [a.x + (fl + fr) / 2.0 + 1.0, 1]]:
 		var x: float = xd[0]
@@ -82,7 +82,7 @@ static func cracks(a: Dictionary, seed: float) -> Array:
 			if i > 1 and R.chance(0.3):
 				out.append([[x, y], [x + dir * R.range(1.0, 2.0), Px.clamp(y + R.sign() * R.range(0.6, 1.4), 0.0, 3.0)]])
 		out.append(pts)
-	CRACKS[seed] = out
+	CRACKS[fx_seed] = out
 	return out
 
 

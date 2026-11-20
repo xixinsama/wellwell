@@ -96,8 +96,8 @@ static func drawBack(p: Px.Painter, t: float, o: Dictionary) -> void:
 
 
 # streaks: a bright head, a coloured body, a dotted tail thinning out behind (some cut across the body in front)
-static func lines(p: Px.Painter, C: Array, a: Dictionary, t: float, seed: float, front: bool) -> void:
-	Px.cycle(t, D, 5 if front else 11, seed + (9.0 if front else 7.0), func(r): return r.range(0.12, 0.26), func(age, life, r):
+static func lines(p: Px.Painter, C: Array, a: Dictionary, t: float, fx_seed: float, front: bool) -> void:
+	Px.cycle(t, D, 5 if front else 11, fx_seed + (9.0 if front else 7.0), func(r): return r.range(0.12, 0.26), func(age, life, r):
 		var u: float = age / life
 		var y: float = a.y + r.range(2.0, a.h - 3.0)
 		var len: float = r.range(10.0, 26.0) * (0.7 if front else 1.0)
@@ -128,6 +128,6 @@ static func draw(p: Px.Painter, t: float, o: Dictionary) -> void:
 	p.glow(-6.0, a.y + a.h * 0.5, 22.0, C[3], 0.16)
 	p.glow(0.0, a.y + a.h * 0.45, 30.0, C[3], 0.16)
 	p.glow(a.x + a.w, a.y + a.h * 0.5, 10.0, C[5], 0.12 + 0.06 * sin((t / D) * TAU * 3.0))
-# (JS: seed, which is a GDScript built-in)
+# (JS: fx_seed, which is a GDScript built-in)
 static func seed_(o: Dictionary) -> float:
 	return o.seed

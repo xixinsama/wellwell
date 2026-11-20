@@ -27,32 +27,32 @@ func _init() -> void:
 
 
 func _run() -> void:
-	var root := TEMPLATE.instantiate()
-	root.set("room_id", ROOM_ID)
-	root.set("display_name", "气体尾迹实验室")
-	root.set("room_size_chunks", Vector2i.ONE)
-	root.set("preview_spawn_id", "start")
-	root.set("map_color", Color(0.4, 0.8, 0.95))
-	_paint_terrain(root)
-	_place_entities(root)
+	var level_root := TEMPLATE.instantiate()
+	level_root.set("room_id", ROOM_ID)
+	level_root.set("display_name", "气体尾迹实验室")
+	level_root.set("room_size_chunks", Vector2i.ONE)
+	level_root.set("preview_spawn_id", "start")
+	level_root.set("map_color", Color(0.4, 0.8, 0.95))
+	_paint_terrain(level_root)
+	_place_entities(level_root)
 
 	var packed := PackedScene.new()
-	var pack_error := packed.pack(root)
+	var pack_error := packed.pack(level_root)
 	if pack_error != OK:
 		push_error("could not pack the gas trail room: %d" % pack_error)
-		root.free()
+		level_root.free()
 		quit(1)
 		return
 	var save_error := ResourceSaver.save(packed, SOURCE_PATH)
 	if save_error != OK:
 		push_error("could not save %s: %d" % [SOURCE_PATH, save_error])
-		root.free()
+		level_root.free()
 		quit(1)
 		return
 	print("saved source room: %s" % SOURCE_PATH)
 
-	var bake_result: Dictionary = ROOM_BAKER.new().bake(root, SOURCE_PATH)
-	root.free()
+	var bake_result: Dictionary = ROOM_BAKER.new().bake(level_root, SOURCE_PATH)
+	level_root.free()
 	if not bake_result.get("ok", false):
 		push_error("room bake failed: %s" % str(bake_result.get("errors", [])))
 		quit(1)
@@ -61,8 +61,8 @@ func _run() -> void:
 	quit(0)
 
 
-func _paint_terrain(root: Node) -> void:
-	var terrain := root.get_node("RoomContent/Terrain")
+func _paint_terrain(level_root: Node) -> void:
+	var terrain := level_root.get_node("RoomContent/Terrain")
 	var back := terrain.get_node("BackTiles") as TileMapLayer
 	var solid := terrain.get_node("SolidTiles") as TileMapLayer
 	var detail := terrain.get_node("DetailTiles") as TileMapLayer
@@ -83,8 +83,8 @@ func _paint_terrain(root: Node) -> void:
 		solid.set_cell(Vector2i(x, HEIGHT_CELLS - 1), 0, ATLAS_SOLID)
 
 
-func _place_entities(root: Node) -> void:
-	var entities := root.get_node("RoomContent/Entities")
+func _place_entities(level_root: Node) -> void:
+	var entities := level_root.get_node("RoomContent/Entities")
 	var spawn := entities.get_node_or_null("StartSpawn") as Node2D
 	if spawn != null:
 		spawn.position = Vector2(40.0, (HEIGHT_CELLS - 2) * TILE)
@@ -98,7 +98,7 @@ func _place_entities(root: Node) -> void:
 	field.decay = 0.32
 	field.diffusion = 0.25
 	field.refill = 0.0
-	_attach(root, entities, field)
+	_attach(level_root, entities, field)
 
 	var walker := GasTrailWalker.new()
 	walker.name = "TrailWalker"
@@ -109,7 +109,7 @@ func _place_entities(root: Node) -> void:
 	walker.emit_rate = 6.0
 	walker.backward_speed = 105.0
 	walker.channel = 1
-	_attach(root, entities, walker)
+	_attach(level_root, entities, walker)
 
 	var warm := FogLight.new()
 	warm.name = "TrailLightTop"
@@ -118,7 +118,7 @@ func _place_entities(root: Node) -> void:
 	warm.radius = 96.0
 	warm.energy = 0.9
 	warm.color = Color(1.0, 0.9, 0.72)
-	_attach(root, entities, warm)
+	_attach(level_root, entities, warm)
 
 	var hall_light := FogZone.new()
 	hall_light.name = "TrailRoomLight"
@@ -126,9 +126,9 @@ func _place_entities(root: Node) -> void:
 	hall_light.mode = FogZone.Mode.LIGHT
 	hall_light.size_cells = Vector2i(WIDTH_CELLS, HEIGHT_CELLS)
 	hall_light.zone_id = "gas_trail_lit"
-	_attach(root, entities, hall_light)
+	_attach(level_root, entities, hall_light)
 
 
-func _attach(root: Node, parent: Node, node: Node) -> void:
+func _attach(level_root: Node, parent: Node, node: Node) -> void:
 	parent.add_child(node)
-	node.owner = root
+	node.owner = level_root

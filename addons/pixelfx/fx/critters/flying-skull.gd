@@ -91,7 +91,7 @@ static func topY(x: float) -> float:
 	return -6.0 - 10.5 * sqrt(maxf(0.0, 1.0 - (x / 11.0) ** 2))
 
 
-static func skull(g: Lib.Grid, B: Array, F: Array, open: float, t: float) -> void:
+static func skull(g: Lib.Grid, B: Array, F: Array, open: float, _t: float) -> void:
 	var warm := Px.mix(B[6], F[6], 0.45)
 	var rim := Px.mix(B[5], F[5], 0.3)
 	var lx := -4.0
@@ -183,18 +183,18 @@ static func inJaw(x: float, y: float, jy: float) -> bool:
 
 
 # the tongues of fire on the crown: one every 2 px, tallest in the middle, leaping now and then
-static func crown(seed: float) -> Array:
+static func crown(fx_seed: float) -> Array:
 	var out := []
 	var x := -10.0
 	while x <= 10.0:
-		out.append({"x": x, "h": 13.0 + 13.0 * (1.0 - (x / 11.0) ** 2), "w": 2.3 + Px.rand(x + 20.0, seed, 3) * 0.8, "n": 37.0 + x * 3.0 + seed * 11.0, "front": false})
+		out.append({"x": x, "h": 13.0 + 13.0 * (1.0 - (x / 11.0) ** 2), "w": 2.3 + Px.rand(x + 20.0, fx_seed, 3) * 0.8, "n": 37.0 + x * 3.0 + fx_seed * 11.0, "front": false})
 		x += 2.0
 	# and up the temples
 	for s in [-1.0, 1.0]:
-		out.append({"x": s * 11.0, "y": -5.0, "h": 10.0, "w": 1.8, "n": 61.0 + s * 13.0 + seed * 5.0, "front": false})
+		out.append({"x": s * 11.0, "y": -5.0, "h": 10.0, "w": 1.8, "n": 61.0 + s * 13.0 + fx_seed * 5.0, "front": false})
 	x = -5.0
 	while x <= 5.0:
-		out.append({"x": x, "h": 5.0 + 3.0 * Px.rand(x * 4.0 + 20.0, seed, 5), "w": 1.6, "n": 91.0 + x * 5.0 + seed * 7.0, "front": true})
+		out.append({"x": x, "h": 5.0 + 3.0 * Px.rand(x * 4.0 + 20.0, fx_seed, 5), "w": 1.6, "n": 91.0 + x * 5.0 + fx_seed * 7.0, "front": true})
 		x += 2.5
 	return out
 

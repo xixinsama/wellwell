@@ -14,8 +14,8 @@ static var trace_x := 0
 var s: int
 
 
-func _init(seed: Variant = 1) -> void:
-	s = u32(seed)
+func _init(rng_seed: Variant = 1) -> void:
+	s = u32(rng_seed)
 	if s == 0:
 		s = 1
 

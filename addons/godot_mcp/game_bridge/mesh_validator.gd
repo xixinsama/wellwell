@@ -112,12 +112,13 @@ static func sniff(n: Node) -> Array[String]:
 				if used[i] == 0:
 					orphans += 1
 			if float(orphans) / float(verts.size()) > _FRACTION_WARN:
-				warnings.append("%s surf %d: %d%% of vertices unreferenced — dropped triangles" % [n.name, s, orphans * 100 / verts.size()])
+				warnings.append("%s surf %d: %d%% of vertices unreferenced — dropped triangles" % [n.name, s, int(orphans * 100.0 / verts.size())])
 				continue
-		var tri_count: int = ((idx as PackedInt32Array).size() if idx != null else verts.size()) / 3
+		var element_count: int = (idx as PackedInt32Array).size() if idx != null else verts.size()
+		var tri_count: int = int(element_count / 3.0)
 		if tri_count == 0:
 			continue
-		var stride := maxi(1, tri_count / _SNIFF_SAMPLE_TRIS)
+		var stride := maxi(1, int(tri_count / float(_SNIFF_SAMPLE_TRIS)))
 		var sampled := 0
 		var inside_out := 0
 		var non_finite := 0
@@ -131,7 +132,7 @@ static func sniff(n: Node) -> Array[String]:
 		if non_finite > 0:
 			warnings.append("%s surf %d: non-finite vertex data (NaN/INF)" % [n.name, s])
 		elif inside_out * 2 > sampled:
-			warnings.append("%s surf %d: ~%d%% of sampled triangles wind inside-out" % [n.name, s, inside_out * 100 / sampled])
+			warnings.append("%s surf %d: ~%d%% of sampled triangles wind inside-out" % [n.name, s, int(inside_out * 100.0 / sampled)])
 	return warnings
 
 
@@ -211,7 +212,8 @@ static func _check_surface(mesh: ArrayMesh, s: int, cull_disabled: bool = false)
 	var tans = arrays[Mesh.ARRAY_TANGENT]
 	var idx = arrays[Mesh.ARRAY_INDEX]
 	var indexed: bool = idx != null and (idx as PackedInt32Array).size() > 0
-	var tri_count: int = ((idx as PackedInt32Array).size() if indexed else verts.size()) / 3
+	var element_count: int = (idx as PackedInt32Array).size() if indexed else verts.size()
+	var tri_count: int = int(element_count / 3.0)
 
 	# 1. Orphaned vertices (indexed only): vertices no triangle references.
 	#    The signature of triangles lost during construction.
@@ -237,7 +239,7 @@ static func _check_surface(mesh: ArrayMesh, s: int, cull_disabled: bool = false)
 			})
 
 	# Work budget: stride-sample huge surfaces instead of silently skipping.
-	var stride := maxi(1, tri_count / _MAX_TRIS_SCANNED)
+	var stride := maxi(1, int(tri_count / float(_MAX_TRIS_SCANNED)))
 	var sampled_note := "" if stride == 1 else " (sampled 1/%d triangles)" % stride
 
 	# 2. Winding vs normals, 3. degenerate UV / position triangles.
@@ -274,11 +276,11 @@ static func _check_surface(mesh: ArrayMesh, s: int, cull_disabled: bool = false)
 		if io_frac > _FRACTION_WARN:
 			var wind_severity := "warning" if cull_disabled else "error"
 			var cull_note := " NOTE: this surface's material is double-sided (cull disabled), so wrong winding hides nothing here — but inverted normals still mislight; this may also be intentional (foliage cards, decals)." if cull_disabled else ""
-			if correct > sampled / 10:
+			if correct > sampled / 10.0:
 				findings.append({
 					"severity": wind_severity,
 					"kind": "mixed_winding",
-					"stat": "%d%% of triangles wind inside-out, %d%% correctly%s" % [int(io_frac * 100.0), correct * 100 / sampled, sampled_note],
+					"stat": "%d%% of triangles wind inside-out, %d%% correctly%s" % [int(io_frac * 100.0), int(correct * 100.0 / sampled), sampled_note],
 					"fix": "The generator's point ordering is inconsistent between face families, so no fixed fan order is right for all of them. Enforce winding PER FACE: Godot front faces wind clockwise seen from the normal side, i.e. (b-a).cross(c-a).dot(normal) must be < 0 for every front triangle — swap two indices when it is not. Symptoms: some faces invisible from the side their normal points (see-through floors/walls), others lit on the wrong side (black under any sun)." + cull_note,
 				})
 			else:
@@ -316,8 +318,8 @@ static func _check_surface(mesh: ArrayMesh, s: int, cull_disabled: bool = false)
 	if tans != null:
 		var ptans := tans as PackedFloat32Array
 		var bad_tan := 0
-		var tcount := ptans.size() / 4
-		var tstride := maxi(1, tcount / _MAX_TRIS_SCANNED)
+		var tcount := int(ptans.size() / 4.0)
+		var tstride := maxi(1, int(tcount / float(_MAX_TRIS_SCANNED)))
 		var tsampled := 0
 		for i in range(0, tcount, tstride):
 			tsampled += 1
@@ -332,7 +334,7 @@ static func _check_surface(mesh: ArrayMesh, s: int, cull_disabled: bool = false)
 			findings.append({
 				"severity": "error",
 				"kind": "bad_tangents",
-				"stat": "%d%% of tangents are NaN/zero" % [bad_tan * 100 / tsampled],
+				"stat": "%d%% of tangents are NaN/zero" % [int(bad_tan * 100.0 / tsampled)],
 				"fix": "Broken tangents corrupt normal mapping and, with compressed vertex formats, the GPU normals themselves. Usual cause is generate_tangents() over degenerate UVs — fix the UVs (see degenerate_uvs) or skip tangents for untextured meshes.",
 			})
 
@@ -344,7 +346,7 @@ static func _check_surface(mesh: ArrayMesh, s: int, cull_disabled: bool = false)
 	if norms != null:
 		var pn := norms as PackedVector3Array
 		var bad_n := 0
-		var nstride := maxi(1, pn.size() / _MAX_TRIS_SCANNED)
+		var nstride := maxi(1, int(pn.size() / float(_MAX_TRIS_SCANNED)))
 		var nsampled := 0
 		for i in range(0, pn.size(), nstride):
 			nsampled += 1
@@ -355,7 +357,7 @@ static func _check_surface(mesh: ArrayMesh, s: int, cull_disabled: bool = false)
 			findings.append({
 				"severity": "error",
 				"kind": "zero_normals",
-				"stat": "%d%% of vertex normals are NaN or near-zero length" % [bad_n * 100 / nsampled],
+				"stat": "%d%% of vertex normals are NaN or near-zero length" % [int(bad_n * 100.0 / nsampled)],
 				"fix": "Unit-length normals are assumed by all lighting. The generator is forgetting set_normal() on some vertices or normalizing zero vectors.",
 			})
 	return findings

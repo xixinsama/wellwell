@@ -224,7 +224,7 @@ static func draw(p: Px.Painter, t: float, o: Dictionary) -> void:
 	var H := Px.fit(o.hull, 6)
 	var ph := t / D
 	var podY := LENS - 5.0 + 1.5 * sin(TAU * 2.0 * ph)
-	var seed: float = o.seed
+	var fx_seed: float = o.seed
 	# the beam: a glassy cone, white-hot at the lens, hard bright edges with a soft fringe, light drifting in it
 	var y := ceilf(LENS + 3.0)
 	while y < 0.0:
@@ -244,7 +244,7 @@ static func draw(p: Px.Painter, t: float, o: Dictionary) -> void:
 			else:
 				var curtain := 0
 				for s in 4:
-					if absf((x + 0.5) / w - (Px.rand(seed, s, 7) - 0.5) * 1.4 - 0.12 * sin(TAU * ph + s * 1.7)) < 0.045:
+					if absf((x + 0.5) / w - (Px.rand(fx_seed, s, 7) - 0.5) * 1.4 - 0.12 * sin(TAU * ph + s * 1.7)) < 0.045:
 						curtain = 1
 				var core := pow(1.0 - q, 2.0) * pow(1.0 - v, 1.6)
 				var a := 0.08 + 0.22 * pow(q, 4.0) + 0.6 * core + 0.12 * pulse + 0.18 * curtain
@@ -265,7 +265,7 @@ static func draw(p: Px.Painter, t: float, o: Dictionary) -> void:
 		hoop(p, ry, w, WHITE if k < 0.12 else C[6], false)
 		p.glow(0.0, ry + w * 0.17, w + 4.0, C[5], 0.12)
 	# light streaks drawn up the beam
-	Px.cycle(t, D, 22, seed + 1.0, func(r: Px.Rng): return r.range(0.6, 1.0), func(age: float, life: float, r: Px.Rng):
+	Px.cycle(t, D, 22, fx_seed + 1.0, func(r: Px.Rng): return r.range(0.6, 1.0), func(age: float, life: float, r: Px.Rng):
 		var k := age / life
 		var yy := Px.lerp(-2.0, LENS + 5.0, k * k)
 		var w := half(yy)
@@ -273,12 +273,12 @@ static func draw(p: Px.Painter, t: float, o: Dictionary) -> void:
 		var L := 2.0 + 6.0 * k
 		p.line(x, yy, x, yy + L, func(u: float): return WHITE if u < 0.3 else C[5], minf(1.0, (1.0 - k) * 3.0)))
 	# dust drawn up in soft puffs, thinning as it goes
-	Px.cycle(t, D, 9, seed + 3.0, func(r: Px.Rng): return r.range(1.4, 2.0), func(age: float, life: float, r: Px.Rng):
+	Px.cycle(t, D, 9, fx_seed + 3.0, func(r: Px.Rng): return r.range(1.4, 2.0), func(age: float, life: float, r: Px.Rng):
 		var k := age / life
 		var xy := haul(r.range(8.0, 26.0), r.range(0.0, TAU), r.sign(), 0.8, k)
 		p.disc(xy[0], xy[1], Px.lerp(4.0, 1.5, k), Px.mix(S[3], C[5], 0.25 + 0.5 * k), 0.4 * minf(1.0, k * 6.0) * (1.0 - k)))
 	# grit and motes of light hauled up in a quick spiral, streaking as they go
-	Px.cycle(t, D, 46, seed + 2.0, func(r: Px.Rng): return r.range(0.8, 1.3), func(age: float, life: float, r: Px.Rng):
+	Px.cycle(t, D, 46, fx_seed + 2.0, func(r: Px.Rng): return r.range(0.8, 1.3), func(age: float, life: float, r: Px.Rng):
 		var k := age / life
 		var r0 := r.range(6.0, 30.0)
 		var th0 := r.range(0.0, TAU)
@@ -296,7 +296,7 @@ static func draw(p: Px.Painter, t: float, o: Dictionary) -> void:
 			p.px(x, yy, WHITE)
 			p.glow(x, yy, 4.0, C[5], 0.45))
 	# twinkles caught in the light
-	Px.cycle(t, D, 8, seed + 4.0, 0.5, func(age: float, life: float, r: Px.Rng):
+	Px.cycle(t, D, 8, fx_seed + 4.0, 0.5, func(age: float, life: float, r: Px.Rng):
 		var k := age / life
 		var xy := haul(r.range(4.0, 24.0), r.range(0.0, TAU), r.sign(), 0.6, r.range(0.1, 0.7) + k * 0.15)
 		var arm := Px.round(2.0 * sin(PI * k))

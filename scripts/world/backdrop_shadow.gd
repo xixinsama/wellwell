@@ -211,12 +211,12 @@ func _update_light_relationship() -> void:
 			for node: Node in get_tree().get_nodes_in_group(group):
 				if not is_instance_valid(node) or not node is Node2D:
 					continue
-				var position := (node as Node2D).global_position
+				var light_position := (node as Node2D).global_position
 				candidates.append({
-					"position": position,
+					"position": light_position,
 					"radius": float(node.get("radius")) if "radius" in node else 0.0,
 					"energy": float(node.get("energy")) if "energy" in node else 1.0,
-					"distance": position.distance_squared_to(hero),
+					"distance": light_position.distance_squared_to(hero),
 				})
 	candidates.sort_custom(func(left: Dictionary, right: Dictionary) -> bool:
 		return float(left["distance"]) < float(right["distance"])

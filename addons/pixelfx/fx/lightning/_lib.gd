@@ -302,5 +302,5 @@ static func puff(p: Px.Painter, x: float, y: float, size: float, u: float, c: in
 
 
 ## A seeded generator for frame f of a loop (new shapes every frame, the same shapes every time).
-static func frameRng(seed: Variant, f: Variant, salt: Variant = 0) -> Px.Rng:
-	return Px.rng(seed, salt, f)
+static func frameRng(fx_seed: Variant, f: Variant, salt: Variant = 0) -> Px.Rng:
+	return Px.rng(fx_seed, salt, f)

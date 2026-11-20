@@ -85,7 +85,7 @@ func bind_room(room_data: Variant, terrain_root: Node, origin_chunk: Variant = n
 
 ## WorldSession room extension entry point. Dust needs nothing but the room
 ## rectangle, so a room without terrain still gets its motes.
-func bind_room_with_origin(room_data: Variant, terrain_root: Node, origin_chunk: Vector2i) -> bool:
+func bind_room_with_origin(room_data: Variant, _terrain_root: Node, origin_chunk: Vector2i) -> bool:
 	if room_data == null:
 		return false
 	var chunks: Vector2i = Vector2i.ONE
@@ -165,13 +165,13 @@ func _draw() -> void:
 	var lights := _collect_lights()
 	for index: int in get_mote_count():
 		var world_position := _mote_position(index)
-		var position := world_position - global_position
+		var draw_position := world_position - global_position
 		var twinkle_speed := _twinkle_speeds[index]
 		var pulse := 0.5 + 0.5 * sin(_phases[index] + _time * twinkle_speed)
 		var brightness := 1.0 - twinkle * pulse * 0.8
 		var lit := _light_factor(lights, world_position)
 		draw_rect(
-			Rect2(position, Vector2(float(pixel_size), float(pixel_size))),
+			Rect2(draw_position, Vector2(float(pixel_size), float(pixel_size))),
 			Color(dust_color, clampf(alpha * brightness * lit, 0.0, 1.0))
 		)
 
@@ -217,14 +217,14 @@ func _mote_position(index: int) -> Vector2:
 		sin(_time * sway_speed + phase) * sway_px,
 		cos(_time * sway_speed * 0.77 + phase * 1.3) * sway_px * 0.6
 	)
-	var position := base + travel + sway
-	position.x = _room_rect.position.x + fposmod(
-		position.x - _room_rect.position.x, maxf(_room_rect.size.x, 1.0)
+	var point := base + travel + sway
+	point.x = _room_rect.position.x + fposmod(
+		point.x - _room_rect.position.x, maxf(_room_rect.size.x, 1.0)
 	)
-	position.y = _room_rect.position.y + fposmod(
-		position.y - _room_rect.position.y, maxf(_room_rect.size.y, 1.0)
+	point.y = _room_rect.position.y + fposmod(
+		point.y - _room_rect.position.y, maxf(_room_rect.size.y, 1.0)
 	)
-	return position.floor()
+	return point.floor()
 
 
 func _seed_motes() -> void:

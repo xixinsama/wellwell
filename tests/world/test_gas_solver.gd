@@ -59,8 +59,8 @@ func _read(path: String) -> String:
 	return FileAccess.get_file_as_string(path)
 
 
-func _source(name: String) -> String:
-	return _read(GAS_DIR + name)
+func _source(file_name: String) -> String:
+	return _read(GAS_DIR + file_name)
 
 
 func _assert_density_alpha_stays_opaque(density: String, failures: Array[String]) -> void:

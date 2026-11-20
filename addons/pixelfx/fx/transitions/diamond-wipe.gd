@@ -30,9 +30,9 @@ const OUT1 := 1.56
 static var cache := {}
 
 
-static func lattice(seed: float) -> Array:
-	if cache.has(seed):
-		return cache[seed]
+static func lattice(fx_seed: float) -> Array:
+	if cache.has(fx_seed):
+		return cache[fx_seed]
 	var out := []
 	for j in range(-1, int(ceilf(H / (S / 2.0))) + 2):
 		for i in range(-1, int(ceilf(W / S)) + 2):
@@ -42,9 +42,9 @@ static func lattice(seed: float) -> Array:
 				continue
 			# the wave runs left to right on a slant, each diamond a little early or late
 			var u := Px.clamp((cx + 0.45 * cy) / (W + 0.45 * H))
-			var jr := Px.rand(i, j, seed)
-			out.append({"cx": cx, "cy": cy, "tin": IN0 + (IN1 - IN0) * Px.clamp(u + (jr - 0.5) * 0.08), "tout": OUT0 + (OUT1 - OUT0) * Px.clamp(u + (Px.rand(i, j, seed + 1.0) - 0.5) * 0.08), "glint": jr < 0.3, "spin": Px.rand(i, j, seed + 2.0) * 3.0})
-	cache[seed] = out
+			var jr := Px.rand(i, j, fx_seed)
+			out.append({"cx": cx, "cy": cy, "tin": IN0 + (IN1 - IN0) * Px.clamp(u + (jr - 0.5) * 0.08), "tout": OUT0 + (OUT1 - OUT0) * Px.clamp(u + (Px.rand(i, j, fx_seed + 1.0) - 0.5) * 0.08), "glint": jr < 0.3, "spin": Px.rand(i, j, fx_seed + 2.0) * 3.0})
+	cache[fx_seed] = out
 	return out
 
 

@@ -342,7 +342,7 @@ func _capture(name: String) -> void:
 ## wall clock is pinned to the monitor and every measurement reads 0 (or a negative
 ## delta from noise). The best of a few passes is reported, because a single pass is
 ## sensitive to whatever the OS is doing.
-func _write_timings(instance: Node) -> void:
+func _write_timings(_instance: Node) -> void:
 	var previous_fps := Engine.max_fps
 	var previous_vsync := DisplayServer.window_get_vsync_mode()
 	Engine.max_fps = 0

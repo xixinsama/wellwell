@@ -258,7 +258,7 @@ func _is_stale_connection() -> bool:
 		_stale_reason = "TCP peer disconnected"
 		return true
 	if Time.get_ticks_msec() - _last_activity_msec > STALE_CONNECTION_TIMEOUT_MSEC:
-		_stale_reason = "no activity for %ds" % (STALE_CONNECTION_TIMEOUT_MSEC / 1000)
+		_stale_reason = "no activity for %ds" % int(STALE_CONNECTION_TIMEOUT_MSEC / 1000.0)
 		return true
 	return false
 

@@ -44,33 +44,33 @@ func _init() -> void:
 
 
 func _run() -> void:
-	var root := TEMPLATE.instantiate()
-	root.set("room_id", ROOM_ID)
-	root.set("display_name", "栅格流体")
-	root.set("room_size_chunks", Vector2i.ONE)
-	root.set("preview_spawn_id", "start")
-	root.set("map_color", Color(0.24, 0.62, 0.95))
-	_paint_terrain(root)
-	_place_entities(root)
-	_place_preview(root)
+	var level_root := TEMPLATE.instantiate()
+	level_root.set("room_id", ROOM_ID)
+	level_root.set("display_name", "栅格流体")
+	level_root.set("room_size_chunks", Vector2i.ONE)
+	level_root.set("preview_spawn_id", "start")
+	level_root.set("map_color", Color(0.24, 0.62, 0.95))
+	_paint_terrain(level_root)
+	_place_entities(level_root)
+	_place_preview(level_root)
 
 	var packed := PackedScene.new()
-	var pack_error := packed.pack(root)
+	var pack_error := packed.pack(level_root)
 	if pack_error != OK:
 		push_error("could not pack the grid room: %d" % pack_error)
-		root.free()
+		level_root.free()
 		quit(1)
 		return
 	var save_error := ResourceSaver.save(packed, SOURCE_PATH)
 	if save_error != OK:
 		push_error("could not save %s: %d" % [SOURCE_PATH, save_error])
-		root.free()
+		level_root.free()
 		quit(1)
 		return
 	print("saved source room: %s" % SOURCE_PATH)
 
-	var bake_result: Dictionary = ROOM_BAKER.new().bake(root, SOURCE_PATH)
-	root.free()
+	var bake_result: Dictionary = ROOM_BAKER.new().bake(level_root, SOURCE_PATH)
+	level_root.free()
 	if not bake_result.get("ok", false):
 		push_error("room bake failed: %s" % str(bake_result.get("errors", [])))
 		quit(1)
@@ -79,8 +79,8 @@ func _run() -> void:
 	quit(0)
 
 
-func _paint_terrain(root: Node) -> void:
-	var terrain := root.get_node("RoomContent/Terrain")
+func _paint_terrain(level_root: Node) -> void:
+	var terrain := level_root.get_node("RoomContent/Terrain")
 	var back := terrain.get_node("BackTiles") as TileMapLayer
 	var solid := terrain.get_node("SolidTiles") as TileMapLayer
 	var detail := terrain.get_node("DetailTiles") as TileMapLayer
@@ -118,8 +118,8 @@ func _fill_block(solid: TileMapLayer, left: int, right: int, top_row: int, botto
 			solid.set_cell(Vector2i(x, y), 0, ATLAS_SOLID)
 
 
-func _place_entities(root: Node) -> void:
-	var entities := root.get_node("RoomContent/Entities")
+func _place_entities(level_root: Node) -> void:
+	var entities := level_root.get_node("RoomContent/Entities")
 	var spawn := entities.get_node_or_null("StartSpawn") as Node2D
 	if spawn != null:
 		# Start the hero inside the left pool: the water is deep there, so the
@@ -135,7 +135,7 @@ func _place_entities(root: Node) -> void:
 		FLUID_BOTTOM_ROW - FLUID_TOP_ROW + 1
 	)
 	region.region_id = "basin"
-	_attach(root, entities, region)
+	_attach(level_root, entities, region)
 
 	var warm := FogLight.new()
 	warm.name = "CascadeLightTop"
@@ -144,7 +144,7 @@ func _place_entities(root: Node) -> void:
 	warm.radius = 110.0
 	warm.energy = 0.9
 	warm.color = Color(1.0, 0.9, 0.72)
-	_attach(root, entities, warm)
+	_attach(level_root, entities, warm)
 
 	var cool := FogLight.new()
 	cool.name = "CascadeLightBottom"
@@ -153,7 +153,7 @@ func _place_entities(root: Node) -> void:
 	cool.radius = 120.0
 	cool.energy = 0.8
 	cool.color = Color(0.6, 0.82, 1.0)
-	_attach(root, entities, cool)
+	_attach(level_root, entities, cool)
 
 	var room_light := FogZone.new()
 	room_light.name = "GridRoomLight"
@@ -161,12 +161,12 @@ func _place_entities(root: Node) -> void:
 	room_light.mode = FogZone.Mode.LIGHT
 	room_light.size_cells = Vector2i(WIDTH_CELLS, HEIGHT_CELLS)
 	room_light.zone_id = "water_grid_lit"
-	_attach(root, entities, room_light)
+	_attach(level_root, entities, room_light)
 
 
 ## Adds the 2D fluid to the editor preview so the room can be tuned before baking.
-func _place_preview(root: Node) -> void:
-	var preview := root.get_node_or_null("PreviewOnly")
+func _place_preview(level_root: Node) -> void:
+	var preview := level_root.get_node_or_null("PreviewOnly")
 	if preview == null:
 		return
 	if preview.get_node_or_null("WaterGrid") != null:
@@ -175,9 +175,9 @@ func _place_preview(root: Node) -> void:
 	grid.name = "WaterGrid"
 	grid.set_script(WATER_GRID_SCRIPT)
 	preview.add_child(grid)
-	grid.owner = root
+	grid.owner = level_root
 
 
-func _attach(root: Node, parent: Node, node: Node) -> void:
+func _attach(level_root: Node, parent: Node, node: Node) -> void:
 	parent.add_child(node)
-	node.owner = root
+	node.owner = level_root

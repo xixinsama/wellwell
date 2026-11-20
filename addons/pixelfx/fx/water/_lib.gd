@@ -119,7 +119,7 @@ static func ring(p: Px.Painter, cx: float, cy: float, r: float, sy: float, k: fl
 	var half: float = opts.get("half", 0.0)
 	var hot: bool = opts.get("hot", false)
 	var glint: float = opts.get("glint", 0.0)
-	var seed: float = opts.get("seed", 0.0)
+	var fx_seed: float = opts.get("seed", 0.0)
 	var wob: float = opts.get("wob", 0.0)
 	if k <= 0.02 or r < 0.5:
 		return
@@ -140,13 +140,13 @@ static func ring(p: Px.Painter, cx: float, cy: float, r: float, sy: float, k: fl
 				i += 1
 				continue
 			# as it weakens the crest breaks into glinting dashes (whole pixels, no dither), fixed to the ring
-			if Px.noise(a * 4.7 + seed * 13.1 + j * 5.3, seed) * 0.65 + Px.noise(a * 11.3 + seed * 7.7, seed + 3.0) * 0.35 < need:
+			if Px.noise(a * 4.7 + fx_seed * 13.1 + j * 5.3, fx_seed) * 0.65 + Px.noise(a * 11.3 + fx_seed * 7.7, fx_seed + 3.0) * 0.35 < need:
 				i += 1
 				continue
 			# the near side and the side toward the light (upper left) read brighter
 			var lit := kj * (1.0 if near else 0.7) * (0.88 - 0.12 * cos(a))
 			var c: int = WHITE if (hot and near and j == 0) else C[6 if lit > 0.7 else (5 if lit > 0.38 else 4)]
-			var ra := (rr + wob * Px.noise(a * 2.6 + seed * 1.9 + j, seed + 11.0)) if wob else rr
+			var ra := (rr + wob * Px.noise(a * 2.6 + fx_seed * 1.9 + j, fx_seed + 11.0)) if wob else rr
 			var x := cx + cos(a) * ra
 			var y := cy + s * ra * sy
 			p.dot(x, y, c)
@@ -197,8 +197,8 @@ class Ripples extends RefCounted:
 
 
 ## Lacy foam floating on the surface around (cx, cy), over an rx x ry patch: the crests of a noise field make
-## a white net with holes, thinning out as k falls (1 thick, 0 gone). t drifts it; seed picks the pattern.
-static func lace(p: Px.Painter, cx: float, cy: float, rx: float, ry: float, k: float, C: Array, t: float, seed: float = 0.0) -> void:
+## a white net with holes, thinning out as k falls (1 thick, 0 gone). t drifts it; fx_seed picks the pattern.
+static func lace(p: Px.Painter, cx: float, cy: float, rx: float, ry: float, k: float, C: Array, t: float, fx_seed: float = 0.0) -> void:
 	if k <= 0.01 or rx < 1.0:
 		return
 	var sy := ry / rx
@@ -210,8 +210,8 @@ static func lace(p: Px.Painter, cx: float, cy: float, rx: float, ry: float, k: f
 			return
 		var u := (x - cx) * 0.36
 		var v := ((y - cy) / sy) * 0.36
-		var n := Px.noise2(u + seed * 7.13, v - t * 0.35, seed)
-		var m := Px.noise2(u * 2.2 - t * 0.3, v * 2.2 + seed * 3.1, seed + 9.0)
+		var n := Px.noise2(u + fx_seed * 7.13, v - t * 0.35, fx_seed)
+		var m := Px.noise2(u * 2.2 - t * 0.3, v * 2.2 + fx_seed * 3.1, fx_seed + 9.0)
 		var net := 1.0 - absf(n) * 4.6 + m * 0.3
 		var need := 1.02 - k * (1.15 - d * 0.9)
 		if net < need:

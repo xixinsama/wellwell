@@ -6,6 +6,7 @@ const SAVE_SNAPSHOT := preload("res://addons/platformer_kit/save/save_snapshot.g
 
 signal world_ready()
 signal world_start_failed(errors: Array[String])
+signal world_travel_completed(from_world_id: String, to_world_id: String)
 
 @export var world_data: WorldData
 @export var terrain_runtime_path := NodePath("TerrainRoot")
@@ -84,6 +85,35 @@ func start(world: WorldData = null, snapshot: RefCounted = null) -> bool:
 
 func start_selected_snapshot(snapshot: RefCounted, world: WorldData = null) -> bool:
 	return start(world if world != null else world_data, snapshot)
+
+
+## Swap the whole session to another world and land the actor on [param door_id]
+## inside [param room_id]. Used by SHUTTLE doors; the same snapshot object stays
+## active, so entity state, checkpoints and the save manager keep their wiring.
+func travel_to_world(world: WorldData, room_id: String, door_id: String) -> bool:
+	if world == null or _active_world == null or _active_snapshot == null:
+		return false
+	if not world.has_room(room_id) or door_id.is_empty():
+		return false
+	if world == _active_world:
+		var same_world_runtime := get_node_or_null(world_runtime_path)
+		return same_world_runtime != null and bool(same_world_runtime.call("travel_to_door", room_id, door_id))
+	var previous := _capture_travel_snapshot()
+	var from_world_id := _active_world.world_id
+	_active_snapshot.world_id = world.world_id
+	_active_snapshot.current_room_id = room_id
+	_active_snapshot.respawn_room_id = room_id
+	_active_snapshot.respawn_spawn_id = door_id
+	if not start(world, _active_snapshot):
+		_restore_travel_snapshot(previous)
+		return false
+	var player := get_node_or_null(player_path) as Node2D
+	if player != null:
+		_active_snapshot.respawn_position = player.global_position
+	_disarm_arrival_door(room_id, door_id)
+	_queue_active_commit()
+	world_travel_completed.emit(from_world_id, world.world_id)
+	return true
 
 
 func bind_persistence_source(source: Object) -> void:
@@ -260,6 +290,50 @@ func _rollback_start(previous: Dictionary, terrain_runtime: Node, runtime: Node,
 func _restore_snapshot(snapshot: RefCounted, state: Dictionary) -> void:
 	if snapshot != null and snapshot.has_method("load_from_dictionary"):
 		snapshot.call("load_from_dictionary", state)
+
+
+func _capture_travel_snapshot() -> Dictionary:
+	if _active_snapshot == null:
+		return {}
+	return {
+		"world_id": _active_snapshot.world_id,
+		"current_room_id": _active_snapshot.current_room_id,
+		"respawn_room_id": _active_snapshot.respawn_room_id,
+		"respawn_spawn_id": _active_snapshot.respawn_spawn_id,
+		"respawn_position": _active_snapshot.respawn_position,
+	}
+
+
+func _restore_travel_snapshot(previous: Dictionary) -> void:
+	if _active_snapshot == null or previous.is_empty():
+		return
+	_active_snapshot.world_id = String(previous.get("world_id", ""))
+	_active_snapshot.current_room_id = String(previous.get("current_room_id", ""))
+	_active_snapshot.respawn_room_id = String(previous.get("respawn_room_id", ""))
+	_active_snapshot.respawn_spawn_id = String(previous.get("respawn_spawn_id", ""))
+	_active_snapshot.respawn_position = previous.get("respawn_position", Vector2.ZERO)
+
+
+## The landing door must not fire before the actor steps out of it.
+func _disarm_arrival_door(room_id: String, door_id: String) -> void:
+	var runtime := get_node_or_null(world_runtime_path)
+	if runtime == null or not runtime.has_method("get_room_runtime"):
+		return
+	var room_runtime: Node = runtime.call("get_room_runtime", room_id)
+	if room_runtime == null or not room_runtime.has_method("get_entity"):
+		return
+	var door: Node = room_runtime.call("get_entity", door_id)
+	if door != null and door.has_method("set_arrival_disarmed"):
+		door.call("set_arrival_disarmed")
+
+
+func _queue_active_commit() -> void:
+	var manager := _persistence_source
+	if _active_snapshot == null or manager == null or not manager.has_method("queue_commit"):
+		return
+	if not ("current_snapshot" in manager) or manager.get("current_snapshot") != _active_snapshot:
+		return
+	manager.call("queue_commit")
 
 
 func _report_failure(errors: Array[String]) -> bool:

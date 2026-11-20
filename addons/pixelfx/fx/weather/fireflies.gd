@@ -135,7 +135,7 @@ static func firefly(q: Px.Painter, t: float, f: Dictionary, C: Array) -> void:
 
 
 # the meadow: blades in two rows (the front row drawn over the low fireflies), swaying as the breeze rolls
-# across, a few seed heads; blade tips near a lit firefly catch its light
+# across, a few fx_seed heads; blade tips near a lit firefly catch its light
 static func grass(q: Px.Painter, t: float, S: float, G: Array, C: Array, flies: Array, front: bool) -> void:
 	var lit := flies.filter(func(f): return f.glow > 0.25 and f.depth > 0).map(func(f): return f.pos.call(t) + [f.glow])
 	var n := 150 if front else 230

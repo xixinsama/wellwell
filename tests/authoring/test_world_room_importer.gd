@@ -96,7 +96,8 @@ func run() -> Array[String]:
 	var failures: Array[String] = []
 	_assert_preconditions(importer_script, failures)
 	_assert_successful_first_room_import(importer_script, failures)
-	_assert_successful_later_room_import_uses_unplaced_origin(importer_script, failures)
+	_assert_later_room_import_avoids_overlap(importer_script, failures)
+	_assert_explicit_origin_is_honoured(importer_script, failures)
 	_assert_duplicate_rejected_before_writes(importer_script, failures)
 	_assert_missing_start_rejected(importer_script, failures)
 	_assert_room_save_failure_rolls_back(importer_script, failures)
@@ -165,11 +166,33 @@ func _assert_successful_first_room_import(importer_script: Script, failures: Arr
 	_cleanup()
 
 
-func _assert_successful_later_room_import_uses_unplaced_origin(importer_script: Script, failures: Array[String]) -> void:
-	var world_data := _make_world(true)
-	var world := _save_and_load_world(world_data, failures)
-	if world == null:
+func _assert_later_room_import_avoids_overlap(importer_script: Script, failures: Array[String]) -> void:
+	var first := _import_later_room(importer_script, failures)
+	if first.is_empty():
 		return
+	var origin: Vector2i = first["origin"]
+	var room_size: Vector2i = first["room_size"]
+	if Rect2i(origin, room_size).intersects(first["start_rect"] as Rect2i):
+		failures.append("later imported room landed on the existing room chunk: %s" % str(origin))
+	if origin == Vector2i(-1, -1):
+		failures.append("later imported room still used the legacy unplaced origin (-1, -1)")
+	var second := _import_later_room(importer_script, failures)
+	if second.is_empty():
+		return
+	if second["origin"] != origin:
+		failures.append(
+			"later imported room placement was not deterministic: %s vs %s"
+			% [str(second["origin"]), str(origin)]
+		)
+
+
+## Imports a second room into a world that already holds start_room at (0, 0)
+## and reports where the importer put it.
+func _import_later_room(importer_script: Script, failures: Array[String]) -> Dictionary:
+	_cleanup()
+	var world := _save_and_load_world(_make_world(true), failures)
+	if world == null:
+		return {}
 	var importer: Object = importer_script.new()
 	importer.call("set_room_baker_adapter", FakeRoomBaker.new())
 	var source := Node.new()
@@ -178,10 +201,38 @@ func _assert_successful_later_room_import_uses_unplaced_origin(importer_script: 
 	if not bool(result.get("ok", false)):
 		failures.append("valid later-room import failed: %s" % str(result.get("errors", [])))
 		_cleanup()
+		return {}
+	var saved_world := result.get("world") as Resource
+	var imported: Resource = saved_world.get_room(ROOM_ID)
+	var placement := {
+		"origin": Vector2i(saved_world.call("get_room_origin_chunk", ROOM_ID)),
+		"room_size": imported.room_size_chunks,
+		"start_rect": Rect2i(saved_world.call("get_room_chunk_rect", "start_room")),
+	}
+	_cleanup()
+	return placement
+
+
+func _assert_explicit_origin_is_honoured(importer_script: Script, failures: Array[String]) -> void:
+	_cleanup()
+	var world := _save_and_load_world(_make_world(false), failures)
+	if world == null:
+		return
+	var importer: Object = importer_script.new()
+	importer.call("set_room_baker_adapter", FakeRoomBaker.new())
+	var source := Node.new()
+	var result: Dictionary = importer.call("import_room", world, source, SOURCE_PATH, Vector2i(4, 3))
+	source.free()
+	if not bool(result.get("ok", false)):
+		failures.append("import with an explicit origin failed: %s" % str(result.get("errors", [])))
+		_cleanup()
 		return
 	var saved_world := result.get("world") as Resource
-	if saved_world.call("get_room_origin_chunk", ROOM_ID) != Vector2i(-1, -1):
-		failures.append("later imported room did not default to unplaced origin (-1, -1)")
+	if Vector2i(saved_world.call("get_room_origin_chunk", ROOM_ID)) != Vector2i(4, 3):
+		failures.append(
+			"explicit import origin was not honoured: %s"
+			% str(saved_world.call("get_room_origin_chunk", ROOM_ID))
+		)
 	_cleanup()
 
 

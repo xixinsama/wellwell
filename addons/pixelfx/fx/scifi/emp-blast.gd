@@ -38,7 +38,7 @@ var C: Array
 var F: int
 var RM: float
 var R: Px.Rng
-var seed: float
+var fx_seed: float
 var ps: Px.Particles
 var lights: Px.Lights
 var arcs: Array = []
@@ -56,7 +56,7 @@ func create(o: Dictionary) -> void:
 	F = Px.hex(o.fringe)
 	RM = o.radius
 	R = Px.Rng.new(o.seed)
-	seed = o.seed
+	fx_seed = o.seed
 	ps = Px.Particles.new({"rng": R, "ground": func(): return 0.0, "sparks": [WHITE, C[6], C[5], C[4]], "haze": C[5]})
 	lights = Px.Lights.new()
 
@@ -67,7 +67,7 @@ func radius() -> float:
 
 # which frames the bubble cuts out in while it fails
 func off() -> bool:
-	return t > STROBE and t < BREAK and Px.rand(seed, floori(t * 30.0)) < 0.2 + 0.5 * ((t - STROBE) / (BREAK - STROBE))
+	return t > STROBE and t < BREAK and Px.rand(fx_seed, floori(t * 30.0)) < 0.2 + 0.5 * ((t - STROBE) / (BREAK - STROBE))
 
 
 # the charge: a mote of light just off the floor, swelling, blinking faster, crackling
@@ -80,7 +80,7 @@ func charge(p: Px.Painter) -> void:
 	p.circle(0.0, -7.0, r + 1.0, C[4])
 	p.circle(0.0, -7.0, r, WHITE if tick else C[6])
 	var f := floori(t * 30.0)
-	var rr := Px.Rng.new(seed * 97.0 + f)
+	var rr := Px.Rng.new(fx_seed * 97.0 + f)
 	for i in 1 + floori(k * 3.0):
 		var a := rr.range(0.0, TAU)
 		var l := r + 2.0 + rr.range(2.0, 6.0) * k
@@ -100,7 +100,7 @@ func bubble(p: Px.Painter, near: bool) -> void:
 	# the tears: a few rows this frame shifted sideways and burning bright
 	var tears := {}
 	for i in 2 + (4 if t > STROBE else 0):
-		tears[floori(-Px.rand(seed, slot, i) * r)] = (-1 if Px.rand(seed, slot, i, 1) < 0.5 else 1) * (2 + floori(Px.rand(seed, slot, i, 2) * 4.0))
+		tears[floori(-Px.rand(fx_seed, slot, i) * r)] = (-1 if Px.rand(fx_seed, slot, i, 1) < 0.5 else 1) * (2 + floori(Px.rand(fx_seed, slot, i, 2) * 4.0))
 	for y in range(floori(-r), ceili(ry) + 1):
 		var shift: int = tears.get(y, 0)
 		for x in range(floori(-r), ceili(r) + 1):
@@ -140,11 +140,11 @@ func bubble(p: Px.Painter, near: bool) -> void:
 			a += 0.35
 		# junk blocks flicker on inside it
 		for i in 3:
-			var k := Px.rand(seed, slot, i, 7)
+			var k := Px.rand(fx_seed, slot, i, 7)
 			if k > 0.5:
 				continue
-			var ja := Px.rand(seed, slot, i, 8) * PI
-			var d := Px.rand(seed, slot, i, 9) * r * 0.85
+			var ja := Px.rand(fx_seed, slot, i, 8) * PI
+			var d := Px.rand(fx_seed, slot, i, 9) * r * 0.85
 			var bx := Px.round(cos(ja) * d)
 			var by := Px.round(-sin(ja) * d)
 			p.rect(bx, by, 2.0 + floorf(k * 8.0), 1.0 + floorf(k * 4.0), WHITE if k < 0.2 else C[5])
@@ -167,8 +167,8 @@ func update(dt: float) -> void:
 		var len := Px.Ease.outBack(sa / 0.05, 2.0) if sa < 0.05 else 1.0 - (sa - 0.05) / 0.26
 		star = []
 		for i in 7:
-			var a := -PI + (i / 6.0) * PI + Px.rand(seed, i, 3) * 0.3 - 0.15 + R.range(-0.1, 0.1)
-			var L := (20.0 + 16.0 * Px.rand(seed, i, 5)) * maxf(0.15, len)
+			var a := -PI + (i / 6.0) * PI + Px.rand(fx_seed, i, 3) * 0.3 - 0.15 + R.range(-0.1, 0.1)
+			var L := (20.0 + 16.0 * Px.rand(fx_seed, i, 5)) * maxf(0.15, len)
 			star.append(Px.bolt(R, 0.0, -7.0, cos(a) * L, minf(-1.0, -7.0 + sin(a) * L), {"jag": 0.28, "depth": 4}))
 	if sa >= 0.26:
 		star = []

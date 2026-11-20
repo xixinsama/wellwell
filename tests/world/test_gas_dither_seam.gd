@@ -115,17 +115,17 @@ func _assert_half_threshold_is_dispersed(failures: Array[String]) -> void:
 		for y in TILE:
 			if _kernel_index(float(x), float(y)) < HALF_THRESHOLD:
 				lit += 1
-		if lit != TILE / 2:
+		if lit != int(TILE / 2.0):
 			failures.append(
 				"dither column %d lights %d of %d texels at half opacity, want %d: the dither is columnar"
-				% [x, lit, TILE, TILE / 2]
+				% [x, lit, TILE, int(TILE / 2.0)]
 			)
 	for y in TILE:
 		var lit := 0
 		for x in TILE:
 			if _kernel_index(float(x), float(y)) < HALF_THRESHOLD:
 				lit += 1
-		if lit != TILE / 2:
+		if lit != int(TILE / 2.0):
 			failures.append("dither row %d lights %d of %d texels at half opacity" % [y, lit, TILE])
 
 

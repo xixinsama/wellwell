@@ -40,7 +40,7 @@ static func surface(x: float, ph: float) -> float:
 	return -0.5 + 0.17 * sin(ph * TAU - 0.9) * x + 0.45 * sin(x * 0.85 + ph * TAU * 3.0)
 
 
-static func flask(p: Px.Painter, C: Array, t: float, ph: float, cy: float, tilt: float, seed: Variant) -> void:
+static func flask(p: Px.Painter, C: Array, t: float, ph: float, cy: float, tilt: float, fx_seed: Variant) -> void:
 	var ct := cos(tilt)
 	var st := sin(tilt)
 	L.begin(-20.0, floorf(cy) - 22.0)
@@ -96,7 +96,7 @@ static func flask(p: Px.Painter, C: Array, t: float, ph: float, cy: float, tilt:
 	p.px(Px.round(2.0 * cos(tilt) + 3.0 * sin(tilt)), Px.round(cy - 3.0), WHITE)
 	# bubbles rising through the brew and popping at its surface
 	var D: float = meta.duration
-	Px.cycle(t, D, 10, seed, func(g: Px.Rng) -> float: return g.range(0.7, 1.3), func(age: float, life: float, r: Px.Rng) -> void:
+	Px.cycle(t, D, 10, fx_seed, func(g: Px.Rng) -> float: return g.range(0.7, 1.3), func(age: float, life: float, r: Px.Rng) -> void:
 		var x0 := r.range(-4.0, 4.0)
 		var r0 := r.range(0.6, 1.7)
 		var vy := r.range(7.0, 13.0)

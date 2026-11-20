@@ -56,7 +56,7 @@ static func beams(t: float) -> Array:
 
 
 # a laser: a white-hot core, a red body either side, a dithered fringe, haze lighting up along it
-static func laser(p: Px.Painter, b: Array, C: Array, t: float, seed: float) -> void:
+static func laser(p: Px.Painter, b: Array, C: Array, t: float, fx_seed: float) -> void:
 	var x0: float = b[0]
 	var y0: float = b[1]
 	var x1: float = b[2]
@@ -73,7 +73,7 @@ static func laser(p: Px.Painter, b: Array, C: Array, t: float, seed: float) -> v
 	while d <= L:
 		var x := Px.lerp(x0, x1, d / L)
 		var y := Px.lerp(y0, y1, d / L)
-		var h := 0.5 + 0.5 * Px.tileFbm(x / 14.0 + (t / D) * 4.0, y / 10.0, 4.0, 0.0, seed)
+		var h := 0.5 + 0.5 * Px.tileFbm(x / 14.0 + (t / D) * 4.0, y / 10.0, 4.0, 0.0, fx_seed)
 		p.glow(x, y, 6.0 + 4.0 * h, C[3], 0.14 + 0.3 * h * h)
 		d += 5.0
 

@@ -237,9 +237,13 @@ static func rock(p: Px.Painter, b: Dictionary, st: Dictionary, FR: Array) -> voi
 		p.glow(bx, by, r * 2.0 + 3.0, FR[3], 0.32 * heat * fade)
 
 
+## A glowDome() box that clamps nothing: an effect drawn straight onto the canvas.
+const FAR_BOX: Array = [-INF, -INF, INF, INF]
+
+
 ## Light hugging the upper half of a circle of radius R at (x, y) (a dome's shock), falling off over width w.
 ## box [x0, y0, x1, y1] (local) keeps it inside a canvas.
-static func glowDome(p: Px.Painter, x: float, y: float, R: float, w: float, c: int, k: float, box: Array = [-INF, -INF, INF, INF]) -> void:
+static func glowDome(p: Px.Painter, x: float, y: float, R: float, w: float, c: int, k: float, box: Array = FAR_BOX) -> void:
 	if k <= 0.004 or w < 1.0:
 		return
 	p.shade(maxf(box[0], x - R - w), maxf(box[1], y - R - w), minf(box[2], x + R + w), minf(box[3], y + 0.5), func(px: float, py: float, out):

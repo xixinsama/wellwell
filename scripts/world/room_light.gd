@@ -57,23 +57,23 @@ func _ready() -> void:
 ## Where the light is and how bright it is at `time` seconds. The returned
 ## position is a world position; `energy` already includes the flicker.
 func get_light_state(time: float) -> Dictionary:
-	var position := global_position
+	var light_position := global_position
 	if swing_pixels > 0.0:
 		var axis := swing_axis.normalized() if swing_axis.length() > 0.01 else Vector2.RIGHT
-		position += axis * sin(time * swing_speed * TAU) * swing_pixels
+		light_position += axis * sin(time * swing_speed * TAU) * swing_pixels
 	if wander_pixels > 0.0:
 		var phase := time * wander_speed * TAU
-		position += Vector2(
-			sin(phase * 1.7 + position.x * 0.11),
-			sin(phase * 1.13 + position.y * 0.17 + 1.7)
+		light_position += Vector2(
+			sin(phase * 1.7 + light_position.x * 0.11),
+			sin(phase * 1.13 + light_position.y * 0.17 + 1.7)
 		) * wander_pixels
 	var value := energy
 	if flicker > 0.0:
-		var wave := sin(time * flicker_speed + position.x * 0.37) * 0.5 + 0.5
-		var wobble := sin(time * flicker_speed * 2.7 + position.y * 0.19) * 0.5 + 0.5
+		var wave := sin(time * flicker_speed + light_position.x * 0.37) * 0.5 + 0.5
+		var wobble := sin(time * flicker_speed * 2.7 + light_position.y * 0.19) * 0.5 + 0.5
 		value = energy * (1.0 - flicker * (1.0 - (wave * 0.7 + wobble * 0.3)))
 	return {
-		"position": position,
+		"position": light_position,
 		"radius": radius,
 		"energy": value,
 		"color": Color(color.r, color.g, color.b, 1.0),

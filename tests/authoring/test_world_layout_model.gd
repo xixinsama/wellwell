@@ -11,6 +11,7 @@ var _missing_model_reported := false
 func run() -> Array[String]:
 	var failures: Array[String] = []
 	_assert_add_remove_move_and_deterministic_arrays(failures)
+	_assert_free_origin_search(failures)
 	_assert_connection_direction_breaks_sort_ties(failures)
 	_assert_duplicate_room_and_duplicate_source_endpoint_are_rejected(failures)
 	_assert_remove_room_clears_referencing_connections_without_files(failures)
@@ -105,6 +106,76 @@ func _assert_duplicate_room_and_duplicate_source_endpoint_are_rejected(failures:
 	_assert_ok(model.call("connect_rooms", world, first), "add first connection", failures)
 	var duplicate_connection: Dictionary = model.call("connect_rooms", world, second)
 	_assert_false(duplicate_connection.get("ok", true), "duplicate source endpoint is rejected", failures)
+
+
+func _assert_free_origin_search(failures: Array[String]) -> void:
+	var model = _new_model(failures)
+	if model == null:
+		return
+	for method_name: String in ["find_free_origin_chunk", "find_default_origin_chunk"]:
+		if not model.has_method(method_name):
+			failures.append("world layout model is missing the free-origin API: %s" % method_name)
+			return
+
+	var empty: Resource = _make_world()
+	_assert_equal(
+		model.call("find_default_origin_chunk", empty, Vector2i.ONE),
+		Vector2i.ZERO,
+		"empty world defaults the first room to (0, 0)",
+		failures
+	)
+	_assert_equal(
+		model.call("find_free_origin_chunk", empty, Vector2i(4, -2), Vector2i.ONE),
+		Vector2i(4, -2),
+		"free desired chunk is honoured",
+		failures
+	)
+
+	var world: Resource = _make_world()
+	var blocker: Resource = _make_room("blocker")
+	blocker.room_size_chunks = Vector2i.ONE
+	world.rooms.assign([blocker])
+	world.set_room_origin_chunk("blocker", Vector2i.ZERO)
+	_assert_equal(
+		model.call("find_default_origin_chunk", world, Vector2i.ONE),
+		Vector2i(1, 0),
+		"default origin scans row-major past an occupied (0, 0)",
+		failures
+	)
+	var displaced: Vector2i = model.call("find_free_origin_chunk", world, Vector2i.ZERO, Vector2i.ONE)
+	if displaced == Vector2i.ZERO:
+		failures.append("occupied desired chunk was not displaced")
+	_assert_equal(displaced, Vector2i(-1, -1), "nearest free chunk follows the ring order", failures)
+	_assert_no_overlap(world, displaced, Vector2i.ONE, "displaced chunk", failures)
+	_assert_equal(
+		model.call("find_free_origin_chunk", world, Vector2i.ZERO, Vector2i.ONE),
+		displaced,
+		"free chunk search is deterministic on repeat",
+		failures
+	)
+
+	var crowded: Resource = _make_world()
+	for entry: Array in [["left", Vector2i(-2, 0), Vector2i(2, 2)], ["middle", Vector2i(1, 1), Vector2i(2, 2)]]:
+		var room: Resource = _make_room(String(entry[0]))
+		room.room_size_chunks = entry[2] as Vector2i
+		crowded.rooms.append(room)
+		crowded.set_room_origin_chunk(room.room_id, entry[1] as Vector2i)
+	var big_size := Vector2i(2, 2)
+	var big_origin: Vector2i = model.call("find_free_origin_chunk", crowded, Vector2i(1, 1), big_size)
+	_assert_no_overlap(crowded, big_origin, big_size, "multi-room free chunk", failures)
+	_assert_equal(
+		model.call("find_free_origin_chunk", crowded, Vector2i(1, 1), big_size),
+		big_origin,
+		"multi-room free chunk search is deterministic on repeat",
+		failures
+	)
+
+
+func _assert_no_overlap(world: Resource, origin: Vector2i, size: Vector2i, label: String, failures: Array[String]) -> void:
+	var candidate := Rect2i(origin, size)
+	for room: Resource in world.rooms:
+		if candidate.intersects(world.call("get_room_chunk_rect", room.room_id)):
+			failures.append("%s %s overlaps room %s" % [label, str(origin), room.room_id])
 
 
 func _assert_connection_direction_breaks_sort_ties(failures: Array[String]) -> void:

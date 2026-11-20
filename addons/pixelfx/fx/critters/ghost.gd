@@ -38,7 +38,7 @@ static func halfW(h: float) -> float:
 	return Px.lerp(R + 2.2, R, (h / (top - R)) ** 0.7)
 
 
-static func sheet(g: Lib.Grid, C: Array, t: float, o: Dictionary, lagX: float) -> Dictionary:
+static func sheet(g: Lib.Grid, C: Array, t: float, _o: Dictionary, lagX: float) -> Dictionary:
 	g.clear()
 	var top := 2.0 * R + 9.0
 	var ph := (t / D) * TAU * 2.0

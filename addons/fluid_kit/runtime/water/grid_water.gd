@@ -373,7 +373,7 @@ func get_cell_surface_y(index: int) -> float:
 		return INF
 	if _water[index] <= REST_HEIGHT:
 		return INF
-	var cell_y := index / width
+	var cell_y := int(index / float(width))
 	var current := index
 	while cell_y > 0:
 		var above := current - width
@@ -471,7 +471,7 @@ func step(delta: float) -> void:
 func surface_of_cell(index: int) -> float:
 	if index < 0 or index >= _water.size():
 		return 0.0
-	var row := index / width
+	var row := int(index / float(width))
 	return float(row + 1) * cell_pixels - _water[index]
 
 
@@ -512,10 +512,12 @@ func _level_pass(delta: float) -> float:
 			# Only level surfaces that sit next to each other. A waterfall is many
 			# cells above the pool it feeds, and moving water sideways out of its
 			# top would thin the fall from above instead of letting it land.
-			if absi(top_a / width - top_b / width) > LEVEL_MAX_ROW_GAP:
+			var row_a := int(top_a / float(width))
+			var row_b := int(top_b / float(width))
+			if absi(row_a - row_b) > LEVEL_MAX_ROW_GAP:
 				continue
-			var surface_a := float(top_a / width + 1) * capacity - water[top_a]
-			var surface_b := float(top_b / width + 1) * capacity - water[top_b]
+			var surface_a := float(row_a + 1) * capacity - water[top_a]
+			var surface_b := float(row_b + 1) * capacity - water[top_b]
 			var difference := surface_a - surface_b
 			if absf(difference) <= LEVEL_DEADBAND:
 				continue
@@ -616,7 +618,7 @@ func _touch(index: int) -> void:
 	if index < 0 or index >= _water.size():
 		return
 	var column := index % width
-	var row := index / width
+	var row := int(index / float(width))
 	if _dirty_top < 0:
 		_dirty_top = row
 		_dirty_bottom = row

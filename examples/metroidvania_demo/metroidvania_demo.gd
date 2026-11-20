@@ -38,10 +38,10 @@ func _ready() -> void:
 	$Status.text = "Current: demo:start\nExploration: %d%%" % roundi(runtime.exploration_ratio() * 100.0)
 
 
-func _room(id: StringName, region_id: StringName, position: Vector2i, room_size: Vector2i) -> Resource:
+func _room(id: StringName, region_id: StringName, map_position: Vector2i, room_size: Vector2i) -> Resource:
 	var room: Resource = MAP_ROOM.new()
 	room.room_id = id
 	room.region_id = region_id
-	room.map_position = position
+	room.map_position = map_position
 	room.map_size = room_size
 	return room

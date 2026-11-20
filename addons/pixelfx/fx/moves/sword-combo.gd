@@ -26,7 +26,8 @@ static var meta := {
 	"options": {"seed": 1},
 }
 
-static func until(keys: Array, t: float) -> Array: return keys.filter(func(k): return k[0] <= t)
+static func until(keys: Array, t: float) -> Array:
+	return keys.filter(func(k): return k[0] <= t)
 static var STAND_ := Px.merge(Px.READY, {"weapon": "sword", "fx": 11, "fy": -15, "sa": 0.38})
 static var act := {
 	"target": {"x": 118},
@@ -43,4 +44,5 @@ static var CHAIN := Px.chain([
 	{"fx": Double, "t": B, "x": STEP},
 	{"fx": Cleave, "t": C, "x": STEP * 2},
 ])
-static func create(o: Dictionary): return CHAIN.create(o)
+static func create(o: Dictionary):
+	return CHAIN.create(o)

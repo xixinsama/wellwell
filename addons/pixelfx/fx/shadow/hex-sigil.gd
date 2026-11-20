@@ -74,9 +74,9 @@ static func strokes(_seed: Variant) -> Dictionary:
 
 
 # seven small glyphs of our own: a spine and two or three branches on a 3x3 grid of nodes
-static func glyphs(seed: Variant) -> Array:
+static func glyphs(fx_seed: Variant) -> Array:
 	return Px.arr(7, func(i):
-		var r := Px.rng(seed, i, 31)
+		var r := Px.rng(fx_seed, i, 31)
 		var segs := [[[1, 0], [1, 2]]]
 		var k := 0
 		while k < 2 + (1 if r.next() < 0.5 else 0):

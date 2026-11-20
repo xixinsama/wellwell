@@ -250,7 +250,7 @@ func draw(p: Px.Painter) -> void:
 		var xy := pos(t)
 		var x: float = xy[0]
 		var y: float = xy[1]
-		var NZ := func(rate: float, seed: Variant = 0, off: float = 0.0) -> float: return Px.noise(t * rate + off, seed)
+		var NZ := func(rate: float, fx_seed: Variant = 0, off: float = 0.0) -> float: return Px.noise(t * rate + off, fx_seed)
 		Lib.floorLight(p, 0.0, 0.5, 30.0 + 40.0 * (t / HIT), 7.0, GLOW, 0.5 * pow(t / HIT, 2.0))
 		var tails := [[36.0, 7.0, 0.0], [26.0, 7.5, -2.5], [26.0, 7.5, 2.5], [16.0, 8.0, 0.0]]
 		for i in tails.size():

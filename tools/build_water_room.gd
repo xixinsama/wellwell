@@ -51,32 +51,32 @@ func _init() -> void:
 
 
 func _run() -> void:
-	var root := TEMPLATE.instantiate()
-	root.set("room_id", ROOM_ID)
-	root.set("display_name", "水池与雾气")
-	root.set("room_size_chunks", Vector2i.ONE)
-	root.set("preview_spawn_id", "start")
-	root.set("map_color", Color(0.28, 0.58, 0.86))
-	_paint_terrain(root)
-	_place_entities(root)
+	var level_root := TEMPLATE.instantiate()
+	level_root.set("room_id", ROOM_ID)
+	level_root.set("display_name", "水池与雾气")
+	level_root.set("room_size_chunks", Vector2i.ONE)
+	level_root.set("preview_spawn_id", "start")
+	level_root.set("map_color", Color(0.28, 0.58, 0.86))
+	_paint_terrain(level_root)
+	_place_entities(level_root)
 
 	var packed := PackedScene.new()
-	var pack_error := packed.pack(root)
+	var pack_error := packed.pack(level_root)
 	if pack_error != OK:
 		push_error("could not pack the water hall: %d" % pack_error)
-		root.free()
+		level_root.free()
 		quit(1)
 		return
 	var save_error := ResourceSaver.save(packed, SOURCE_PATH)
 	if save_error != OK:
 		push_error("could not save %s: %d" % [SOURCE_PATH, save_error])
-		root.free()
+		level_root.free()
 		quit(1)
 		return
 	print("saved source room: %s" % SOURCE_PATH)
 
-	var bake_result: Dictionary = ROOM_BAKER.new().bake(root, SOURCE_PATH)
-	root.free()
+	var bake_result: Dictionary = ROOM_BAKER.new().bake(level_root, SOURCE_PATH)
+	level_root.free()
 	if not bake_result.get("ok", false):
 		push_error("room bake failed: %s" % str(bake_result.get("errors", [])))
 		quit(1)
@@ -87,8 +87,8 @@ func _run() -> void:
 	quit(0)
 
 
-func _paint_terrain(root: Node) -> void:
-	var terrain := root.get_node("RoomContent/Terrain")
+func _paint_terrain(level_root: Node) -> void:
+	var terrain := level_root.get_node("RoomContent/Terrain")
 	var back := terrain.get_node("BackTiles") as TileMapLayer
 	var solid := terrain.get_node("SolidTiles") as TileMapLayer
 	var detail := terrain.get_node("DetailTiles") as TileMapLayer
@@ -134,8 +134,8 @@ func _paint_solid(layer: TileMapLayer, x: int, y: int, atlas: Vector2i) -> void:
 	layer.set_cell(Vector2i(x, y), 0, atlas)
 
 
-func _place_entities(root: Node) -> void:
-	var entities := root.get_node("RoomContent/Entities")
+func _place_entities(level_root: Node) -> void:
+	var entities := level_root.get_node("RoomContent/Entities")
 	var spawn := entities.get_node_or_null("StartSpawn") as Node2D
 	if spawn != null:
 		spawn.position = Vector2(LEDGE_LEFT * TILE + 20.0, LEDGE_ROW * TILE)
@@ -146,14 +146,14 @@ func _place_entities(root: Node) -> void:
 	basin_a.position = Vector2(TANK_A_LEFT * TILE, TANK_A_SURFACE_ROW * TILE)
 	basin_a.size_cells = Vector2i(TANK_A_RIGHT - TANK_A_LEFT, TANK_A_FLOOR_ROW - TANK_A_SURFACE_ROW + 1)
 	basin_a.basin_id = "tank_a"
-	_attach(root, entities, basin_a)
+	_attach(level_root, entities, basin_a)
 
 	var basin_b := WaterBasin.new()
 	basin_b.name = "WaterBasinB"
 	basin_b.position = Vector2(BASIN_B_LEFT * TILE, BASIN_B_FLOOR_ROW * TILE)
 	basin_b.size_cells = Vector2i(BASIN_B_RIGHT - BASIN_B_LEFT, 2)
 	basin_b.basin_id = "basin_b"
-	_attach(root, entities, basin_b)
+	_attach(level_root, entities, basin_b)
 
 	var gate := WaterGate.new()
 	gate.name = "SluiceGate"
@@ -162,7 +162,7 @@ func _place_entities(root: Node) -> void:
 	gate.gate_id = "spill_gate"
 	gate.open_delay_seconds = 0.9
 	gate.slide_seconds = 0.5
-	_attach(root, entities, gate)
+	_attach(level_root, entities, gate)
 
 	var warm := FogLight.new()
 	warm.name = "HarborLight"
@@ -172,7 +172,7 @@ func _place_entities(root: Node) -> void:
 	warm.energy = 1.15
 	warm.color = Color(1.0, 0.76, 0.44)
 	warm.flicker = 0.16
-	_attach(root, entities, warm)
+	_attach(level_root, entities, warm)
 
 	var cool := FogLight.new()
 	cool.name = "BasinLight"
@@ -183,7 +183,7 @@ func _place_entities(root: Node) -> void:
 	cool.color = Color(0.52, 0.82, 1.0)
 	cool.flicker = 0.08
 	cool.flicker_speed = 2.4
-	_attach(root, entities, cool)
+	_attach(level_root, entities, cool)
 
 	# The hall is lit as a whole: a LIGHT fog zone covering the room keeps the
 	# exploration fog from clipping the pools and the mist into a black band.
@@ -193,9 +193,9 @@ func _place_entities(root: Node) -> void:
 	hall_light.mode = FogZone.Mode.LIGHT
 	hall_light.size_cells = Vector2i(WIDTH_CELLS, HEIGHT_CELLS)
 	hall_light.zone_id = "water_hall_lit"
-	_attach(root, entities, hall_light)
+	_attach(level_root, entities, hall_light)
 
 
-func _attach(root: Node, parent: Node, node: Node) -> void:
+func _attach(level_root: Node, parent: Node, node: Node) -> void:
 	parent.add_child(node)
-	node.owner = root
+	node.owner = level_root

@@ -142,7 +142,7 @@ static func wingColor(C: Array, Sp: Array, hind: bool, u: float, v: float) -> in
 	return C[4]
 
 
-static func butterfly(g: Lib.Grid, C: Array, Sp: Array, w: float, t: float) -> void:
+static func butterfly(g: Lib.Grid, C: Array, Sp: Array, w: float, _t: float) -> void:
 	g.clear()
 	for s in [-1.0, 1.0]:
 		for hind in [true, false]:

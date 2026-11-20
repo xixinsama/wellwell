@@ -134,7 +134,7 @@ func _assert_histogram(failures: Array[String]) -> void:
 	counts.fill(0)
 	for cell: int in CELL_COUNT:
 		counts[_bytes[cell] >> BIN_SHIFT] += 1
-	var expected := CELL_COUNT / BIN_COUNT
+	var expected := int(CELL_COUNT / float(BIN_COUNT))
 	for bin: int in BIN_COUNT:
 		if absi(counts[bin] - expected) > BIN_TOLERANCE:
 			failures.append(

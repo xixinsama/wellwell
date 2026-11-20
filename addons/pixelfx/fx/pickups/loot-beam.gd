@@ -213,8 +213,8 @@ static func column(p: Px.Painter, C: Array, t: float, T: float) -> void:
 
 
 # motes streaming up round the beam, a few twinkling
-static func motes(p: Px.Painter, C: Array, t: float, T: float, seed: Variant) -> void:
-	Px.cycle(t, T, 30, seed, func(g: Px.Rng) -> float: return g.range(1.0, 2.2), func(age: float, life: float, r: Px.Rng) -> void:
+static func motes(p: Px.Painter, C: Array, t: float, T: float, fx_seed: Variant) -> void:
+	Px.cycle(t, T, 30, fx_seed, func(g: Px.Rng) -> float: return g.range(1.0, 2.2), func(age: float, life: float, r: Px.Rng) -> void:
 		var inner := r.chance(0.3)
 		var side := r.sign()
 		var x0 := r.range(-3.0, 3.0) if inner else side * r.range(4.0, 15.0)

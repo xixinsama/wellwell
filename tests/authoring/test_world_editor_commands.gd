@@ -11,6 +11,9 @@ const WORLD_LAYOUT_MODEL := preload("res://addons/world_editor/authoring/world/w
 const CONTROLLER_WORLD_PATH := "res://resources/worlds/test_editor_controller_world.tres"
 const CONTROLLER_OTHER_WORLD_PATH := "res://resources/worlds/test_editor_controller_other_world.tres"
 const CONTROLLER_SOURCE_PATH := "res://tests/authoring/test_editor_controller_source.tscn"
+## Stack fixtures live in user:// so the test never writes into the project.
+const STACK_WORLD_PATH := "user://test_editor_stack_world.tres"
+const STACK_PATH := "user://test_editor_stack_world_stack.tres"
 const EDITOR_DEPENDENCY_PATHS: Array[String] = [
     "res://addons/platformer_kit/world/data/world_data.gd",
     "res://addons/platformer_kit/world/data/room_data.gd",
@@ -64,16 +67,37 @@ class FakeRoomBaker:
 class FakeImporter:
     var result: Dictionary
     var call_count := 0
-    func import_room(_world: Resource, _source: Node, _path: String) -> Dictionary:
+    var last_origin := Vector2i(-2147483648, -2147483648)
+    func import_room(
+        _world: Resource,
+        _source: Node,
+        _path: String,
+        origin := Vector2i(-2147483648, -2147483648)
+    ) -> Dictionary:
         call_count += 1
+        last_origin = origin
         return result
 
 
 class FakeCanvas extends Control:
     var focused_room_id := ""
+    var focused_chunk := Vector2i.ZERO
+    var cursor_chunk := Vector2i(4, -2)
+    var cursor_over_canvas := true
     func focus_room(room_id: String) -> bool:
         focused_room_id = room_id
         return true
+    func focus_chunk(chunk: Vector2i) -> void:
+        focused_chunk = chunk
+    func get_cursor_chunk() -> Vector2i:
+        return cursor_chunk
+    func get_view_center_chunk() -> Vector2i:
+        return Vector2i(1, 1)
+    func is_cursor_over_canvas() -> bool:
+        return cursor_over_canvas
+    var portal_links: Array = []
+    func set_portal_links(links: Array) -> void:
+        portal_links = links.duplicate()
 
 
 class FakeEditorInterface:
@@ -110,6 +134,8 @@ func run() -> Array[String]:
     _assert_world_selection_behavior(failures)
     _assert_command_states_and_import_history(failures)
     _assert_move_command(failures)
+    _assert_status_bar_chunk_field(failures)
+    _assert_stack_layers(failures)
     _assert_add_remove_commands(failures)
     _assert_connection_commands(failures)
     _assert_rebake_sync_and_overlap_connection_geometry(failures)
@@ -141,6 +167,13 @@ func _assert_toolbar_contract(failures: Array[String]) -> void:
         "Workspace/CanvasSplit/InspectorPanel/Connections/ConnectionButtons/Disconnect",
         "CommandBar/ValidateWorld",
         "CommandBar/BakeWorld",
+        "CommandBar/ViewMode3D",
+        "StatusBar/ChunkField",
+        "StatusBar/ChunkGo",
+        "Workspace/RoomListPanel/LayerPanel/LayerTitle",
+        "Workspace/RoomListPanel/LayerPanel/LayerRows",
+        "Workspace/RoomListPanel/LayerPanel/LayerAdd",
+        "Workspace/RoomListPanel/LayerPanel/LayerHint",
     ]:
         if _scene_node_index(state, node_path) < 0:
             failures.append("world editor dock is missing command control: %s" % node_path)
@@ -287,6 +320,8 @@ func _assert_command_states_and_import_history(failures: Array[String]) -> void:
     main.call("_add_existing_source", CONTROLLER_SOURCE_PATH)
     if main.get("world_data") != imported_world or main.get("selected_room_id") != "imported_room":
         failures.append("successful import did not select the validated saved room")
+    if importer.last_origin != (main.get("canvas") as FakeCanvas).cursor_chunk:
+        failures.append("Add Existing did not import at the chunk under the canvas pointer")
     if (main.get("canvas") as FakeCanvas).focused_room_id != "imported_room":
         failures.append("successful import did not focus the imported room")
     if undo.commit_execute or not undo.undo_call.is_valid() or not undo.do_call.is_valid():
@@ -382,6 +417,119 @@ func _assert_move_command(failures: Array[String]) -> void:
     if changed_count[0] < 2:
         failures.append("world editor move and undo did not mark WorldData changed")
     dock.free()
+
+
+func _assert_status_bar_chunk_field(failures: Array[String]) -> void:
+    var dock: Control = (load(DOCK_PATH) as Script).new() as Control
+    var field := LineEdit.new()
+    var canvas := FakeCanvas.new()
+    dock.set("chunk_field", field)
+    dock.set("canvas", canvas)
+    var world: Resource = WORLD_DATA.new()
+    world.rooms.assign([_make_room("room_a", [], ["start"])])
+    world.set_room_origin_chunk("room_a", Vector2i(2, -3))
+    dock.call("set_world_data", world)
+    dock.call("select_room", "room_a")
+    if field.text != "2,-3":
+        failures.append("chunk field did not mirror the selected room origin: %s" % field.text)
+
+    field.text = " 7, -4 "
+    dock.call("_on_chunk_go")
+    if canvas.focused_chunk != Vector2i(7, -4):
+        failures.append("chunk Go did not centre the canvas without a movable room: %s" % str(canvas.focused_chunk))
+
+    field.text = "not a chunk"
+    dock.call("_on_chunk_go")
+    if not field.text.is_empty():
+        failures.append("invalid chunk text was not cleared")
+
+    field.text = "5"
+    dock.call("_on_chunk_go")
+    if not field.text.is_empty():
+        failures.append("incomplete chunk text was not cleared")
+
+    var parsed: Variant = dock.call("parse_chunk_text", "-12, 8")
+    if parsed != Vector2i(-12, 8):
+        failures.append("chunk parsing rejected negative coordinates: %s" % str(parsed))
+    if dock.call("parse_chunk_text", "") != null:
+        failures.append("empty chunk text parsed as a chunk")
+
+    field.free()
+    canvas.free()
+    dock.free()
+
+
+## The 3D view's layer stack is real world data: the order lives on WorldData and
+## the payload the layer draws comes from it.
+func _assert_stack_layers(failures: Array[String]) -> void:
+    var main := (load(DOCK_PATH) as Script).new() as Control
+    var world: Resource = WORLD_DATA.new()
+    world.world_id = "main_world"
+    world.resource_path = STACK_WORLD_PATH
+    world.rooms.assign([_make_room("room_a", [], ["start"])])
+    world.set_room_origin_chunk("room_a", Vector2i.ZERO)
+    main.call("set_world_data", world)
+
+    if main.call("get_world_stack") != null:
+        failures.append("a fresh world already claims a stack resource")
+    var alone: Array = main.call("get_stack_worlds")
+    if alone.size() != 1 or alone[0] != world:
+        failures.append("a world without a stack is not a stack of one: %s" % str(alone))
+
+    # Adding the first layer creates and saves the stack resource next to the world.
+    main.call("add_layer", "loop_world")
+    var stack: Resource = main.call("get_world_stack")
+    if stack == null:
+        failures.append("adding a layer did not create a WorldStack resource")
+    else:
+        if String(stack.resource_path).is_empty() or not FileAccess.file_exists(String(stack.resource_path)):
+            failures.append("the created WorldStack was not saved: %s" % String(stack.resource_path))
+        if stack.get_layer_count() != 2:
+            failures.append("the created WorldStack does not hold both worlds: %d" % stack.get_layer_count())
+    _assert_layer_ids(main, ["main_world", "loop_world"], "adding a layer appends it above the edited world", failures)
+
+    main.call("add_layer", "the_world")
+    _assert_layer_ids(main, ["main_world", "loop_world", "the_world"], "adding a second layer appends it", failures)
+    main.call("move_layer", "the_world", -1)
+    _assert_layer_ids(main, ["main_world", "the_world", "loop_world"], "moving a layer down reorders the stack", failures)
+    main.call("move_layer", "the_world", 1)
+    _assert_layer_ids(main, ["main_world", "loop_world", "the_world"], "moving a layer up reorders the stack", failures)
+    main.call("remove_layer", "the_world")
+    _assert_layer_ids(main, ["main_world", "loop_world"], "removing a layer drops it", failures)
+    main.call("add_layer", "loop_world")
+    _assert_layer_ids(main, ["main_world", "loop_world"], "adding a present layer is a no-op", failures)
+    main.call("remove_layer", "main_world")
+    _assert_layer_ids(main, ["main_world", "loop_world"], "the edited world cannot be removed from its own stack", failures)
+
+    var payload: Dictionary = main.call("get_stack_3d_payload")
+    var layers: Array = payload.get("layers", [])
+    if layers.size() != 2:
+        failures.append("the 3D payload did not contain the stack worlds: %d" % layers.size())
+    elif String(layers[0].get("world_id", "")) != "main_world" or String(layers[1].get("world_id", "")) != "loop_world":
+        failures.append("the 3D payload layers do not follow the stack order")
+    if not payload.has("links") or not payload.has("dangling_count") or not payload.has("dangling_links"):
+        failures.append("the 3D payload is missing its link report")
+
+    var stacked := main.call("get_world_stack") as Resource
+    if stacked != null:
+        stacked.layers.clear()
+        stacked.normalize()
+        var repaired: Array = main.call("get_stack_worlds")
+        if repaired.is_empty() or repaired[0] != world:
+            failures.append("a stack that lost its world did not get it back")
+    main.free()
+    if FileAccess.file_exists(STACK_WORLD_PATH):
+        DirAccess.remove_absolute(ProjectSettings.globalize_path(STACK_WORLD_PATH))
+    if FileAccess.file_exists(STACK_PATH):
+        DirAccess.remove_absolute(ProjectSettings.globalize_path(STACK_PATH))
+
+
+func _assert_layer_ids(main: Control, expected: Array[String], label: String, failures: Array[String]) -> void:
+    var ids: Array[String] = []
+    for value: Variant in main.call("get_stack_worlds"):
+        ids.append(String((value as Resource).get("world_id")))
+    if ids != expected:
+        failures.append("%s: expected %s, got %s" % [label, str(expected), str(ids)])
 
 
 func _assert_add_remove_commands(failures: Array[String]) -> void:

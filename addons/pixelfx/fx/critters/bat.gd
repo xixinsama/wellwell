@@ -57,7 +57,7 @@ static func wingPts(F: Dictionary, s: float) -> Dictionary:
 	return {"sh": sh, "wr": wr, "tips": tips, "hip": hip, "poly": [sh, wr, tips[0], pull.call(tips[0], tips[1], 0.22), tips[1], pull.call(tips[1], tips[2], 0.22), tips[2], pull.call(tips[2], hip, 0.38), hip]}
 
 
-static func bat(g: Lib.Grid, C: Array, E: Array, F: Dictionary, t: float) -> void:
+static func bat(g: Lib.Grid, C: Array, E: Array, F: Dictionary, _t: float) -> void:
 	g.clear()
 	# wings: a membrane, darker near the body, lit along the leading edge; finger bones over it
 	for s in [-1.0, 1.0]:

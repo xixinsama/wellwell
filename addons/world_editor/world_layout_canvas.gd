@@ -15,6 +15,12 @@ const SELECTED_COLOR := Color(0.35, 0.66, 0.92)
 const HOVERED_COLOR := Color(0.98, 0.86, 0.34)
 const BOX_FILL := Color(0.35, 0.66, 0.92, 0.12)
 const BOX_OUTLINE := Color(0.35, 0.66, 0.92, 0.85)
+## Room entrance → spawn connections. Deliberately dim and dashed: they are
+## layout plumbing, not teleports.
+const CONNECTION_COLOR := Color(0.66, 0.74, 0.84, 0.42)
+## Door links: PORTAL pairs inside this world.
+const PORTAL_COLOR := Color(0.47, 0.95, 0.82)
+const PORTAL_DANGLING_COLOR := Color(0.95, 0.41, 0.37)
 const STATUS_OUTLINES := {
     &"fresh": Color(0, 0, 0, 0),
     &"stale": Color(0.88, 0.58, 0.24),
@@ -46,6 +52,7 @@ var _selected_ids: Array[String] = []
 var _primary := ""
 var _statuses: Dictionary = {}
 var _annotations: Dictionary = {}
+var _portal_links: Array = []
 var _box_selecting := false
 var _box_additive := false
 var _box_start := Vector2.ZERO
@@ -124,6 +131,18 @@ func set_annotations(annotations: Dictionary) -> void:
     queue_redraw()
 
 
+## PORTAL door links of the world being edited, in world pixels. Drawn as teal
+## arcs between the two door positions so they can never be mistaken for the dim
+## dashed room connections.
+func set_portal_links(links: Array) -> void:
+    _portal_links = links.duplicate()
+    queue_redraw()
+
+
+func get_portal_links() -> Array:
+    return _portal_links.duplicate()
+
+
 func _apply_selection(room_ids: Array[String], primary: String, notify: bool) -> void:
     set_selection(room_ids, primary)
     if notify:
@@ -172,16 +191,18 @@ func clear_selection() -> void:
 
 func focus_all() -> bool:
     var world := _get_world()
-    if world == null or world.rooms.is_empty():
+    var bounds := Rect2()
+    var has_bounds := false
+    if world != null:
+        for room_id: String in world.get_room_ids():
+            var pixel_rect := Rect2(world.get_room_pixel_rect(room_id))
+            bounds = pixel_rect if not has_bounds else bounds.merge(pixel_rect)
+            has_bounds = true
+    # No ghost layers: the 3D stack view owns other worlds now.
+    if not has_bounds:
         _view.call("reset")
         _notify_view_changed()
         return false
-    var bounds := Rect2()
-    var has_bounds := false
-    for room_id: String in world.get_room_ids():
-        var pixel_rect := Rect2(world.get_room_pixel_rect(room_id))
-        bounds = pixel_rect if not has_bounds else bounds.merge(pixel_rect)
-        has_bounds = true
     _view.call("fit_world_rect", bounds, size)
     _notify_view_changed()
     return has_bounds
@@ -195,6 +216,24 @@ func focus_room(room_id: String) -> bool:
     _view.call("fit_world_rect", Rect2(world.get_room_pixel_rect(room_id)), size)
     _notify_view_changed()
     return true
+
+
+## Centre the view on one chunk at the current zoom (status bar "Go").
+func focus_chunk(chunk: Vector2i) -> void:
+    _view.call("focus_world_point", Vector2(chunk) * CHUNK_PIXELS + CHUNK_PIXELS * 0.5)
+    _notify_view_changed()
+
+
+func get_view_center_chunk() -> Vector2i:
+    var center: Vector2 = _view.get("view_center_world_pixels")
+    return Vector2i(floori(center.x / CHUNK_PIXELS.x), floori(center.y / CHUNK_PIXELS.y))
+
+
+## True while the pointer is inside the canvas, so imports land under it.
+func is_cursor_over_canvas() -> bool:
+    if not is_inside_tree():
+        return false
+    return Rect2(Vector2.ZERO, size).has_point(get_local_mouse_position())
 
 
 func reset_view() -> void:
@@ -347,6 +386,7 @@ func _draw() -> void:
                     Color(0.95, 0.78, 0.2)
                 )
     _draw_box_selection()
+    _draw_portal_links()
     _draw_overlays(world)
 
 
@@ -602,7 +642,7 @@ func _draw_grid() -> void:
             draw_string(ThemeDB.fallback_font, Vector2(4, screen_y - 4), str(y), HORIZONTAL_ALIGNMENT_LEFT, -1, 11, GRID_COLOR.lightened(0.45))
 
 
-func _draw_overlays(world: WorldData) -> void:
+func _draw_overlays(_world: WorldData) -> void:
     var font := ThemeDB.fallback_font
     var world_position := get_cursor_world_pixels()
     var chunk := get_cursor_chunk()
@@ -631,11 +671,89 @@ func _draw_connections(world: WorldData) -> void:
         var start := _room_rect(world.get_room_origin_chunk(from_room.room_id), from_room.room_size_chunks).get_center()
         var finish := _room_rect(world.get_room_origin_chunk(to_room.room_id), to_room.room_size_chunks).get_center()
         var geometry := get_connection_geometry(start, finish)
-        draw_polyline(geometry, Color(0.75, 0.82, 0.9), 2.0)
-        var direction := geometry[-2].direction_to(geometry[-1])
-        var tip := geometry[-1] - direction * 10.0
-        var side := Vector2(-direction.y, direction.x) * 5.0
-        draw_colored_polygon(PackedVector2Array([geometry[-1], tip + side, tip - side]), Color(0.75, 0.82, 0.9))
+        _draw_dashed_polyline(geometry, CONNECTION_COLOR, 1.3, 6.0)
+        _draw_arrow_head(geometry[-2], geometry[-1], CONNECTION_COLOR, 8.0)
+
+
+## Door links of the edited world. PORTAL pairs get a teal arc with an arrowhead;
+## an unmatched door gets a short red dashed stub plus its label.
+func _draw_portal_links() -> void:
+    if _portal_links.is_empty():
+        return
+    var font := ThemeDB.fallback_font
+    for link: Dictionary in _portal_links:
+        var from: Vector2 = _view.call("world_to_screen", link.get("from_position", Vector2.ZERO), size)
+        var to: Vector2 = _view.call("world_to_screen", link.get("to_position", Vector2.ZERO), size)
+        var paired := bool(link.get("paired", false))
+        var color := PORTAL_COLOR if paired else PORTAL_DANGLING_COLOR
+        var points := get_portal_arc_points(from, to, 30.0)
+        if paired:
+            draw_polyline(points, color, 2.0, true)
+        else:
+            _draw_dashed_polyline(points, color, 1.6, 5.0)
+        _draw_arrow_head(points[-2], points[-1], color, 7.5)
+        draw_circle(from, 2.6, color)
+        draw_circle(to, 2.6, color)
+        if not paired:
+            draw_string(
+                font,
+                to + Vector2(8, -7),
+                WorldEditorLocalization.t("WE_LINK_UNPAIRED"),
+                HORIZONTAL_ALIGNMENT_LEFT,
+                -1,
+                10,
+                color
+            )
+
+
+## Quadratic arc between two screen points, lifted toward the top of the canvas.
+func get_portal_arc_points(from: Vector2, to: Vector2, lift: float) -> PackedVector2Array:
+    var control := (from + to) * 0.5 - Vector2(0.0, maxf(lift, from.distance_to(to) * 0.18))
+    var points := PackedVector2Array()
+    var steps := 18
+    for index: int in range(steps + 1):
+        var t := float(index) / float(steps)
+        var inverse := 1.0 - t
+        points.append(from * inverse * inverse + control * 2.0 * inverse * t + to * t * t)
+    return points
+
+
+func _draw_arrow_head(from: Vector2, tip: Vector2, color: Color, size_px: float) -> void:
+    var direction := from.direction_to(tip)
+    if direction == Vector2.ZERO:
+        return
+    var side := Vector2(-direction.y, direction.x) * size_px * 0.55
+    draw_colored_polygon(
+        PackedVector2Array([tip, tip - direction * size_px + side, tip - direction * size_px - side]),
+        color
+    )
+
+
+func _draw_dashed_polyline(points: PackedVector2Array, color: Color, width: float, dash: float) -> void:
+    var drawing := true
+    var remaining := dash
+    for index: int in range(points.size() - 1):
+        var start := points[index]
+        var finish := points[index + 1]
+        var segment := start.distance_to(finish)
+        if segment <= 0.001:
+            continue
+        var travelled := 0.0
+        while travelled < segment:
+            var step := minf(remaining, segment - travelled)
+            if drawing:
+                draw_line(
+                    start.lerp(finish, travelled / segment),
+                    start.lerp(finish, (travelled + step) / segment),
+                    color,
+                    width,
+                    true
+                )
+            travelled += step
+            remaining -= step
+            if remaining <= 0.001:
+                drawing = not drawing
+                remaining = dash
 
 
 func get_connection_geometry(start: Vector2, finish: Vector2) -> PackedVector2Array:

@@ -8,6 +8,8 @@ const ROOM_BAKER := preload("res://addons/world_editor/authoring/room/room_baker
 const WORLD_RESOURCE_SERVICE := preload("res://addons/world_editor/authoring/world/world_resource_service.gd")
 const WORLD_LAYOUT_MODEL := preload("res://addons/world_editor/authoring/world/world_layout_model.gd")
 const WORLD_DIRECTORY := "res://resources/worlds/"
+## Passing this as [param desired_origin] makes the importer pick a free chunk.
+const AUTO_ORIGIN := WORLD_LAYOUT_MODEL.AUTO_ORIGIN
 
 var _room_baker: Object = ROOM_BAKER.new()
 var _world_resources: Object = WORLD_RESOURCE_SERVICE.new()
@@ -26,7 +28,19 @@ func set_layout_model_adapter(value: Object) -> void:
     _layout_model = value
 
 
-func import_room(world: WorldData, source_root: Node, source_path: String) -> Dictionary:
+## Imports (stages, bakes and saves) one authored room source into [param world].
+##
+## [param desired_origin] is the chunk the room should land on. The sentinel
+## [constant AUTO_ORIGIN] (also the default, so the 3-argument call keeps
+## working) asks for the first free chunk scanning row-major from (0, 0); any
+## real chunk is still pushed to the nearest free chunk so two imports never
+## stack on the same cells.
+func import_room(
+    world: WorldData,
+    source_root: Node,
+    source_path: String,
+    desired_origin: Vector2i = AUTO_ORIGIN
+) -> Dictionary:
     if not _is_world_data(world):
         return _failure("world is not WorldData")
     if world.resource_path.is_empty() or not FileAccess.file_exists(world.resource_path):
@@ -54,7 +68,7 @@ func import_room(world: WorldData, source_root: Node, source_path: String) -> Di
 
     var before_state: Dictionary = _layout_model.call("capture_world_state", world)
     var candidate := world.duplicate(true) as WorldData
-    var import_origin := Vector2i.ZERO if world.rooms.is_empty() else Vector2i(-1, -1)
+    var import_origin := _resolve_import_origin(candidate, staged_room, desired_origin)
     var add_result: Dictionary = _layout_model.call("add_room", candidate, staged_room, import_origin)
     if not bool(add_result.get("ok", false)):
         return _from_dependency_failure(add_result, world.resource_path)
@@ -122,6 +136,22 @@ func import_room(world: WorldData, source_root: Node, source_path: String) -> Di
     result["before_state"] = before_state
     result["after_state"] = _layout_model.call("capture_world_state", saved_world)
     return result
+
+
+func _resolve_import_origin(world: WorldData, room: RoomData, desired_origin: Vector2i) -> Vector2i:
+    var size := Vector2i.ONE
+    if room != null:
+        size = Vector2i(maxi(1, room.room_size_chunks.x), maxi(1, room.room_size_chunks.y))
+    var layout := _layout_model
+    var can_search := layout != null and layout.has_method("find_free_origin_chunk")
+    var default_origin := Vector2i.ZERO
+    if desired_origin == AUTO_ORIGIN:
+        if can_search and layout.has_method("find_default_origin_chunk"):
+            default_origin = Vector2i(layout.call("find_default_origin_chunk", world, size))
+        desired_origin = default_origin
+    if not can_search:
+        return desired_origin
+    return Vector2i(layout.call("find_free_origin_chunk", world, desired_origin, size))
 
 
 func _prepare_start_endpoint(world: WorldData, candidate: WorldData, room: RoomData, manifest: Dictionary) -> String:

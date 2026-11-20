@@ -28,22 +28,22 @@ const OUT1 := 1.66
 static var cache := {}
 
 
-static func bands(seed: float) -> Array:
-	if cache.has(seed):
-		return cache[seed]
+static func bands(fx_seed: float) -> Array:
+	if cache.has(fx_seed):
+		return cache[fx_seed]
 	var out := []
 	var y := 0
 	var i := 0
 	while y < H:
-		var r := Px.rand(i, seed)
-		var h := mini(H - y, 5 + floori(Px.rand(i, seed + 1.0) * 6.0) if r < 0.4 else (10 + floori(Px.rand(i, seed + 1.0) * 10.0) if r < 0.85 else 20 + floori(Px.rand(i, seed + 1.0) * 12.0)))
-		var a := Px.clamp(0.5 + 0.55 * Px.noise(y / 40.0, seed + 9.0) + (Px.rand(i, seed + 2.0) - 0.5) * 0.25)
-		var b := Px.clamp(0.5 + 0.55 * Px.noise(y / 40.0, seed + 19.0) + (Px.rand(i, seed + 3.0) - 0.5) * 0.25)
-		var span := 0.32 + Px.rand(i, seed + 6.0) * 0.12
-		out.append({"i": i, "y": y, "h": h, "dir": 1 if Px.rand(i, seed + 4.0) < 0.82 else -1, "off": Px.rand(i, seed + 5.0), "t0": IN0 + a * (IN1 - IN0 - span), "t1": IN0 + a * (IN1 - IN0 - span) + span, "o0": OUT0 + b * (OUT1 - OUT0 - span), "o1": OUT0 + b * (OUT1 - OUT0 - span) + span})
+		var r := Px.rand(i, fx_seed)
+		var h := mini(H - y, 5 + floori(Px.rand(i, fx_seed + 1.0) * 6.0) if r < 0.4 else (10 + floori(Px.rand(i, fx_seed + 1.0) * 10.0) if r < 0.85 else 20 + floori(Px.rand(i, fx_seed + 1.0) * 12.0)))
+		var a := Px.clamp(0.5 + 0.55 * Px.noise(y / 40.0, fx_seed + 9.0) + (Px.rand(i, fx_seed + 2.0) - 0.5) * 0.25)
+		var b := Px.clamp(0.5 + 0.55 * Px.noise(y / 40.0, fx_seed + 19.0) + (Px.rand(i, fx_seed + 3.0) - 0.5) * 0.25)
+		var span := 0.32 + Px.rand(i, fx_seed + 6.0) * 0.12
+		out.append({"i": i, "y": y, "h": h, "dir": 1 if Px.rand(i, fx_seed + 4.0) < 0.82 else -1, "off": Px.rand(i, fx_seed + 5.0), "t0": IN0 + a * (IN1 - IN0 - span), "t1": IN0 + a * (IN1 - IN0 - span) + span, "o0": OUT0 + b * (OUT1 - OUT0 - span), "o1": OUT0 + b * (OUT1 - OUT0 - span) + span})
 		y += h
 		i += 1
-	cache[seed] = out
+	cache[fx_seed] = out
 	return out
 
 

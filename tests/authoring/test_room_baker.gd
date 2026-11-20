@@ -216,7 +216,7 @@ func _assert_signature_property_barriers(baker: RefCounted, source: Node, paths:
 		_assert_no_temporary_outputs(paths, failures)
 
 
-func _assert_embedded_resource_and_dictionary_signatures(baker: RefCounted, source: Node, paths: Dictionary, failures: Array[String]) -> void:
+func _assert_embedded_resource_and_dictionary_signatures(baker: RefCounted, _source: Node, paths: Dictionary, failures: Array[String]) -> void:
 	_assert_textual_variant_key_identity(failures)
 	var cycle_source: Node = _make_source(true, true)
 	var cycle_stage: Dictionary = baker.stage(cycle_source, SOURCE_PATH)

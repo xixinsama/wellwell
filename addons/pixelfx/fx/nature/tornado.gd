@@ -41,7 +41,7 @@ static func geo(o: Dictionary, t: float) -> Dictionary:
 
 # the body: a translucent column, thicker through its middle, lit from the left, with streaks of dust that
 # shear past each other as rows spin at different speeds
-static func body(p: Px.Painter, C: Array, Dst: Array, g: Dictionary, t: float, seed: float) -> void:
+static func body(p: Px.Painter, C: Array, Dst: Array, g: Dictionary, t: float, fx_seed: float) -> void:
 	var FH: float = g.FH
 	var ax: Callable = g.ax
 	var rad: Callable = g.rad
@@ -49,14 +49,14 @@ static func body(p: Px.Painter, C: Array, Dst: Array, g: Dictionary, t: float, s
 		var u := -y / FH
 		var cx: float = ax.call(u)
 		var r: float = rad.call(u)
-		var K := 2 + (1 if Px.rand(y, seed) < 0.35 else 0)
+		var K := 2 + (1 if Px.rand(y, fx_seed) < 0.35 else 0)
 		var rot: float = (TAU * K * t) / meta.duration
 		var fade := minf(1.0, u * 8.0 + 0.25) * (1.0 - Px.smooth(0.9, 1.02, u))
 		for x in range(floori(cx - r), ceili(cx + r) + 1):
 			var c := (x + 0.5 - cx) / r
 			if absf(c) > 1.0:
 				continue
-			var n := Px.tileNoise(((acos(c) + rot) * 6.0) / TAU, y * 0.34, 6.0, 0.0, seed)
+			var n := Px.tileNoise(((acos(c) + rot) * 6.0) / TAU, y * 0.34, 6.0, 0.0, fx_seed)
 			var v := -c * 0.55 + 0.15 + n * 0.55
 			var col: int = C[6] if v > 0.6 else (C[5] if v > 0.28 else (C[4] if v > -0.05 else (C[3] if v > -0.4 else C[2])))
 			if u < 0.3:
@@ -66,12 +66,12 @@ static func body(p: Px.Painter, C: Array, Dst: Array, g: Dictionary, t: float, s
 
 # wind bands: 1 px streaks wrapped round the funnel, bright at the head, fading along the tail; the far half
 # goes behind, dimmer
-static func bands(p: Px.Painter, C: Array, g: Dictionary, t: float, seed: float, back: bool) -> void:
+static func bands(p: Px.Painter, C: Array, g: Dictionary, t: float, fx_seed: float, back: bool) -> void:
 	var FH: float = g.FH
 	var ax: Callable = g.ax
 	var rad: Callable = g.rad
 	for j in 58:
-		var R := Px.rng(seed, j)
+		var R := Px.rng(fx_seed, j)
 		var u := (j + R.range(0.1, 0.9)) / 58.0
 		var K := R.int_(2, 4)
 		var span := R.range(0.7, 2.1)
@@ -120,7 +120,7 @@ static func blob(p: Px.Painter, cx: float, cy: float, rx: float, ry: float, c: i
 
 # the flared top: a lid of cloud sheared into flat bands that ride round with the funnel, each thick in the
 # middle and drawn out to a thin tail behind, lit along its upper rim, dark beneath; a dark mass at its core
-static func crown(p: Px.Painter, C: Array, g: Dictionary, t: float, seed: float, back: bool, flash: float) -> void:
+static func crown(p: Px.Painter, C: Array, g: Dictionary, t: float, fx_seed: float, back: bool, flash: float) -> void:
 	var FH: float = g.FH
 	var ax: Callable = g.ax
 	var rad: Callable = g.rad
@@ -132,7 +132,7 @@ static func crown(p: Px.Painter, C: Array, g: Dictionary, t: float, seed: float,
 		blob(p, cx, y0 + 1.0, r * 0.85, 6.0, C[1], 0.6)
 		blob(p, cx - 4.0, y0 - 3.0, r * 0.6, 3.5, L.call(C[3]), 0.45)
 	for j in 16:
-		var R := Px.rng(seed, j)
+		var R := Px.rng(fx_seed, j)
 		var rr := r * R.range(0.4, 1.15)
 		var K := R.int_(1, 2)
 		var span := R.range(1.4, 2.8)
@@ -160,11 +160,11 @@ static func crown(p: Px.Painter, C: Array, g: Dictionary, t: float, seed: float,
 
 
 # leaves, twigs and pebbles spiralling up round it and flung off the top
-static func debris(p: Px.Painter, C: Array, L: Array, g: Dictionary, t: float, seed: float, back: bool, S: Array) -> void:
+static func debris(p: Px.Painter, _C: Array, L: Array, g: Dictionary, t: float, fx_seed: float, back: bool, S: Array) -> void:
 	var FH: float = g.FH
 	var ax: Callable = g.ax
 	var rad: Callable = g.rad
-	Px.cycle(t, meta.duration, 24, seed, func(q): return q.range(1.3, 1.95), func(age: float, life: float, R: Px.Rng):
+	Px.cycle(t, meta.duration, 24, fx_seed, func(q): return q.range(1.3, 1.95), func(age: float, life: float, R: Px.Rng):
 		# the first stretch skids in across the floor, then it spirals up and is flung off the top
 		var k := age / life
 		var sk := R.range(0.15, 0.3)
@@ -198,9 +198,9 @@ static func debris(p: Px.Painter, C: Array, L: Array, g: Dictionary, t: float, s
 
 
 # at its foot: dust boiling round and out, grit hopping, scuffs swept round the floor
-static func skirt(p: Px.Painter, D: Array, g: Dictionary, t: float, seed: float, back: bool) -> void:
+static func skirt(p: Px.Painter, D: Array, g: Dictionary, t: float, fx_seed: float, back: bool) -> void:
 	var cx0: float = g.ax.call(0.0)
-	Px.cycle(t, meta.duration, 40, seed, func(q): return q.range(0.7, 1.3), func(age: float, life: float, R: Px.Rng):
+	Px.cycle(t, meta.duration, 40, fx_seed, func(q): return q.range(0.7, 1.3), func(age: float, life: float, R: Px.Rng):
 		var k := age / life
 		var th := R.range(0.0, TAU) + R.range(5.0, 9.0) * age
 		var sn := sin(th)
@@ -215,7 +215,7 @@ static func skirt(p: Px.Painter, D: Array, g: Dictionary, t: float, seed: float,
 		p.disc(x - s * 0.2, y - s * 0.3, s * 0.55, D[2 if back else 3], a * 0.8))
 	if back:
 		return
-	Px.cycle(t, meta.duration, 16, seed + 7.0, func(q): return q.range(0.35, 0.6), func(age: float, life: float, R: Px.Rng):
+	Px.cycle(t, meta.duration, 16, fx_seed + 7.0, func(q): return q.range(0.35, 0.6), func(age: float, life: float, R: Px.Rng):
 		var th := R.range(0.0, TAU)
 		var v := R.range(25.0, 55.0)
 		var x := cx0 + cos(th) * (4.0 + v * age)
@@ -223,7 +223,7 @@ static func skirt(p: Px.Painter, D: Array, g: Dictionary, t: float, seed: float,
 		if y < 0.5:
 			p.dot(x, minf(0.0, y), D[3] if R.next() < 0.5 else D[4], 1.0 - age / life))
 	for j in 7:
-		var R := Px.rng(seed + 3.0, j)
+		var R := Px.rng(fx_seed + 3.0, j)
 		var rr := R.range(12.0, 28.0)
 		var th0: float = R.range(0.0, TAU) + (TAU * 3.0 * t) / meta.duration
 		var span := R.range(0.5, 1.1)

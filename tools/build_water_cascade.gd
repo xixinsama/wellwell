@@ -42,32 +42,32 @@ func _init() -> void:
 
 
 func _run() -> void:
-	var root := TEMPLATE.instantiate()
-	root.set("room_id", ROOM_ID)
-	root.set("display_name", "三池级联")
-	root.set("room_size_chunks", Vector2i.ONE)
-	root.set("preview_spawn_id", "start")
-	root.set("map_color", Color(0.3, 0.7, 1.0))
-	_paint_terrain(root)
-	_place_entities(root)
+	var level_root := TEMPLATE.instantiate()
+	level_root.set("room_id", ROOM_ID)
+	level_root.set("display_name", "三池级联")
+	level_root.set("room_size_chunks", Vector2i.ONE)
+	level_root.set("preview_spawn_id", "start")
+	level_root.set("map_color", Color(0.3, 0.7, 1.0))
+	_paint_terrain(level_root)
+	_place_entities(level_root)
 
 	var packed := PackedScene.new()
-	var pack_error := packed.pack(root)
+	var pack_error := packed.pack(level_root)
 	if pack_error != OK:
 		push_error("could not pack the cascade room: %d" % pack_error)
-		root.free()
+		level_root.free()
 		quit(1)
 		return
 	var save_error := ResourceSaver.save(packed, SOURCE_PATH)
 	if save_error != OK:
 		push_error("could not save %s: %d" % [SOURCE_PATH, save_error])
-		root.free()
+		level_root.free()
 		quit(1)
 		return
 	print("saved source room: %s" % SOURCE_PATH)
 
-	var bake_result: Dictionary = ROOM_BAKER.new().bake(root, SOURCE_PATH)
-	root.free()
+	var bake_result: Dictionary = ROOM_BAKER.new().bake(level_root, SOURCE_PATH)
+	level_root.free()
 	if not bake_result.get("ok", false):
 		push_error("room bake failed: %s" % str(bake_result.get("errors", [])))
 		quit(1)
@@ -76,8 +76,8 @@ func _run() -> void:
 	quit(0)
 
 
-func _paint_terrain(root: Node) -> void:
-	var terrain := root.get_node("RoomContent/Terrain")
+func _paint_terrain(level_root: Node) -> void:
+	var terrain := level_root.get_node("RoomContent/Terrain")
 	var back := terrain.get_node("BackTiles") as TileMapLayer
 	var solid := terrain.get_node("SolidTiles") as TileMapLayer
 	var detail := terrain.get_node("DetailTiles") as TileMapLayer
@@ -112,8 +112,8 @@ func _fill_block(solid: TileMapLayer, left: int, right: int, top_row: int, botto
 			solid.set_cell(Vector2i(x, y), 0, ATLAS_SOLID)
 
 
-func _place_entities(root: Node) -> void:
-	var entities := root.get_node("RoomContent/Entities")
+func _place_entities(level_root: Node) -> void:
+	var entities := level_root.get_node("RoomContent/Entities")
 	var spawn := entities.get_node_or_null("StartSpawn") as Node2D
 	if spawn != null:
 		spawn.position = Vector2(float(C_LEFT + 2) * TILE, float(C_FLOOR_ROW - 1) * TILE)
@@ -125,7 +125,7 @@ func _place_entities(root: Node) -> void:
 	basin.position = Vector2(float(A_LEFT) * TILE, float(A_SURFACE_ROW) * TILE)
 	basin.size_cells = Vector2i(A_RIGHT - A_LEFT + 1, A_FLOOR_ROW - A_SURFACE_ROW)
 	basin.basin_id = "cascade_a"
-	_attach(root, entities, basin)
+	_attach(level_root, entities, basin)
 
 	# B and C are dry at start, but their basin markers define the simulation span
 	# and their initial surface (their floor) so the height field covers them.
@@ -134,14 +134,14 @@ func _place_entities(root: Node) -> void:
 	basin_b.position = Vector2(float(B_LEFT) * TILE, float(B_FLOOR_ROW) * TILE)
 	basin_b.size_cells = Vector2i(B_RIGHT - B_LEFT + 1, 1)
 	basin_b.basin_id = "cascade_b"
-	_attach(root, entities, basin_b)
+	_attach(level_root, entities, basin_b)
 
 	var basin_c := WaterBasin.new()
 	basin_c.name = "WaterBasinC"
 	basin_c.position = Vector2(float(C_LEFT) * TILE, float(C_FLOOR_ROW) * TILE)
 	basin_c.size_cells = Vector2i(C_RIGHT - C_LEFT + 1, 1)
 	basin_c.basin_id = "cascade_c"
-	_attach(root, entities, basin_c)
+	_attach(level_root, entities, basin_c)
 
 	var warm := FogLight.new()
 	warm.name = "CascadeLightTop"
@@ -150,7 +150,7 @@ func _place_entities(root: Node) -> void:
 	warm.radius = 96.0
 	warm.energy = 0.9
 	warm.color = Color(1.0, 0.9, 0.72)
-	_attach(root, entities, warm)
+	_attach(level_root, entities, warm)
 
 	var cool := FogLight.new()
 	cool.name = "CascadeLightBottom"
@@ -159,7 +159,7 @@ func _place_entities(root: Node) -> void:
 	cool.radius = 110.0
 	cool.energy = 0.8
 	cool.color = Color(0.6, 0.82, 1.0)
-	_attach(root, entities, cool)
+	_attach(level_root, entities, cool)
 
 	var hall_light := FogZone.new()
 	hall_light.name = "CascadeRoomLight"
@@ -167,9 +167,9 @@ func _place_entities(root: Node) -> void:
 	hall_light.mode = FogZone.Mode.LIGHT
 	hall_light.size_cells = Vector2i(WIDTH_CELLS, HEIGHT_CELLS)
 	hall_light.zone_id = "water_cascade_lit"
-	_attach(root, entities, hall_light)
+	_attach(level_root, entities, hall_light)
 
 
-func _attach(root: Node, parent: Node, node: Node) -> void:
+func _attach(level_root: Node, parent: Node, node: Node) -> void:
 	parent.add_child(node)
-	node.owner = root
+	node.owner = level_root

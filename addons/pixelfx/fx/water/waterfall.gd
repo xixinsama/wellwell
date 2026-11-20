@@ -363,8 +363,8 @@ static func foam(p: Px.Painter, C: Array, t: float, ph: float, W: float, S: floa
 
 
 # mist: soft puffs rolled out of the churn that drift sideways along the pool, swell and thin, with a cool light
-static func mist(p: Px.Painter, C: Array, t: float, S: float, n: float, seed: float) -> void:
-	Px.cycle(t, D, n, S + seed, func(g: Px.Rng): return g.range(1.8, 2.8), func(age: float, life: float, r: Px.Rng):
+static func mist(p: Px.Painter, C: Array, t: float, S: float, n: float, fx_seed: float) -> void:
+	Px.cycle(t, D, n, S + fx_seed, func(g: Px.Rng): return g.range(1.8, 2.8), func(age: float, life: float, r: Px.Rng):
 		var k := age / life
 		var side := r.sign()
 		var drift := Px.Ease.outCubic(k)

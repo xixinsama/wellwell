@@ -26,9 +26,9 @@ const REGISTRY_PATH := "res://addons/pixelfx/fx/registry.gd"
 	set(v):
 		flip = v
 		_reload()
-@export var seed := -1:
-	set(v):
-		seed = v
+@export var fx_seed := -1:
+	set(value):
+		fx_seed = value
 		_reload()
 @export var palette_preset := "":
 	set(v):
@@ -89,8 +89,8 @@ func _reload() -> void:
 	_pivot = Vector2(6.0 - b.x0, 6.0 - b.y0)
 	var o := options.duplicate()
 	o.merge({"x": _pivot.x, "y": _pivot.y}, true)
-	if seed >= 0:
-		o.seed = float(seed)
+	if fx_seed >= 0:
+		o.seed = float(fx_seed)
 	if palette_preset and Px.PAL.has(palette_preset):
 		o.palette = Px.PAL[palette_preset]
 	if flip:

@@ -19,59 +19,59 @@ size = Vector2(80, 2)
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_xi7lp"]
 size = Vector2(80, 8)
 
-[node name="RoomRuntimeContent" type="Node2D" unique_id=86631718]
+[node name="RoomRuntimeContent" type="Node2D" unique_id=474680919]
 
-[node name="Entities" type="Node2D" parent="." unique_id=1023971819]
+[node name="Entities" type="Node2D" parent="." unique_id=1362772139]
 
-[node name="StartSpawn" type="Marker2D" parent="Entities" unique_id=1328405427]
+[node name="StartSpawn" type="Marker2D" parent="Entities" unique_id=442825133]
 script = ExtResource("1_v8q1t")
 
-[node name="MovingPlatform" type="AnimatableBody2D" parent="Entities" unique_id=1729722111]
+[node name="MovingPlatform" type="AnimatableBody2D" parent="Entities" unique_id=559603484]
 position = Vector2(112, 124)
 script = ExtResource("2_arldv")
 platform_id = &"room0200:moving"
 
-[node name="WaypointMotion" type="Node" parent="Entities/MovingPlatform" unique_id=980015538]
+[node name="WaypointMotion" type="Node" parent="Entities/MovingPlatform" unique_id=1709832028]
 script = ExtResource("3_rmdke")
 waypoints = PackedVector2Array(0, 0, 128, 0)
 travel_speed = 51.2
 arrival_pause_seconds = 0.5
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Entities/MovingPlatform" unique_id=901244956]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Entities/MovingPlatform" unique_id=1356566253]
 shape = SubResource("RectangleShape2D_85tgp")
 one_way_collision = true
 one_way_collision_margin = 3.0
 
-[node name="Visual" type="Polygon2D" parent="Entities/MovingPlatform" unique_id=988378130]
+[node name="Visual" type="Polygon2D" parent="Entities/MovingPlatform" unique_id=1705101956]
 color = Color(0.949, 0.702, 0.239, 1)
 polygon = PackedVector2Array(-40, -4, 40, -4, 40, 4, -40, 4)
 
-[node name="ConveyorPlatform" type="AnimatableBody2D" parent="Entities" unique_id=1429636234]
+[node name="ConveyorPlatform" type="AnimatableBody2D" parent="Entities" unique_id=989162508]
 position = Vector2(176, 148)
 script = ExtResource("2_arldv")
 platform_id = &"room0200:conveyor"
 
-[node name="ConveyorSurface" type="Node" parent="Entities/ConveyorPlatform" unique_id=1223888183]
+[node name="ConveyorSurface" type="Node" parent="Entities/ConveyorPlatform" unique_id=1253630625]
 script = ExtResource("4_vtwa6")
 surface_velocity = Vector2(100, 0)
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Entities/ConveyorPlatform" unique_id=808072782]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Entities/ConveyorPlatform" unique_id=1539665118]
 shape = SubResource("RectangleShape2D_ty00l")
 
-[node name="Visual" type="Polygon2D" parent="Entities/ConveyorPlatform" unique_id=581750773]
+[node name="Visual" type="Polygon2D" parent="Entities/ConveyorPlatform" unique_id=2146841480]
 color = Color(0.298, 0.784, 0.82, 1)
 polygon = PackedVector2Array(-40, -4, 40, -4, 40, 4, -40, 4)
 
-[node name="FallingPlatform" type="AnimatableBody2D" parent="Entities" unique_id=1146200139]
+[node name="FallingPlatform" type="AnimatableBody2D" parent="Entities" unique_id=483915901]
 position = Vector2(232, 100)
 script = ExtResource("2_arldv")
 platform_id = &"room0200:falling"
 
-[node name="FallMotion" type="Node" parent="Entities/FallingPlatform" unique_id=1454746991]
+[node name="FallMotion" type="Node" parent="Entities/FallingPlatform" unique_id=1995062388]
 script = ExtResource("5_y56y6")
 activation_delay = 0.2
 
-[node name="RiderTrigger" type="Area2D" parent="Entities/FallingPlatform" unique_id=1379952653]
+[node name="RiderTrigger" type="Area2D" parent="Entities/FallingPlatform" unique_id=1213046663]
 position = Vector2(0, -5)
 collision_layer = 0
 collision_mask = 2
@@ -79,14 +79,14 @@ script = ExtResource("6_xq5dk")
 target_paths = Array[NodePath]([NodePath("../FallMotion")])
 trigger_once = false
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Entities/FallingPlatform/RiderTrigger" unique_id=1408317773]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Entities/FallingPlatform/RiderTrigger" unique_id=89349560]
 shape = SubResource("RectangleShape2D_jsl8t")
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Entities/FallingPlatform" unique_id=1613307784]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Entities/FallingPlatform" unique_id=1708585265]
 shape = SubResource("RectangleShape2D_xi7lp")
 
-[node name="Visual" type="Polygon2D" parent="Entities/FallingPlatform" unique_id=1916232729]
+[node name="Visual" type="Polygon2D" parent="Entities/FallingPlatform" unique_id=1642071393]
 color = Color(0.906, 0.337, 0.337, 1)
 polygon = PackedVector2Array(-40, -4, 40, -4, 40, 4, -40, 4)
 
-[node name="Foreground" type="Node2D" parent="." unique_id=2139959580]
+[node name="Foreground" type="Node2D" parent="." unique_id=1086110194]

@@ -117,14 +117,14 @@ class Ghosts extends RefCounted:
 
 	func add(born: float, k: int, x: float, y: float, vx: float, vy: float, life: float, col: Variant = WHITE, size: float = 1.0, flag: int = 0) -> void:
 		var n := specs.size()
-		# a star's twinkle runs on the clock: pick its seed so the twinkle repeats with the period too
-		var seed := Px.rand(n, 41) * 100.0
+		# a star's twinkle runs on the clock: pick its fx_seed so the twinkle repeats with the period too
+		var fx_seed := Px.rand(n, 41) * 100.0
 		if k == P.STAR:
 			var m := ceilf((8.0 * D) / TAU)
 			var f := (TAU * m) / D - 8.0
 			if f < 5.0:
-				seed = f + 5.0 * floorf(Px.rand(n, 43) * 19.0)
-		specs.append({"born": fmod(fmod(born, D) + D, D), "k": k, "x": x, "y": y, "vx": vx, "vy": vy, "life": life, "col": Px.hex(col) if col else 0, "size": size, "flag": flag, "seed": seed})
+				fx_seed = f + 5.0 * floorf(Px.rand(n, 43) * 19.0)
+		specs.append({"born": fmod(fmod(born, D) + D, D), "k": k, "x": x, "y": y, "vx": vx, "vy": vy, "life": life, "col": Px.hex(col) if col else 0, "size": size, "flag": flag, "seed": fx_seed})
 
 	## The state of one particle `age` seconds after its birth, or null if it's gone.
 	func state(s: Dictionary, age: float) -> Variant:

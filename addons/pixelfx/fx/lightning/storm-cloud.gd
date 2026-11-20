@@ -57,7 +57,7 @@ static func _f32(n: int) -> PackedFloat32Array:
 
 
 # where each billow is this frame: drifting, breathing and boiling up on its own clock, all seamless over the loop
-static func billows(seed: float, ph: float) -> Array:
+static func billows(fx_seed: float, ph: float) -> Array:
 	var out := []
 	for i in BILLOWS.size():
 		var bl: Array = BILLOWS[i]
@@ -67,13 +67,13 @@ static func billows(seed: float, ph: float) -> Array:
 		var sq: float = bl[3] if bl.size() > 3 else 1.0
 		var top := y < -112.0 and sq == 1.0
 		var boil := 0.82 + 0.3 * sin(PI * fmod(ph + i * 0.37, 1.0)) ** 2
-		out.append({"sq": sq, "x": x + 3.5 * Px.loopNoise(ph, 0.7, seed + i) + (4.0 * Px.loopNoise(ph, 0.5, seed + i + 90) if sq < 1.0 else 0.0), "y": y + 2.0 * Px.loopNoise(ph, 0.7, seed + i + 30) - (4.0 * (boil - 0.97) if top else 0.0), "r": (v * (boil if top else 1.0 + 0.08 * Px.loopNoise(ph, 0.6, seed + i + 60))) / VIS})
+		out.append({"sq": sq, "x": x + 3.5 * Px.loopNoise(ph, 0.7, fx_seed + i) + (4.0 * Px.loopNoise(ph, 0.5, fx_seed + i + 90) if sq < 1.0 else 0.0), "y": y + 2.0 * Px.loopNoise(ph, 0.7, fx_seed + i + 30) - (4.0 * (boil - 0.97) if top else 0.0), "r": (v * (boil if top else 1.0 + 0.08 * Px.loopNoise(ph, 0.6, fx_seed + i + 60))) / VIS})
 	return out
 
 
 # the cloud as one field: billows summed so they fuse, clipped flat at the base, its edge ragged with drifting
 # noise; shaded as one mass (a lit top, a cool middle, a dark belly), discharges lighting whole billows from inside
-static func cloud(p: Px.Painter, B: Array, ph: float, seed: float, K: Array, C: Array, flashes: Dictionary) -> void:
+static func cloud(p: Px.Painter, B: Array, ph: float, fx_seed: float, K: Array, C: Array, flashes: Dictionary) -> void:
 	FIELD.fill(0.0)
 	GX.fill(0.0)
 	GY.fill(0.0)
@@ -111,8 +111,8 @@ static func cloud(p: Px.Painter, B: Array, ph: float, seed: float, K: Array, C: 
 			if FIELD[j] < TH - 0.06:
 				continue
 			var cx := x + W0 + 0.5
-			var base := BASE + 1.5 * Px.tileNoise(cx * 0.12 + 9.0 * ph, 3.0, 9.0, 0.0, seed + 5.0)
-			var F := FIELD[j] * (1.0 - Px.smooth(base - 3.0, base, cy)) + 0.05 * Px.tileNoise(cx * 0.21 + 18.0 * ph, cy * 0.21, 18.0, 0.0, seed)
+			var base := BASE + 1.5 * Px.tileNoise(cx * 0.12 + 9.0 * ph, 3.0, 9.0, 0.0, fx_seed + 5.0)
+			var F := FIELD[j] * (1.0 - Px.smooth(base - 3.0, base, cy)) + 0.05 * Px.tileNoise(cx * 0.21 + 18.0 * ph, cy * 0.21, 18.0, 0.0, fx_seed)
 			if F < TH:
 				continue
 			# the field's slope rounds each billow's top; height does the rest: lit above, cool in the middle, dark below
@@ -122,22 +122,22 @@ static func cloud(p: Px.Painter, B: Array, ph: float, seed: float, K: Array, C: 
 			var lam := -(GX[j] * 0.42 + GY[j] * 0.9) / gl
 			var edge := minf(1.0, gl * 5.0) * (1.0 if F < TH + 0.08 else 0.55)
 			var h := 1.0 - 2.0 * Px.clamp((cy - TOP) / (BASE - TOP))
-			var i := 2.7 + 2.2 * h + 1.3 * lam * edge + 0.4 * Px.tileNoise(cx * 0.16 + 12.0 * ph, cy * 0.16, 12.0, 0.0, seed + 9.0)
+			var i := 2.7 + 2.2 * h + 1.3 * lam * edge + 0.4 * Px.tileNoise(cx * 0.16 + 12.0 * ph, cy * 0.16, 12.0, 0.0, fx_seed + 9.0)
 			if F < TH + 0.05 and lam > 0.3 and h > -0.5:
 				i += 1.0
 			if cy > base - 6.0:
 				i -= 1.0
 			i = Px.clamp(Px.round(i), 0.0, n - 1.0)
 			# lit from inside: brightest deep in the billow, breaking up through the cloud's own lumps toward its edges
-			var L := LIT[j] * (0.7 + 0.6 * Px.tileNoise(cx * 0.2 - 14.0 * ph, cy * 0.2, 14.0, 0.0, seed + 3.0))
+			var L := LIT[j] * (0.7 + 0.6 * Px.tileNoise(cx * 0.2 - 14.0 * ph, cy * 0.2, 14.0, 0.0, fx_seed + 3.0))
 			if L > 0.12:
 				i = minf(ramp.size() - 1.0, i + Px.round(L * 5.5))
 			p.px(cx, cy, ramp[int(i)])
 
 
 # scud: ragged wisps that form under the base, drift off on the wind and fray away
-static func scud(p: Px.Painter, ph: float, seed: float, K: Array) -> void:
-	var r := Px.rng(seed, 13)
+static func scud(p: Px.Painter, ph: float, fx_seed: float, K: Array) -> void:
+	var r := Px.rng(fx_seed, 13)
 	for w in 6:
 		var x0 := r.range(-60.0, 60.0)
 		var y0 := BASE + r.range(3.0, 9.0)
@@ -153,7 +153,7 @@ static func scud(p: Px.Painter, ph: float, seed: float, K: Array) -> void:
 			while x <= xc + rx + 1.0:
 				var dx := (x + 0.5 - xc) / rx
 				var dy := (y + 0.5 - y0) / ry
-				var nz := Px.tileNoise((x + 0.5) * 0.35 + 10.0 * ph + w * 7, (y + 0.5) * 0.5, 10.0, 0.0, seed + 20.0 + w)
+				var nz := Px.tileNoise((x + 0.5) * 0.35 + 10.0 * ph + w * 7, (y + 0.5) * 0.5, 10.0, 0.0, fx_seed + 20.0 + w)
 				var v := (1.0 - dx * dx - dy * dy) * a + 0.6 * nz - 0.25
 				if v > 0.0:
 					p.blend(x + 0.5, y + 0.5, K[2] if v > 0.4 else K[3], minf(0.6, 0.2 + v * 0.7))

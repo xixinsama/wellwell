@@ -169,7 +169,10 @@ func _format_shader_material(mat: ShaderMaterial, max_depth: int) -> Dictionary:
 	return result
 
 
-func _format_standard_material(mat: BaseMaterial3D, max_depth: int) -> Dictionary:
+## `max_depth` is part of the shared formatter signature used by the dispatcher
+## that reports a material's serialized shape; a standard material has no
+## nested resources, so the depth is not consulted here.
+func _format_standard_material(mat: BaseMaterial3D, _max_depth: int) -> Dictionary:
 	var result := {
 		"albedo_color": _serialize_color(mat.albedo_color),
 		"metallic": mat.metallic,

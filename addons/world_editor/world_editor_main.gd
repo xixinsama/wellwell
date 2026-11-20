@@ -12,6 +12,14 @@ const TEMPLATE_SCENE_SETTING := "world_editor/room_template_scene"
 const ROOM_STATUS := preload("res://addons/world_editor/authoring/world/room_status_service.gd")
 const ROOM_ANNOTATIONS := preload("res://addons/world_editor/authoring/world/room_annotation_service.gd")
 const ROOM_SCENE_WRITER := preload("res://addons/world_editor/authoring/world/room_scene_writer.gd")
+## The 3D stack view is loaded by path so the editor keeps working (flat 2D only)
+## when the script is absent, e.g. in a stripped checkout.
+const STACK_3D_PATH := "res://addons/world_editor/world_stack_3d_layer.gd"
+## One world unit in the 3D stack view is one chunk of this size.
+const CHUNK_PIXELS_F := Vector2(320.0, 180.0)
+const WORLD_STACK_MODEL := preload("res://addons/world_editor/authoring/world/world_stack_model.gd")
+## Catalog the stacked-world view lists; missing/unreadable degrades to no rows.
+const WORLD_CATALOG_PATH := "res://resources/worlds/world_catalog.tres"
 
 var world_data: WorldData
 var selected_room_id := ""
@@ -37,9 +45,23 @@ var _wizard_id: LineEdit
 var _wizard_name: LineEdit
 var _wizard_path: LineEdit
 var _auto_path := ""
+var _view_3d := false
+var _stack_3d_view: Control
+var _stack_model := WORLD_STACK_MODEL.new()
+var _stack_3d_payload: Dictionary = {}
+## Layer ids shown while the world has no saved order yet; only written to the
+## resource when the author edits the stack.
+var _stack_default_order: Array[String] = []
 
 @onready var canvas: Control = %LayoutCanvas
 @onready var status_label: Label = %Status
+@onready var chunk_field: LineEdit = %ChunkField
+@onready var chunk_go: Button = %ChunkGo
+@onready var layer_panel: VBoxContainer = %LayerPanel
+@onready var layer_title: Label = %LayerTitle
+@onready var layer_rows: VBoxContainer = %LayerRows
+@onready var layer_add: Button = %LayerAdd
+@onready var layer_hint: Label = %LayerHint
 @onready var source_entrance: OptionButton = %SourceEntrance
 @onready var target_room: OptionButton = %TargetRoom
 @onready var target_spawn: OptionButton = %TargetSpawn
@@ -51,6 +73,7 @@ var _auto_path := ""
 @onready var selection_label: Label = %SelectionLabel
 @onready var room_list_panel: VBoxContainer = %RoomListPanel
 @onready var inspector_panel: VBoxContainer = %InspectorPanel
+@onready var view_mode_3d: CheckButton = %ViewMode3D
 
 
 func _ready() -> void:
@@ -80,6 +103,12 @@ func _ready() -> void:
     inspector.action_requested.connect(_on_room_action)
     %RoomsToggle.toggled.connect(func(on: bool) -> void: room_list_panel.visible = on)
     %InspectorToggle.toggled.connect(func(on: bool) -> void: inspector_panel.visible = on)
+    if is_instance_valid(view_mode_3d):
+        view_mode_3d.toggled.connect(set_view_mode_3d)
+    chunk_go.pressed.connect(_on_chunk_go)
+    chunk_field.text_submitted.connect(func(_text: String) -> void: _on_chunk_go())
+    if is_instance_valid(layer_add):
+        layer_add.pressed.connect(_on_layer_add_pressed)
     if canvas.has_signal("selection_changed"):
         canvas.connect("selection_changed", _on_canvas_selection_changed)
     if canvas.has_signal("delete_requested"):
@@ -91,6 +120,7 @@ func _ready() -> void:
 
 func set_world_data(value: WorldData, preserve_selection := false) -> void:
     world_data = value
+    _stack_default_order.clear()
     if not preserve_selection or world_data == null or not world_data.has_room(selected_room_id):
         selected_room_id = ""
     selected_room_ids.clear()
@@ -146,6 +176,7 @@ func set_selection(room_ids: Array, primary: String) -> void:
     _refresh_inspector()
     _refresh_status_bar()
     _refresh_command_state()
+    _refresh_layer_panel()
 
 
 func move_room(room_id: String, origin_chunk: Vector2i) -> bool:
@@ -546,6 +577,9 @@ func _on_create_room_confirmed() -> void:
 
 func _localize_ui() -> void:
     var t := WorldEditorLocalization.t
+    if is_instance_valid(view_mode_3d):
+        view_mode_3d.text = t.call("WE_STACK_VIEW_3D")
+        view_mode_3d.tooltip_text = t.call("WE_TT_STACK_VIEW_3D")
     %NewWorld.text = t.call("WE_NEW_WORLD")
     %NewWorld.tooltip_text = t.call("WE_TT_NEW_WORLD")
     %SaveWorld.text = t.call("WE_SAVE_WORLD")
@@ -579,6 +613,9 @@ func _localize_ui() -> void:
     %ConnectionsTitle.text = t.call("WE_CONNECTIONS")
     %AddExistingDialog.title = t.call("WE_DIALOG_ADD_EXISTING")
     %NewWorldDialog.title = t.call("WE_DIALOG_NEW_WORLD")
+    %ChunkGo.text = t.call("WE_CHUNK_GO")
+    %ChunkField.placeholder_text = t.call("WE_CHUNK_PLACEHOLDER")
+    %ChunkField.tooltip_text = t.call("WE_TT_CHUNK_FIELD")
 
 
 func _sync_world_picker(resource: WorldData) -> void:
@@ -615,6 +652,8 @@ func _refresh() -> void:
         room_count.text = WorldEditorLocalization.t("WE_ROOMS_COUNT", [0 if world_data == null else world_data.rooms.size()])
     if is_instance_valid(inspector):
         _refresh_inspector()
+    # Built once per refresh: the diagnostics and the 3D view read the same data.
+    _stack_3d_payload = build_stack_3d_payload()
     _report_diagnostics()
     if is_instance_valid(canvas):
         if canvas.has_method("set_statuses"):
@@ -623,9 +662,13 @@ func _refresh() -> void:
             canvas.call("set_selection", selected_room_ids, selected_room_id)
         if canvas.has_method("set_annotations"):
             canvas.call("set_annotations", _annotations)
+        if canvas.has_method("set_portal_links"):
+            canvas.call("set_portal_links", _current_portal_links())
         if canvas.has_method("sync_preview"):
             canvas.call("sync_preview")
         canvas.queue_redraw()
+    _refresh_stack_3d()
+    _refresh_layer_panel()
     _refresh_status_bar()
     _refresh_command_state()
 
@@ -720,12 +763,478 @@ func _report_diagnostics() -> void:
                 lines.append(WorldEditorLog.format_error(issue_text))
             else:
                 lines.append(WorldEditorLog.format_warning(issue_text))
+        for dangling: String in _dangling_diagnostics():
+            lines.append(WorldEditorLog.format_warning(dangling))
     var signature := "\n".join(lines)
     if signature == _output_signature:
         return
     _output_signature = signature
     for line: String in lines:
         print(line)
+
+
+
+# --- 3D stack view ------------------------------------------------------------
+
+## The 3D slice view replaces the flat canvas. It is loaded by path and skipped
+## when absent so the editor still opens without it.
+func set_view_mode_3d(enabled: bool) -> bool:
+    if enabled and world_data == null:
+        _set_view_mode_button(false)
+        return false
+    if not enabled:
+        _view_3d = false
+        if _stack_3d_view != null and is_instance_valid(_stack_3d_view):
+            _stack_3d_view.visible = false
+        if is_instance_valid(canvas):
+            canvas.queue_redraw()
+        _refresh_command_state()
+        return true
+    if _stack_3d_view == null or not is_instance_valid(_stack_3d_view):
+        _stack_3d_view = _ensure_stack_3d_view()
+    if _stack_3d_view == null:
+        _set_view_mode_button(false)
+        _show_result(_failure(WorldEditorLocalization.t("WE_STACK_3D_MISSING")))
+        return false
+    _view_3d = true
+    # The 3D view is a full-rect, opaque child of the canvas: it covers the flat
+    # work view instead of hiding it, because hiding the canvas would hide the
+    # 3D view with it.
+    _stack_3d_view.visible = true
+    _stack_3d_view.mouse_filter = Control.MOUSE_FILTER_STOP
+    if is_instance_valid(canvas):
+        canvas.move_child(_stack_3d_view, canvas.get_child_count() - 1)
+    _refresh()
+    # Anchors own the view's size, so frame it once the layout has settled
+    # instead of assigning a size (which Godot warns about).
+    if _stack_3d_view.has_method("focus_stack"):
+        _stack_3d_view.call_deferred("focus_stack")
+    _refresh_command_state()
+    return true
+
+
+func is_view_mode_3d() -> bool:
+    return _view_3d
+
+
+func get_stack_3d_payload() -> Dictionary:
+    return build_stack_3d_payload()
+
+
+func _set_view_mode_button(pressed: bool) -> void:
+    if is_instance_valid(view_mode_3d):
+        view_mode_3d.set_pressed_no_signal(pressed)
+
+
+func _ensure_stack_3d_view() -> Control:
+    if not ResourceLoader.exists(STACK_3D_PATH):
+        return null
+    var script := load(STACK_3D_PATH) as Script
+    if script == null or not is_instance_valid(canvas):
+        return null
+    var view := Control.new()
+    view.name = "Stack3DView"
+    view.mouse_filter = Control.MOUSE_FILTER_STOP
+    view.set_script(script)
+    canvas.add_child(view)
+    view.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+    view.visible = false
+    if view.has_signal("world_picked"):
+        view.connect("world_picked", _on_stack_world_picked)
+    return view
+
+
+func _refresh_stack_3d() -> void:
+    if not _view_3d or _stack_3d_view == null or not is_instance_valid(_stack_3d_view):
+        return
+    _stack_3d_view.call("set_stack", _stack_3d_payload)
+
+
+## Clicking a slice in the 3D view edits that world in the flat 2D view.
+func _on_stack_world_picked(world_id: String) -> void:
+    if world_id.is_empty():
+        return
+    var target: WorldData
+    if world_data != null and world_data.world_id == world_id:
+        target = world_data
+    else:
+        target = _find_catalog_world(world_id)
+    if target == null:
+        _show_result(_failure("world is not in the catalog: %s" % world_id))
+        return
+    _set_view_mode_button(false)
+    set_view_mode_3d(false)
+    if target != world_data:
+        set_world_data(target)
+    if is_instance_valid(canvas):
+        canvas.call("focus_all")
+    _show_result({"ok": true, "errors": [], "warnings": [], "path": target.resource_path})
+
+
+func _current_portal_links() -> Array:
+    if world_data == null:
+        return []
+    return _stack_model.build_portal_links(world_data, world_data.world_id, _annotations)
+
+
+## Worlds drawn as slices: exactly the stack this world belongs to.
+func _stack_3d_worlds() -> Array[WorldData]:
+    return get_stack_worlds()
+
+
+func _annotations_for_world(world: WorldData) -> Dictionary:
+    var result: Dictionary = {}
+    if world == null:
+        return result
+    for room_id: String in world.get_room_ids():
+        result[room_id] = _annotations_service.collect(world.get_room(room_id))
+    return result
+
+
+## Everything the 3D layer needs: slices with rooms and doors, plus the door
+## links (portal inside a slice, shuttle across slices) in chunk units.
+func build_stack_3d_payload() -> Dictionary:
+    var payload := {
+        "current_world_id": "" if world_data == null else world_data.world_id,
+        "layers": [],
+        "links": [],
+        "dangling_count": 0,
+    }
+    if world_data == null:
+        return payload
+    var worlds := _stack_3d_worlds()
+    var layers: Array[Dictionary] = []
+    var all_doors: Array[Dictionary] = []
+    for index: int in range(worlds.size()):
+        var world: WorldData = worlds[index]
+        var annotations: Dictionary = _annotations if world == world_data else _annotations_for_world(world)
+        var rooms: Array[Dictionary] = []
+        var bounds := Rect2()
+        var has_bounds := false
+        for room_id: String in world.get_room_ids():
+            var room := world.get_room(room_id)
+            if room == null:
+                continue
+            var rect := Rect2(Vector2(world.get_room_origin_chunk(room_id)), Vector2(room.room_size_chunks))
+            rooms.append({"id": room_id, "rect": rect})
+            bounds = rect if not has_bounds else bounds.merge(rect)
+            has_bounds = true
+        if not has_bounds:
+            continue
+        var doors: Array[Dictionary] = []
+        var records := _stack_model.collect_world_doors(world, world.world_id, index, annotations)
+        for record: Dictionary in records:
+            doors.append({
+                "id": String(record.get("door_id", "")),
+                "pos": _to_chunk_units(record.get("position", Vector2.ZERO)),
+                "kind": int(record.get("door_kind", 0)),
+            })
+            all_doors.append(record)
+        layers.append({
+            "index": index,
+            "world_id": world.world_id,
+            "name": world.display_name if not world.display_name.is_empty() else world.world_id,
+            "color": _stack_model.layer_color(world.world_id),
+            "bounds": bounds.grow(0.18),
+            "rooms": rooms,
+            "doors": doors,
+        })
+    var report: Dictionary = _stack_model.build_door_links(all_doors)
+    var links: Array[Dictionary] = []
+    var dangling: Array[Dictionary] = []
+    for link: Dictionary in report.get("links", []):
+        if not bool(link.get("paired", false)):
+            dangling.append(link)
+        links.append({
+            "kind": String(link.get("kind", "portal")),
+            "paired": bool(link.get("paired", false)),
+            "from_layer": int(link.get("from_layer", 0)),
+            "from_pos": _to_chunk_units(link.get("from_position", Vector2.ZERO)),
+            "to_layer": int(link.get("to_layer", 0)),
+            "to_pos": _to_chunk_units(link.get("to_position", Vector2.ZERO)),
+        })
+    payload["layers"] = layers
+    payload["links"] = links
+    payload["dangling_links"] = dangling
+    payload["dangling_count"] = int(report.get("dangling_count", 0))
+    return payload
+
+
+static func _to_chunk_units(world_pixels: Vector2) -> Vector2:
+    return Vector2(world_pixels.x / CHUNK_PIXELS_F.x, world_pixels.y / CHUNK_PIXELS_F.y)
+
+
+func _world_catalog_worlds() -> Array[WorldData]:
+    var worlds: Array[WorldData] = []
+    if not ResourceLoader.exists(WORLD_CATALOG_PATH):
+        return worlds
+    var catalog := ResourceLoader.load(WORLD_CATALOG_PATH) as WorldCatalog
+    if catalog == null:
+        return worlds
+    for world: WorldData in catalog.get_worlds():
+        if world != null and not world.world_id.is_empty():
+            worlds.append(world)
+    return worlds
+
+
+func _find_catalog_world(world_id: String) -> WorldData:
+    for world: WorldData in _world_catalog_worlds():
+        if world.world_id == world_id:
+            return world
+    return null
+
+
+# --- Layer panel (3D view) ----------------------------------------------------
+
+const WORLD_STACK_SCRIPT := preload("res://addons/platformer_kit/world/data/world_stack_data.gd")
+
+## The stack this world belongs to, or null when it is not stacked with anything.
+func get_world_stack() -> WorldStack:
+    return null if world_data == null else world_data.world_stack
+
+
+## Creates and saves a stack resource for the edited world on demand, so adding
+## the first layer is one click instead of a manual resource step.
+func ensure_world_stack() -> WorldStack:
+    if world_data == null:
+        return null
+    if world_data.world_stack != null:
+        return world_data.world_stack
+    if world_data.resource_path.is_empty() or world_data.resource_path.get_extension() != "tres":
+        _show_result(_failure(WorldEditorLocalization.t("WE_STACK_NEEDS_SAVED_WORLD")))
+        return null
+    var path := "%s/%s_stack.tres" % [
+        world_data.resource_path.get_base_dir(),
+        world_data.resource_path.get_file().get_basename()
+    ]
+    var stack: WorldStack = WORLD_STACK_SCRIPT.new() as WorldStack
+    stack.stack_id = "%s_stack" % world_data.world_id
+    stack.display_name = "%s Stack" % _world_label(world_data)
+    stack.layers.assign([world_data])
+    if ResourceSaver.save(stack, path) != OK:
+        _show_result(_failure(WorldEditorLocalization.t("WE_STACK_SAVE_FAILED", [path])))
+        return null
+    stack = ResourceLoader.load(path, "WorldStack", ResourceLoader.CACHE_MODE_IGNORE) as WorldStack
+    if stack == null:
+        _show_result(_failure(WorldEditorLocalization.t("WE_STACK_SAVE_FAILED", [path])))
+        return null
+    world_data.world_stack = stack
+    world_data.emit_changed()
+    return stack
+
+
+## Worlds drawn as slices, bottom layer first. A world without a stack is a
+## stack of one; a stack that lost its own world gets it back at layer 0.
+func get_stack_worlds() -> Array[WorldData]:
+    var result: Array[WorldData] = []
+    if world_data == null:
+        return result
+    var stack := get_world_stack()
+    if stack == null:
+        result.append(world_data)
+        return result
+    stack.normalize()
+    for world: WorldData in stack.layers:
+        if world != null:
+            result.append(world)
+    if not result.has(world_data):
+        result.insert(0, world_data)
+    return result
+
+
+func add_layer(world_id: String) -> void:
+    if world_data == null:
+        return
+    var world := _find_catalog_world(world_id)
+    if world == null or world == world_data:
+        return
+    var stack := get_world_stack()
+    if stack == null:
+        stack = ensure_world_stack()
+        if stack == null:
+            return
+    if not stack.insert_world(world):
+        return
+    _after_stack_change()
+
+
+func remove_layer(world_id: String) -> void:
+    var stack := get_world_stack()
+    if stack == null or world_data == null or world_id == world_data.world_id:
+        return
+    if not stack.remove_world(world_id):
+        return
+    _after_stack_change()
+
+
+func move_layer(world_id: String, delta: int) -> void:
+    var stack := get_world_stack()
+    if stack == null:
+        return
+    var index := stack.get_layer_index(world_id)
+    if index < 0 or not stack.move_layer(index, index + delta):
+        return
+    _after_stack_change()
+
+
+func _after_stack_change() -> void:
+    var stack := get_world_stack()
+    if stack != null:
+        stack.emit_changed()
+        if not stack.resource_path.is_empty() and ResourceSaver.save(stack, stack.resource_path) != OK:
+            _show_result(_failure(WorldEditorLocalization.t("WE_STACK_SAVE_FAILED", [stack.resource_path])))
+    _refresh()
+    if _view_3d and _stack_3d_view != null and is_instance_valid(_stack_3d_view):
+        _stack_3d_view.call("focus_stack")
+
+
+func _on_layer_add_pressed() -> void:
+    if not is_instance_valid(layer_add):
+        return
+    var menu := layer_add.get_node_or_null("LayerAddMenu") as PopupMenu
+    if menu == null:
+        menu = PopupMenu.new()
+        menu.name = "LayerAddMenu"
+        layer_add.add_child(menu)
+        menu.index_pressed.connect(_on_layer_add_selected)
+    menu.clear()
+    var stacked := get_stack_worlds()
+    for world: WorldData in _world_catalog_worlds():
+        if world == null or world.world_id.is_empty():
+            continue
+        if stacked.has(world) or world == world_data:
+            continue
+        menu.add_item(_world_label(world), menu.item_count)
+        menu.set_item_metadata(menu.item_count - 1, world.world_id)
+    if menu.item_count == 0:
+        _show_result(_failure(WorldEditorLocalization.t("WE_STACK_EMPTY")))
+        return
+    menu.reset_size()
+    menu.position = Vector2i(
+        int(layer_add.get_screen_position().x),
+        int(layer_add.get_screen_position().y + layer_add.size.y)
+    )
+    menu.popup()
+
+
+func _on_layer_add_selected(index: int) -> void:
+    if not is_instance_valid(layer_add):
+        return
+    var menu := layer_add.get_node_or_null("LayerAddMenu") as PopupMenu
+    if menu == null or index < 0 or index >= menu.item_count:
+        return
+    add_layer(String(menu.get_item_metadata(index)))
+
+
+## Left column in 3D mode: the world stack (Z order) instead of the room list.
+func _refresh_layer_panel() -> void:
+    if not is_instance_valid(layer_panel):
+        return
+    if is_instance_valid(room_search):
+        room_search.visible = not _view_3d
+    if is_instance_valid(room_list):
+        room_list.visible = not _view_3d
+    if is_instance_valid(room_count):
+        room_count.visible = not _view_3d
+    layer_panel.visible = _view_3d
+    if not _view_3d:
+        return
+    var t := WorldEditorLocalization.t
+    layer_title.text = String(t.call("WE_STACK_LAYER_TITLE"))
+    layer_add.text = String(t.call("WE_STACK_ADD_WORLD"))
+    layer_add.disabled = world_data == null
+    layer_hint.text = String(
+        t.call("WE_STACK_LAYER_HINT" if get_world_stack() != null else "WE_STACK_LAYER_HINT_EMPTY")
+    )
+    for child: Node in layer_rows.get_children():
+        # Detach now so a rebuild inside a row button's own handler cannot count
+        # the old rows twice; freeing is deferred so the running button stays alive.
+        layer_rows.remove_child(child)
+        child.queue_free()
+    if world_data == null:
+        return
+    var stacked := get_stack_worlds()
+    for index: int in range(stacked.size() - 1, -1, -1):
+        var world: WorldData = stacked[index]
+        _append_layer_row(index, world, index == 0, stacked.size())
+    if stacked.size() == 1:
+        var empty := Label.new()
+        empty.text = String(t.call("WE_STACK_ONLY_ONE"))
+        empty.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+        empty.modulate = Color(1, 1, 1, 0.5)
+        empty.add_theme_font_size_override("font_size", 11)
+        layer_rows.add_child(empty)
+
+
+func _append_layer_row(z: int, world: WorldData, is_bottom: bool, layer_count: int) -> void:
+    var row := HBoxContainer.new()
+    row.add_theme_constant_override("separation", 4)
+    var is_current := world == world_data
+    var badge := Label.new()
+    badge.text = "Z%d" % z
+    badge.custom_minimum_size.x = 34
+    badge.modulate = Color(1, 1, 1, 0.95 if is_current else 0.55)
+    badge.add_theme_font_size_override("font_size", 11)
+    row.add_child(badge)
+    var name_button := Button.new()
+    name_button.text = _world_label(world)
+    name_button.flat = true
+    name_button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+    name_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+    name_button.disabled = is_current
+    name_button.tooltip_text = WorldEditorLocalization.t("WE_TT_LAYER_ROW")
+    if not is_current:
+        var world_id := world.world_id
+        name_button.pressed.connect(func() -> void: _on_stack_world_picked(world_id))
+    row.add_child(name_button)
+    if not is_bottom:
+        var world_id := world.world_id
+        var up := Button.new()
+        up.text = "▲"
+        up.tooltip_text = WorldEditorLocalization.t("WE_TT_LAYER_UP")
+        up.custom_minimum_size.x = 26
+        up.disabled = z >= layer_count - 1
+        up.pressed.connect(func() -> void: move_layer(world_id, 1))
+        row.add_child(up)
+        var down := Button.new()
+        down.text = "▼"
+        down.tooltip_text = WorldEditorLocalization.t("WE_TT_LAYER_DOWN")
+        down.custom_minimum_size.x = 26
+        down.disabled = z <= 0
+        down.pressed.connect(func() -> void: move_layer(world_id, -1))
+        row.add_child(down)
+        var remove := Button.new()
+        remove.text = "✕"
+        remove.tooltip_text = WorldEditorLocalization.t("WE_TT_LAYER_REMOVE")
+        remove.custom_minimum_size.x = 26
+        remove.pressed.connect(func() -> void: remove_layer(world_id))
+        row.add_child(remove)
+    layer_rows.add_child(row)
+
+
+func _world_label(world: WorldData) -> String:
+    if world == null:
+        return ""
+    return world.display_name if not world.display_name.is_empty() else world.world_id
+
+
+## One de-duplicated warning line per door that found no partner.
+func _dangling_diagnostics() -> Array[String]:
+    var lines: Array[String] = []
+    for link: Dictionary in _stack_3d_payload.get("dangling_links", []):
+        var line := "%s link %s/%s/%s -> %s/%s/%s is unmatched" % [
+            String(link.get("kind", "")),
+            String(link.get("from_world_id", "")),
+            String(link.get("from_room_id", "")),
+            String(link.get("from_door_id", "")),
+            String(link.get("to_world_id", "")),
+            String(link.get("to_room_id", "")),
+            String(link.get("to_door_id", "")),
+        ]
+        if not lines.has(line):
+            lines.append(line)
+    return lines
+
 
 
 func _refresh_status_bar() -> void:
@@ -741,6 +1250,54 @@ func _refresh_status_bar() -> void:
             status_label.text = WorldEditorLocalization.t("WE_NO_WORLD_SELECTED") if world_data == null else WorldEditorLocalization.t("WE_ROOMS_COUNT", [world_data.rooms.size()])
     if is_instance_valid(selection_label):
         selection_label.text = "" if selected_room_ids.is_empty() else WorldEditorLocalization.t("WE_SELECTED_COUNT", [selected_room_ids.size()])
+    _refresh_chunk_field()
+
+
+## Status-bar chunk field mirrors the primary selection's chunk origin.
+func _refresh_chunk_field() -> void:
+    if not is_instance_valid(chunk_field):
+        return
+    if world_data != null and not selected_room_id.is_empty() and world_data.has_room(selected_room_id):
+        var origin := world_data.get_room_origin_chunk(selected_room_id)
+        chunk_field.text = "%d,%d" % [origin.x, origin.y]
+        return
+    chunk_field.text = ""
+
+
+## Parses the status-bar chunk field ("x,y", spaces and negatives allowed).
+## Returns a Vector2i, or null when the text is not a chunk.
+static func parse_chunk_text(text: String) -> Variant:
+    var cleaned := String(text).strip_edges().replace(" ", "").replace("\t", "")
+    if cleaned.is_empty():
+        return null
+    var parts := cleaned.split(",")
+    if parts.size() != 2:
+        return null
+    var left := String(parts[0]).strip_edges()
+    var right := String(parts[1]).strip_edges()
+    if not left.is_valid_int() or not right.is_valid_int():
+        return null
+    return Vector2i(
+        clampi(int(left), -100000, 100000),
+        clampi(int(right), -100000, 100000)
+    )
+
+
+func _on_chunk_go() -> void:
+    if not is_instance_valid(chunk_field):
+        return
+    var parsed: Variant = parse_chunk_text(chunk_field.text)
+    if parsed == null:
+        chunk_field.text = ""
+        _show_result(_failure(WorldEditorLocalization.t("WE_CHUNK_INVALID")))
+        return
+    var chunk: Vector2i = parsed
+    var moved := false
+    if world_data != null and not selected_room_id.is_empty() and world_data.has_room(selected_room_id):
+        moved = move_room(selected_room_id, chunk)
+    if not moved and is_instance_valid(canvas) and canvas.has_method("focus_chunk"):
+        canvas.call("focus_chunk", chunk)
+    _refresh_chunk_field()
 
 
 func _start_room_id() -> String:
@@ -924,6 +1481,19 @@ func _instantiate_room_source(room_id: String) -> Node:
     return null if packed == null else packed.instantiate()
 
 
+## Chunk a freshly imported room should land on: under the pointer when the
+## pointer is over the canvas, otherwise the chunk at the canvas view centre.
+func _import_origin_chunk() -> Vector2i:
+    if not is_instance_valid(canvas):
+        return Vector2i.ZERO
+    if canvas.has_method("is_cursor_over_canvas") and bool(canvas.call("is_cursor_over_canvas")) \
+        and canvas.has_method("get_cursor_chunk"):
+        return Vector2i(canvas.call("get_cursor_chunk"))
+    if canvas.has_method("get_view_center_chunk"):
+        return Vector2i(canvas.call("get_view_center_chunk"))
+    return Vector2i.ZERO
+
+
 func _add_existing_source(path: String) -> void:
     if world_data == null or world_data.resource_path.is_empty() or not FileAccess.file_exists(world_data.resource_path):
         _show_result(_failure("Select or create a saved WorldData resource first"))
@@ -937,7 +1507,7 @@ func _add_existing_source(path: String) -> void:
     if source == null:
         result = _failure("Room source could not be loaded: %s" % path)
     else:
-        result = _world_room_importer.call("import_room", world_data, source, path)
+        result = _world_room_importer.call("import_room", world_data, source, path, _import_origin_chunk())
         source.free()
     if bool(result.get("ok", false)):
         var imported_world := result.get("world") as WorldData
@@ -997,6 +1567,8 @@ func _refresh_command_state() -> void:
         option.disabled = not bool(state["has_selection"])
     %NewRoom.disabled = bool(state["transaction_busy"])
     %NewWorld.disabled = bool(state["transaction_busy"])
+    if is_instance_valid(view_mode_3d):
+        view_mode_3d.disabled = bool(state["world_command_disabled"])
 
 
 func _set_transaction_busy(value: bool) -> void:

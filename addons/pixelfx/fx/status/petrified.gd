@@ -49,7 +49,7 @@ var a: Dictionary
 var S: Dictionary
 var H: int
 var R: Px.Rng
-var seed: float
+var fx_seed: float
 var ps: Px.Particles
 var bits: Px.Bits
 var lights: Px.Lights
@@ -63,7 +63,7 @@ var settled := false
 
 
 func front(mx: float) -> float:
-	return level(t) + 0.06 * Px.tileFbm(mx * 0.4, 0.5, 0.0, 0.0, seed, 2)
+	return level(t) + 0.06 * Px.tileFbm(mx * 0.4, 0.5, 0.0, 0.0, fx_seed, 2)
 
 
 # cracks: random walks through the statue from a point on its chest
@@ -89,7 +89,7 @@ func create(o: Dictionary) -> void:
 	S = Lib.shape(a)
 	H = S.h
 	R = Px.Rng.new(o.seed)
-	seed = o.seed
+	fx_seed = o.seed
 	var floor_ := func(): return 0.0
 	ps = Px.Particles.new({"rng": R, "ground": floor_, "sparks": [C[7], C[6], C[5], C[4]]})
 	bits = Px.Bits.new({"ground": floor_})

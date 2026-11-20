@@ -132,7 +132,7 @@ func column(p: Px.Painter) -> void:
 	# a crown of tongues where the column breaks into the air, drawn first so the column flows up into them
 	if t < FALL + 0.25:
 		var k := Px.clamp(w0 / 12.0)
-		var NZ := func(rate: float, seed: Variant, off: float) -> float: return Px.noise(t * rate + off, seed)
+		var NZ := func(rate: float, fx_seed: Variant, off: float) -> float: return Px.noise(t * rate + off, fx_seed)
 		for i in 5:
 			var n := (S + i) * 17.0
 			var dx := (i - 2) * w0 * 0.4

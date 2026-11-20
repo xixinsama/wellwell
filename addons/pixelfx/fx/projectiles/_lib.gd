@@ -13,14 +13,14 @@ const WHITE := Px.WHITE
 
 ## Like cycle(), but particle i is born exactly at i * period / n: an emitter with a steady beat, so a trail
 ## has no clumps or gaps. Loops seamlessly over period. fn(age, life, r, i), r the same rng every period.
-static func beat(t: float, period: float, n: float, seed: Variant, life: Variant, fn: Callable) -> void:
+static func beat(t: float, period: float, n: float, fx_seed: Variant, life: Variant, fn: Callable) -> void:
 	var na := fn.get_argument_count()
 	var i := 0
 	while i < n:
-		var L: float = life.call(Px.rng(seed, i, 911)) if life is Callable else life
+		var L: float = life.call(Px.rng(fx_seed, i, 911)) if life is Callable else life
 		var age := Px.wrap(t - (i * period) / n + 1e-7, period)
 		while age < L:
-			Px.call4(fn, na, age, L, Px.rng(seed, i), i)
+			Px.call4(fn, na, age, L, Px.rng(fx_seed, i), i)
 			age += period
 		i += 1
 
@@ -269,9 +269,9 @@ static func profile(l: Dictionary, u: float) -> float:
 
 
 ## Draw flash lobes L at (x, y) pointing along angle a: a white (or hot) core, a hot inner flame, a body and
-## a ragged rim, chosen by how deep a pixel sits inside its lobe. C: [core, inner, body, rim]. seed varies the
+## a ragged rim, chosen by how deep a pixel sits inside its lobe. C: [core, inner, body, rim]. fx_seed varies the
 ## ragged edge. Returns the flash's reach.
-static func flash(p: Px.Painter, x: float, y: float, a: float, L: Array, C: Array, seed: Variant) -> float:
+static func flash(p: Px.Painter, x: float, y: float, a: float, L: Array, C: Array, fx_seed: Variant) -> float:
 	var c := cos(a)
 	var s := sin(a)
 	var ext := 2.0
@@ -305,7 +305,7 @@ static func flash(p: Px.Painter, x: float, y: float, a: float, L: Array, C: Arra
 			m = dm
 		if dm > 0.6:
 			hot = true
-		m += (Px.rand(floorf(px) * 73.0 + floorf(py) * 151.0, seed) - 0.5) * 0.5 * minf(1.0, ext / 14.0)
+		m += (Px.rand(floorf(px) * 73.0 + floorf(py) * 151.0, fx_seed) - 0.5) * 0.5 * minf(1.0, ext / 14.0)
 		if m < -0.85:
 			return null
 		return C[3] if m < 0.0 else (C[0] if hot else (C[1] if warm else C[2])))

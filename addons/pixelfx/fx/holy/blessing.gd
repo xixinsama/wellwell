@@ -50,7 +50,7 @@ static func ray(q: float, t: float) -> float:
 		I += exp(-(pow((q - o) / w, 2.0))) * (0.55 + 0.45 * sin((t / T) * TAU * k + ph)) * 0.6
 	return I * Px.smooth(1.25, 0.75, absf(q))
 
-# where each falling sparkle meets the character or the floor (cached per seed and character)
+# where each falling sparkle meets the character or the floor (cached per fx_seed and character)
 static var LANDS := {}
 
 static func landings(o: Dictionary, S: Dictionary) -> Array:

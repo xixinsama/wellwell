@@ -36,18 +36,18 @@ static func actorAlpha(_t: float, _o: Dictionary) -> float:
 
 # worked out once per character: the veins (walks out from a wound on the forearm), blister spots, sweat spots
 static var BODIES := {}
-static func body(a: Dictionary, seed: float) -> Dictionary:
+static func body(a: Dictionary, fx_seed: float) -> Dictionary:
 	var m: Variant = BODIES.get(a.mask.id)
 	if not m:
 		m = {}
 		BODIES[a.mask.id] = m
-	if m.has(seed):
-		return m[seed]
+	if m.has(fx_seed):
+		return m[fx_seed]
 	var S := Lib.shape(a)
 	var H: int = S.h
 	var W: int = S.w
 	var on: Callable = S.on
-	var R := Px.Rng.new(seed * 7.0 + 3.0)
+	var R := Px.Rng.new(fx_seed * 7.0 + 3.0)
 	var lr: Array = S.rows[Px.roundi(H * 0.6)]
 	var l: int = lr[0]
 	var r: int = lr[1]
@@ -77,7 +77,7 @@ static func body(a: Dictionary, seed: float) -> Dictionary:
 	if not sweat.size():
 		sweat.append(pick.call(skin if skin.size() else S.body))
 	var out := {"veins": veins, "wound": [wx, wy], "blisters": blisters, "sweat": sweat}
-	m[seed] = out
+	m[fx_seed] = out
 	return out
 
 

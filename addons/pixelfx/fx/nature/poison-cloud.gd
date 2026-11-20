@@ -41,10 +41,10 @@ static func tongues(sh: Dictionary, si: int, E: float, ph: float) -> Array:
 
 # a sheet's height above the floor at x: flat through the middle, falling away at its ends, its top torn by
 # noise that flows outward, raised behind each tongue's front
-static func height(sh: Dictionary, si: int, E: float, x: float, ph: float, T: Array, seed: float) -> float:
+static func height(sh: Dictionary, si: int, E: float, x: float, ph: float, T: Array, fx_seed: float) -> float:
 	var ax := absf(x)
 	var env := 1.0 - Px.smooth(0.5, 1.0, ax / (E * sh.e))
-	var r := Px.tileNoise(ax * 0.07 - ph * sh.flow, si * 3.7, sh.flow, 0.0, seed + si)
+	var r := Px.tileNoise(ax * 0.07 - ph * sh.flow, si * 3.7, sh.flow, 0.0, fx_seed + si)
 	var h: float = sh.h * env * (0.55 + 0.45 * r)
 	for g: Dictionary in T:
 		var behind: float = g.s * (g.x - x)
@@ -56,19 +56,19 @@ static func height(sh: Dictionary, si: int, E: float, x: float, ph: float, T: Ar
 
 # one sheet: brightest down at the floor where it's lit from within, darkening to violet toward its torn top,
 # streaked in thin layers, a pale rim along its edge
-static func sheet(p: Px.Painter, C: Array, sh: Dictionary, si: int, E: float, t: float, seed: float) -> void:
+static func sheet(p: Px.Painter, C: Array, sh: Dictionary, si: int, E: float, t: float, fx_seed: float) -> void:
 	var ph := t / D
 	var T := tongues(sh, si, E, ph)
 	var d: int = sh.dim
 	var X := ceili(E * 1.25)
 	for x in range(-X, X + 1):
-		var H := height(sh, si, E, x + 0.5, ph, T, seed)
+		var H := height(sh, si, E, x + 0.5, ph, T, fx_seed)
 		if H < 0.6:
 			continue
 		var top := -Px.roundi(H)
 		for y in range(top, 2):
 			var v := Px.clamp(-y / H)
-			var streak := 0.7 + 0.3 * Px.tileNoise(x * 0.05 - ph * sh.flow * Px.sign(x if x else 1), y * 0.55, sh.flow, 0.0, seed + 9.0 + si)
+			var streak := 0.7 + 0.3 * Px.tileNoise(x * 0.05 - ph * sh.flow * Px.sign(x if x else 1), y * 0.55, sh.flow, 0.0, fx_seed + 9.0 + si)
 			var lv := v - (streak - 0.7) * 0.6
 			var c: int = C[maxi(1, 4 - d)] if y == top else (C[6 - d] if lv < 0.16 else (C[5 - d] if lv < 0.42 else (C[4 - d] if lv < 0.68 else C[maxi(1, 3 - d)])))
 			p.blend(x, y, c, sh.a * (0.65 if y == top else (0.6 + 0.4 * (1.0 - v)) * streak))
@@ -98,8 +98,8 @@ static func sheet(p: Px.Painter, C: Array, sh: Dictionary, si: int, E: float, t:
 
 
 # plumes: columns that lift off the sheets and twist into ribbons, thinning as they climb
-static func plumes(p: Px.Painter, C: Array, E: float, t: float, seed: float) -> void:
-	Px.cycle(t, D, 5, seed, func(g): return g.range(2.4, 3.2), func(age: float, L: float, R: Px.Rng):
+static func plumes(p: Px.Painter, C: Array, E: float, t: float, fx_seed: float) -> void:
+	Px.cycle(t, D, 5, fx_seed, func(g): return g.range(2.4, 3.2), func(age: float, L: float, R: Px.Rng):
 		var u := age / L
 		var x0 := R.range(-0.55, 0.55) * E
 		var rise := R.range(13.0, 19.0)
@@ -124,8 +124,8 @@ static func plumes(p: Px.Painter, C: Array, E: float, t: float, seed: float) -> 
 
 
 # specks drifting out through the gas with its flow, twinkling
-static func specks(p: Px.Painter, C: Array, E: float, t: float, seed: float) -> void:
-	Px.cycle(t, D, 30, seed, func(g): return g.range(1.5, 2.6), func(age: float, L: float, R: Px.Rng):
+static func specks(p: Px.Painter, C: Array, E: float, t: float, fx_seed: float) -> void:
+	Px.cycle(t, D, 30, fx_seed, func(g): return g.range(1.5, 2.6), func(age: float, L: float, R: Px.Rng):
 		var u := age / L
 		var s := R.sign()
 		var x := s * (R.range(0.05, 0.7) * E + age * R.range(6.0, 14.0))

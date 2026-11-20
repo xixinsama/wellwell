@@ -338,8 +338,8 @@ class Field:
 static var FIELDS := {}
 ## A baked fractal noise that tiles: w x h cells (powers of two), octaves of `cells` lattice squares across.
 ## Values 0..1, mostly near 0.5. Scroll it a whole number of tiles a loop and the loop has no seam.
-static func field(seed: float, w: int = 256, h: int = 128, cells: Array = [4, 8, 16, 32]) -> Field:
-	var key := "%s|%d|%d|%s" % [var_to_str(seed), w, h, ",".join(cells.map(func(v): return str(v)))]
+static func field(fx_seed: float, w: int = 256, h: int = 128, cells: Array = [4, 8, 16, 32]) -> Field:
+	var key := "%s|%d|%d|%s" % [var_to_str(fx_seed), w, h, ",".join(cells.map(func(v): return str(v)))]
 	var F: Field = FIELDS.get(key)
 	if F:
 		return F
@@ -356,7 +356,7 @@ static func field(seed: float, w: int = 256, h: int = 128, cells: Array = [4, 8,
 		lat.resize(nw * (int(rows_) + 1))
 		for b in int(rows_) + 1:
 			for a in nw:
-				lat[b * nw + a] = _at(a, b, n, rows_, seed)
+				lat[b * nw + a] = _at(a, b, n, rows_, fx_seed)
 		for y in h:
 			for x in w:
 				var gx := x / cs
@@ -384,8 +384,8 @@ static func field(seed: float, w: int = 256, h: int = 128, cells: Array = [4, 8,
 
 
 # field()'s at(a, b)
-static func _at(a: float, b: float, n: float, rows_: float, seed: float) -> float:
-	return Px.rand(Px.wrap(a, n), Px.wrap(b, rows_), seed, n)
+static func _at(a: float, b: float, n: float, rows_: float, fx_seed: float) -> float:
+	return Px.rand(Px.wrap(a, n), Px.wrap(b, rows_), fx_seed, n)
 
 
 ## A field at (u, v) in its own cells, wrapping, smooth between cells.
@@ -412,13 +412,13 @@ static func sample(F: Field, u: float, v: float) -> float:
 
 ## Falling particles for a loop of D seconds: n slots, each falling m times a loop (m whole, from m0 to m1), each
 ## fall somewhere new. fn(u, k, m, i): u 0..1 through the current fall, k its number (wrap(k, m) names it: use
-## rand(seed, i, wrap(k, m), ...) for its own randoms, the same every loop), m, the slot i. A fall lasts D / m s.
+## rand(fx_seed, i, wrap(k, m), ...) for its own randoms, the same every loop), m, the slot i. A fall lasts D / m s.
 ## fn must take all four arguments.
-static func trips(t: float, D: float, n: float, seed: float, m0: float, m1: float, fn: Callable) -> void:
+static func trips(t: float, D: float, n: float, fx_seed: float, m0: float, m1: float, fn: Callable) -> void:
 	var i := 0
 	while i < n:
-		var m := m0 + floorf(Px.rand(seed, i, 72) * (m1 - m0 + 1.0))
-		var s := (t / D) * m + Px.rand(seed, i, 71)
+		var m := m0 + floorf(Px.rand(fx_seed, i, 72) * (m1 - m0 + 1.0))
+		var s := (t / D) * m + Px.rand(fx_seed, i, 71)
 		var k := floorf(s)
 		fn.call(s - k, k, m, i)
 		i += 1

@@ -109,8 +109,8 @@ func room_rect(room: Resource) -> Rect2:
 	var room_size := Vector2(room.get("map_size"))
 	var step := block_size * zoom
 	var view_center := size * 0.5
-	var position := (origin - _center_chunk) * step + view_center
-	return Rect2(position, room_size * step)
+	var position_px := (origin - _center_chunk) * step + view_center
+	return Rect2(position_px, room_size * step)
 
 
 func _draw() -> void:

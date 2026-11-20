@@ -48,7 +48,7 @@ enabled=PackedStringArray("res://addons/fluid_kit/plugin.cfg", "res://addons/inp
 
 [godot_mcp]
 
-bind_mode=1
+bind_mode=0
 custom_bind_ip=""
 port_override_enabled=true
 port_override=6550

@@ -1,90 +1,33 @@
 [gd_scene format=3 uid="uid://daov7piu6ki3u"]
 
-[ext_resource type="PackedScene" path="res://addons/platformer_abilities/entities/ability_pickup.tscn" id="1_ou72k"]
-[ext_resource type="Script" path="res://addons/platformer_abilities/entities/ability_pickup.gd" id="2_nqtjo"]
-[ext_resource type="Resource" path="res://addons/platformer_abilities/abilities/dash/default_dash.tres" id="3_5qyxo"]
-[ext_resource type="PackedScene" path="res://addons/platformer_kit/world/entities/save_point.tscn" id="4_o8akd"]
-[ext_resource type="Script" path="res://addons/platformer_kit/world/entities/save_point.gd" id="5_3igum"]
-[ext_resource type="Script" path="res://addons/platformer_kit/interaction/interactable.gd" id="6_4yw2n"]
-[ext_resource type="Script" path="res://addons/platformer_kit/world/entities/spawn_point.gd" id="7_6ifd7"]
+[ext_resource type="PackedScene" path="res://addons/platformer_abilities/entities/ability_pickup.tscn" id="1_60fuk"]
+[ext_resource type="Script" path="res://addons/platformer_abilities/entities/ability_pickup.gd" id="2_ou72k"]
+[ext_resource type="Resource" path="res://addons/platformer_abilities/abilities/dash/default_dash.tres" id="3_nqtjo"]
+[ext_resource type="PackedScene" path="res://addons/platformer_kit/world/entities/save_point.tscn" id="4_5qyxo"]
+[ext_resource type="Script" path="res://addons/platformer_kit/world/entities/save_point.gd" id="5_o8akd"]
+[ext_resource type="Script" path="res://addons/platformer_kit/world/entities/spawn_point.gd" id="6_3igum"]
 
-[sub_resource type="CircleShape2D" id="CircleShape_pickup"]
+[node name="RoomRuntimeContent" type="Node2D" unique_id=2126582169]
 
-[sub_resource type="RectangleShape2D" id="RectangleShape_activation"]
-size = Vector2(16, 20)
+[node name="Entities" type="Node2D" parent="." unique_id=1376244811]
 
-[sub_resource type="RectangleShape2D" id="RectangleShape_interaction"]
-size = Vector2(32, 28)
-
-[node name="RoomRuntimeContent" type="Node2D" unique_id=1082337620]
-
-[node name="Entities" type="Node2D" parent="." unique_id=1459619987]
-
-[node name="AbilityPickup" type="Node2D" parent="Entities" unique_id=261258473 instance=ExtResource("1_ou72k")]
+[node name="AbilityPickup" type="Node2D" parent="Entities" unique_id=261258473 instance=ExtResource("1_60fuk")]
 position = Vector2(93, 315)
-script = ExtResource("2_nqtjo")
-ability_definition = ExtResource("3_5qyxo")
+script = ExtResource("2_ou72k")
+ability_definition = ExtResource("3_nqtjo")
 entity_id = "ability_pickup"
 persistent_id = &"ability_pickup"
 map_visible = true
 
-[node name="VisualRoot" type="Node2D" parent="Entities/AbilityPickup" unique_id=716267154]
-
-[node name="Outer" type="Polygon2D" parent="Entities/AbilityPickup/VisualRoot" unique_id=488042765]
-color = Color(0.2, 0.92, 0.95, 1)
-polygon = PackedVector2Array(0, -12, 9, -4, 7, 8, 0, 13, -7, 8, -9, -4)
-
-[node name="Inner" type="Polygon2D" parent="Entities/AbilityPickup/VisualRoot" unique_id=1097187165]
-color = Color(0.9, 1, 1, 1)
-polygon = PackedVector2Array(0, -8, 5, -2, 3, 6, 0, 9, -3, 6, -5, -2)
-
-[node name="ActivationArea" type="Area2D" parent="Entities/AbilityPickup" unique_id=1845122032]
-collision_layer = 0
-collision_mask = 2
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Entities/AbilityPickup/ActivationArea" unique_id=1663492711]
-shape = SubResource("CircleShape_pickup")
-
-[node name="SavePoint" type="Node2D" parent="Entities" unique_id=939447865 instance=ExtResource("4_o8akd")]
+[node name="SavePoint" type="Node2D" parent="Entities" unique_id=939447865 instance=ExtResource("4_5qyxo")]
 position = Vector2(87, 152)
-script = ExtResource("5_3igum")
+script = ExtResource("5_o8akd")
 inactive_color = Color(0.31023967, 0.6653145, 0.7608393, 1)
 active_color = Color(1.6364455e-06, 0.95945245, 0.23636574, 1)
 entity_id = "checkpoint"
 persistent_id = &"checkpoint"
 
-[node name="VisualRoot" type="Node2D" parent="Entities/SavePoint" unique_id=1854276615]
+[node name="StartSpawn" type="Marker2D" parent="Entities" unique_id=987069367]
+script = ExtResource("6_3igum")
 
-[node name="Polygon2D" type="Polygon2D" parent="Entities/SavePoint/VisualRoot" unique_id=509490264]
-position = Vector2(0, -4)
-polygon = PackedVector2Array(-4, -4, 4, -4, 4, 0, 0, 0, -4, 0, -4, 4, 8, 4, 8, -4, 8, -8, 0, -8, 0, -12, 8, -12, 8, -16, -4, -16)
-
-[node name="ActivationArea" type="Area2D" parent="Entities/SavePoint" unique_id=1201975166]
-position = Vector2(0, -16)
-collision_layer = 0
-collision_mask = 2
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Entities/SavePoint/ActivationArea" unique_id=927462723]
-position = Vector2(0, 6)
-shape = SubResource("RectangleShape_activation")
-
-[node name="Interactable" type="Area2D" parent="Entities/SavePoint" unique_id=602600738]
-position = Vector2(0, -16)
-collision_layer = 4
-collision_mask = 0
-script = ExtResource("6_4yw2n")
-interaction_id = &"save_point"
-interaction_priority = 20
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Entities/SavePoint/Interactable" unique_id=1270620948]
-position = Vector2(0, 2)
-shape = SubResource("RectangleShape_interaction")
-
-[node name="SpawnPoint" type="Marker2D" parent="Entities/SavePoint" unique_id=1888059450]
-script = ExtResource("7_6ifd7")
-spawn_id = "checkpoint"
-
-[node name="StartSpawn" type="Marker2D" parent="Entities" unique_id=1616099707]
-script = ExtResource("7_6ifd7")
-
-[node name="Foreground" type="Node2D" parent="." unique_id=1119025654]
+[node name="Foreground" type="Node2D" parent="." unique_id=1253729287]

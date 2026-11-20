@@ -15,6 +15,7 @@ const TYPE_PICKUP := &"pickup"
 const TYPE_HAZARD := &"hazard"
 const TYPE_SWITCH := &"switch"
 const TYPE_RESET_ZONE := &"reset_zone"
+const TYPE_DOOR := &"door"
 const TYPE_WORLD_ENTITY := &"world_entity"
 
 ## (path) -> PackedScene. Overridable in tests.
@@ -64,13 +65,16 @@ func _walk(node: Node, parent_transform: Transform2D, parent_path: String, out: 
     var node_path := node.name if parent_path.is_empty() else "%s/%s" % [parent_path, node.name]
     var type := _annotation_type(node)
     if type != &"":
-        out.append({
+        var annotation := {
             "type": type,
             "id": _annotation_id(node),
             "name": String(node.name),
             "position": transform.origin,
             "path": node_path,
-        })
+        }
+        if type == TYPE_DOOR:
+            annotation.merge(_door_fields(node as WorldDoor), true)
+        out.append(annotation)
     for child: Node in node.get_children():
         _walk(child, transform, node_path, out)
 
@@ -90,9 +94,22 @@ static func _annotation_type(node: Node) -> StringName:
         return TYPE_SWITCH
     if node is ResetZone:
         return TYPE_RESET_ZONE
+    # Doors are WorldEntity subclasses but carry a cross-world link contract.
+    if node is WorldDoor:
+        return TYPE_DOOR
     if node is WorldEntity:
         return TYPE_WORLD_ENTITY
     return &""
+
+
+## Link fields of a door annotation; the stacked-world view keys off these.
+static func _door_fields(door: WorldDoor) -> Dictionary:
+    return {
+        "door_kind": int(door.door_kind),
+        "target_world_id": door.get_target_world_id(),
+        "target_room_id": String(door.target_room_id),
+        "target_door_id": String(door.target_door_id),
+    }
 
 
 static func _annotation_id(node: Node) -> String:

@@ -105,11 +105,34 @@ script default can be omitted by scene packing, exposing a different prefab
 default.
 
 Add `addons/platformer_abilities/entities/ability_pickup.tscn` for a persistent
-ability reward. Assign a stable ID and an `AbilityDefinition`; use
-`addons/platformer_abilities/abilities/dash/default_dash.tres` for the supplied
+ability reward. Assign a stable ID and an `AbilityDefinition`; use`addons/platformer_abilities/abilities/dash/default_dash.tres` for the supplied
 Dash. Player-like receivers opt in with
 `grant_ability_definition(definition: Resource) -> bool`. A rejected grant does
 not consume the pickup.
+
+## Doors: Portals and Shuttle Doors
+
+Add `addons/platformer_kit/world/entities/world_door.tscn` below a source room's
+`RoomContent/Entities` like a checkpoint. `PORTAL` doors pair two doors inside
+one world; `SHUTTLE` doors pair a door in this world with a door in another
+`WorldData` and move the player between worlds. Each side names the other through
+`target_room_id` + `target_door_id` (plus `target_world` for a shuttle), so a
+pair is bidirectional by construction. Contact activates the door, the state is
+saved like a checkpoint, and the nested `ArrivalSpawn` is where the player lands
+— keep it clear of the activation sensor. Bake the source room after adding one.
+Full contract: `docs/doors.md`.
+
+## Level Hierarchy and Stacked Worlds
+
+The authoring hierarchy, bottom up: a **block** is one 1x1 chunk cell, a **room**
+is one or more blocks (`RoomData.room_size_chunks`), a **world** groups rooms
+with placements and connections (`WorldData`), and a **stack** is an ordered set
+of worlds drawn as parallel slices in the editor's 3D view (`WorldStack`,
+referenced from `WorldData.world_stack`). Stacks are authoring data — the runtime
+never reads them; they exist so several worlds can be seen and connected at once.
+Open a world in the World editor and press `3D`; the left column becomes the
+layer list (add, remove, reorder), and clicking a slice returns to that world in
+2D.
 
 ## World Selection
 

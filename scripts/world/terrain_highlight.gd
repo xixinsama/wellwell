@@ -85,7 +85,7 @@ func _apply_light_to_all() -> void:
 
 
 ## Binds the light map and this quad's offset inside it to a quad's material.
-func _apply_light(quad: MeshInstance2D, entry: Dictionary) -> void:
+func _apply_light(quad: MeshInstance2D, _entry: Dictionary) -> void:
 	var material := quad.material as ShaderMaterial
 	if material == null:
 		return

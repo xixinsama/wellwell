@@ -58,7 +58,7 @@ static func draw(p: Px.Painter, t: float, o: Dictionary) -> void:
 	var H := Lib.hotFirst(F)
 	var S: float = o.seed
 	var ph := t / D
-	var N := func(rate: float, seed: Variant = 0, off: float = 0.0) -> float: return NL.call(t, rate, seed, off)
+	var N := func(rate: float, fx_seed: Variant = 0, off: float = 0.0) -> float: return NL.call(t, rate, fx_seed, off)
 	var COLD := Px.mix(H[3], WHITE, 0.15)
 	var bob := sin(ph * TAU) * 1.5
 	# the wave: it climbs the flame twice a loop, growing toward the tip, and the whole flame leans with a slow drift

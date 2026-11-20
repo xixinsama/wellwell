@@ -304,8 +304,8 @@ static func spikeLook(R: Px.Rng) -> Dictionary:
 	for i in n:
 		strata.append(R.range(0.12, 0.8))
 	var slope := R.range(-0.25, 0.25)
-	var seed := R.int_(1, 9999)
-	return {"notches": notches, "strata": strata, "slope": slope, "seed": seed}
+	var fx_seed := R.int_(1, 9999)
+	return {"notches": notches, "strata": strata, "slope": slope, "seed": fx_seed}
 
 
 ## A crack that branches up a spike: points [u (height 0..1), v (-1 left edge..1 right edge)].
@@ -470,9 +470,9 @@ class Gas extends RefCounted:
 		n = 0
 
 	func add(t: float, x: float, y: float, vx: float, vy: float, r0: float, r1: float, end: float, rise: float = 0.0) -> void:
-		var seed := fmod(n * 37.7, 100.0)
+		var fx_seed := fmod(n * 37.7, 100.0)
 		n += 1
-		list.append({"x": x, "y": y, "vx": vx, "vy": vy, "r0": r0, "r1": r1, "t0": t, "end": end, "rise": rise, "seed": seed})
+		list.append({"x": x, "y": y, "vx": vx, "vy": vy, "r0": r0, "r1": r1, "t0": t, "end": end, "rise": rise, "seed": fx_seed})
 
 	func prune(t: float) -> void:
 		var i := list.size() - 1

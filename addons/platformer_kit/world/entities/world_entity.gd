@@ -34,12 +34,12 @@ func commit_save_state() -> bool:
 	return true
 
 
-func set_respawn_state(spawn_id: String, position: Vector2) -> bool:
+func set_respawn_state(spawn_id: String, respawn_position: Vector2) -> bool:
 	if room_id.is_empty() or _entity_state_sink == null or not is_instance_valid(_entity_state_sink):
 		return false
 	if not _entity_state_sink.has_method("set_respawn"):
 		return false
-	return bool(_entity_state_sink.call("set_respawn", room_id, spawn_id, position))
+	return bool(_entity_state_sink.call("set_respawn", room_id, spawn_id, respawn_position))
 
 func get_save_key() -> String:
 	if not persistent_id.is_empty():

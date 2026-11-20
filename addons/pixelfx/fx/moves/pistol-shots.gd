@@ -43,4 +43,5 @@ static var CHAIN := Px.chain(
 		{"fx": Spark, "t": t + FLY, "x": TX - 10, "height": 28},
 	], []),
 )
-static func create(o: Dictionary): return CHAIN.create(o)
+static func create(o: Dictionary):
+	return CHAIN.create(o)

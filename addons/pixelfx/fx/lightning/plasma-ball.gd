@@ -28,11 +28,11 @@ static var BASE := Px.ramp(["#0d0b12", "#17131f", "#231d2d", "#342b43", "#4b3f60
 
 
 # a tendril at phase ph: its end wanders over the glass, front ones end on the near face, back ones on the far
-static func tendril(i: int, n: float, ph: float, seed: float) -> Dictionary:
-	var a := ((i + 0.5) / n) * TAU + 0.9 * Px.loopNoise(ph, 0.9, seed + i * 7)
-	var z := Px.loopNoise(ph, 0.7, seed + i * 7 + 3)
+static func tendril(i: int, n: float, ph: float, fx_seed: float) -> Dictionary:
+	var a := ((i + 0.5) / n) * TAU + 0.9 * Px.loopNoise(ph, 0.9, fx_seed + i * 7)
+	var z := Px.loopNoise(ph, 0.7, fx_seed + i * 7 + 3)
 	var rho := RG * (0.72 + 0.28 * sqrt(1.0 - minf(1.0, z * z * 1.6)))
-	return {"a": a, "front": z > -0.15, "ex": GX + cos(a) * rho, "ey": GY + sin(a) * rho, "rim": rho > RG * 0.93, "w1": Px.loopNoise(ph, 1.1, seed + i * 7 + 5), "w2": Px.loopNoise(ph, 1.3, seed + i * 7 + 6)}
+	return {"a": a, "front": z > -0.15, "ex": GX + cos(a) * rho, "ey": GY + sin(a) * rho, "rim": rho > RG * 0.93, "w1": Px.loopNoise(ph, 1.1, fx_seed + i * 7 + 5), "w2": Px.loopNoise(ph, 1.3, fx_seed + i * 7 + 6)}
 
 
 # the pedestal: a flared stand lit from above by the globe, a collar under the glass

@@ -58,15 +58,15 @@ func _init() -> void:
 
 
 func _run() -> void:
-	var root := TEMPLATE.instantiate()
-	root.set("room_id", ROOM_ID)
-	root.set("display_name", "光照实验")
-	root.set("room_size_chunks", Vector2i.ONE)
-	root.set("preview_spawn_id", "start")
-	root.set("map_color", Color(0.95, 0.82, 0.42))
-	_paint_terrain(root)
-	_place_entities(root)
-	_place_preview(root)
+	var level_root := TEMPLATE.instantiate()
+	level_root.set("room_id", ROOM_ID)
+	level_root.set("display_name", "光照实验")
+	level_root.set("room_size_chunks", Vector2i.ONE)
+	level_root.set("preview_spawn_id", "start")
+	level_root.set("map_color", Color(0.95, 0.82, 0.42))
+	_paint_terrain(level_root)
+	_place_entities(level_root)
+	_place_preview(level_root)
 
 	if FileAccess.file_exists(SOURCE_PATH) and not FORCE_REWRITE:
 		print("source scene exists, keeping the hand edits: %s" % SOURCE_PATH)
@@ -82,22 +82,22 @@ func _run() -> void:
 		quit(0)
 		return
 	var packed := PackedScene.new()
-	var pack_error := packed.pack(root)
+	var pack_error := packed.pack(level_root)
 	if pack_error != OK:
 		push_error("could not pack the light room: %d" % pack_error)
-		root.free()
+		level_root.free()
 		quit(1)
 		return
 	var save_error := ResourceSaver.save(packed, SOURCE_PATH)
 	if save_error != OK:
 		push_error("could not save %s: %d" % [SOURCE_PATH, save_error])
-		root.free()
+		level_root.free()
 		quit(1)
 		return
 	print("saved source room: %s" % SOURCE_PATH)
 
-	var bake_result: Dictionary = ROOM_BAKER.new().bake(root, SOURCE_PATH)
-	root.free()
+	var bake_result: Dictionary = ROOM_BAKER.new().bake(level_root, SOURCE_PATH)
+	level_root.free()
 	if not bake_result.get("ok", false):
 		push_error("room bake failed: %s" % str(bake_result.get("errors", [])))
 		quit(1)
@@ -137,8 +137,8 @@ func _register_in_world() -> void:
 	print("registered %s in %s at chunk %s" % [ROOM_ID, WORLD_PATH, str(ORIGIN_CHUNK)])
 
 
-func _paint_terrain(root: Node) -> void:
-	var terrain := root.get_node("RoomContent/Terrain")
+func _paint_terrain(level_root: Node) -> void:
+	var terrain := level_root.get_node("RoomContent/Terrain")
 	var back := terrain.get_node("BackTiles") as TileMapLayer
 	var solid := terrain.get_node("SolidTiles") as TileMapLayer
 	var detail := terrain.get_node("DetailTiles") as TileMapLayer
@@ -174,8 +174,8 @@ func _fill_block(solid: TileMapLayer, left: int, right: int, top_row: int, botto
 			solid.set_cell(Vector2i(x, y), 0, ATLAS_SOLID)
 
 
-func _place_entities(root: Node) -> void:
-	var entities := root.get_node("RoomContent/Entities")
+func _place_entities(level_root: Node) -> void:
+	var entities := level_root.get_node("RoomContent/Entities")
 	var spawn := entities.get_node_or_null("StartSpawn") as Node2D
 	if spawn != null:
 		spawn.position = Vector2(3.0 * TILE, 18.0 * TILE)
@@ -193,7 +193,7 @@ func _place_entities(root: Node) -> void:
 	lamp.swing_speed = 0.22
 	lamp.flicker = 0.12
 	lamp.flicker_speed = 5.0
-	_attach(root, entities, lamp)
+	_attach(level_root, entities, lamp)
 
 	# Second lamp over the pool, softer and cooler.
 	var pool_lamp := RoomLight.new()
@@ -204,7 +204,7 @@ func _place_entities(root: Node) -> void:
 	pool_lamp.energy = 0.95
 	pool_lamp.color = Color(0.72, 0.88, 1.0)
 	pool_lamp.flicker = 0.08
-	_attach(root, entities, pool_lamp)
+	_attach(level_root, entities, pool_lamp)
 
 	# A light that ignores walls, to show a circle that is *not* cut.
 	var glow := RoomLight.new()
@@ -217,7 +217,7 @@ func _place_entities(root: Node) -> void:
 	glow.casts_shadows = false
 	glow.flicker = 0.25
 	glow.flicker_speed = 7.0
-	_attach(root, entities, glow)
+	_attach(level_root, entities, glow)
 
 	# Fireflies: four glowing pixels each, so they read as specks with a bloom.
 	for index: int in 6:
@@ -236,7 +236,7 @@ func _place_entities(root: Node) -> void:
 		firefly.flicker = 0.45
 		firefly.flicker_speed = 3.0 + float(index)
 		firefly.casts_shadows = false
-		_attach(root, entities, firefly)
+		_attach(level_root, entities, firefly)
 
 	# The pool: a grid fluid region, so the surface reflects the lights.
 	var pool := FluidRegion.new()
@@ -246,7 +246,7 @@ func _place_entities(root: Node) -> void:
 		POOL_RIGHT - POOL_LEFT - 1, WATER_BOTTOM_ROW - WATER_TOP_ROW + 1
 	)
 	pool.region_id = "pool"
-	_attach(root, entities, pool)
+	_attach(level_root, entities, pool)
 
 	# Keep the room lit for the fog, so the hero can see the whole demo.
 	var zone := FogZone.new()
@@ -255,13 +255,13 @@ func _place_entities(root: Node) -> void:
 	zone.mode = FogZone.Mode.LIGHT
 	zone.size_cells = Vector2i(WIDTH_CELLS, HEIGHT_CELLS)
 	zone.zone_id = "light_lab_lit"
-	_attach(root, entities, zone)
+	_attach(level_root, entities, zone)
 
 
 ## The editor preview needs the light field and the grid water bound to the room
 ## to show anything, so they are added here with the room's own data.
-func _place_preview(root: Node) -> void:
-	var preview := root.get_node_or_null("PreviewOnly")
+func _place_preview(level_root: Node) -> void:
+	var preview := level_root.get_node_or_null("PreviewOnly")
 	if preview == null:
 		return
 	if preview.get_node_or_null("LightField") == null:
@@ -270,15 +270,15 @@ func _place_preview(root: Node) -> void:
 		field.set_script(LIGHT_FIELD_SCRIPT)
 		field.set("player_path", NodePath("../Player"))
 		preview.add_child(field)
-		field.owner = root
+		field.owner = level_root
 	if preview.get_node_or_null("WaterGrid") == null:
 		var grid := Node2D.new()
 		grid.name = "WaterGrid"
 		grid.set_script(WATER_GRID_SCRIPT)
 		preview.add_child(grid)
-		grid.owner = root
+		grid.owner = level_root
 
 
-func _attach(root: Node, parent: Node, node: Node) -> void:
+func _attach(level_root: Node, parent: Node, node: Node) -> void:
 	parent.add_child(node)
-	node.owner = root
+	node.owner = level_root

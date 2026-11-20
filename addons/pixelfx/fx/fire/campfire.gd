@@ -133,7 +133,7 @@ static func draw(p: Px.Painter, t: float, o: Dictionary) -> void:
 	var S: float = o.seed
 	var R := Px.Rng.new(S)
 	var HC: float = o.height
-	var N := func(rate: float, seed: Variant = 0, off: float = 0.0) -> float: return NL.call(t, rate, seed, off)
+	var N := func(rate: float, fx_seed: Variant = 0, off: float = 0.0) -> float: return NL.call(t, rate, fx_seed, off)
 	var fla := func(tt: float) -> float: return 0.74 + 0.16 * NL.call(tt, 7.3, S + 1.0) + 0.1 * NL.call(tt, 19.0, S + 2.0)
 	var fl: float = fla.call(t)
 	var GLOW := Px.mix(Px.mix(H[3], H[4], 0.5), WHITE, 0.25)

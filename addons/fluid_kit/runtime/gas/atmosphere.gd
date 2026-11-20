@@ -642,10 +642,10 @@ func _collect_vents() -> Array[Dictionary]:
 		if not is_instance_valid(node) or not node.has_method("to_light_data"):
 			continue
 		var data: Dictionary = node.call("to_light_data")
-		var position: Vector2 = data.get("position", Vector2.ZERO)
-		if not _room_rect.has_point(position):
+		var vent_position: Vector2 = data.get("position", Vector2.ZERO)
+		if not _room_rect.has_point(vent_position):
 			continue
-		data["position"] = position - _room_rect.position
+		data["position"] = vent_position - _room_rect.position
 		result.append(data)
 		if result.size() >= MAX_VENTS:
 			break
@@ -797,10 +797,10 @@ func _update_lights() -> void:
 			_material.set_shader_parameter(color_name, Color(0.0, 0.0, 0.0, 1.0))
 			continue
 		var slot: Dictionary = slots[index]
-		var position: Vector2 = slot["position"]
+		var light_position: Vector2 = slot["position"]
 		_material.set_shader_parameter(
 			slot_name,
-			Vector4(position.x, position.y, float(slot["radius"]), float(slot["energy"]))
+			Vector4(light_position.x, light_position.y, float(slot["radius"]), float(slot["energy"]))
 		)
 		_material.set_shader_parameter(color_name, slot["color"])
 	# The volume pass marches towards the key light, which in this game is the

@@ -45,10 +45,10 @@ const REGISTRY_PATH := "res://addons/pixelfx/fx/registry.gd"
 	set(v):
 		flip = v
 		_reload()
-## The effect's seed: another take on the same effect. -1 keeps the effect's own.
-@export var seed := -1:
-	set(v):
-		seed = v
+## The effect's variation index: another take on the same effect. -1 keeps the effect's own.
+@export var fx_seed := -1:
+	set(value):
+		fx_seed = value
 		_reload()
 ## Recolor: a dark-to-bright ramp. Empty keeps the effect's own colors.
 @export var palette := PackedColorArray():
@@ -126,8 +126,8 @@ func _validate_property(property: Dictionary) -> void:
 ## The effect's options as this node sets them.
 func fx_options() -> Dictionary:
 	var o := options.duplicate()
-	if seed >= 0:
-		o.seed = float(seed)
+	if fx_seed >= 0:
+		o.seed = float(fx_seed)
 	if not palette.is_empty():
 		o.palette = Array(palette).map(func(c): return "#" + c.to_html(false))
 	elif palette_preset and Px.PAL.has(palette_preset):

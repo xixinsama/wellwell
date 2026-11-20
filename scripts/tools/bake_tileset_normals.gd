@@ -155,8 +155,9 @@ func _bake_image(albedo: Image) -> Image:
 	var size := albedo.get_size()
 	var output := Image.create(size.x, size.y, false, Image.FORMAT_RGBA8)
 	output.fill(FLAT)
-	for tile_y: int in size.y / TILE_SIZE:
-		for tile_x: int in size.x / TILE_SIZE:
+	var tiles := size / TILE_SIZE
+	for tile_y: int in tiles.y:
+		for tile_x: int in tiles.x:
 			var origin := Vector2i(tile_x * TILE_SIZE, tile_y * TILE_SIZE)
 			if _bake_tile(albedo, origin, output):
 				print("  tile %d:%d" % [tile_x, tile_y])

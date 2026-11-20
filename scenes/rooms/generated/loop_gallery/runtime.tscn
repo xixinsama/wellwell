@@ -1,23 +1,16 @@
 [gd_scene format=3 uid="uid://slyeo3u2jxa7"]
 
-[ext_resource type="Script" path="res://addons/platformer_kit/world/entities/spawn_point.gd" id="1_qnfkf"]
-[ext_resource type="PackedScene" path="res://addons/platformer_kit/world/entities/save_point.tscn" id="2_cux3g"]
-[ext_resource type="Script" path="res://addons/platformer_kit/world/entities/save_point.gd" id="3_2752m"]
-[ext_resource type="Script" path="res://addons/platformer_kit/interaction/interactable.gd" id="4_xt8bm"]
-[ext_resource type="Script" path="res://addons/platformer_kit/platforms/platform_body_2d.gd" id="5_sp17c"]
-[ext_resource type="Script" path="res://addons/platformer_kit/platforms/components/elevator_motion_component_2d.gd" id="6_i2do2"]
-[ext_resource type="Script" path="res://addons/platformer_kit/platforms/components/rider_trigger_component_2d.gd" id="7_0uyev"]
-[ext_resource type="Script" path="res://addons/platformer_kit/platforms/components/conveyor_surface_component_2d.gd" id="8_35xfm"]
-[ext_resource type="PackedScene" path="res://addons/platformer_abilities/entities/ability_pickup.tscn" id="9_roomb"]
-[ext_resource type="Script" path="res://addons/platformer_abilities/entities/ability_pickup.gd" id="10_ltnep"]
-[ext_resource type="Resource" path="res://addons/platformer_abilities/abilities/dash/default_dash.tres" id="11_kmhq4"]
-[ext_resource type="Script" path="res://addons/platformer_kit/world/entities/room_entrance.gd" id="12_vvk6u"]
-
-[sub_resource type="RectangleShape2D" id="RectangleShape_activation"]
-size = Vector2(16, 20)
-
-[sub_resource type="RectangleShape2D" id="RectangleShape_interaction"]
-size = Vector2(32, 28)
+[ext_resource type="Script" path="res://addons/platformer_kit/world/entities/spawn_point.gd" id="1_6k2lr"]
+[ext_resource type="PackedScene" path="res://addons/platformer_kit/world/entities/save_point.tscn" id="2_qnfkf"]
+[ext_resource type="Script" path="res://addons/platformer_kit/world/entities/save_point.gd" id="3_cux3g"]
+[ext_resource type="Script" path="res://addons/platformer_kit/platforms/platform_body_2d.gd" id="4_2752m"]
+[ext_resource type="Script" path="res://addons/platformer_kit/platforms/components/elevator_motion_component_2d.gd" id="5_xt8bm"]
+[ext_resource type="Script" path="res://addons/platformer_kit/platforms/components/rider_trigger_component_2d.gd" id="6_sp17c"]
+[ext_resource type="Script" path="res://addons/platformer_kit/platforms/components/conveyor_surface_component_2d.gd" id="7_i2do2"]
+[ext_resource type="PackedScene" path="res://addons/platformer_abilities/entities/ability_pickup.tscn" id="8_0uyev"]
+[ext_resource type="Script" path="res://addons/platformer_abilities/entities/ability_pickup.gd" id="9_35xfm"]
+[ext_resource type="Resource" path="res://addons/platformer_abilities/abilities/dash/default_dash.tres" id="10_roomb"]
+[ext_resource type="Script" path="res://addons/platformer_kit/world/entities/room_entrance.gd" id="11_ltnep"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_f2dpf"]
 size = Vector2(48, 16)
@@ -28,140 +21,90 @@ size = Vector2(48, 8)
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_vgvwq"]
 size = Vector2(56, 8)
 
-[sub_resource type="CircleShape2D" id="CircleShape_pickup"]
+[node name="RoomRuntimeContent" type="Node2D" unique_id=541766705]
 
-[node name="RoomRuntimeContent" type="Node2D" unique_id=619973088]
+[node name="Entities" type="Node2D" parent="." unique_id=1191723981]
 
-[node name="Entities" type="Node2D" parent="." unique_id=187609264]
+[node name="StartSpawn" type="Marker2D" parent="Entities" unique_id=60303031]
+script = ExtResource("1_6k2lr")
 
-[node name="StartSpawn" type="Marker2D" parent="Entities" unique_id=36260374]
-script = ExtResource("1_qnfkf")
-
-[node name="FromSplit" type="Marker2D" parent="Entities" unique_id=149181037]
+[node name="FromSplit" type="Marker2D" parent="Entities" unique_id=50067413]
 position = Vector2(288, 168)
-script = ExtResource("1_qnfkf")
+script = ExtResource("1_6k2lr")
 spawn_id = "from_split"
 
-[node name="CheckpointC" type="Node2D" parent="Entities" unique_id=939447865 instance=ExtResource("2_cux3g")]
+[node name="CheckpointC" type="Node2D" parent="Entities" unique_id=939447865 instance=ExtResource("2_qnfkf")]
 position = Vector2(280, 168)
-script = ExtResource("3_2752m")
+script = ExtResource("3_cux3g")
 entity_id = "save_cp_c"
 
-[node name="VisualRoot" type="Node2D" parent="Entities/CheckpointC" unique_id=1854276615]
-
-[node name="Polygon2D" type="Polygon2D" parent="Entities/CheckpointC/VisualRoot" unique_id=509490264]
-position = Vector2(0, -4)
-polygon = PackedVector2Array(-4, -4, 4, -4, 4, 0, 0, 0, -4, 0, -4, 4, 8, 4, 8, -4, 8, -8, 0, -8, 0, -12, 8, -12, 8, -16, -4, -16)
-
-[node name="ActivationArea" type="Area2D" parent="Entities/CheckpointC" unique_id=1201975166]
-position = Vector2(0, -16)
-collision_layer = 0
-collision_mask = 2
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Entities/CheckpointC/ActivationArea" unique_id=927462723]
-position = Vector2(0, 6)
-shape = SubResource("RectangleShape_activation")
-
-[node name="Interactable" type="Area2D" parent="Entities/CheckpointC" unique_id=602600738]
-position = Vector2(0, -16)
-collision_layer = 4
-collision_mask = 0
-script = ExtResource("4_xt8bm")
-interaction_id = &"save_point"
-interaction_priority = 20
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Entities/CheckpointC/Interactable" unique_id=1270620948]
-position = Vector2(0, 2)
-shape = SubResource("RectangleShape_interaction")
-
-[node name="SpawnPoint" type="Marker2D" parent="Entities/CheckpointC" unique_id=1888059450]
-script = ExtResource("1_qnfkf")
-spawn_id = "checkpoint"
-
-[node name="Lift" type="AnimatableBody2D" parent="Entities" unique_id=2105549014]
+[node name="Lift" type="AnimatableBody2D" parent="Entities" unique_id=1057441207]
 position = Vector2(144, 160)
-script = ExtResource("5_sp17c")
+script = ExtResource("4_2752m")
 
-[node name="ElevatorMotion" type="Node" parent="Entities/Lift" unique_id=1897667182]
-script = ExtResource("6_i2do2")
+[node name="ElevatorMotion" type="Node" parent="Entities/Lift" unique_id=1341224926]
+script = ExtResource("5_xt8bm")
 travel = Vector2(0, -112)
 bottom_wait_seconds = 0.6
 
-[node name="RiderTrigger" type="Area2D" parent="Entities/Lift" unique_id=438434929]
+[node name="RiderTrigger" type="Area2D" parent="Entities/Lift" unique_id=302503219]
 collision_layer = 0
 collision_mask = 2
 monitorable = false
-script = ExtResource("7_0uyev")
+script = ExtResource("6_sp17c")
 target_paths = Array[NodePath]([NodePath("../ElevatorMotion")])
 trigger_once = false
 
-[node name="_CollisionShape2D_10" type="CollisionShape2D" parent="Entities/Lift/RiderTrigger" unique_id=451391111]
+[node name="_CollisionShape2D_10" type="CollisionShape2D" parent="Entities/Lift/RiderTrigger" unique_id=1358029861]
 position = Vector2(24, 0)
 shape = SubResource("RectangleShape2D_f2dpf")
 
-[node name="_CollisionShape2D_11" type="CollisionShape2D" parent="Entities/Lift" unique_id=1097975718]
+[node name="_CollisionShape2D_11" type="CollisionShape2D" parent="Entities/Lift" unique_id=1089383231]
 position = Vector2(24, 4)
 shape = SubResource("RectangleShape2D_jn4hn")
 
-[node name="Visual" type="Polygon2D" parent="Entities/Lift" unique_id=528797376]
+[node name="Visual" type="Polygon2D" parent="Entities/Lift" unique_id=1133394837]
 color = Color(0.3, 0.43, 0.52, 1)
 polygon = PackedVector2Array(0, 0, 48, 0, 48, 8, 0, 8)
 
-[node name="Cap" type="Polygon2D" parent="Entities/Lift" unique_id=1401073419]
+[node name="Cap" type="Polygon2D" parent="Entities/Lift" unique_id=1202408245]
 color = Color(0.62, 0.8, 0.9, 1)
 polygon = PackedVector2Array(0, 0, 48, 0, 48, 2, 0, 2)
 
-[node name="BeltGallery" type="AnimatableBody2D" parent="Entities" unique_id=402253722]
+[node name="BeltGallery" type="AnimatableBody2D" parent="Entities" unique_id=1449570673]
 position = Vector2(8, 48)
-script = ExtResource("5_sp17c")
+script = ExtResource("4_2752m")
 
-[node name="ConveyorSurface" type="Node" parent="Entities/BeltGallery" unique_id=848808438]
-script = ExtResource("8_35xfm")
+[node name="ConveyorSurface" type="Node" parent="Entities/BeltGallery" unique_id=1364590146]
+script = ExtResource("7_i2do2")
 surface_velocity = Vector2(70, 0)
 
-[node name="_CollisionShape2D_12" type="CollisionShape2D" parent="Entities/BeltGallery" unique_id=729070582]
+[node name="_CollisionShape2D_12" type="CollisionShape2D" parent="Entities/BeltGallery" unique_id=1430620006]
 position = Vector2(28, 4)
 shape = SubResource("RectangleShape2D_vgvwq")
 
-[node name="Visual" type="Polygon2D" parent="Entities/BeltGallery" unique_id=461642940]
+[node name="Visual" type="Polygon2D" parent="Entities/BeltGallery" unique_id=452255695]
 color = Color(0.36, 0.3, 0.2, 1)
 polygon = PackedVector2Array(0, 0, 56, 0, 56, 8, 0, 8)
 
-[node name="Cap" type="Polygon2D" parent="Entities/BeltGallery" unique_id=837377817]
+[node name="Cap" type="Polygon2D" parent="Entities/BeltGallery" unique_id=55626011]
 color = Color(0.88, 0.7, 0.32, 1)
 polygon = PackedVector2Array(0, 0, 56, 0, 56, 2, 0, 2)
 
-[node name="DashPickup" type="Node2D" parent="Entities" unique_id=261258473 instance=ExtResource("9_roomb")]
+[node name="DashPickup" type="Node2D" parent="Entities" unique_id=261258473 instance=ExtResource("8_0uyev")]
 position = Vector2(32, 48)
-script = ExtResource("10_ltnep")
-ability_definition = ExtResource("11_kmhq4")
+script = ExtResource("9_35xfm")
+ability_definition = ExtResource("10_roomb")
 entity_id = "dash_pickup"
 
-[node name="VisualRoot" type="Node2D" parent="Entities/DashPickup" unique_id=716267154]
-
-[node name="Outer" type="Polygon2D" parent="Entities/DashPickup/VisualRoot" unique_id=488042765]
-color = Color(0.2, 0.92, 0.95, 1)
-polygon = PackedVector2Array(0, -12, 9, -4, 7, 8, 0, 13, -7, 8, -9, -4)
-
-[node name="Inner" type="Polygon2D" parent="Entities/DashPickup/VisualRoot" unique_id=1097187165]
-color = Color(0.9, 1, 1, 1)
-polygon = PackedVector2Array(0, -8, 5, -2, 3, 6, 0, 9, -3, 6, -5, -2)
-
-[node name="ActivationArea" type="Area2D" parent="Entities/DashPickup" unique_id=1845122032]
-collision_layer = 0
-collision_mask = 2
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Entities/DashPickup/ActivationArea" unique_id=1663492711]
-shape = SubResource("CircleShape_pickup")
-
-[node name="SouthExit" type="Node2D" parent="Entities" unique_id=247090609]
+[node name="SouthExit" type="Node2D" parent="Entities" unique_id=754192579]
 position = Vector2(288, 168)
-script = ExtResource("12_vvk6u")
+script = ExtResource("11_ltnep")
 entity_id = "south"
 
-[node name="WestExit" type="Node2D" parent="Entities" unique_id=1641294709]
+[node name="WestExit" type="Node2D" parent="Entities" unique_id=1188089187]
 position = Vector2(8, 32)
-script = ExtResource("12_vvk6u")
+script = ExtResource("11_ltnep")
 entity_id = "west"
 
-[node name="Foreground" type="Node2D" parent="." unique_id=623589455]
+[node name="Foreground" type="Node2D" parent="." unique_id=921504516]

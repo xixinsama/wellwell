@@ -36,7 +36,7 @@ func _run() -> void:
 			var image := Image.create_from_data(frame.w, frame.h, false, Image.FORMAT_RGBA8, rgba)
 			var cell := Image.create(CELL_SIZE, CELL_SIZE, false, Image.FORMAT_RGBA8)
 			cell.fill(Color(0, 0, 0, 0))
-			var feet := Vector2i(CELL_SIZE / 2, 26)
+			var feet := Vector2i(int(CELL_SIZE / 2.0), 26)
 			cell.fill_rect(Rect2i(feet.x - 4, feet.y - 8, 8, 8), Color("4bdb9f"))
 			cell.blend_rect(image, Rect2i(0, 0, frame.w, frame.h), feet - Vector2i(meta.origin[0], meta.origin[1]))
 			cell.resize(scaled_size, scaled_size, Image.INTERPOLATE_NEAREST)

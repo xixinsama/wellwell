@@ -108,7 +108,7 @@ static func hole(p: Px.Painter, C: Array, t: float, pulse: float) -> void:
 		return c)
 
 
-static func drawBack(p: Px.Painter, t: float, o: Dictionary) -> void:
+static func drawBack(p: Px.Painter, _t: float, o: Dictionary) -> void:
 	var C := Px.fit(o.palette, 8)
 	p.glow(0.0, -1.0, 44.0, C[4], 0.12)
 	p.glow(0.0, Y, 80.0, C[4], 0.32)

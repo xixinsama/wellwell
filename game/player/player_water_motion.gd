@@ -87,7 +87,7 @@ func get_submersion() -> float:
 	return _submerged
 
 
-func step(context: RefCounted, intent: RefCounted, environment: RefCounted, profile: RefCounted, delta: float) -> bool:
+func step(context: RefCounted, intent: RefCounted, _environment: RefCounted, profile: RefCounted, delta: float) -> bool:
 	if context == null or intent == null or profile == null:
 		_submerged = 0.0
 		_was_in_water = false

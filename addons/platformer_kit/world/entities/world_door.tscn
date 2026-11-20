@@ -1,0 +1,42 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://addons/platformer_kit/world/entities/world_door.gd" id="1_door"]
+[ext_resource type="Script" path="res://addons/platformer_kit/world/entities/spawn_point.gd" id="2_spawn"]
+[ext_resource type="Script" path="res://addons/platformer_kit/interaction/interactable.gd" id="3_interactable"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape_activation"]
+size = Vector2(20, 26)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape_interaction"]
+size = Vector2(28, 30)
+
+[node name="WorldDoor" type="Node2D"]
+z_index = 2
+script = ExtResource("1_door")
+entity_id = "portal_a"
+
+[node name="ActivationArea" type="Area2D" parent="."]
+position = Vector2(0, -13)
+collision_layer = 0
+collision_mask = 2
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="ActivationArea"]
+shape = SubResource("RectangleShape_activation")
+
+[node name="Interactable" type="Area2D" parent="."]
+position = Vector2(0, -13)
+collision_layer = 4
+collision_mask = 0
+monitorable = false
+script = ExtResource("3_interactable")
+interaction_id = &"world_door"
+interaction_priority = 25
+enabled = false
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Interactable"]
+shape = SubResource("RectangleShape_interaction")
+
+[node name="ArrivalSpawn" type="Marker2D" parent="."]
+position = Vector2(20, 0)
+script = ExtResource("2_spawn")
+spawn_id = "portal_a"

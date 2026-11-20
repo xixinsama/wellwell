@@ -31,15 +31,15 @@ const PLUS := [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]]
 static var cache := {}
 
 
-static func layout(seed: float) -> Array:
-	if cache.has(seed):
-		return cache[seed]
+static func layout(fx_seed: float) -> Array:
+	if cache.has(fx_seed):
+		return cache[fx_seed]
 	var blocks := []
 	var cy := 0
 	while cy < H / CELL:
 		var cx := 0
 		while cx < W / CELL:
-			var h := Px.rand(cx, cy, seed)
+			var h := Px.rand(cx, cy, fx_seed)
 			var n := 1 if h < 0.32 else (2 if h < 0.74 else 4)
 			var s := CELL / n
 			for j in n:
@@ -56,19 +56,19 @@ static func layout(seed: float) -> Array:
 			out[idx[k]] = k / float(v.size() - 1)
 		return out
 	var at := func(b: Dictionary, sd: float) -> float: return Px.fbm((b.x + b.s / 2.0) / 64.0, (b.y + b.s / 2.0) / 64.0, sd, 3)
-	var uin: PackedFloat32Array = rank.call(func(b): return at.call(b, seed) + 0.22 * Px.rand(b.x, b.y, seed + 1.0) + (0.12 if b.s == 20.0 else (-0.08 if b.s == 5.0 else 0.0)))
-	var uout: PackedFloat32Array = rank.call(func(b): return at.call(b, seed + 7.0) + 0.22 * Px.rand(b.x, b.y, seed + 2.0) + (-0.14 if b.s == 20.0 else (0.1 if b.s == 5.0 else 0.0)))
+	var uin: PackedFloat32Array = rank.call(func(b): return at.call(b, fx_seed) + 0.22 * Px.rand(b.x, b.y, fx_seed + 1.0) + (0.12 if b.s == 20.0 else (-0.08 if b.s == 5.0 else 0.0)))
+	var uout: PackedFloat32Array = rank.call(func(b): return at.call(b, fx_seed + 7.0) + 0.22 * Px.rand(b.x, b.y, fx_seed + 2.0) + (-0.14 if b.s == 20.0 else (0.1 if b.s == 5.0 else 0.0)))
 	for i in blocks.size():
 		var b: Dictionary = blocks[i]
 		b.tin = IN0 + uin[i] * (IN1 - IN0)
 		b.tout = OUT0 + uout[i] * (OUT1 - OUT0)
-		b.glint = Px.rand(b.x, b.y, seed + 3.0) < (0.32 if b.s >= 10.0 else 0.1)
-		b.gx = b.x + (0.0 if Px.rand(b.x, b.y, seed + 4.0) < 0.5 else b.s)
-		b.gy = b.y + (0.0 if Px.rand(b.x, b.y, seed + 5.0) < 0.5 else b.s)
-		b.spin = (Px.rand(b.x, b.y, seed + 6.0) - 0.5) * 3.0
+		b.glint = Px.rand(b.x, b.y, fx_seed + 3.0) < (0.32 if b.s >= 10.0 else 0.1)
+		b.gx = b.x + (0.0 if Px.rand(b.x, b.y, fx_seed + 4.0) < 0.5 else b.s)
+		b.gy = b.y + (0.0 if Px.rand(b.x, b.y, fx_seed + 5.0) < 0.5 else b.s)
+		b.spin = (Px.rand(b.x, b.y, fx_seed + 6.0) - 0.5) * 3.0
 		# now and then a big block throws a hero glint
-		b.L = 9.0 + 6.0 * Px.rand(b.x, b.y, seed + 9.0) if b.s == 20.0 and Px.rand(b.x, b.y, seed + 8.0) < 0.45 else 2.5 + b.s * 0.32
-	cache[seed] = blocks
+		b.L = 9.0 + 6.0 * Px.rand(b.x, b.y, fx_seed + 9.0) if b.s == 20.0 and Px.rand(b.x, b.y, fx_seed + 8.0) < 0.45 else 2.5 + b.s * 0.32
+	cache[fx_seed] = blocks
 	return blocks
 
 

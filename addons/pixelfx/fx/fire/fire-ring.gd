@@ -112,7 +112,7 @@ func create(o: Dictionary) -> void:
 
 
 func flames(p: Px.Painter, back: bool) -> void:
-	var NZ := func(rate: float, seed: Variant = 0, off: float = 0.0) -> float: return Px.noise(t * rate + off, seed)
+	var NZ := func(rate: float, fx_seed: Variant = 0, off: float = 0.0) -> float: return Px.noise(t * rate + off, fx_seed)
 	for s: Dictionary in sites:
 		if s.back != back:
 			continue

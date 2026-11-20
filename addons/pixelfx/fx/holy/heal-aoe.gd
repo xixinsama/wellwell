@@ -8,7 +8,7 @@ const WHITE := Px.WHITE
 
 static var meta := {
 	"name": "Healing ring",
-	"desc": "A seed of green light sinks into the floor and a soft ring rolls out from it; the floor glows where it passes and plus signs sprout and float up.",
+	"desc": "A fx_seed of green light sinks into the floor and a soft ring rolls out from it; the floor glows where it passes and plus signs sprout and float up.",
 	"tags": ["holy", "heal", "aoe", "ring", "plus", "ground", "one-shot"],
 	"size": [256, 136],
 	"origin": [128, 104],
@@ -155,7 +155,7 @@ func sprouts(p: Px.Painter, back: bool) -> void:
 
 func update(dt: float) -> void:
 	t += dt
-	# the seed gathers: motes slide in over the floor to a point that brightens
+	# the fx_seed gathers: motes slide in over the floor to a point that brightens
 	if t < SEED - 0.04 and R.chance(0.7):
 		var a := R.range(0.0, TAU)
 		var D := R.range(24.0, 48.0)
@@ -202,7 +202,7 @@ func drawBack(p: Px.Painter) -> void:
 
 func draw(p: Px.Painter) -> void:
 	ring(p, false)
-	# the seed: a point of light pulsing on the floor, then a flare as it lets go
+	# the fx_seed: a point of light pulsing on the floor, then a flare as it lets go
 	if t < SEED:
 		var k := t / SEED
 		Px.sparkle(p, 0.0, -3.0, 2.0 + 4.0 * k * k, WHITE, C[6], 0.3 + 0.4 * k)

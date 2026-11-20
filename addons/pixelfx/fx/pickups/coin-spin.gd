@@ -26,7 +26,7 @@ const TH := 3.0
 const HOVER := 17.0
 
 
-static func drawBack(p: Px.Painter, t: float, o: Dictionary) -> void:
+static func drawBack(p: Px.Painter, t: float, _o: Dictionary) -> void:
 	var T: float = meta.duration
 	var ph := t / T
 	var th := ph * TAU

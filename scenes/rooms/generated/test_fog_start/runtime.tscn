@@ -6,26 +6,20 @@
 [ext_resource type="PackedScene" path="res://scenes/world/fog_door.tscn" id="4_i8rho"]
 [ext_resource type="Script" path="res://scripts/world/fog_door.gd" id="5_b4hej"]
 
-[sub_resource type="RectangleShape2D" id="Shape_body"]
-size = Vector2(8, 16)
+[node name="RoomRuntimeContent" type="Node2D" unique_id=1626305116]
 
-[sub_resource type="RectangleShape2D" id="Shape_sense"]
-size = Vector2(16, 24)
+[node name="Entities" type="Node2D" parent="." unique_id=1162848294]
 
-[node name="RoomRuntimeContent" type="Node2D" unique_id=533171591]
-
-[node name="Entities" type="Node2D" parent="." unique_id=584174803]
-
-[node name="StartSpawn" type="Marker2D" parent="Entities" unique_id=1964414592]
+[node name="StartSpawn" type="Marker2D" parent="Entities" unique_id=489670480]
 position = Vector2(24, 152)
 script = ExtResource("1_i10ms")
 
-[node name="EastEntrance" type="Node2D" parent="Entities" unique_id=961588460]
+[node name="EastEntrance" type="Node2D" parent="Entities" unique_id=1298043677]
 position = Vector2(316, 152)
 script = ExtResource("2_hqcya")
 entity_id = "to_east"
 
-[node name="DarkZone" type="Node2D" parent="Entities" unique_id=596242601]
+[node name="DarkZone" type="Node2D" parent="Entities" unique_id=360739445]
 position = Vector2(152, 144)
 script = ExtResource("3_7bfp7")
 size_cells = Vector2i(8, 2)
@@ -33,7 +27,7 @@ zone_id = "start_dark"
 restore_on_exit = true
 focus_room = true
 
-[node name="LightZone" type="Node2D" parent="Entities" unique_id=242633139]
+[node name="LightZone" type="Node2D" parent="Entities" unique_id=750692888]
 position = Vector2(104, 32)
 script = ExtResource("3_7bfp7")
 mode = 1
@@ -41,26 +35,10 @@ size_cells = Vector2i(4, 3)
 zone_id = "start_light"
 reveal_on_enter = false
 
-[node name="ChamberDoor" type="Node2D" parent="Entities" unique_id=1708021079 instance=ExtResource("4_i8rho")]
+[node name="ChamberDoor" type="Node2D" parent="Entities" unique_id=859936525 instance=ExtResource("4_i8rho")]
 z_index = 2
 position = Vector2(264, 144)
 script = ExtResource("5_b4hej")
 door_id = "start_chamber"
 
-[node name="Body" type="StaticBody2D" parent="Entities/ChamberDoor" unique_id=1954281566]
-collision_mask = 0
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Entities/ChamberDoor/Body" unique_id=1886439372]
-position = Vector2(4, 8)
-shape = SubResource("Shape_body")
-
-[node name="Sense" type="Area2D" parent="Entities/ChamberDoor" unique_id=2074344460]
-collision_layer = 0
-collision_mask = 2
-monitorable = false
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Entities/ChamberDoor/Sense" unique_id=520349892]
-position = Vector2(4, 8)
-shape = SubResource("Shape_sense")
-
-[node name="Foreground" type="Node2D" parent="." unique_id=1355505203]
+[node name="Foreground" type="Node2D" parent="." unique_id=1731621883]

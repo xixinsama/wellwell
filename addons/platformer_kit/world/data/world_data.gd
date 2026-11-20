@@ -21,6 +21,9 @@ const DEFAULT_CELL_SIZE := Vector2i(8, 8)
 @export var connections: Array[Resource] = []
 @export var regions: Array[Resource] = []
 @export var tags: PackedStringArray = []
+## Authoring only: the stack this world belongs to (see [WorldStack]). The editor
+## draws and edits that stack; the runtime never reads it.
+@export var world_stack: WorldStack
 
 
 func get_room(room_id: String) -> Resource:

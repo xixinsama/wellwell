@@ -14,34 +14,34 @@ const SMOKE_RAMP := Px.SMOKE_RAMP
 
 
 ## Smooth value noise in [-1, 1] that repeats every `period` cells (a whole number).
-static func pnoise(x: float, period: float, seed: Variant = 0) -> float:
+static func pnoise(x: float, period: float, fx_seed: Variant = 0) -> float:
 	var i := floorf(x)
 	var f := x - i
 	var u := f * f * (3.0 - 2.0 * f)
-	var a := Px.rand(Px.wrap(i, period), seed)
-	var b := Px.rand(Px.wrap(i + 1.0, period), seed)
+	var a := Px.rand(Px.wrap(i, period), fx_seed)
+	var b := Px.rand(Px.wrap(i + 1.0, period), fx_seed)
 	return (a + (b - a) * u) * 2.0 - 1.0
 
 
-## Noise for a loop D seconds long: N.call(tt, rate, seed, off) wobbles about `rate` times a second and is the same at
+## Noise for a loop D seconds long: N.call(tt, rate, fx_seed, off) wobbles about `rate` times a second and is the same at
 ## tt and tt + D. Pass D = 0 for one-shots (plain noise, no repeat).
 static func noiseFor(D: float) -> Callable:
 	if not D:
-		return func(tt: float, rate: float, seed: Variant = 0, off: float = 0.0) -> float: return Px.noise(tt * rate + off, seed)
-	return func(tt: float, rate: float, seed: Variant = 0, off: float = 0.0) -> float:
+		return func(tt: float, rate: float, fx_seed: Variant = 0, off: float = 0.0) -> float: return Px.noise(tt * rate + off, fx_seed)
+	return func(tt: float, rate: float, fx_seed: Variant = 0, off: float = 0.0) -> float:
 		var P_ := maxf(1.0, Px.round(rate * D))
-		return pnoise((tt / D) * P_ + off, P_, seed)
+		return pnoise((tt / D) * P_ + off, P_, fx_seed)
 
 
 ## Seamless particles for a loop D seconds long: count particles, each born at its own phase and reborn every D.
 ## make.call(r, i) builds particle i from its own rng (the same every frame) and returns it with a .life (which may
 ## be longer than D); draw.call(q, age, i) is called for every live copy. Either may take fewer arguments.
-static func looped(t: float, D: float, count: float, seed: Variant, make: Callable, draw: Callable) -> void:
+static func looped(t: float, D: float, count: float, fx_seed: Variant, make: Callable, draw: Callable) -> void:
 	var mn := make.get_argument_count()
 	var dn := draw.get_argument_count()
 	var i := 0
 	while i < count:
-		var r := Px.rng(seed, i)
+		var r := Px.rng(fx_seed, i)
 		var born := r.next() * D
 		var q: Dictionary = Px.call4(make, mn, r, i)
 		var age := Px.wrap(t - born, D)
@@ -51,7 +51,7 @@ static func looped(t: float, D: float, count: float, seed: Variant, make: Callab
 		i += 1
 
 
-## Hugo's flicker, 0.74 to 1: a slow breath and a fast crackle. N(rate, seed) at the current time.
+## Hugo's flicker, 0.74 to 1: a slow breath and a fast crackle. N(rate, fx_seed) at the current time.
 static func flicker(N: Callable, s: float = 0.0) -> float:
 	return 0.74 + 0.16 * N.call(7.3, 1.0 + s) + 0.1 * N.call(19.0, 2.0 + s)
 
@@ -75,7 +75,7 @@ const BACK_LAYERS := [[1.0, 1.0, 7], [0.76, 0.86, 5], [0.54, 0.68, 3], [0.3, 0.4
 
 ## A flame tongue standing at (x, y), h tall, w its half-width at the base, its tip swept sx px sideways: a red
 ## rim round orange round yellow round a white heart, every row's width and centre jittered by noise so the
-## edges crackle. N.call(rate, seed, off) is the effect's noise at this frame; n seeds this tongue. H: hot-first ramp.
+## edges crackle. N.call(rate, fx_seed, off) is the effect's noise at this frame; n seeds this tongue. H: hot-first ramp.
 ## jit: how far the edges crackle (px); wob: how far the tip wanders (px).
 static func flameTongue(p: Px.Painter, x: float, y: float, h: float, w: float, sx: float, N: Callable, n: Variant, H: Array, layers: Array = LAYERS, jit: float = 0.5, wob: float = 1.1) -> void:
 	if h < 1.0:
@@ -349,7 +349,7 @@ static var SMOKE1 := Px.hex("#5b5566")
 ## A fire for loops, drawn from t alone. Tongues T: [[dx, dy, height share, half-width, back row?], ...] from the
 ## base (o.x, o.y), back row first then outer to inner; licks torn off their tips, flame puffs that burn out into
 ## smoke, a smoke plume curling off with the draught, embers, and the fire's light.
-## o: { H, D, NL (noiseFor(D)), S (seed), height, lean, rates per second: puffs and licks (per tongue), smoke,
+## o: { H, D, NL (noiseFor(D)), S (fx_seed), height, lean, rates per second: puffs and licks (per tongue), smoke,
 ## embers; spread (how wide embers and smoke leave), glow (light strength), glowR, mid() (called after the
 ## tongues, before what flies off them: draw what the fire burns out of there) }. Wide tongues get BIG_LAYERS.
 ## Returns { tip(i, tt), fl (this frame's flicker) }.
@@ -363,7 +363,7 @@ static func burn(p: Px.Painter, t: float, T: Array, o: Dictionary) -> Dictionary
 	var Y: float = o.get("y", 0.0)
 	var W: float = o.get("spread", 6.0)
 	var G: float = o.get("glow", 1.0)
-	var N := func(rate: float, seed: Variant = 0, off: float = 0.0) -> float: return NL.call(t, rate, seed, off)
+	var N := func(rate: float, fx_seed: Variant = 0, off: float = 0.0) -> float: return NL.call(t, rate, fx_seed, off)
 	var fla := func(tt: float) -> float: return 0.74 + 0.16 * NL.call(tt, 7.3, S + 1.0) + 0.1 * NL.call(tt, 19.0, S + 2.0)
 	var fl: float = fla.call(t)
 	var SMOKE := Px.mix(SMOKE1, H[6], 0.25)

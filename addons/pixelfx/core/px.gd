@@ -326,21 +326,21 @@ static func rng(a: Variant, b: Variant = NA, c: Variant = NA, d: Variant = NA, e
 	return Rng.new(Self.hash(a, b, c, d, e, f))
 
 ## Smooth 1D value noise in [-1, 1].
-static func noise(x: float, seed: Variant = 0) -> float:
+static func noise(x: float, noise_seed: Variant = 0) -> float:
 	var i := floorf(x)
 	var fx := x - i
 	var u := fx * fx * (3.0 - 2.0 * fx)
-	return Self.lerp(Self.rand(i, seed), Self.rand(i + 1.0, seed), u) * 2.0 - 1.0
+	return Self.lerp(Self.rand(i, noise_seed), Self.rand(i + 1.0, noise_seed), u) * 2.0 - 1.0
 
 ## Smooth 2D value noise in [-1, 1].
-static func noise2(x: float, y: float, seed: Variant = 0) -> float:
+static func noise2(x: float, y: float, noise_seed: Variant = 0) -> float:
 	var ix := floorf(x)
 	var iy := floorf(y)
 	var fx := x - ix
 	var fy := y - iy
 	var ux := fx * fx * (3.0 - 2.0 * fx)
 	var uy := fy * fy * (3.0 - 2.0 * fy)
-	var sd: float = seed
+	var sd: float = noise_seed
 	var a := _rand3(ix, iy, sd)
 	var b := _rand3(ix + 1.0, iy, sd)
 	var c := _rand3(ix, iy + 1.0, sd)
@@ -348,12 +348,12 @@ static func noise2(x: float, y: float, seed: Variant = 0) -> float:
 	return Self.lerp(Self.lerp(a, b, ux), Self.lerp(c, d, ux), uy) * 2.0 - 1.0
 
 ## Fractal 2D noise in about [-1, 1].
-static func fbm(x: float, y: float, seed: float = 0.0, octaves: float = 3) -> float:
+static func fbm(x: float, y: float, noise_seed: float = 0.0, octaves: float = 3) -> float:
 	var s := 0.0
 	var a := 0.5
 	var n := 0.0
 	for o in int(octaves):
-		s += Self.noise2(x, y, seed + o * 101) * a
+		s += Self.noise2(x, y, noise_seed + o * 101) * a
 		n += a
 		x *= 2.03
 		y *= 2.03
@@ -361,7 +361,7 @@ static func fbm(x: float, y: float, seed: float = 0.0, octaves: float = 3) -> fl
 	return s / n
 
 ## 2D value noise whose lattice repeats every px cells in x and py cells in y (0: no repeat).
-static func tileNoise(x: float, y: float, px: float = 0.0, py: float = 0.0, seed: Variant = 0) -> float:
+static func tileNoise(x: float, y: float, px: float = 0.0, py: float = 0.0, noise_seed: Variant = 0) -> float:
 	var ix := floorf(x)
 	var iy := floorf(y)
 	var fx := x - ix
@@ -372,7 +372,7 @@ static func tileNoise(x: float, y: float, px: float = 0.0, py: float = 0.0, seed
 	var x1 := Self.wrap(ix + 1.0, px) if px else ix + 1.0
 	var y0 := Self.wrap(iy, py) if py else iy
 	var y1 := Self.wrap(iy + 1.0, py) if py else iy + 1.0
-	var sd: float = seed
+	var sd: float = noise_seed
 	var a := _rand3(x0, y0, sd)
 	var b := _rand3(x1, y0, sd)
 	var c := _rand3(x0, y1, sd)
@@ -380,22 +380,22 @@ static func tileNoise(x: float, y: float, px: float = 0.0, py: float = 0.0, seed
 	return Self.lerp(Self.lerp(a, b, ux), Self.lerp(c, d, ux), uy) * 2.0 - 1.0
 
 ## Fractal tileNoise: every octave keeps the repeat, so scrolled fields still loop.
-static func tileFbm(x: float, y: float, px: float = 0.0, py: float = 0.0, seed: float = 0.0, octaves: float = 3) -> float:
+static func tileFbm(x: float, y: float, px: float = 0.0, py: float = 0.0, noise_seed: float = 0.0, octaves: float = 3) -> float:
 	var s := 0.0
 	var a := 0.5
 	var n := 0.0
 	var k := 1.0
 	for o in int(octaves):
-		s += tileNoise(x * k, y * k, px * k, py * k, seed + o * 101) * a
+		s += tileNoise(x * k, y * k, px * k, py * k, noise_seed + o * 101) * a
 		n += a
 		a *= 0.5
 		k *= 2.0
 	return s / n
 
 ## Noise that loops: the same value at phase 0 and phase 1 (for seamless loops).
-static func loopNoise(phase: float, radius: float = 1.0, seed: Variant = 0) -> float:
+static func loopNoise(phase: float, radius: float = 1.0, noise_seed: Variant = 0) -> float:
 	var a := phase * TAU
-	return Self.noise2(cos(a) * radius + 50.0, sin(a) * radius + 50.0, seed)
+	return Self.noise2(cos(a) * radius + 50.0, sin(a) * radius + 50.0, noise_seed)
 
 # --------------------------------------------------------------------------------------------------- color.js
 # Colors are 32-bit ints laid out like RGBA bytes (R in the low byte), as JS: rgb() and hex() are *signed*
@@ -553,40 +553,40 @@ static func call4(fn: Callable, n: int, a: Variant, b: Variant = null, c: Varian
 	return fn.call(a, b, c, d)
 
 ## n one-shot particles: fn.call(r, i) with a repeatable rng per particle.
-static func burst(n: float, seed: Variant, fn: Callable) -> void:
+static func burst(n: float, rng_seed: Variant, fn: Callable) -> void:
 	var na := fn.get_argument_count()
 	var i := 0
 	while i < n:
-		call4(fn, na, rng(seed, i), i)
+		call4(fn, na, rng(rng_seed, i), i)
 		i += 1
 
 ## Particles that repeat every `period` seconds, for loops with no seam: fn.call(age, life, r, i) for every live copy.
 ## life is a number or a Callable taking the particle's rng.
-static func cycle(t: float, period: float, count: float, seed: Variant, life: Variant, fn: Callable) -> void:
+static func cycle(t: float, period: float, count: float, rng_seed: Variant, life: Variant, fn: Callable) -> void:
 	var na := fn.get_argument_count()
 	var i := 0
 	while i < count:
-		var g := rng(seed, i, 911)
+		var g := rng(rng_seed, i, 911)
 		var born := g.next() * period
 		var L: float = life.call(g) if life is Callable else life
 		var age := fmod(fmod(t - born, period) + period, period)
 		while age < L:
-			call4(fn, na, age, L, rng(seed, i), i)
+			call4(fn, na, age, L, rng(rng_seed, i), i)
 			age += period
 		i += 1
 
 ## Particles born at a steady rate between t0 and t1: fn.call(age, life, r, i) for every particle alive at t.
-static func stream(t: float, t0: float, t1: float, rate: float, seed: Variant, life: Variant, fn: Callable) -> void:
+static func stream(t: float, t0: float, t1: float, rate: float, rng_seed: Variant, life: Variant, fn: Callable) -> void:
 	var na := fn.get_argument_count()
 	var n := floori((minf(t, t1) - t0) * rate)
 	var i := 0
 	while i <= n:
 		var born := t0 + i / rate
-		var g := rng(seed, i, 911)
+		var g := rng(rng_seed, i, 911)
 		var L: float = life.call(g) if life is Callable else life
 		var age := t - born
 		if age >= 0.0 and age < L:
-			call4(fn, na, age, L, rng(seed, i), i)
+			call4(fn, na, age, L, rng(rng_seed, i), i)
 		i += 1
 
 # -------------------------------------------------------------------------------------------------- shapes.js

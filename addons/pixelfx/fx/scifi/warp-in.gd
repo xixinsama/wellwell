@@ -73,7 +73,7 @@ var C: Array
 var W: float
 var R: Px.Rng
 var A: Dictionary
-var seed: float
+var fx_seed: float
 var ps: Px.Particles
 var lights: Px.Lights
 var body: Array = []
@@ -91,7 +91,7 @@ func create(o: Dictionary) -> void:
 	W = o.width
 	R = Px.Rng.new(o.seed)
 	A = o.actor
-	seed = o.seed
+	fx_seed = o.seed
 	ps = Px.Particles.new({"rng": R, "ground": func(): return 0.0, "sparks": [WHITE, C[6], C[5], C[3]], "haze": C[5]})
 	lights = Px.Lights.new()
 	# the body: each filled pixel, its own color, whether it's on the outline, and each row's extent
@@ -144,7 +144,7 @@ func column(p: Px.Painter) -> void:
 			# strands: thin bright threads drifting inside the beam
 			var strand := 0
 			for s in 5:
-				if absf((x + 0.5) / w - (Px.rand(seed, s) - 0.5) * 1.3 - 0.06 * sin(t * (1.5 + s) + s * 2)) < 0.05:
+				if absf((x + 0.5) / w - (Px.rand(fx_seed, s) - 0.5) * 1.3 - 0.06 * sin(t * (1.5 + s) + s * 2)) < 0.05:
 					strand = 1
 			if q < hollow:
 				p.blend(x + 0.5, y + 0.5, C[6] if (strand or pulse) else C[5], Px.clamp(0.12 + 0.3 * q * q + 0.3 * strand + 0.25 * pulse + 0.7 * thin))

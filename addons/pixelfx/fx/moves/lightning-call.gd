@@ -44,4 +44,5 @@ static var act := {
 }
 
 static var CHAIN := Px.chain([{"fx": Strike, "t": 0, "x": TX}])
-static func create(o: Dictionary): return CHAIN.create(o)
+static func create(o: Dictionary):
+	return CHAIN.create(o)

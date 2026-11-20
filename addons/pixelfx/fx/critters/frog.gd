@@ -84,7 +84,7 @@ static func fly(t: float) -> Variant:
 	return home
 
 
-static func frog(g: Lib.Grid, C: Array, Bl: Array, Pz: Dictionary, t: float) -> void:
+static func frog(g: Lib.Grid, C: Array, Bl: Array, Pz: Dictionary, _t: float) -> void:
 	g.clear()
 	var cs := cos(Pz.rot)
 	var sn := sin(Pz.rot)

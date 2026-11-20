@@ -634,7 +634,8 @@ func _cells_center(cells: Dictionary[Vector2i, bool]) -> Vector2i:
 	var sum := Vector2i.ZERO
 	for cell: Vector2i in cells:
 		sum += cell
-	return Vector2i(sum.x / cells.size(), sum.y / cells.size())
+	var cell_count := float(cells.size())
+	return Vector2i(int(sum.x / cell_count), int(sum.y / cell_count))
 
 
 func _max_cell_distance(center: Vector2i, cells: Dictionary[Vector2i, bool]) -> float:
@@ -1039,7 +1040,7 @@ func _chamfer(field: PackedFloat32Array, width: int, height: int) -> void:
 func _mask_index_to_cell(index: int) -> Vector2i:
 	return Vector2i(
 		map_origin_cell.x + index % map_size_cells.x,
-		map_origin_cell.y + index / map_size_cells.x
+		map_origin_cell.y + int(index / float(map_size_cells.x))
 	)
 
 

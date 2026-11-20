@@ -5,21 +5,21 @@
 [ext_resource type="Script" path="res://addons/fluid_kit/runtime/gas/fog_light.gd" id="3_kubw5"]
 [ext_resource type="Script" path="res://scripts/world/fog_zone.gd" id="4_0htw2"]
 
-[node name="RoomRuntimeContent" type="Node2D" unique_id=1238050814]
+[node name="RoomRuntimeContent" type="Node2D" unique_id=336315325]
 
-[node name="Entities" type="Node2D" parent="." unique_id=2034585625]
+[node name="Entities" type="Node2D" parent="." unique_id=1553969318]
 
-[node name="StartSpawn" type="Marker2D" parent="Entities" unique_id=1967219124]
+[node name="StartSpawn" type="Marker2D" parent="Entities" unique_id=543758564]
 position = Vector2(44, 96)
 script = ExtResource("1_jkc1o")
 
-[node name="FluidRegionBasin" type="Node2D" parent="Entities" unique_id=908681672]
+[node name="FluidRegionBasin" type="Node2D" parent="Entities" unique_id=1615554272]
 position = Vector2(16, 40)
 script = ExtResource("2_nl6j1")
 size_cells = Vector2i(17, 9)
 region_id = "basin"
 
-[node name="CascadeLightTop" type="Node2D" parent="Entities" unique_id=1846660825]
+[node name="CascadeLightTop" type="Node2D" parent="Entities" unique_id=1361525603]
 position = Vector2(152, 48)
 script = ExtResource("3_kubw5")
 light_id = "grid_top"
@@ -27,7 +27,7 @@ radius = 110.0
 energy = 0.9
 color = Color(1, 0.9, 0.72, 1)
 
-[node name="CascadeLightBottom" type="Node2D" parent="Entities" unique_id=352804589]
+[node name="CascadeLightBottom" type="Node2D" parent="Entities" unique_id=1641308222]
 position = Vector2(240, 120)
 script = ExtResource("3_kubw5")
 light_id = "grid_bottom"
@@ -35,10 +35,10 @@ radius = 120.0
 energy = 0.8
 color = Color(0.6, 0.82, 1, 1)
 
-[node name="GridRoomLight" type="Node2D" parent="Entities" unique_id=767703362]
+[node name="GridRoomLight" type="Node2D" parent="Entities" unique_id=1063245860]
 script = ExtResource("4_0htw2")
 mode = 1
 size_cells = Vector2i(40, 23)
 zone_id = "water_grid_lit"
 
-[node name="Foreground" type="Node2D" parent="." unique_id=699743283]
+[node name="Foreground" type="Node2D" parent="." unique_id=1337640712]

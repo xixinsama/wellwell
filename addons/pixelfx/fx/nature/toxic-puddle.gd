@@ -36,15 +36,15 @@ static func surf(x: float, W: float, t: float) -> float:
 
 # the pool: an oily skin with a violet and teal sheen sliding over it, black depths threaded with veins of light,
 # a chartreuse rim glowing where the tar meets the floor
-static func pool(p: Px.Painter, C: Array, Sh: Array, W: float, t: float, seed: float) -> void:
+static func pool(p: Px.Painter, C: Array, Sh: Array, W: float, t: float, fx_seed: float) -> void:
 	var ph := t / D
 	for x in range(floori(-W - 1.0), ceili(W + 1.0) + 1):
 		var d := absf(x + 0.5) / W
 		if d > 1.03:
 			continue
 		var top := int(surf(x + 0.5, W, t))
-		var oil := 0.6 * Px.tileNoise(x * 0.08, ph * 4.0, 0.0, 4.0, seed) + 0.6 * Px.tileNoise(x * 0.11 - ph * 4.0, 1.0, 4.0, 0.0, seed + 1.0)
-		var hue := Px.tileNoise(x * 0.05, ph * 2.0 + 7.0, 0.0, 2.0, seed + 3.0)
+		var oil := 0.6 * Px.tileNoise(x * 0.08, ph * 4.0, 0.0, 4.0, fx_seed) + 0.6 * Px.tileNoise(x * 0.11 - ph * 4.0, 1.0, 4.0, 0.0, fx_seed + 1.0)
+		var hue := Px.tileNoise(x * 0.05, ph * 2.0 + 7.0, 0.0, 2.0, fx_seed + 3.0)
 		for y in range(top, 3):
 			if (y == 2 and d > 0.75) or (y == 1 and d > 0.9):
 				continue
@@ -64,7 +64,7 @@ static func pool(p: Px.Painter, C: Array, Sh: Array, W: float, t: float, seed: f
 			else:
 				# cracks of light under the crust, writhing slowly and swelling brighter and dimmer in a slow pulse
 				var pulse := 0.5 + 0.5 * sin((TAU * t) / D + x * 0.03)
-				var v := absf(Px.tileNoise(x * 0.09, y * 0.75 + ph * 4.0, 0.0, 4.0, seed + 7.0) + 0.2 * sin((TAU * t * 2.0) / D + x * 0.15))
+				var v := absf(Px.tileNoise(x * 0.09, y * 0.75 + ph * 4.0, 0.0, 4.0, fx_seed + 7.0) + 0.2 * sin((TAU * t * 2.0) / D + x * 0.15))
 				var w := 0.6 + 0.6 * pulse
 				c = C[7] if v < 0.035 * w else (C[6] if v < 0.08 * w else (C[4] if v < 0.14 * w else C[1]))
 				if v < 0.08 * w:
@@ -80,8 +80,8 @@ static func pool(p: Px.Painter, C: Array, Sh: Array, W: float, t: float, seed: f
 
 # fat bubbles: dome up dark and glossy, stretch thin as light shows through their tops, pop in a ripple ring
 # and a spatter of tar, and loose a ribbon of vapour
-static func bubbles(p: Px.Painter, C: Array, Sh: Array, W: float, t: float, seed: float) -> void:
-	Px.cycle(t, D, 8, seed, func(g): return g.range(2.4, 3.2), func(age: float, L: float, R: Px.Rng):
+static func bubbles(p: Px.Painter, C: Array, Sh: Array, W: float, t: float, fx_seed: float) -> void:
+	Px.cycle(t, D, 8, fx_seed, func(g): return g.range(2.4, 3.2), func(age: float, L: float, R: Px.Rng):
 		var swell := R.range(1.0, 1.6)
 		var x := R.range(-0.7, 0.7) * W
 		var rmax := R.range(4.5, 8.0)
@@ -138,8 +138,8 @@ static func bubbles(p: Px.Painter, C: Array, Sh: Array, W: float, t: float, seed
 			if e < 0.1:
 				p.glow(x, sy - 2.0, 18.0, C[6], 0.7 * (1.0 - e / 0.1))
 		for j in 7:
-			var vx := (Px.rand(j, seed, Px.round(x * 10.0)) - 0.5) * 80.0
-			var vy := -45.0 - Px.rand(j, seed + 3.0, Px.round(x * 10.0)) * 70.0
+			var vx := (Px.rand(j, fx_seed, Px.round(x * 10.0)) - 0.5) * 80.0
+			var vy := -45.0 - Px.rand(j, fx_seed + 3.0, Px.round(x * 10.0)) * 70.0
 			var dxy := Px.fly(x, sy - 2.0, vx, vy, e, 420.0)
 			var dx: float = dxy[0]
 			var dy: float = dxy[1]

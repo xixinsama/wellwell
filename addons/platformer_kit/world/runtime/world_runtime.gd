@@ -250,6 +250,83 @@ func request_transition(entrance: Node) -> bool:
 	return true
 
 
+## Move the actor to [param door_id] inside [param room_id], without a connection.
+##
+## A door owns its arrival spot (the nested arrival SpawnPoint), so a portal pair
+## needs no extra world data: rooms are staged with the same residency rules
+## every other entry uses.
+func travel_to_door(room_id: String, door_id: String) -> bool:
+	if not _is_world_data(world_data) or room_id.is_empty() or door_id.is_empty():
+		return false
+	if not world_data.has_room(room_id):
+		return false
+	var target_ids := _get_target_room_ids_for(
+		world_data,
+		room_id,
+		_get_room_origin_chunk(world_data, room_id)
+	)
+	var staged_value: Variant = _stage_missing_rooms(world_data, target_ids, _get_entity_state_source())
+	if staged_value == null:
+		return false
+	var staged_rooms := staged_value as Dictionary
+	var target_runtime: Node = _loaded_rooms.get(room_id, staged_rooms.get(room_id, null))
+	if target_runtime == null:
+		_free_staged_rooms(staged_rooms)
+		return false
+	var arrival := _resolve_door_arrival(target_runtime, door_id)
+	if arrival.is_empty():
+		_free_staged_rooms(staged_rooms)
+		return false
+	var arrival_position: Vector2 = arrival.get("position", Vector2.ZERO)
+	var spawn_chunk: Vector2i = world_data.get_chunk_at_world_position(to_local(arrival_position))
+	target_ids = _get_target_room_ids_for(world_data, room_id, spawn_chunk)
+	var additional_value: Variant = _stage_missing_rooms(
+		world_data,
+		target_ids,
+		_get_entity_state_source(),
+		staged_rooms
+	)
+	if additional_value == null:
+		_free_staged_rooms(staged_rooms)
+		return false
+	var additional_rooms := additional_value as Dictionary
+	for staged_id: String in additional_rooms:
+		staged_rooms[staged_id] = additional_rooms[staged_id]
+	additional_rooms.clear()
+	_trim_staged_rooms(staged_rooms, target_ids)
+	var from_room_id := _current_room_id
+	_commit_room_change(room_id, target_ids, staged_rooms)
+	_respawn_player(arrival_position)
+	_disarm_door(target_runtime, door_id)
+	_record_player_tracking()
+	transition_completed.emit(from_room_id, room_id, door_id)
+	return true
+
+
+## Position the actor would land at when arriving through [param door_id].
+## Doors answer with their nested arrival SpawnPoint; a plain spawn id works too.
+func _resolve_door_arrival(room_runtime: Node, door_id: String) -> Dictionary:
+	if room_runtime == null or not room_runtime.has_method("get_entity"):
+		return {}
+	var door: Node = room_runtime.call("get_entity", door_id)
+	if door != null and door.has_method("get_arrival_position"):
+		return {"position": Vector2(door.call("get_arrival_position"))}
+	if room_runtime.has_method("get_spawn_point"):
+		var spawn: Node2D = room_runtime.call("get_spawn_point", door_id) as Node2D
+		if spawn != null:
+			return {"position": spawn.global_position}
+	return {}
+
+
+## Keep the arrival door from sending the actor straight back.
+func _disarm_door(room_runtime: Node, door_id: String) -> void:
+	if room_runtime == null or not room_runtime.has_method("get_entity"):
+		return
+	var door: Node = room_runtime.call("get_entity", door_id)
+	if door != null and door.has_method("set_arrival_disarmed"):
+		door.call("set_arrival_disarmed")
+
+
 func _get_target_room_ids_for(data: Resource, room_id: String, player_chunk: Vector2i) -> Array[String]:
 	return data.get_resident_room_ids(player_chunk, room_id)
 
@@ -415,14 +492,14 @@ func _get_spawn_point_from_rooms(rooms: Dictionary, room_id: String, spawn_id: S
 	return room_runtime.call("get_spawn_point", spawn_id) as Node2D
 
 
-func _respawn_player(position: Vector2) -> void:
+func _respawn_player(respawn_position: Vector2) -> void:
 	if not is_instance_valid(_player):
 		_player = null
 		return
 	if _player.has_method("respawn_at"):
-		_player.call("respawn_at", position)
+		_player.call("respawn_at", respawn_position)
 	else:
-		_player.global_position = position
+		_player.global_position = respawn_position
 
 
 func _get_room_origin_chunk(data: Resource, room_id: String) -> Vector2i:

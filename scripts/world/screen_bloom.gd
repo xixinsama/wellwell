@@ -137,9 +137,8 @@ func _resize(world_size: Vector2i) -> void:
 
 
 func _buffer_for(world_size: Vector2i) -> Vector2i:
-	return Vector2i(
-		maxi(world_size.x / DOWNSCALE, 1), maxi(world_size.y / DOWNSCALE, 1)
-	)
+	var buffer := world_size / DOWNSCALE
+	return Vector2i(maxi(buffer.x, 1), maxi(buffer.y, 1))
 
 
 func _make_viewport(node_name: String, size: Vector2i) -> SubViewport:

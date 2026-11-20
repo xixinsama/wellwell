@@ -89,7 +89,7 @@ static func draw(p: Px.Painter, t: float, o: Dictionary) -> void:
 	var B := Px.fit(o.brass, 5)
 	var S: float = o.seed
 	# calm: everything moves slowly, the flame now and then stretches tall
-	var N := func(rate: float, seed: Variant = 0, off: float = 0.0) -> float: return NL.call(t, rate * 0.35, seed, off)
+	var N := func(rate: float, fx_seed: Variant = 0, off: float = 0.0) -> float: return NL.call(t, rate * 0.35, fx_seed, off)
 	var fl: float = 0.86 + 0.08 * NL.call(t, 2.0, S + 1.0) + 0.06 * NL.call(t, 7.0, S + 2.0)
 	var stretch: float = maxf(0.0, NL.call(t, 0.75, S + 3.0) - 0.3) * 0.6
 	var h := 12.0 * (1.0 + stretch) * (0.94 + 0.06 * fl)

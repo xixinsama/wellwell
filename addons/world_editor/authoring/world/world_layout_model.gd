@@ -7,6 +7,12 @@ const ROOM_CONNECTION_DATA_SCRIPT: Script = preload("res://addons/platformer_kit
 const ROOM_PLACEMENT_DATA_SCRIPT: Script = preload("res://addons/platformer_kit/world/data/world_room_placement_data.gd")
 const WORLD_VALIDATION: Script = preload("res://addons/platformer_kit/world/data/world_validation.gd")
 
+## "Pick a chunk for me" marker used by the room importer's optional origin.
+## A signed 64-bit style sentinel so any real chunk is still expressible.
+const AUTO_ORIGIN := Vector2i(-2147483648, -2147483648)
+## Upper bound for the free-chunk search; a world this wide is already unusable.
+const FREE_ORIGIN_SEARCH_LIMIT := 512
+
 
 func add_room(world: WorldData, room: RoomData, origin_chunk: Vector2i = Vector2i.ZERO) -> Dictionary:
     if world == null:
@@ -60,6 +66,37 @@ func move_room(world: WorldData, room_id: String, origin_chunk: Vector2i) -> Dic
     if not world.set_room_origin_chunk(room_id, origin_chunk):
         return _error("could not update placement for room: %s" % room_id)
     return _success()
+
+
+## Returns [param desired] when a room of [param room_size_chunks] fits there
+## without touching another room, otherwise the nearest free chunk.
+##
+## Search order is deterministic: rings of growing Chebyshev distance around
+## [param desired], each ring scanned by (y, x). The result never overlaps an
+## existing room, so imported rooms land side by side instead of on top of each
+## other.
+func find_free_origin_chunk(world: WorldData, desired: Vector2i, room_size_chunks: Vector2i) -> Vector2i:
+    var size := _sanitized_room_size(room_size_chunks)
+    if _origin_is_free(world, desired, size):
+        return desired
+    for distance: int in range(1, FREE_ORIGIN_SEARCH_LIMIT + 1):
+        for candidate: Vector2i in _chebyshev_ring(desired, distance):
+            if _origin_is_free(world, candidate, size):
+                return candidate
+    return desired
+
+
+## First free chunk scanning row-major from (0, 0): an empty world yields
+## (0, 0), and a world already holding (0, 0) yields the next free chunk on that
+## row rather than a chunk above/left of the origin.
+func find_default_origin_chunk(world: WorldData, room_size_chunks: Vector2i) -> Vector2i:
+    var size := _sanitized_room_size(room_size_chunks)
+    for y: int in range(0, FREE_ORIGIN_SEARCH_LIMIT + 1):
+        for x: int in range(0, FREE_ORIGIN_SEARCH_LIMIT + 1):
+            var candidate := Vector2i(x, y)
+            if _origin_is_free(world, candidate, size):
+                return candidate
+    return Vector2i.ZERO
 
 
 func connect_rooms(world: WorldData, connection: RoomConnectionData) -> Dictionary:
@@ -180,6 +217,35 @@ func _duplicate_resources(values: Variant) -> Array[Resource]:
         if value is Resource:
             result.append((value as Resource).duplicate(true))
     return result
+
+
+func _sanitized_room_size(room_size_chunks: Vector2i) -> Vector2i:
+    return Vector2i(maxi(1, room_size_chunks.x), maxi(1, room_size_chunks.y))
+
+
+func _origin_is_free(world: WorldData, origin: Vector2i, room_size_chunks: Vector2i) -> bool:
+    if world == null:
+        return true
+    var candidate := Rect2i(origin, room_size_chunks)
+    for room_id: String in world.get_room_ids():
+        if candidate.intersects(world.get_room_chunk_rect(room_id)):
+            return false
+    return true
+
+
+func _chebyshev_ring(center: Vector2i, distance: int) -> Array[Vector2i]:
+    var ring: Array[Vector2i] = []
+    for dy: int in range(-distance, distance + 1):
+        for dx: int in range(-distance, distance + 1):
+            if maxi(absi(dx), absi(dy)) != distance:
+                continue
+            ring.append(center + Vector2i(dx, dy))
+    ring.sort_custom(func(left: Vector2i, right: Vector2i) -> bool:
+        if left.y != right.y:
+            return left.y < right.y
+        return left.x < right.x
+    )
+    return ring
 
 
 static func _is_room_data(resource: Resource) -> bool:

@@ -5,32 +5,32 @@
 [ext_resource type="Script" path="res://addons/fluid_kit/runtime/gas/gas_brush.gd" id="3_85iyd"]
 [ext_resource type="Script" path="res://scripts/world/room_light.gd" id="4_ml0p0"]
 
-[node name="RoomRuntimeContent" type="Node2D" unique_id=1037049986]
+[node name="RoomRuntimeContent" type="Node2D" unique_id=456856674]
 
-[node name="Foreground" type="Node2D" parent="." unique_id=1717232603]
+[node name="Foreground" type="Node2D" parent="." unique_id=1357761990]
 
-[node name="Entities" type="Node2D" parent="." unique_id=34201116]
+[node name="Entities" type="Node2D" parent="." unique_id=66358514]
 
-[node name="StartSpawn" type="Marker2D" parent="Entities" unique_id=466661001]
+[node name="StartSpawn" type="Marker2D" parent="Entities" unique_id=679699204]
 position = Vector2(48, 330)
 script = ExtResource("1_4dknn")
 
-[node name="GasField" type="Node2D" parent="Entities" unique_id=1124607729]
+[node name="GasField" type="Node2D" parent="Entities" unique_id=578801040]
 position = Vector2(320, 180)
 script = ExtResource("2_6xhg8")
 decay = 0.22
 
-[node name="GasBrush" type="Node2D" parent="Entities" unique_id=725328962]
+[node name="GasBrush" type="Node2D" parent="Entities" unique_id=2112998499]
 position = Vector2(320, 180)
 script = ExtResource("3_85iyd")
 
-[node name="LabLight_lab_left" type="Node2D" parent="Entities" unique_id=886876563]
+[node name="LabLight_lab_left" type="Node2D" parent="Entities" unique_id=1874925962]
 position = Vector2(96, 88)
 script = ExtResource("4_ml0p0")
 light_id = "lab_left"
 radius = 96.0
 
-[node name="LabLight_lab_right" type="Node2D" parent="Entities" unique_id=720593747]
+[node name="LabLight_lab_right" type="Node2D" parent="Entities" unique_id=1529529595]
 position = Vector2(560, 272)
 script = ExtResource("4_ml0p0")
 light_id = "lab_right"

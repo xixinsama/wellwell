@@ -109,6 +109,12 @@ layout_mode = 2
 size_flags_horizontal = 3
 mouse_filter = 2
 
+[node name="ViewMode3D" type="CheckButton" parent="CommandBar"]
+unique_name_in_owner = true
+layout_mode = 2
+tooltip_text = "View the stacked worlds in 3D; click a slice to edit that world"
+text = "3D"
+
 [node name="RoomsToggle" type="CheckButton" parent="CommandBar"]
 unique_name_in_owner = true
 layout_mode = 2
@@ -146,6 +152,35 @@ size_flags_vertical = 3
 allow_reselect = true
 script = ExtResource("4_list")
 
+[node name="LayerPanel" type="VBoxContainer" parent="Workspace/RoomListPanel"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 6
+
+[node name="LayerTitle" type="Label" parent="Workspace/RoomListPanel/LayerPanel"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Layers (Z)"
+
+[node name="LayerRows" type="VBoxContainer" parent="Workspace/RoomListPanel/LayerPanel"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 2
+
+[node name="LayerAdd" type="Button" parent="Workspace/RoomListPanel/LayerPanel"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "+ World"
+
+[node name="LayerHint" type="Label" parent="Workspace/RoomListPanel/LayerPanel"]
+unique_name_in_owner = true
+layout_mode = 2
+text = ""
+autowrap_mode = 3
+theme_override_font_sizes/font_size = 11
 [node name="RoomCount" type="Label" parent="Workspace/RoomListPanel"]
 unique_name_in_owner = true
 layout_mode = 2
@@ -245,6 +280,17 @@ text = "No world selected"
 [node name="SelectionLabel" type="Label" parent="StatusBar"]
 unique_name_in_owner = true
 layout_mode = 2
+
+[node name="ChunkField" type="LineEdit" parent="StatusBar"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(90, 0)
+layout_mode = 2
+placeholder_text = "x,y"
+
+[node name="ChunkGo" type="Button" parent="StatusBar"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Go"
 
 [node name="ZoomLabel" type="Label" parent="StatusBar"]
 unique_name_in_owner = true

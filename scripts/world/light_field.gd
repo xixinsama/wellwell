@@ -498,11 +498,11 @@ func _update_authored_lights() -> void:
 			continue
 		if node.has_method("get_light_state"):
 			var state: Dictionary = node.call("get_light_state", now)
-			var position := Vector2(state["position"]) - Vector2(_room_origin_pixels)
+			var light_position := Vector2(state["position"]) - Vector2(_room_origin_pixels)
 			var ring: PointLight2D = lights[0]
 			var spill: PointLight2D = lights[1]
-			ring.position = position
-			spill.position = position
+			ring.position = light_position
+			spill.position = light_position
 			ring.energy = float(state["energy"])
 			spill.energy = float(state["energy"]) * AUTHORED_SPILL
 			ring.color = Color(state["color"])

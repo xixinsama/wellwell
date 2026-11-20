@@ -86,7 +86,7 @@ static func key(p: Px.Painter, C: Array, cx: float, cy: float, a: float, gu: flo
 	L.outline(C[0]).draw(p)
 
 
-static func drawBack(p: Px.Painter, t: float, o: Dictionary) -> void:
+static func drawBack(p: Px.Painter, t: float, _o: Dictionary) -> void:
 	var D: float = meta.duration
 	var y: float = pose(t / D).y
 	Lib.blobShadow(p, 0.0, 10.0, 0.8 - (-y - HOVER + 1.6) * 0.06)

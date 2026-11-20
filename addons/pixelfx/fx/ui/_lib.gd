@@ -334,8 +334,8 @@ static func heartPal(C: Array) -> Dictionary:
 
 
 ## A whole-pixel shake that dies away: [dx, dy] at time t, amp px, from t0 over len seconds.
-static func shake(t: float, amp: float, t0: float = 0.0, len_: float = 0.3, seed: float = 1.0, hz: float = 32.0) -> Array:
+static func shake(t: float, amp: float, t0: float = 0.0, len_: float = 0.3, fx_seed: float = 1.0, hz: float = 32.0) -> Array:
 	if t < t0 or t > t0 + len_:
 		return [0.0, 0.0]
 	var k := 1.0 - (t - t0) / len_
-	return [Px.round(Px.noise(t * hz, seed) * amp * k * 1.7), Px.round(Px.noise(t * hz, seed + 7.0) * amp * k * 1.3)]
+	return [Px.round(Px.noise(t * hz, fx_seed) * amp * k * 1.7), Px.round(Px.noise(t * hz, fx_seed + 7.0) * amp * k * 1.3)]

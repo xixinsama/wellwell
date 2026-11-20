@@ -164,11 +164,11 @@ static func _toScreen(R: float, path: Array, u0: float, u1: float) -> Array:
 static var crackCache := {}
 
 
-static func cracks(R: float, seed: float, s: Dictionary) -> Array:
-	var key := "%s:%s" % [R, seed]
+static func cracks(R: float, fx_seed: float, s: Dictionary) -> Array:
+	var key := "%s:%s" % [R, fx_seed]
 	if crackCache.has(key):
 		return crackCache[key]
-	var rn := Px.Rng.new(seed * 13.0 + 5.0)
+	var rn := Px.Rng.new(fx_seed * 13.0 + 5.0)
 	var out := []
 	var slon: float = s.lon
 	var slat: float = s.lat

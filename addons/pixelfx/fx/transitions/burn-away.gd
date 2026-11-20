@@ -35,17 +35,17 @@ const LAYERS := [[1.0, 1.0, 2], [0.76, 0.86, 4], [0.54, 0.68, 6], [0.3, 0.42, 8]
 
 # where the fire reaches when: rising from the edges' midpoints (the corners go first), ragged at two scales,
 # and the bottom burns a little faster because fire climbs
-static func inField(seed: float) -> Dictionary:
+static func inField(fx_seed: float) -> Dictionary:
 	return Lib.field(func(x: float, y: float) -> float:
 		var ux := (x - W / 2.0) / (W / 2.0)
 		var uy := (y - H / 2.0) / (H / 2.0)
 		var m := pow(ux ** 4 + uy ** 4, 0.25)
-		return (1.0 - m) * SC + 14.0 * Px.fbm(x / 44.0, y / 44.0, seed, 3) + 2.4 * Px.fbm(x / 7.0, y / 7.0, seed + 9.0, 2) + 7.0 * (0.5 - y / H))
+		return (1.0 - m) * SC + 14.0 * Px.fbm(x / 44.0, y / 44.0, fx_seed, 3) + 2.4 * Px.fbm(x / 7.0, y / 7.0, fx_seed + 9.0, 2) + 7.0 * (0.5 - y / H))
 
 
 # the hole: from a spot near the middle (and two smaller ones that catch a beat later) out to the corners
-static func outField(seed: float) -> Dictionary:
-	var R := Px.Rng.new(seed * 31.0 + 5.0)
+static func outField(fx_seed: float) -> Dictionary:
+	var R := Px.Rng.new(fx_seed * 31.0 + 5.0)
 	var ox := W / 2.0 + R.range(-26, 26)
 	var oy := H / 2.0 + R.range(-14, 6)
 	var sats := []
@@ -55,7 +55,7 @@ static func outField(seed: float) -> Dictionary:
 		var v := Px.hypot((x - ox) / (W / 2.0), (y - oy) / (H / 2.0)) * SC
 		for s: Dictionary in sats:
 			v = minf(v, s.d + Px.hypot((x - s.x) / (W / 2.0), (y - s.y) / (H / 2.0)) * SC * 1.15)
-		return v + 13.0 * Px.fbm(x / 40.0, y / 40.0, seed + 21.0, 3) + 2.4 * Px.fbm(x / 7.0, y / 7.0, seed + 33.0, 2))
+		return v + 13.0 * Px.fbm(x / 40.0, y / 40.0, fx_seed + 21.0, 3) + 2.4 * Px.fbm(x / 7.0, y / 7.0, fx_seed + 33.0, 2))
 	f.ox = ox
 	f.oy = oy
 	return f
@@ -85,7 +85,7 @@ static func tongue(p: Px.Painter, F: Array, x: float, y: float, h: float, w: flo
 var F: Array
 var ink: int
 var R: Px.Rng
-var seed: float
+var fx_seed: float
 var CHAR: int
 var SCORCH: int
 var WARM: int
@@ -126,13 +126,13 @@ func create(o: Dictionary) -> void:
 	F = Px.fit(o.palette, 9)
 	ink = Px.hex(o.color)
 	R = Px.Rng.new(o.seed)
-	seed = o.seed * 13.0
+	fx_seed = o.seed * 13.0
 	CHAR = Px.mix(ink, F[0], 0.45)
 	SCORCH = Px.mix(ink, Px.hex("#3a2216"), 0.6)
 	WARM = Px.mix(F[4], F[5], 0.4)
 	SMOKE = Px.mix(Px.hex("#8a7276"), F[2], 0.2)
-	A = inField(seed)
-	B = outField(seed + 1.0)
+	A = inField(fx_seed)
+	B = outField(fx_seed + 1.0)
 	heat.resize(W * H)
 	ph.resize(W * H)
 	fleck.resize(W * H)
@@ -141,13 +141,13 @@ func create(o: Dictionary) -> void:
 	for i in W * H:
 		var x := i % W
 		var y := floori(i / float(W))
-		heat[i] = 0.5 + 0.5 * Px.noise2(x / 13.0, y / 13.0, seed + 41.0)
-		ph[i] = mini(63, floori((0.5 + 0.5 * Px.noise2(x / 23.0, y / 23.0, seed + 43.0)) * 64.0))
-		fleck[i] = 9.0 + 22.0 * Px.rand(x, y, seed + 47.0) if Px.rand(x, y, seed + 45.0) < 0.04 else 0.0
-		jit[i] = (Px.rand(x, y, seed + 49.0) - 0.5) * 1.5
+		heat[i] = 0.5 + 0.5 * Px.noise2(x / 13.0, y / 13.0, fx_seed + 41.0)
+		ph[i] = mini(63, floori((0.5 + 0.5 * Px.noise2(x / 23.0, y / 23.0, fx_seed + 43.0)) * 64.0))
+		fleck[i] = 9.0 + 22.0 * Px.rand(x, y, fx_seed + 47.0) if Px.rand(x, y, fx_seed + 45.0) < 0.04 else 0.0
+		jit[i] = (Px.rand(x, y, fx_seed + 49.0) - 0.5) * 1.5
 		var rx := x * 0.8 + y * 0.6  # off the pixel grid, so cracks don't run square
 		var ry := y * 0.8 - x * 0.6
-		vein[i] = minf(absf(Px.noise2(rx / 11.0, ry / 9.0, seed + 61.0)), absf(Px.noise2(ry / 5.5, rx / 5.0, seed + 63.0)) * 1.5)
+		vein[i] = minf(absf(Px.noise2(rx / 11.0, ry / 9.0, fx_seed + 61.0)), absf(Px.noise2(ry / 5.5, rx / 5.0, fx_seed + 63.0)) * 1.5)
 	FL.resize(64)
 	HV.resize(64)
 	TW.resize(64)
@@ -418,13 +418,13 @@ func draw(p0: Px.Painter) -> void:
 			var x := i % W
 			var y := floori(i / float(W))
 			var dn := -ny[i] if inPhase else ny[i]
-			var h0 := Px.rand(x, y >> 3, seed + 51.0)
+			var h0 := Px.rand(x, y >> 3, fx_seed + 51.0)
 			if h0 > 0.12 + 0.6 * maxf(0.0, dn):
 				continue
 			var n := (x * 7 + (y >> 4) * 131) % 977
 			var hv := heat[i]
 			var leap := 1.0 + maxf(0.0, Px.noise(t * 2.6 + n * 3.1, n + 70) - 0.5) * 1.8
-			var h := (5.0 + 7.0 * Px.rand(x, 1, seed + 53.0)) * (0.6 + 0.4 * Px.noise(t * 3.3 + n * 1.7, n)) * (0.6 + 0.6 * hv) * leap * fade * (0.65 + 0.5 * dn if dn > 0.0 else 0.5)
+			var h := (5.0 + 7.0 * Px.rand(x, 1, fx_seed + 53.0)) * (0.6 + 0.4 * Px.noise(t * 3.3 + n * 1.7, n)) * (0.6 + 0.6 * hv) * leap * fade * (0.65 + 0.5 * dn if dn > 0.0 else 0.5)
 			if h >= 1.5:
 				tongue(p, F, x + 0.5, y + 1.0, h, (1.1 + 0.7 * hv) * (0.8 + h / 16.0), Px.noise(t * 2.2 + n, n + 40) * 1.5, t, n)
 	drawSmoke(p, p0)

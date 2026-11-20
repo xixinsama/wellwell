@@ -37,8 +37,8 @@ static func thump(ph: float) -> float:
 
 
 # little hearts drifting up (half of them behind the character)
-static func hearts(p: Px.Painter, C: Array, a: Dictionary, t: float, seed: float, back: bool) -> void:
-	Px.cycle(t, D, 12, seed + 4.0, func(r): return r.range(1.3, 1.9), func(age, life, r, i):
+static func hearts(p: Px.Painter, C: Array, a: Dictionary, t: float, fx_seed: float, back: bool) -> void:
+	Px.cycle(t, D, 12, fx_seed + 4.0, func(r): return r.range(1.3, 1.9), func(age, life, r, i):
 		if (i % 3 == 0) != back:
 			return
 		var u: float = age / life

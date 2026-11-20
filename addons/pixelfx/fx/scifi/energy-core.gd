@@ -174,7 +174,7 @@ static func hoop(p: Px.Painter, y: float, rx: float, H: Array, C: Array, near: b
 
 # the core: dark plasma held in a hard rim, thin bright bands churning round a white-hot heart, filaments
 # flickering out from it; a thump floods it with light
-static func core(p: Px.Painter, t: float, C: Array, R: float, pulse: float, seed: float) -> void:
+static func core(p: Px.Painter, t: float, C: Array, R: float, pulse: float, fx_seed: float) -> void:
 	var ph := t / D
 	p.shade(-R - 2.0, CY - R - 2.0, R + 2.0, CY + R + 2.0, func(x: float, y: float, out):
 		var dx := x
@@ -189,7 +189,7 @@ static func core(p: Px.Painter, t: float, C: Array, R: float, pulse: float, seed
 			out.c = C[6] if (dy < -R * 0.3 and dx < R * 0.3) else C[4]
 			return
 		var a := atan2(dy, dx)
-		var n := 0.5 + 0.5 * Px.tileFbm((a / TAU) * 6.0 + ph * 6.0 + d * 1.5, d * 2.2 - ph * 4.0, 6.0, 4.0, seed, 2)
+		var n := 0.5 + 0.5 * Px.tileFbm((a / TAU) * 6.0 + ph * 6.0 + d * 1.5, d * 2.2 - ph * 4.0, 6.0, 4.0, fx_seed, 2)
 		var band := absf(n - 0.5) < 0.05 + 0.05 * pulse
 		var heat := pow(1.0 - d, 2.0) + pulse * 0.45
 		if band:
@@ -198,7 +198,7 @@ static func core(p: Px.Painter, t: float, C: Array, R: float, pulse: float, seed
 			out.c = C[6] if heat > 0.7 else (C[5] if heat > 0.42 else (C[3] if heat > 0.2 else (C[2] if n > 0.5 else C[1]))))
 	# filaments, redrawn every other frame
 	var f := floori(t * 15.0)
-	var r := Px.rng(seed, f, 5)
+	var r := Px.rng(fx_seed, f, 5)
 	for i in 3:
 		var a := (i / 3.0) * TAU + f * 0.7 + r.range(-0.4, 0.4)
 		var pts := Px.bolt(r, 0.0, CY, cos(a) * R * 0.88, CY + sin(a) * R * 0.88, {"jag": 0.32, "depth": 3})

@@ -46,8 +46,8 @@ static func ringR(y: float) -> float:
 
 
 # leaves riding the spiral: up from the floor, round two turns or so, flung out off the top
-static func leaves(p: Px.Painter, L: Array, t: float, seed: float, back: bool) -> void:
-	Px.cycle(t, meta.duration, 28, seed, func(g): return g.range(1.5, 2.3), func(age: float, life: float, R: Px.Rng):
+static func leaves(p: Px.Painter, L: Array, t: float, fx_seed: float, back: bool) -> void:
+	Px.cycle(t, meta.duration, 28, fx_seed, func(g): return g.range(1.5, 2.3), func(age: float, life: float, R: Px.Rng):
 		var k := age / life
 		var turns := R.range(1.4, 2.2)
 		var th := R.range(0.0, TAU) + turns * TAU * k
@@ -73,9 +73,9 @@ static func leaves(p: Px.Painter, L: Array, t: float, seed: float, back: bool) -
 
 # wind bands: 1 px streaks on tilted rings round the character, bright at the head, fading behind, the far
 # halves dimmer and behind it
-static func wind(p: Px.Painter, C: Array, t: float, seed: float, back: bool) -> void:
+static func wind(p: Px.Painter, C: Array, t: float, fx_seed: float, back: bool) -> void:
 	for j in 16:
-		var R := Px.rng(seed, j)
+		var R := Px.rng(fx_seed, j)
 		var y0 := -R.range(4.0, TOP - 4.0)
 		var r := ringR(y0) * R.range(1.0, 1.25)
 		var K := R.int_(2, 3)
@@ -103,8 +103,8 @@ static func wind(p: Px.Painter, C: Array, t: float, seed: float, back: bool) -> 
 
 
 # at the feet: litter and dust swept round on the floor
-static func swirl(p: Px.Painter, C: Array, L: Array, t: float, seed: float, back: bool) -> void:
-	Px.cycle(t, meta.duration, 14, seed, func(g): return g.range(0.6, 1.1), func(age: float, life: float, R: Px.Rng):
+static func swirl(p: Px.Painter, C: Array, _L: Array, t: float, fx_seed: float, back: bool) -> void:
+	Px.cycle(t, meta.duration, 14, fx_seed, func(g): return g.range(0.6, 1.1), func(age: float, life: float, R: Px.Rng):
 		var k := age / life
 		var th := R.range(0.0, TAU) + R.range(6.0, 9.0) * age
 		var sn := sin(th)
@@ -116,7 +116,7 @@ static func swirl(p: Px.Painter, C: Array, L: Array, t: float, seed: float, back
 		var s := R.range(2.0, 3.5) * (0.6 + k)
 		p.disc(x, y, s, C[2] if back else C[3], (1.0 - k) * minf(1.0, k * 6.0) * 0.3))
 	for j in 6:
-		var R := Px.rng(seed + 9.0, j)
+		var R := Px.rng(fx_seed + 9.0, j)
 		var rr := R.range(12.0, 24.0)
 		var th0: float = R.range(0.0, TAU) + (TAU * 3.0 * t) / meta.duration
 		var span := R.range(0.5, 1.0)

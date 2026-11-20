@@ -78,7 +78,7 @@ static func drop(p: Px.Painter, C: Array, x: float, y: float, v: float, s: int) 
 
 
 # a splat where a drop lands: it spreads, throws a crown of droplets, then dries darker and fades
-static func splat(p: Px.Painter, C: Array, x: float, ground: float, age: float, big: bool, seed: int) -> void:
+static func splat(p: Px.Painter, C: Array, x: float, ground: float, age: float, big: bool, fx_seed: int) -> void:
 	var life := D * 0.85
 	if age < 0.0 or age > life:
 		return
@@ -93,8 +93,8 @@ static func splat(p: Px.Painter, C: Array, x: float, ground: float, age: float, 
 	# the crown
 	if age < 0.4:
 		for j in (3 if big else 2):
-			var vx := (1.0 if j % 2 else -1.0) * (18.0 + 24.0 * Px.rand(seed, j, 1))
-			var vy := -(40.0 + 40.0 * Px.rand(seed, j, 2))
+			var vx := (1.0 if j % 2 else -1.0) * (18.0 + 24.0 * Px.rand(fx_seed, j, 1))
+			var vy := -(40.0 + 40.0 * Px.rand(fx_seed, j, 2))
 			var tt := age
 			var dx := vx * tt
 			var dy := vy * tt + 0.5 * G * tt * tt

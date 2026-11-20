@@ -5,10 +5,12 @@ extends Node
 
 const ANNOTATIONS := preload("res://addons/world_editor/authoring/world/room_annotation_service.gd")
 const ROOM_DATA := preload("res://addons/platformer_kit/world/data/room_data.gd")
+const WORLD_DATA := preload("res://addons/platformer_kit/world/data/world_data.gd")
 const SPAWN := preload("res://addons/platformer_kit/world/entities/spawn_point.gd")
 const ENTRANCE := preload("res://addons/platformer_kit/world/entities/room_entrance.gd")
 const SAVE := preload("res://addons/platformer_kit/world/entities/save_point.gd")
 const CUSTOM := preload("res://addons/platformer_kit/world/entities/world_entity.gd")
+const DOOR := preload("res://addons/platformer_kit/world/entities/world_door.gd")
 const SCENE := "user://world_annotations.tscn"
 
 
@@ -16,6 +18,7 @@ func run() -> Array[String]:
     var failures: Array[String] = []
     _build_scene()
     _assert_collects_anchors(failures)
+    _assert_door_annotation(failures)
     _assert_cache_hits(failures)
     _assert_missing_scene(failures)
     DirAccess.remove_absolute(ProjectSettings.globalize_path(SCENE))
@@ -25,13 +28,38 @@ func run() -> Array[String]:
 func _assert_collects_anchors(failures: Array[String]) -> void:
     var service := ANNOTATIONS.new() as RoomAnnotationService
     var annotations := service.collect(_make_room())
-    if annotations.size() != 4:
-        failures.append("expected 4 annotations, got %d" % annotations.size())
+    if annotations.size() != 5:
+        failures.append("expected 5 annotations, got %d" % annotations.size())
         return
     _assert_annotation(annotations, RoomAnnotationService.TYPE_SPAWN, "start", Vector2(20, 12), failures)
     _assert_annotation(annotations, RoomAnnotationService.TYPE_ENTRANCE, "east", Vector2(52, 12), failures)
     _assert_annotation(annotations, RoomAnnotationService.TYPE_SAVE, "save_a", Vector2(28, 28), failures)
     _assert_annotation(annotations, RoomAnnotationService.TYPE_WORLD_ENTITY, "custom", Vector2(12, 36), failures)
+    _assert_annotation(annotations, RoomAnnotationService.TYPE_DOOR, "door_a", Vector2(44, 40), failures)
+
+
+func _assert_door_annotation(failures: Array[String]) -> void:
+    var service := ANNOTATIONS.new() as RoomAnnotationService
+    var annotations := service.collect(_make_room())
+    var door: Dictionary = {}
+    for annotation: Dictionary in annotations:
+        if String(annotation.get("id", "")) == "door_a":
+            door = annotation
+    if door.is_empty():
+        failures.append("missing door annotation door_a")
+        return
+    if door.get("type", &"") != RoomAnnotationService.TYPE_DOOR:
+        failures.append("door annotation was typed %s instead of door" % str(door.get("type", &"")))
+    if door.get("type", &"") == RoomAnnotationService.TYPE_WORLD_ENTITY:
+        failures.append("door annotation was typed world_entity")
+    if int(door.get("door_kind", -1)) != DOOR.Kind.SHUTTLE:
+        failures.append("door annotation lost its door_kind")
+    if String(door.get("target_world_id", "")) != "shadow_world":
+        failures.append("door annotation lost its target_world_id")
+    if String(door.get("target_room_id", "")) != "room_shadow":
+        failures.append("door annotation lost its target_room_id")
+    if String(door.get("target_door_id", "")) != "door_b":
+        failures.append("door annotation lost its target_door_id")
 
 
 func _assert_annotation(
@@ -108,6 +136,18 @@ func _build_scene() -> void:
     custom.entity_id = "custom"
     custom.position = Vector2(8, 32)
     entities.add_child(custom)
+
+    var target_world := WORLD_DATA.new() as WorldData
+    target_world.world_id = "shadow_world"
+    var door := DOOR.new() as WorldDoor
+    door.name = "ShuttleDoor"
+    door.entity_id = "door_a"
+    door.door_kind = DOOR.Kind.SHUTTLE
+    door.target_world = target_world
+    door.target_room_id = "room_shadow"
+    door.target_door_id = "door_b"
+    door.position = Vector2(40, 36)
+    entities.add_child(door)
 
     entities.owner = root
     for child: Node in entities.get_children():

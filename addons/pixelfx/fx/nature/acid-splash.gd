@@ -79,8 +79,8 @@ func create(o: Dictionary) -> void:
 	wisps = []
 	pops = []
 	spikes = Px.arr(13, func(i: int) -> Dictionary: return {"a": (i / 13.0) * TAU + R.range(-0.18, 0.18), "h": R.range(4.0, 10.0), "r": R.range(0.85, 1.12), "shed": false})
-	var seed: float = o.seed
-	rag = Px.arr(80, func(i: int) -> float: return Px.rand(i, seed, 5) - 0.5)
+	var fx_seed: float = o.seed
+	rag = Px.arr(80, func(i: int) -> float: return Px.rand(i, fx_seed, 5) - 0.5)
 	t = 0.0
 	hit = false
 

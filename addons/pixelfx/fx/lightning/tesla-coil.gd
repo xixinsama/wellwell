@@ -43,8 +43,8 @@ const FL := [1.0, 0.7, 0.95, 0.55, 0.85, 0.45, 0.7, 0.35]
 
 
 # the loop's events, frame by frame: volleys of arcs off the torus, and two zaps to the floor
-static func plan(seed: float) -> Dictionary:
-	var r := Px.rng(seed, 1)
+static func plan(fx_seed: float) -> Dictionary:
+	var r := Px.rng(fx_seed, 1)
 	var arcs := []
 	var strikes := []
 	for vn: Array in [[2, 3], [20, 3], [30, 1], [38, 3], [56, 3], [66, 1]]:

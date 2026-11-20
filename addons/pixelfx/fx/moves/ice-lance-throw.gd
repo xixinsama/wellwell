@@ -52,4 +52,5 @@ static var CHAIN := Px.chain([
 	{"fx": Lance, "t": THROW, "until": HIT, "x": func(t): return 34 + (t - THROW) * SPEED, "y": -24},
 	{"fx": Burst, "t": HIT, "x": TX, "y": -26},
 ])
-static func create(o: Dictionary): return CHAIN.create(o)
+static func create(o: Dictionary):
+	return CHAIN.create(o)

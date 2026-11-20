@@ -217,6 +217,9 @@ script = ExtResource("13_xfqtc")
 
 [node name="Atmosphere" type="Node2D" parent="PreviewOnly" unique_id=1277597002]
 script = ExtResource("14_y1als")
+pressure_iterations = 32
+gas_cell_pixels = 1.0
+gas_diffusion = 1.0
 
 [node name="FogOfWar" type="Node2D" parent="PreviewOnly" unique_id=1324736546]
 z_index = 10

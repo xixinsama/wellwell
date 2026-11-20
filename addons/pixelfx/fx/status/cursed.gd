@@ -50,8 +50,8 @@ const GONE := 2.1
 # how high the stain has crept at column x (0 at the feet, 1 at the head), a slow tide with crawling tendrils
 static func tide(t: float) -> float:
 	return 0.3 + 0.12 * sin((t / D) * TAU)
-static func reach(x: float, t: float, seed: float) -> float:
-	return tide(t) + 0.13 * Px.tileFbm(x * 0.35, (t / D) * 4.0, 0.0, 4.0, seed, 2)
+static func reach(x: float, t: float, fx_seed: float) -> float:
+	return tide(t) + 0.13 * Px.tileFbm(x * 0.35, (t / D) * 4.0, 0.0, 4.0, fx_seed, 2)
 
 
 # smoke trails: each rises from a spot on the body as a ribbon of soft puffs that wind as they climb, swell, cool

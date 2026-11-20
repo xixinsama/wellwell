@@ -65,7 +65,7 @@ static func streak(p: Px.Painter, x: float, y: float, vx: float, vy: float, c: i
 
 
 ## A crackling arc from (x0, y0) to (x1, y1): a jagged main path plus forks, as [{ pts, w }]. r is an Rng, so
-## re-seed it every couple of frames for flicker. opts: { jag = 0.3, forks = 1, forkLen = 0.5 }.
+## re-fx_seed it every couple of frames for flicker. opts: { jag = 0.3, forks = 1, forkLen = 0.5 }.
 static func arc(r: Px.Rng, x0: float, y0: float, x1: float, y1: float, opts: Dictionary = {}) -> Array:
 	var jag: float = opts.get("jag", 0.3)
 	var forks: float = opts.get("forks", 1.0)

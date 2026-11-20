@@ -46,7 +46,7 @@ static func draw(p: Px.Painter, t: float, o: Dictionary) -> void:
 	var S: float = o.seed
 	var L: float = o.reach
 	var V: float = o.speed
-	var N := func(rate: float, seed: Variant = 0, off: float = 0.0) -> float: return NL.call(t, rate, seed, off)
+	var N := func(rate: float, fx_seed: Variant = 0, off: float = 0.0) -> float: return NL.call(t, rate, fx_seed, off)
 	var GLOW := Px.mix(Px.mix(H[3], H[4], 0.5), WHITE, 0.25)
 	var SPARKS := [H[1], H[2], H[4], H[5]]
 	var SMOKE := Px.mix(SOOT, H[7], 0.3)

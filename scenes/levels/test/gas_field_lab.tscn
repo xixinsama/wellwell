@@ -1,12 +1,12 @@
-[gd_scene format=4]
+[gd_scene format=4 uid="uid://bnm8u7glvcusk"]
 
-[ext_resource type="Script" path="res://addons/world_editor/authoring/room/room_authoring_root.gd" id="1_j3yrr"]
-[ext_resource type="TileSet" path="res://resources/tilesets/primordial_tileset.tres" id="2_6evwh"]
-[ext_resource type="Script" path="res://addons/platformer_kit/world/entities/spawn_point.gd" id="3_kqh1y"]
-[ext_resource type="Script" path="res://addons/fluid_kit/runtime/gas/gas_field.gd" id="4_stwce"]
-[ext_resource type="Script" path="res://addons/fluid_kit/runtime/gas/gas_brush.gd" id="5_7jbgy"]
-[ext_resource type="Script" path="res://scripts/world/room_light.gd" id="6_wabb5"]
-[ext_resource type="Script" path="res://addons/fluid_kit/runtime/gas/atmosphere.gd" id="7_fxkcc"]
+[ext_resource type="Script" uid="uid://chnjcov24wxi" path="res://addons/world_editor/authoring/room/room_authoring_root.gd" id="1_j3yrr"]
+[ext_resource type="TileSet" uid="uid://ct7c6ejoixgkq" path="res://resources/tilesets/primordial_tileset.tres" id="2_6evwh"]
+[ext_resource type="Script" uid="uid://bo5asnakkt3ao" path="res://addons/platformer_kit/world/entities/spawn_point.gd" id="3_kqh1y"]
+[ext_resource type="Script" uid="uid://qyqfqj4hdv5g" path="res://addons/fluid_kit/runtime/gas/gas_field.gd" id="4_stwce"]
+[ext_resource type="Script" uid="uid://dim7e844mp1yg" path="res://addons/fluid_kit/runtime/gas/gas_brush.gd" id="5_7jbgy"]
+[ext_resource type="Script" uid="uid://vteq1agj2p7w" path="res://scripts/world/room_light.gd" id="6_wabb5"]
+[ext_resource type="Script" uid="uid://fqwahtimacjq" path="res://addons/fluid_kit/runtime/gas/atmosphere.gd" id="7_fxkcc"]
 
 [node name="gas_field_lab" type="Node2D" unique_id=371025075]
 script = ExtResource("1_j3yrr")

@@ -37,18 +37,18 @@ static func shake(t: float) -> int:
 
 # worked out once per character: fern paths creeping in from the outline, icicle roots, snow ledges, the mouth
 static var PLANS := {}
-static func plan(a: Dictionary, seed: float) -> Dictionary:
+static func plan(a: Dictionary, fx_seed: float) -> Dictionary:
 	var m: Variant = PLANS.get(a.mask.id)
 	if not m:
 		m = {}
 		PLANS[a.mask.id] = m
-	if m.has(seed):
-		return m[seed]
+	if m.has(fx_seed):
+		return m[fx_seed]
 	var S := Lib.shape(a)
 	var H: int = S.h
 	var W: int = S.w
 	var on: Callable = S.on
-	var R := Px.Rng.new(seed * 11.0 + 1.0)
+	var R := Px.Rng.new(fx_seed * 11.0 + 1.0)
 	# ferns: a stem walking in from an edge with fronds branching off it at alternate sides, each pixel ordered by when it grows
 	var ferns := []
 	var roots: Array = Px.sort(S.side.filter(func(xyd): return xyd[1] > H * 0.2 and xyd[1] < H * 0.85), func(_p, _q): return R.next() - 0.5).slice(0, 6)
@@ -101,11 +101,11 @@ static func plan(a: Dictionary, seed: float) -> Dictionary:
 		var xyc: Array = picks[i]
 		icicles.append({"x": xyc[0], "y": xyc[1] + 1, "len": minf(xyc[2] - 1, R.range(3.0, 5.5)), "phase": R.next(), "period": 1.0 if i % 2 else 2.0})
 	# snow ledges: the upward edges of the head and the shoulders
-	var snow: Array = S.up.filter(func(xy): return xy[1] < H * 0.6).map(func(xy): return [xy[0], xy[1], 1 + (1 if Px.rand(xy[0], seed, 3) < 0.45 else 0)])
+	var snow: Array = S.up.filter(func(xy): return xy[1] < H * 0.6).map(func(xy): return [xy[0], xy[1], 1 + (1 if Px.rand(xy[0], fx_seed, 3) < 0.45 else 0)])
 	var E := Lib.eyes(a)
 	var mouth := [(E[0].x1 + E[1].x0 + 1) / 2.0, maxi(E[0].y1, E[1].y1) + 2] if E.size() == 2 else [W / 2.0, H * 0.38]
 	var out := {"ferns": ferns, "icicles": icicles, "snow": snow, "mouth": mouth}
-	m[seed] = out
+	m[fx_seed] = out
 	return out
 
 

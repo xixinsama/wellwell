@@ -277,9 +277,9 @@ class Target:
 	var R: Px.Rng
 	var straw: Array = []
 
-	func _init(px: float, seed: Variant = 5) -> void:
+	func _init(px: float, rng_seed: Variant = 5) -> void:
 		x = px
-		R = Px.Rng.new(seed)
+		R = Px.Rng.new(rng_seed)
 
 	func hit(h: Dictionary) -> void:
 		var push: float = h.push if h.get("push") != null else 1.2
@@ -388,7 +388,7 @@ class ActInstance:
 	var meta: Dictionary
 	var D: float
 	var flip: bool
-	var seed: float
+	var act_seed: float
 	var fx: Px.Fx.Instance
 	var track: Array
 	var span: Dictionary
@@ -424,7 +424,7 @@ class ActInstance:
 		D = meta.duration
 		flip = true if o.get("flip") else false
 		var mo: Dictionary = meta.get("options", {})
-		seed = o.seed if o.get("seed") != null else (mo.seed if mo.get("seed") != null else 1.0)
+		act_seed = o.seed if o.get("seed") != null else (mo.seed if mo.get("seed") != null else 1.0)
 		fx = Px.Fx.createFx(m, o)
 		track = a.poses if a.get("poses") != null else [[0, Px.merge(Px.Rig.STAND)]]
 		span = Px.Act.actSpan(m)
@@ -432,12 +432,12 @@ class ActInstance:
 		Y = o.y if o.get("y") != null else 0.0
 		var tl: Array = Px.Act._targets(a)
 		for i in tl.size():
-			targets.append(Px.Act.Target.new(tl[i].x if tl[i].get("x") != null else 66.0, seed + 4 + i))
+			targets.append(Px.Act.Target.new(tl[i].x if tl[i].get("x") != null else 66.0, act_seed + 4 + i))
 		for h in a.get("hits", []):
 			hits.append((h as Dictionary).duplicate())
 		Px.sort(hits, func(p, q): return p.t - q.t)
 		dust = (a.get("dust", []) as Array).duplicate()
-		R = Px.Rng.new(seed + 9)
+		R = Px.Rng.new(act_seed + 9)
 		# after-images take the effect's own color unless the act names one
 		var rmp: Variant = o.palette if o.get("palette") != null else mo.get("palette")
 		var g: Variant = a.get("ghost")

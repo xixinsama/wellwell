@@ -44,21 +44,21 @@ direction = 2
 [sub_resource type="Resource" id="Resource_nmwcm"]
 script = ExtResource("2_gmmt2")
 room_id = "loop_entry"
-
-[sub_resource type="Resource" id="Resource_dwkou"]
-script = ExtResource("2_gmmt2")
-room_id = "loop_split"
-origin_chunk = Vector2i(1, 0)
+origin_chunk = Vector2i(0, 1)
 
 [sub_resource type="Resource" id="Resource_6gmoa"]
 script = ExtResource("2_gmmt2")
 room_id = "loop_gallery"
-origin_chunk = Vector2i(1, -1)
+origin_chunk = Vector2i(1, 0)
 
 [sub_resource type="Resource" id="Resource_2ptwi"]
 script = ExtResource("2_gmmt2")
 room_id = "loop_relay"
-origin_chunk = Vector2i(0, -1)
+
+[sub_resource type="Resource" id="Resource_dwkou"]
+script = ExtResource("2_gmmt2")
+room_id = "loop_split"
+origin_chunk = Vector2i(1, 1)
 
 [sub_resource type="Resource" id="Resource_arrxv"]
 script = ExtResource("3_776cy")
@@ -75,7 +75,7 @@ description = "下沉、涉水、崩塌、骑行与冲刺：一条绕回起点�
 start_room_id = "loop_entry"
 start_spawn_id = "start"
 rooms = Array[Resource]([ExtResource("4_4csbw"), ExtResource("5_t5as1"), ExtResource("6_7bogd"), ExtResource("7_q3a80")])
-placements = Array[Resource]([SubResource("Resource_nmwcm"), SubResource("Resource_dwkou"), SubResource("Resource_6gmoa"), SubResource("Resource_2ptwi")])
+placements = Array[Resource]([SubResource("Resource_nmwcm"), SubResource("Resource_6gmoa"), SubResource("Resource_2ptwi"), SubResource("Resource_dwkou")])
 connections = Array[Resource]([SubResource("Resource_joerp"), SubResource("Resource_nr7op"), SubResource("Resource_0uyql"), SubResource("Resource_o1308")])
 regions = Array[Resource]([SubResource("Resource_arrxv")])
 tags = PackedStringArray()

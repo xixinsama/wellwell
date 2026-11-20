@@ -57,9 +57,9 @@ static func at(t: float, hover: float) -> Dictionary:
 
 
 # veins: branching red threads creeping in from the rim, fixed to the eyeball's surface
-static func veins(seed: float) -> Array:
+static func veins(fx_seed: float) -> Array:
 	var out := []
-	var r := Px.rng(seed, 77)
+	var r := Px.rng(fx_seed, 77)
 	for i in 7:
 		var a := (i / 7.0) * TAU + r.range(-0.3, 0.3)
 		var d := R - 0.5
@@ -72,13 +72,13 @@ static func veins(seed: float) -> Array:
 	return out
 
 
-static func eye(g: Lib.Grid, C: Array, Fl: Array, I: Array, t: float, seed: float) -> void:
+static func eye(g: Lib.Grid, C: Array, Fl: Array, I: Array, t: float, fx_seed: float) -> void:
 	g.clear()
 	var lxy := look(t)
 	var lx: float = lxy[0]
 	var ly: float = lxy[1]
 	var L := lid(t)
-	var V := veins(seed)
+	var V := veins(fx_seed)
 	var lit := func(x: float, y: float, k: float) -> bool:
 		return Px.hypot(-4.0 + (x + 4.0) / k, -4.5 + (y + 4.5) / k) <= R
 	# the sclera: a wet sphere lit from the top-left, pinker in its shadow
