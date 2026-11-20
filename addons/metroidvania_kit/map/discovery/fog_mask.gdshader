@@ -35,7 +35,7 @@ uniform float distance_range = 64.0;
 
 // --- edge shape -----------------------------------------------------------
 // How far the noise may push the border out or in, in pixels.
-uniform float tendril_pixels = 7.0;
+uniform float tendril_pixels = 4.0;
 // Half width of the anti-aliased cut in pixels (0 = hard pixel edge).
 uniform float edge_softness = 1.6;
 uniform float noise_scale = 13.0;
@@ -46,7 +46,7 @@ uniform float noise_warp = 0.65;
 // --- breathing ------------------------------------------------------------
 // A very low frequency swell added to the cut, so the whole shadow slowly
 // inhales and exhales instead of only shimmering along its border.
-uniform float breath_pixels = 3.0;
+uniform float breath_pixels = 1.5;
 uniform float breath_scale = 46.0;
 uniform float breath_speed = 0.16;
 
@@ -63,8 +63,23 @@ uniform bool animate = true;
 // behind it stay black.
 uniform sampler2D light_tex : filter_linear, repeat_disable;
 uniform vec2 light_pixels = vec2(320.0, 180.0);
-uniform float light_push_px = 10.0;
+uniform float light_push_px = 3.0;
 uniform float light_gain = 1.0;
+// --- hero recess ----------------------------------------------------------
+// The fog gives way around the hero on *every* side, not only where the lantern
+// happens to light something. The light map alone could only ever do the floor:
+// walls and ceilings are occluded, so their border never moved (measured: the
+// light push changed rows 168..173 and the top band, and nothing along a wall).
+// This term is radial and bounded, so the border can never slide more than a few
+// pixels, which is what keeps the recess reading as "the mist leans away" instead
+// of "a whole row of fog vanished".
+uniform vec2 hero_center_px = vec2(-99999.0, -99999.0);
+uniform float hero_push_px = 5.0;
+uniform float hero_push_radius_px = 44.0;
+// Hard ceiling on how far the border may be pushed away in one frame (recession),
+// shared by the hero and the light terms. The fringe on the other side is bounded
+// by tendril_pixels instead.
+uniform float max_push_px = 7.0;
 // --- focus ----------------------------------------------------------------
 // focus_room spotlight. It is a shader term and not a mask channel on purpose:
 // the bubble is centred on the hero body and follows it every frame, so baking
@@ -145,18 +160,20 @@ float bayer4(vec2 p) {
 	return (4.0 * inner + outer + 0.5) / 16.0;
 }
 
-// Bilinear read of the per-cell distance field, interpolated between cell
-// centres so the border is continuous inside a cell instead of a staircase.
-float cell_distance(vec2 cell_pos) {
+// Bilinear read of one cell channel, interpolated between cell centres so the
+// value is continuous inside a cell instead of a staircase. The mask stores one
+// value per cell, so anything read per pixel with `filter_nearest` would paint
+// every cell as a hard 8 px square.
+vec4 cell_sample(vec2 cell_pos) {
 	vec2 base = floor(cell_pos);
 	vec2 f = cell_pos - base;
 	vec2 corner = (base + 0.5) * cell_pixels / mask_pixels;
 	vec2 step_uv = cell_pixels / mask_pixels;
-	float d00 = texture(mask_tex, corner).g;
-	float d10 = texture(mask_tex, corner + vec2(step_uv.x, 0.0)).g;
-	float d01 = texture(mask_tex, corner + vec2(0.0, step_uv.y)).g;
-	float d11 = texture(mask_tex, corner + step_uv).g;
-	return mix(mix(d00, d10, f.x), mix(d01, d11, f.x), f.y);
+	vec4 a00 = texture(mask_tex, corner);
+	vec4 a10 = texture(mask_tex, corner + vec2(step_uv.x, 0.0));
+	vec4 a01 = texture(mask_tex, corner + vec2(0.0, step_uv.y));
+	vec4 a11 = texture(mask_tex, corner + step_uv);
+	return mix(mix(a00, a10, f.x), mix(a01, a11, f.x), f.y);
 }
 
 void fragment() {
@@ -165,10 +182,15 @@ void fragment() {
 	vec4 centre = texture(mask_tex, (px + 0.5) / mask_pixels);
 
 	// Cell-space position of this fragment, measured so integer values land on
-	// cell centres (the distance field is stored per cell centre).
+	// cell centres (the fields are stored per cell centre).
 	vec2 cell_pos = (px + 0.5) / cell_pixels - 0.5;
+	// Both fields are read bilinearly between cell centres: the distance so the
+	// cut can sit anywhere, the opacity so a cell that is still fading is a soft
+	// patch instead of a hard 8 px square.
+	vec4 cell = cell_sample(cell_pos);
 	// Positive inside the fog, negative inside the revealed area.
-	float distance_px = (cell_distance(cell_pos) - 0.5) * 2.0 * distance_range;
+	float distance_px = (cell.g - 0.5) * 2.0 * distance_range;
+	float body = cell.a;
 
 	if (debug_view < 0.5 && centre.r <= 0.0 && distance_px < -distance_range * 0.98
 			&& focus_amount <= 0.001) {
@@ -177,8 +199,12 @@ void fragment() {
 		float t = animate ? TIME : 0.0;
 		vec2 drift = vec2(t * 0.31, t * 0.23) * noise_speed;
 
-		// Tendrils: domain-warped fbm so the border grows tongues instead of
-		// just getting a noisy offset.
+		// Tendrils: domain-warped fbm decides how far the dark side creeps into the
+		// *revealed* side, between 55% and 100% of tendril_pixels. The fringe is
+		// deliberately one-signed: the old term pushed the cut in and out by the
+		// same noise, so the fringe disappeared in the low lobes (that is the
+		// "creep is broken into islands" report) and its depth was the sum of
+		// lobes, grain and swell instead of a number anyone could dial.
 		vec2 lobe_uv = px / noise_scale;
 		vec2 warp = vec2(
 			value_noise(lobe_uv * 0.6 + drift * 0.7),
@@ -190,9 +216,20 @@ void fragment() {
 			px / breath_scale + vec2(t * breath_speed, -t * breath_speed * 0.7)
 		) - 0.5;
 
-		float wobble = (lobes - 0.5) * 2.0 * tendril_pixels;
-		wobble += grain * 0.6 * tendril_pixels;
-		wobble += swell * 2.0 * breath_pixels;
+		float fringe = tendril_pixels * (0.55 + 0.45 * clamp(lobes, 0.0, 1.0));
+		fringe += max(grain, 0.0) * 0.35 * tendril_pixels;
+		fringe += max(swell, 0.0) * breath_pixels;
+
+		// Recession, the other direction: the hero leans the mist away on every
+		// side, and the light map pushes it back further where the room is lit.
+		// Both are bounded per pixel, so the border cannot slide a whole row.
+		float push = 0.0;
+		if (hero_push_px != 0.0) {
+			float hero_distance = length(px - hero_center_px);
+			push += hero_push_px * (
+				1.0 - smoothstep(hero_push_radius_px * 0.35, hero_push_radius_px, hero_distance)
+			);
+		}
 		// Light pushes the cut outwards, so the shadow recedes where it is lit.
 		// The mask is untouched: this moves the border, it never opens a cell
 		// that is still unexplored.
@@ -201,32 +238,37 @@ void fragment() {
 			float light = clamp(
 				dot(light_sample, vec3(0.3, 0.59, 0.11)) * light_gain, 0.0, 1.0
 			);
-			wobble += light * light_push_px;
+			push += light * light_push_px;
 		}
+		push = min(push, max_push_px);
 
+		float wobble = push - fringe;
 		float soft = max(edge_softness, 0.001);
-		float shape = smoothstep(-soft, soft, distance_px - wobble);
+		float band = smoothstep(-soft, soft, distance_px - wobble);
 
-		// A cell that is fogged, fading or dimmed keeps exactly its own
-		// opacity, so the reveal wave and the focus spotlight stay truthful.
-		// Only a fully revealed cell can still be covered by a tongue, and that
-		// one is solid at the cut and thins out towards its tip.
-		//
-		// The tongue share is scaled by (1 - opacity) instead of switching at a
-		// threshold: a hard step made the whole border pop the moment a cell
-		// crossed the threshold, which read as a flicker at the start and the end
-		// of every authored zone fade.
-		float past = max(0.0, wobble - distance_px);
-		float tongue = 1.0 - smoothstep(0.0, max(tendril_pixels, 0.5), past);
-		float value = max(centre.a, tongue * (1.0 - centre.a));
-
-		// Ordered dither only where the cut is in flight, so the fog interior
+		// Ordered dither only where the band is in flight, so the fog interior
 		// stays clean and the border breaks into chunky pixel grain.
-		float border = 1.0 - abs(shape * 2.0 - 1.0);
-		float dither = step(bayer4(px / dither_scale), shape);
-		shape = mix(shape, dither, dither_strength * border);
+		float border = 1.0 - abs(band * 2.0 - 1.0);
+		float dither = step(bayer4(px / dither_scale), band);
+		band = mix(band, dither, dither_strength * border);
 
-		float fog_amount = fog_color.a * shape * value;
+		// Two terms, because a pixel can be dark for two different reasons:
+		//   * the cell itself is fogged (or still fading) -> its own opacity, but
+		//     only inside the band: a cell that is far from the border and still
+		//     evaporating must stay invisible, otherwise the whole reveal wave
+		//     turns into a grey flash across the room (the mask deliberately
+		//     flips a cell to "revealed" the moment its fade starts).
+		//   * the fringe spills over cells that are already revealed -> the band
+		//     alone, at full strength.
+		// Which of the two applies is decided by the *distance* sign, not by the
+		// cell opacity: the opacity is bilinear, so it is already 0.2 well inside
+		// the revealed side, and using it there diluted the fringe to about half.
+		// `body_sharp` keeps the bilinear fade from eating 8 px into the fog on
+		// every border (the smear made the fog look thinner, not softer).
+		float body_sharp = smoothstep(0.30, 0.70, body);
+		float fog_side = smoothstep(-1.5, 1.5, distance_px);
+		float value = band * mix(1.0, body_sharp, fog_side);
+		float fog_amount = fog_color.a * value;
 		float flash_amount = centre.r * flash_strength * flash_color.a;
 		if (flash_amount > 0.0) {
 			// Trace a 1px outline inside the revealed cell instead of a blob.
@@ -245,9 +287,9 @@ void fragment() {
 		if (debug_view > 0.5 && debug_view < 1.5) {
 			COLOR = vec4(step(0.0, distance_px), step(0.0, -distance_px), 0.0, 1.0);
 		} else if (debug_view > 1.5 && debug_view < 2.5) {
-			COLOR = vec4(value, shape, centre.a, 1.0);
+			COLOR = vec4(value, band, body, 1.0);
 		} else if (debug_view > 2.5) {
-			COLOR = vec4(shape, value, 0.0, 1.0);
+			COLOR = vec4(band, value, push / max(max_push_px, 0.001), 1.0);
 		} else {
 			COLOR = vec4(rgb, out_alpha);
 		}

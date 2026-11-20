@@ -113,7 +113,91 @@ func run() -> Array[String]:
 	_assert_saved_exploration_updates_mask(failures)
 	_assert_zone_fade_is_gradual(failures)
 	_assert_focus_spotlight_reaches_the_shader(failures)
+	_assert_edge_is_one_sided_and_bilinear(failures)
+	_assert_hero_recess_tracks_the_body(failures)
 	return failures
+
+
+## The border's three rules, which are shader-only and cannot be run headless, so
+## they are checked as a contract on the source:
+##
+##   * the creep into the revealed side is ONE-SIGNED (`tendril * (0.55 + 0.45 * n)`
+##     with n in 0..1). The old form `(lobes - 0.5) * 2 * tendril` pushed the cut in
+##     and out, so the fringe vanished in the low lobes and left detached patches;
+##   * the per-cell opacity is read bilinearly (`cell_sample`), not with the nearest
+##     `centre.a`, because one texel per cell painted every fading cell as a hard
+##     8 px square;
+##   * the recession is the hero term plus the light term, clamped; the light alone
+##     could only move the border where the lantern lights a surface, so walls and
+##     ceilings never receded.
+func _assert_edge_is_one_sided_and_bilinear(failures: Array[String]) -> void:
+	var path := "res://addons/metroidvania_kit/map/discovery/fog_mask.gdshader"
+	if not FileAccess.file_exists(path):
+		failures.append("fog mask shader is missing: %s" % path)
+		return
+	var source := FileAccess.get_file_as_string(path)
+	for marker: String in [
+		"tendril_pixels * (0.55 + 0.45 * clamp(lobes, 0.0, 1.0))",
+		"vec4 cell_sample(vec2 cell_pos)",
+		"float body_sharp = smoothstep(0.30, 0.70, body);",
+		"float value = band * mix(1.0, body_sharp, fog_side);",
+		"push += hero_push_px * (",
+		"push = min(push, max_push_px);",
+	]:
+		if not source.contains(marker):
+			failures.append("fog border math is missing `%s`; see the comment above" % marker)
+	if source.contains("(lobes - 0.5) * 2.0 * tendril_pixels"):
+		failures.append("the creep is two-signed again, so it can drop below zero and detach")
+	if source.contains("max(centre.a, tongue"):
+		failures.append("the fog opacity is back to the nearest per-cell read (8 px squares)")
+
+
+## The recess centre is the hero body in mask pixels, and it is pushed every frame:
+## the border has to lean away from the hero on every side, which only works if the
+## shader knows where the hero is.
+func _assert_hero_recess_tracks_the_body(failures: Array[String]) -> void:
+	var root := Node2D.new()
+	var player := Node2D.new()
+	player.position = Vector2(64.0, 40.0)
+	root.add_child(player)
+	var terrain := _make_terrain({})
+	root.add_child(terrain)
+	var fog: Node2D = FOG_OF_WAR.new() as Node2D
+	fog.cell_size = Vector2i(8, 8)
+	fog.chunk_size_pixels = Vector2i(320, 180)
+	fog.call("bind_player", player)
+	root.add_child(fog)
+	add_child(root)
+	var room: Resource = _make_room("recess_room", Vector2i.ZERO, Vector2i(1, 1))
+	fog.call("bind_room", room, terrain, Vector2i.ZERO)
+	fog.call("reveal_from_player")
+	fog.call("_update_mask_image")
+	fog.call("_process", 0.016)
+	var quad := fog.get_node_or_null("FogMask") as Sprite2D
+	if quad == null or not (quad.material is ShaderMaterial):
+		failures.append("fog mask material missing, the recess cannot reach the shader")
+		root.free()
+		return
+	var material := quad.material as ShaderMaterial
+	var centre: Variant = material.get_shader_parameter("hero_center_px")
+	var body_rect: Rect2 = fog.get("hero_body_rect")
+	var mask_origin: Vector2i = fog.call("get_mask_origin_pixels")
+	var expected: Vector2 = player.position + body_rect.get_center() - Vector2(mask_origin)
+	if not (centre is Vector2) or not (centre as Vector2).is_equal_approx(expected):
+		failures.append("hero recess centre is %s, expected the hero body at %s"
+			% [str(centre), str(expected)])
+	for property: String in ["hero_push_px", "hero_push_radius_px"]:
+		if float(fog.get(property)) <= 0.0:
+			failures.append("%s is %s, so the recess has no effect" % [property, str(fog.get(property))])
+	# The creep is bounded and the recess is bounded: a fog that can move 20 px per
+	# frame reads as a whole row of it disappearing.
+	if float(fog.get("tendril_pixels")) > 6.0:
+		failures.append("tendril_pixels is %.1f, more than the 3..4 px creep the border wants"
+			% float(fog.tendril_pixels))
+	if float(fog.get("light_push_px")) > 6.0:
+		failures.append("light_push_px is %.1f, which alone outruns the hero recess"
+			% float(fog.get("light_push_px")))
+	root.free()
 
 
 func _assert_blocker_is_visible_but_stops_spread(failures: Array[String]) -> void:

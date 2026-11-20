@@ -56,9 +56,13 @@ const MASK_DISTANCE_PIXELS := 32.0
 @export var hero_body_rect := Rect2(-5, -10, 10, 10)
 
 @export_group("Fog Edge")
-## How far the noise may push the border out or in, in pixels. This is also the
-## depth of the tendrils that grow out of (and bite into) the shadow.
-@export_range(0.0, 20.0, 0.5) var tendril_pixels := 7.0
+## How far the dark side creeps into the *revealed* side, in pixels. The creep is
+## one-signed (it always grows outwards, never bites back in), because a term that
+## pushed the cut both ways made the fringe disappear in the low lobes and left
+## detached patches of fog around the border. The noise scales its depth between
+## 55% and 100% of this value, so 4 gives a 2..4 px fringe plus up to 1.4 px of fine
+## grain. Was 7, which summed lobes, grain and swell into a 17 px wobble.
+@export_range(0.0, 20.0, 0.5) var tendril_pixels := 4.0
 ## Anti-alias width of the cut in pixels; 0 gives a hard pixel edge.
 @export_range(0.0, 8.0, 0.1) var edge_softness := 1.6
 ## Size of the coarse lobes in pixels; smaller means busier tendrils.
@@ -71,9 +75,9 @@ const MASK_DISTANCE_PIXELS := 32.0
 @export_range(0.0, 2.0, 0.05) var edge_noise_warp := 0.65
 
 @export_group("Fog Breathing")
-## How far the whole border swells in and out, in pixels. This is the shadow
-## slowly inhaling rather than only shimmering where the noise is.
-@export_range(0.0, 16.0, 0.5) var breath_pixels := 3.0
+## How far the fringe swells outwards over time, in pixels. It only ever grows
+## (0..breath_pixels), so the breathing cannot eat into the fringe either.
+@export_range(0.0, 8.0, 0.5) var breath_pixels := 1.5
 ## Size of the swell lobes in pixels; big values move the whole silhouette.
 @export_range(8.0, 160.0, 1.0) var breath_scale := 46.0
 ## Speed of the swell.
@@ -85,10 +89,18 @@ const MASK_DISTANCE_PIXELS := 32.0
 ## Size of one dither cell in pixels; 1 keeps the grain at design resolution.
 @export_range(1.0, 4.0, 1.0) var dither_scale := 1.0
 
-@export_group("Fog Light")
+@export_group("Fog Recess")
+## How far the mist leans away from the hero, in pixels. This is what makes the
+## fog give way on *every* side: the light push below could only ever move the
+## border where the lantern actually lights a surface, so a wall or a ceiling never
+## receded. Bounded by the shader's `max_push_px`.
+@export_range(0.0, 24.0, 0.5) var hero_push_px := 5.0
+## Radius in pixels over which the hero recess fades out.
+@export_range(4.0, 200.0, 1.0) var hero_push_radius_px := 44.0
 ## How far light pushes the tendrils back, in pixels. Light never reveals a cell:
-## it only moves the border, so the dark side of the edge stays dark.
-@export_range(0.0, 40.0, 0.5) var light_push_px := 10.0
+## it only moves the border, so the dark side of the edge stays dark. Reduced from
+## 10 to 3: together with the hero recess it used to slide a whole row of fog.
+@export_range(0.0, 40.0, 0.5) var light_push_px := 3.0
 ## Multiplier on the light map before it pushes the edge.
 @export_range(0.0, 2.0, 0.01) var light_gain := 1.0
 
@@ -189,6 +201,7 @@ func _process(_delta: float) -> void:
 	var now := _now()
 	_settle_finished_focus(now)
 	_update_focus_uniforms(now)
+	_update_hero_uniforms()
 	var origin := _current_player_cell()
 	var view := _view_bounds_cells()
 	var zone_signature := _zone_overlap_signature()
@@ -1231,7 +1244,25 @@ func _apply_mask_shader_parameters() -> void:
 		"light_push_px", light_push_px if _light_texture != null else 0.0
 	)
 	_mask_material.set_shader_parameter("light_gain", light_gain)
+	_mask_material.set_shader_parameter("hero_push_px", hero_push_px)
+	_mask_material.set_shader_parameter("hero_push_radius_px", hero_push_radius_px)
 	_update_focus_uniforms(_now())
+
+
+## The recess follows the hero every frame, so its centre is a uniform and not a
+## mask channel: baking it would mean repainting the whole mask every frame. The
+## centre is the hero body rect in *mask* pixels, because the shader works in the
+## mask's own space.
+func _update_hero_uniforms() -> void:
+	if _mask_material == null:
+		return
+	if not is_instance_valid(_player):
+		_mask_material.set_shader_parameter("hero_center_px", Vector2(-99999.0, -99999.0))
+		return
+	var body_centre := _player.global_position + hero_body_rect.get_center()
+	_mask_material.set_shader_parameter(
+		"hero_center_px", body_centre - Vector2(get_mask_origin_pixels())
+	)
 
 
 ## Drops the mask and the quad texture, for example on a room switch.

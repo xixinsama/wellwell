@@ -142,21 +142,44 @@ The mask holds one texel block per cell, three channels:
 
 The distance is a two-pass 3-4 chamfer transform over the cell grid, so the
 shader can sample it bilinearly between cell centres and place the cut on any
-pixel instead of on a cell edge. On top of that the shader adds three noise
-layers to the cut:
+pixel instead of on a cell edge. The opacity is interpolated the same way.
 
-1. **tendrils** — domain-warped fbm, so tongues of shadow grow out of the border
-   and bite into it, drifting slowly,
-2. **breathing** — one very low frequency swell that moves the whole silhouette
-   in and out, which reads as the shadow inhaling,
-3. **pixel grain** — a 4×4 ordered dither that only applies where the cut is in
+**The border is built from three terms, and all three are one-signed** (each can
+only push the cut one way, so the fringe cannot break up or float away from the
+dark mass):
+
+1. **creep** — `tendril_pixels × (0.55 + 0.45 × fbm)`, so the dark side always
+   spills 55 %..100 % of `tendril_pixels` into the *revealed* side (default 4 px:
+   a 2.2..4 px fringe, plus up to 1.4 px of fine grain and 1.5 px of swell). It
+   used to be a two-signed wobble of `±(lobes + grain + swell)` ≈ ±17 px, which is
+   why the fringe vanished in some places and left detached patches in others: the
+   fog could pull *in* as hard as it pushed out.
+2. **recess** — the border leans away from the hero: a radial term
+   (`hero_push_px`, 5 px, fading out over `hero_push_radius_px`, 44 px) plus the
+   light map term (`light_push_px`, 3 px), summed and clamped to `max_push_px`
+   (7 px). The light alone could never do this: it only moves the border where the
+   lantern actually lights a surface, so a wall or a ceiling never receded.
+3. **pixel grain** — a 4×4 ordered dither that only applies where the band is in
    flight, so the last pixels break into hard 1 px chunks while the fog interior
    stays clean.
 
-A cell that is fogged or fading always keeps exactly its own opacity, so the
-reveal wave and the zone fades stay truthful; only a fully revealed cell can be
-covered by a tongue, and that one is solid at the cut and thins out towards its
-tip.
+The per-cell opacity is read **bilinearly** and then sharpened
+(`smoothstep(0.30, 0.70, body)`): the mask stores one value per cell, so reading it
+per pixel with `filter_nearest` painted every fading cell as a hard 8 px square and
+made a cell that was still evaporating next to cleared ones look like a floating
+block with a visible edge. A cell that is fogged (or fading) keeps its own opacity,
+but only *inside the band*; the revealed side of the band is full strength, which is
+the fringe itself.
+
+Measured on `test_fog_start` with `scripts/tools/fog_diagnostic.gd` (`--room
+test_fog_start`), before and after this change:
+
+| Metric | Before | After |
+| :--- | :--- | :--- |
+| fogged area of the room | 19.9 % | 25.8 % (the fringe) |
+| detached fog blobs > 12 px | 2..7 | 2..3 |
+| hard per-cell plateaus (share of a fading cell sitting on one alpha) | 0.68 | 0.59 |
+| recess around the hero, north / south / west / east | — (light only, so floor only) | 6.0 / 7.8 / 5.9 / 6.4 px, the west side at light = 0.000 |
 
 The mask is only rewritten when the revealed set changes, while a reveal wave is
 evaporating, or while an authored zone fade is in flight. Everything else is
@@ -185,17 +208,20 @@ outside it (falloff 34 px, `focus_alpha` 0.92).
 
 | Property | Default | Meaning |
 | :--- | :--- | :--- |
-| `tendril_pixels` | 7 | how far noise may push the border out or in, in pixels; this is the tongue depth |
+| `tendril_pixels` | 4 | how far the dark side creeps into the revealed side (one-signed: 55..100 % of this) |
 | `edge_softness` | 1.6 | anti-alias width of the cut; 0 gives a hard pixel edge |
 | `edge_noise_scale` | 13 | size of the coarse lobes; smaller means busier |
 | `edge_noise_grain` | 3.2 | size of the fine grain layer |
 | `edge_noise_speed` | 0.55 | drift speed; 0 freezes the border |
 | `edge_noise_warp` | 0.65 | how strongly the lobes are bent, which turns blobs into tongues |
-| `breath_pixels` | 3 | how far the whole border swells |
+| `breath_pixels` | 1.5 | extra swell of the creep, 0..this (one-signed) |
 | `breath_scale` | 46 | size of the swell lobes; big values move the whole silhouette |
 | `breath_speed` | 0.16 | swell speed |
 | `dither_strength` | 0.6 | blend towards the ordered dither, 0 to 1 |
 | `dither_scale` | 1 | size of one dither cell in pixels |
+| `hero_push_px` | 5 | how far the mist leans away from the hero, on every side |
+| `hero_push_radius_px` | 44 | radius over which that recess fades out |
+| `light_push_px` | 3 | extra recess where the lantern lights a surface |
 | `zone_reveal_seconds` | 0.9 | how long a dark zone takes to dissolve after the hero enters |
 | `zone_reveal_stagger` | 0.02 | extra delay per cell of distance from the hero |
 | `zone_restore_seconds` | 0.8 | how long a `restore_on_exit` zone takes to close again |
@@ -203,8 +229,11 @@ outside it (falloff 34 px, `focus_alpha` 0.92).
 | `focus_radius_px` | 34 | lit bubble around the hero while a focus zone is active |
 | `focus_falloff_px` | 34 | width of the lit → dark ramp of the focus spotlight |
 
-Set `tendril_pixels`, `breath_pixels` and `dither_strength` to 0 to get the old
-cell-aligned border back.
+Set `tendril_pixels` and `dither_strength` to 0 to get the old cell-aligned border
+back, and `hero_push_px` / `light_push_px` to 0 to take the recess out entirely.
+The shader's `debug_view` uniform (1 = distance sign, 2 = value / band / opacity,
+3 = band / value / recess share) is what the captures in the table above were taken
+with; `fog_diagnostic.gd --uniform=debug_view=3` reads the recess field directly.
 
 ## Crumble Tiles
 
