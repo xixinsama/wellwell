@@ -143,6 +143,10 @@ func _assert_edge_is_one_sided_and_bilinear(failures: Array[String]) -> void:
 		"float value = band * mix(1.0, body_sharp, fog_side);",
 		"push += hero_push_px * (",
 		"push = min(push, max_push_px);",
+		"float breath01 = 0.5 + 0.5 * sin(t * breath_speed * TAU + breath_phase);",
+		"float surge01 = (surge_coarse + 0.45 * surge_fine) / 1.45;",
+		"fringe += breath01 * breath_pixels;",
+		"fringe += surge01 * surge_pixels;",
 	]:
 		if not source.contains(marker):
 			failures.append("fog border math is missing `%s`; see the comment above" % marker)

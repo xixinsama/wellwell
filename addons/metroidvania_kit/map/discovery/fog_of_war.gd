@@ -75,13 +75,25 @@ const MASK_DISTANCE_PIXELS := 32.0
 @export_range(0.0, 2.0, 0.05) var edge_noise_warp := 0.65
 
 @export_group("Fog Breathing")
-## How far the fringe swells outwards over time, in pixels. It only ever grows
-## (0..breath_pixels), so the breathing cannot eat into the fringe either.
-@export_range(0.0, 8.0, 0.5) var breath_pixels := 1.5
+## How far the fringe swells in the slow inhale, in pixels. It is a sine whose
+## phase is offset per region, so the room does not pulse in unison; it only ever
+## *adds* depth, so the breathing cannot detach the fringe from the dark mass.
+@export_range(0.0, 8.0, 0.5) var breath_pixels := 1.6
 ## Size of the swell lobes in pixels; big values move the whole silhouette.
 @export_range(8.0, 160.0, 1.0) var breath_scale := 46.0
-## Speed of the swell.
+## Speed of the inhale, in Hz (0.16 is one breath every ~6 s).
 @export_range(0.0, 2.0, 0.01) var breath_speed := 0.16
+
+@export_group("Fog Surge")
+## How far the travelling swell along the border reaches, in pixels. This is the
+## "涌" part: the wave has a wavelength and a direction, so the edge visibly runs
+## rather than only pulsing in place. One-signed like the breathing.
+@export_range(0.0, 8.0, 0.5) var surge_pixels := 2.6
+## Wavelength of that swell in pixels. 12..24 reads as a wave; much larger starts
+## to look like the breathing term and much smaller like static.
+@export_range(4.0, 64.0, 1.0) var surge_scale := 15.0
+## Speed of the swell in screen pixels per second (it is a translation of the noise).
+@export_range(0.0, 3.0, 0.05) var surge_speed := 0.5
 
 @export_group("Fog Pixel Grain")
 ## Blend towards a 4x4 ordered dither on the border, 0 (smooth) to 1 (chunky).
@@ -1234,6 +1246,9 @@ func _apply_mask_shader_parameters() -> void:
 	_mask_material.set_shader_parameter("breath_pixels", breath_pixels)
 	_mask_material.set_shader_parameter("breath_scale", breath_scale)
 	_mask_material.set_shader_parameter("breath_speed", breath_speed)
+	_mask_material.set_shader_parameter("surge_pixels", surge_pixels)
+	_mask_material.set_shader_parameter("surge_scale", surge_scale)
+	_mask_material.set_shader_parameter("surge_speed", surge_speed)
 	_mask_material.set_shader_parameter("dither_strength", dither_strength)
 	_mask_material.set_shader_parameter("dither_scale", dither_scale)
 	_mask_material.set_shader_parameter("light_tex", _light_texture)

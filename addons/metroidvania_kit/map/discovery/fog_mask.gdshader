@@ -43,12 +43,25 @@ uniform float noise_grain = 3.2;
 uniform float noise_speed = 0.55;
 uniform float noise_warp = 0.65;
 
-// --- breathing ------------------------------------------------------------
-// A very low frequency swell added to the cut, so the whole shadow slowly
-// inhales and exhales instead of only shimmering along its border.
-uniform float breath_pixels = 1.5;
+// --- breathing / surge ----------------------------------------------------
+// The fringe is not a fixed depth: it swells and undulates, which is what makes a
+// standing shadow read as alive instead of as a hole cut into the picture.
+//
+// Both terms only ever *add* depth, so the breathing can never pull the fringe to
+// zero and detach it from the dark mass (that is what the earlier two-signed
+// wobble did). What breathes is the *fringe*, not the whole cut.
+//
+// `breath_*` is the slow whole-silhouette inhale: a sine whose phase is offset by
+// a low-frequency noise field, so the room does not pulse in unison.
+uniform float breath_pixels = 1.6;
 uniform float breath_scale = 46.0;
 uniform float breath_speed = 0.16;
+// `surge_*` is the finer wave that *travels along* the border, which is the "surge"
+// in the report: a swell that runs along the edge reads as movement, a swell that
+// only changes in place reads as a pulse.
+uniform float surge_pixels = 2.6;
+uniform float surge_scale = 15.0;
+uniform float surge_speed = 0.5;
 
 // --- pixel grain ----------------------------------------------------------
 uniform float dither_strength = 0.6;
@@ -212,13 +225,29 @@ void fragment() {
 		) - 0.5;
 		float lobes = fbm3(lobe_uv + warp * noise_warp + drift);
 		float grain = value_noise(px / noise_grain + drift * 2.1) - 0.5;
-		float swell = value_noise(
-			px / breath_scale + vec2(t * breath_speed, -t * breath_speed * 0.7)
-		) - 0.5;
+
+		// Slow inhale: a sine, but with the phase offset by a low frequency field so
+		// one wall breathes a beat behind the other instead of the room pulsing as
+		// a single block.
+		float breath_phase = value_noise(px / max(breath_scale, 1.0)) * TAU;
+		float breath01 = 0.5 + 0.5 * sin(t * breath_speed * TAU + breath_phase);
+		// The surge runs *along* the border: the same noise field translated over
+		// time, at a wavelength short enough to read as a swell travelling along the
+		// edge and slow enough not to look like static. Two octaves, because a
+		// single 15 px lobe leaves long flat stretches where the border sits still
+		// for a second and the breathing reads as a stutter.
+		float surge_coarse = value_noise(
+			px / max(surge_scale, 1.0) + vec2(t * surge_speed, -t * surge_speed * 0.55)
+		);
+		float surge_fine = value_noise(
+			px / max(surge_scale * 0.55, 1.0) + vec2(-t * surge_speed * 1.7, t * surge_speed * 1.1) + vec2(19.3, 7.1)
+		);
+		float surge01 = (surge_coarse + 0.45 * surge_fine) / 1.45;
 
 		float fringe = tendril_pixels * (0.55 + 0.45 * clamp(lobes, 0.0, 1.0));
 		fringe += max(grain, 0.0) * 0.35 * tendril_pixels;
-		fringe += max(swell, 0.0) * breath_pixels;
+		fringe += breath01 * breath_pixels;
+		fringe += surge01 * surge_pixels;
 
 		// Recession, the other direction: the hero leans the mist away on every
 		// side, and the light map pushes it back further where the room is lit.

@@ -163,6 +163,25 @@ dark mass):
    flight, so the last pixels break into hard 1 px chunks while the fog interior
    stays clean.
 
+On top of that the fringe **breathes**, and both breathing terms are one-signed
+too (they only add depth, so the swell can never thin the fringe to zero and
+detach it):
+
+* `breath_*` is the slow inhale: a sine whose phase is offset by a low-frequency
+  field, so one wall breathes a beat behind another instead of the room pulsing as
+  one block. `breath_pixels` 1.6 px, one breath every ~6 s (`breath_speed` 0.16).
+* `surge_*` is the swell that *travels along* the border (two octaves of value
+  noise translated over time), which is what turns a pulse into movement: 15 px
+  wavelength, 2.6 px deep, `surge_speed` 0.5. The second octave exists because a
+  single 15 px lobe leaves long flat stretches where the edge sits still and the
+  breathing reads as a stutter.
+
+Measured over 4 s of a settled room (ten frames, `fog_diagnostic.gd --frames 10
+--interval 0.45`): the border contour travels a median of 2 px and up to 6 px, 62 %
+of the border band moves, and the room's mean opacity oscillates between 0.287 and
+0.299 — it breathes instead of drifting. Before the two terms it was a 2 px median
+with no travel at all.
+
 The per-cell opacity is read **bilinearly** and then sharpened
 (`smoothstep(0.30, 0.70, body)`): the mask stores one value per cell, so reading it
 per pixel with `filter_nearest` painted every fading cell as a hard 8 px square and
@@ -214,9 +233,12 @@ outside it (falloff 34 px, `focus_alpha` 0.92).
 | `edge_noise_grain` | 3.2 | size of the fine grain layer |
 | `edge_noise_speed` | 0.55 | drift speed; 0 freezes the border |
 | `edge_noise_warp` | 0.65 | how strongly the lobes are bent, which turns blobs into tongues |
-| `breath_pixels` | 1.5 | extra swell of the creep, 0..this (one-signed) |
-| `breath_scale` | 46 | size of the swell lobes; big values move the whole silhouette |
-| `breath_speed` | 0.16 | swell speed |
+| `breath_pixels` | 1.6 | depth of the slow inhale, 0..this (one-signed) |
+| `breath_scale` | 46 | size of the inhale lobes; big values move the whole silhouette |
+| `breath_speed` | 0.16 | inhale speed in Hz (~6 s per breath) |
+| `surge_pixels` | 2.6 | depth of the swell that travels along the border |
+| `surge_scale` | 15 | wavelength of that swell in pixels |
+| `surge_speed` | 0.5 | how fast it travels |
 | `dither_strength` | 0.6 | blend towards the ordered dither, 0 to 1 |
 | `dither_scale` | 1 | size of one dither cell in pixels |
 | `hero_push_px` | 5 | how far the mist leans away from the hero, on every side |
