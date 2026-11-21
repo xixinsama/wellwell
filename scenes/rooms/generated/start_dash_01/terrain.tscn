@@ -1,0 +1,24 @@
+[gd_scene format=3 uid="uid://cf4m6jlkxh2rr"]
+
+[ext_resource type="TileSet" path="res://resources/tilesets/primordial_tileset.tres" id="1_eql0u"]
+[ext_resource type="Script" path="res://scripts/world/ladder_tile_area_builder.gd" id="2_r63h3"]
+
+[node name="RoomTerrain" type="Node2D" unique_id=1436310207]
+
+[node name="Background" type="Node2D" parent="." unique_id=1767376370]
+
+[node name="Terrain" type="Node2D" parent="." unique_id=422845366]
+
+[node name="BackTiles" type="TileMapLayer" parent="Terrain" unique_id=553643524]
+tile_set = ExtResource("1_eql0u")
+collision_enabled = false
+
+[node name="SolidTiles" type="TileMapLayer" parent="Terrain" unique_id=687778719]
+tile_set = ExtResource("1_eql0u")
+
+[node name="DetailTiles" type="TileMapLayer" parent="Terrain" unique_id=113439328]
+tile_set = ExtResource("1_eql0u")
+collision_enabled = false
+
+[node name="LadderAreaBuilder" type="Node2D" parent="Terrain" unique_id=690830642]
+script = ExtResource("2_r63h3")

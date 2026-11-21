@@ -1,0 +1,7 @@
+[gd_scene format=3 uid="uid://bnvvbjck87er0"]
+
+[ext_resource type="PackedScene" uid="uid://oa5ui3h6fkhd" path="res://scenes/rooms/template/level_template.tscn" id="1_template"]
+
+[node name="Room_start_dash_01" unique_id=1174233948 instance=ExtResource("1_template")]
+room_id = "start_dash_01"
+display_name = "开始冲冲冲"
