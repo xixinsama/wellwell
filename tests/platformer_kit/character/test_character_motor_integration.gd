@@ -42,14 +42,14 @@ func run() -> Array[String]:
 		if player.call("_apply_ability_motion", CHARACTER_INTENT.new()) or player.velocity != Vector2(30, 40):
 			failures.append("PlayerController changed motor velocity while Dash was inactive")
 	var player_source := FileAccess.get_file_as_string("res://scripts/player/player_controller.gd")
-	var motor_step := player_source.find("_motor.call(\"step\"")
-	var ability_step := player_source.find("_apply_ability_motion(intent)")
-	var recharge_step := player_source.find("_update_dash_recharge()")
-	var slide_step := player_source.find("move_and_slide()")
-	if motor_step < 0 or ability_step <= motor_step or slide_step <= ability_step:
-		failures.append("PlayerController does not apply ability motion between Motor and move_and_slide")
-	if recharge_step < 0 or recharge_step >= ability_step:
-		failures.append("PlayerController does not recharge the Dash before applying ability motion")
+	if not player_source.contains("_step_dash(intent, delta)"):
+		failures.append("PlayerController has no dash state step")
+	if not player_source.contains("_step_wall(intent, delta)"):
+		failures.append("PlayerController has no wall state step")
+	if not player_source.contains("_update_dash_recharge(delta)"):
+		failures.append("PlayerController does not recharge the Dash with delta")
+	if not player_source.contains("move_and_slide()"):
+		failures.append("PlayerController no longer owns movement integration")
 	if not player_source.contains("is_in_water") or not player_source.contains("is_on_floor() or in_water"):
 		failures.append("PlayerController does not recharge the Dash on ground and in water")
 	var debug_state: Dictionary = player.call("get_debug_state")
