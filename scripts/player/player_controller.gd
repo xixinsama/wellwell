@@ -50,6 +50,8 @@ var _ducking := false
 var _current_move_axis := 0.0
 
 var _wall_direction := 0
+var _wall_body: Node
+var _wall_lockout_direction := 0
 var _wall_slide_remaining := 0.0
 var _climb_jump_refund_pending := false
 var _was_in_water := false
@@ -334,6 +336,7 @@ func _finish_dash() -> void:
 
 
 func _apply_wallbounce(away_direction: int) -> void:
+	_wall_lockout_direction = -away_direction
 	_apply_jump_velocity(MOTION_RULES.wallbounce_velocity(_profile(), away_direction), 0.25)
 	_movement_context.force_move_x = float(_profile().wallbounce_speed) * float(away_direction)
 	_movement_context.force_move_x_remaining = _profile().wall_jump_force_time
@@ -371,14 +374,19 @@ func _try_advanced_jump(intent: RefCounted) -> bool:
 
 
 func _try_enter_wall(intent: RefCounted) -> bool:
-	if _movement_context.wall_grab_lockout > 0.0 or is_on_floor():
+	if is_on_floor():
 		return false
 	var direction := _wall_input_direction(intent)
 	if direction == 0:
 		return false
-	if not _probe_wall(direction, _profile().wall_check_distance):
+	if _movement_context.wall_grab_lockout > 0.0 and direction == _wall_lockout_direction:
+		return false
+	var probe := _wall_probe(direction, _profile().wall_check_distance)
+	if probe.is_empty():
 		return false
 	_wall_direction = direction
+	_wall_body = probe.get("body") as Node
+	_snap_to_wall(direction, _profile().wall_check_distance + 1.0)
 	_wall_slide_remaining = _profile().wall_slide_time
 	if _stamina == null or bool(_stamina.call("is_tired")) or bool(_stamina.call("is_empty")):
 		_state = PlayerMotionState.State.WALL_SLIDE
@@ -392,28 +400,31 @@ func _step_wall(intent: RefCounted, delta: float) -> bool:
 	if is_on_floor() or _wall_input_direction(intent) != _wall_direction:
 		_leave_wall(true)
 		return false
-	if not _probe_wall(_wall_direction, _profile().wall_check_distance):
+	var probe := _wall_probe(_wall_direction, _profile().wall_check_distance)
+	if probe.is_empty():
 		_leave_wall(true)
 		return false
+	_wall_body = probe.get("body") as Node
 	if intent.jump_pressed and _try_wall_jump(intent):
 		return true
+	var carry := _wall_carry_velocity()
 	if _state == PlayerMotionState.State.WALL_SLIDE:
 		_wall_slide_remaining = maxf(_wall_slide_remaining - delta, 0.0)
-		_movement_context.velocity.x = 0.0
+		_movement_context.velocity.x = carry.x
 		_movement_context.velocity.y = minf(
 			_movement_context.velocity.y + _profile().gravity * delta,
 			MOTION_RULES.wall_slide_cap(_profile(), _wall_slide_remaining)
-		)
+		) + carry.y
 		return true
 	var vertical := float(intent.vertical_axis)
 	if vertical < -0.5:
-		_movement_context.velocity = Vector2(0.0, -_profile().wall_climb_speed)
+		_movement_context.velocity = carry + Vector2(0.0, -_profile().wall_climb_speed)
 		if _stamina != null:
 			_stamina.call("drain", _profile().stamina_climb_drain, delta)
 	elif vertical > 0.5:
-		_movement_context.velocity = Vector2(0.0, _profile().climb_down_speed)
+		_movement_context.velocity = carry + Vector2(0.0, _profile().climb_down_speed)
 	else:
-		_movement_context.velocity = Vector2.ZERO
+		_movement_context.velocity = carry
 		if _stamina != null:
 			_stamina.call("drain", _profile().stamina_grab_drain, delta)
 	if _stamina != null and bool(_stamina.call("is_empty")):
@@ -428,9 +439,10 @@ func _try_wall_jump(intent: RefCounted) -> bool:
 		if bounce_side != 0:
 			_apply_wallbounce(-bounce_side)
 			return true
-	var axis := float(intent.move_axis)
-	var toward := axis * float(_wall_direction) > 0.3
-	if toward and _stamina != null and not bool(_stamina.call("is_empty")):
+	# Jump away by default, so holding toward a wall and tapping jump chains
+	# left/right wall jumps without spending stamina. Climbing up is the
+	# deliberate exception: hold up and jump.
+	if float(intent.vertical_axis) < -0.5 and _stamina != null and not bool(_stamina.call("is_empty")):
 		_apply_climb_jump()
 	else:
 		_apply_wall_jump()
@@ -439,6 +451,7 @@ func _try_wall_jump(intent: RefCounted) -> bool:
 
 func _apply_wall_jump() -> void:
 	var away := -_wall_direction
+	_wall_lockout_direction = _wall_direction
 	_apply_jump_velocity(MOTION_RULES.wall_jump_velocity(_profile(), away))
 	_movement_context.force_move_x = float(_profile().wall_jump_speed) * float(away)
 	_movement_context.force_move_x_remaining = _profile().wall_jump_force_time
@@ -466,6 +479,7 @@ func _update_climb_jump_conversion(intent: RefCounted, delta: float) -> void:
 		_movement_context.force_move_x = _movement_context.velocity.x
 		_movement_context.force_move_x_remaining = _profile().wall_jump_force_time
 		_movement_context.wall_grab_lockout = _profile().wall_grab_lockout
+		_wall_lockout_direction = _wall_direction
 		if _climb_jump_refund_pending and _stamina != null:
 			_stamina.call("refund", _profile().climb_jump_stamina)
 			_climb_jump_refund_pending = false
@@ -476,6 +490,7 @@ func _update_climb_jump_conversion(intent: RefCounted, delta: float) -> void:
 
 func _leave_wall(reset_conversion: bool) -> void:
 	_state = PlayerMotionState.State.NORMAL
+	_wall_body = null
 	if reset_conversion:
 		_movement_context.climb_jump_window = 0.0
 		_climb_jump_refund_pending = false
@@ -502,13 +517,36 @@ func _wall_input_direction(intent: RefCounted) -> int:
 
 
 func _probe_wall(direction: int, distance: float) -> bool:
+	return not _wall_probe(direction, distance).is_empty()
+
+
+func _wall_probe(direction: int, distance: float) -> Dictionary:
 	if direction == 0 or not is_inside_tree():
-		return false
+		return {}
 	var collision := KinematicCollision2D.new()
 	if not test_move(global_transform, Vector2(float(direction) * distance, 0.0), collision):
-		return false
+		return {}
 	var normal := collision.get_normal()
-	return normal.x * float(direction) < -0.7
+	if normal.x * float(direction) >= -0.7:
+		return {}
+	return {
+		"body": collision.get_collider() as Node,
+		"normal": normal,
+	}
+
+
+func _snap_to_wall(direction: int, distance: float) -> void:
+	if direction == 0 or distance <= 0.0:
+		return
+	move_and_collide(Vector2(float(direction) * distance, 0.0))
+
+
+func _wall_carry_velocity() -> Vector2:
+	if _wall_body == null or not is_instance_valid(_wall_body):
+		return Vector2.ZERO
+	if _wall_body.has_method("get_motion_velocity"):
+		return Vector2(_wall_body.call("get_motion_velocity"))
+	return Vector2.ZERO
 
 
 func _find_wall(distance: float) -> int:
@@ -524,6 +562,8 @@ func _find_wall(distance: float) -> int:
 func _update_timers(delta: float) -> void:
 	_movement_context.dash_attack_remaining = maxf(_movement_context.dash_attack_remaining - delta, 0.0)
 	_movement_context.wall_grab_lockout = maxf(_movement_context.wall_grab_lockout - delta, 0.0)
+	if _movement_context.wall_grab_lockout <= 0.0:
+		_wall_lockout_direction = 0
 	if _movement_context.climb_jump_window > 0.0:
 		# The conversion function owns the countdown while normal movement is
 		# active; this fallback keeps the window finite if another state owns
@@ -670,6 +710,8 @@ func _reset_motion_state() -> void:
 	_dash_jump_buffered = false
 	_ducking = false
 	_wall_direction = 0
+	_wall_body = null
+	_wall_lockout_direction = 0
 	_wall_slide_remaining = 0.0
 	_climb_jump_refund_pending = false
 	_was_in_water = false

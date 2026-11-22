@@ -21,6 +21,7 @@ func run() -> Array[String]:
 	var failures: Array[String] = []
 	_assert_rule_velocities(failures)
 	_assert_dash_state(failures)
+	_assert_standalone_dash_install(failures)
 	_assert_advanced_jumps(failures)
 	_assert_dash_jump_rules(failures)
 	_assert_wall_jumps(failures)
@@ -67,14 +68,28 @@ func _assert_wall_jumps(failures: Array[String]) -> void:
 	player.set("_wall_direction", 1)
 	player.call("get_stamina").call("refill")
 	intent.set("move_axis", 1.0)
+	intent.set("vertical_axis", 0.0)
 	intent.set("jump_pressed", true)
 	if not bool(player.call("_try_wall_jump", intent)):
-		failures.append("toward input did not produce a climb jump")
+		failures.append("toward input did not produce a wall jump")
+	elif not Vector2(context.get("velocity")).is_equal_approx(Vector2(-130, -120)):
+		failures.append("toward-wall jump did not push away")
+	if not is_equal_approx(float(player.call("get_stamina").call("get_current")), 110.0):
+		failures.append("free wall jump spent stamina")
+	player.set("_state", PlayerMotionState.State.WALL_GRAB)
+	player.set("_wall_direction", 1)
+	player.call("get_stamina").call("refill")
+	intent.set("move_axis", 1.0)
+	intent.set("vertical_axis", -1.0)
+	intent.set("jump_pressed", true)
+	if not bool(player.call("_try_wall_jump", intent)):
+		failures.append("up input did not produce a climb jump")
 	elif not Vector2(context.get("velocity")).is_equal_approx(Vector2(0, -120)):
 		failures.append("climb jump velocity is wrong")
 	if not is_equal_approx(float(player.call("get_stamina").call("get_current")), 82.5):
 		failures.append("climb jump did not spend its stamina")
 	intent.set("move_axis", -1.0)
+	intent.set("vertical_axis", 0.0)
 	player.call("_update_climb_jump_conversion", intent, 1.0 / 60.0)
 	if not Vector2(context.get("velocity")).is_equal_approx(Vector2(-130, -120)):
 		failures.append("climb jump did not convert to a wall jump")
@@ -111,6 +126,24 @@ func _assert_dash_jump_rules(failures: Array[String]) -> void:
 		failures.append("ducking dash jump was rejected")
 	elif not Vector2(context.get("velocity")).is_equal_approx(Vector2(325, -60)):
 		failures.append("dash jump did not produce hyper velocity")
+	player.free()
+
+
+func _assert_standalone_dash_install(failures: Array[String]) -> void:
+	var packed := load(PLAYER_SCENE_PATH) as PackedScene
+	if packed == null:
+		return
+	var player := packed.instantiate() as CharacterBody2D
+	add_child(player)
+	player.set_physics_process(false)
+	var loadout := player.get_node_or_null("AbilityLoadout")
+	if loadout == null:
+		failures.append("player scene is missing AbilityLoadout")
+		player.free()
+		return
+	loadout.call("_install_unbound_definitions")
+	if loadout.call("get_dash_runtime") == null:
+		failures.append("standalone player did not auto-install its authored dash")
 	player.free()
 
 

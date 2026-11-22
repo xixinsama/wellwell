@@ -10,6 +10,22 @@ const DASH_ID: StringName = &"dash"
 var _progression: RefCounted
 
 
+func _ready() -> void:
+	call_deferred("_install_unbound_definitions")
+
+
+## Standalone scenes (room previews, component galleries, labs) have no
+## ProgressionContext. Install the authored definitions so their player can
+## still dash; a real game binding overwrites this through
+## synchronize_unlocked_abilities().
+func _install_unbound_definitions() -> void:
+	if _progression != null or not is_inside_tree():
+		return
+	for definition: Resource in ability_definitions:
+		if definition != null:
+			_install_definition(definition)
+
+
 func bind_progression(progression: RefCounted) -> bool:
 	if progression == null or not progression.has_method("grant_ability") or not progression.has_method("has_ability"):
 		return false
