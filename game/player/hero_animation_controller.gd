@@ -49,6 +49,10 @@ func update_visual(delta: float, state: Dictionary) -> void:
 	var move_axis := float(state.get("move_axis", 0.0))
 	var vertical_axis := float(state.get("vertical_axis", 0.0))
 	var just_jumped := bool(state.get("just_jumped", false))
+	var wall_active := bool(state.get("wall", false))
+	var wall_sliding := bool(state.get("wall_slide", false))
+	var dash_active := bool(state.get("dash", false))
+	var ducking := bool(state.get("ducking", false))
 	_facing = int(state.get("facing", _facing))
 	var horizontal_speed := absf(velocity.x)
 	var has_input := absf(move_axis) > 0.01 or absf(vertical_axis) > 0.01
@@ -58,12 +62,22 @@ func update_visual(delta: float, state: Dictionary) -> void:
 	else:
 		_idle_elapsed += maxf(delta, 0.0)
 	var target := ""
-	if _swim_active:
+	if dash_active:
+		target = "jump"
+	elif _swim_active:
 		target = "swim" if _sprite.sprite_frames.has_animation(&"swim") else "climb"
+	elif wall_active and absf(vertical_axis) > 0.01:
+		target = "climb"
+	elif wall_sliding:
+		target = "fall"
+	elif wall_active:
+		target = "climb"
 	elif _climb_active and absf(_climb_direction.y) > 0.01:
 		target = "climb"
 	elif not grounded and not _climb_active:
 		target = "jump" if velocity.y < 0.0 else "fall"
+	elif grounded and ducking:
+		target = "look_down"
 	elif grounded and absf(vertical_axis) > 0.01:
 		target = "look_up" if vertical_axis < 0.0 else "look_down"
 	elif horizontal_speed >= 1.0:

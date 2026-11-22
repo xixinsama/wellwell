@@ -11,9 +11,15 @@
 [ext_resource type="SpriteFrames" uid="uid://dagq4637whohn" path="res://resources/player/hero_sprite_frames.tres" id="9_hero_frames"]
 [ext_resource type="Script" uid="uid://drh0mk60xr43" path="res://game/player/player_water_motion.gd" id="10_water_motion"]
 [ext_resource type="Script" uid="uid://d1heatb10qxsl" path="res://game/player/one_way_dash_piercer.gd" id="11_piercer"]
+[ext_resource type="Script" uid="uid://bljvgf2s1jie0" path="res://addons/platformer_kit/interaction/interaction_detector.gd" id="12_detector"]
+[ext_resource type="Script" path="res://game/interaction/player_interaction_controller.gd" id="13_interaction"]
+[ext_resource type="Script" path="res://scripts/player/player_stamina.gd" id="14_stamina"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_gmlin"]
 size = Vector2(6, 6)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_reach"]
+size = Vector2(14, 14)
 
 [node name="Player" type="CharacterBody2D" unique_id=43758805]
 z_index = 10
@@ -25,6 +31,19 @@ tuning = ExtResource("2_tuning")
 [node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=2008286553]
 position = Vector2(0, -3)
 shape = SubResource("RectangleShape2D_gmlin")
+
+[node name="InteractionDetector" type="Area2D" parent="."]
+collision_layer = 0
+collision_mask = 4
+monitorable = false
+script = ExtResource("12_detector")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="InteractionDetector"]
+position = Vector2(0, -4)
+shape = SubResource("RectangleShape2D_reach")
+
+[node name="InteractionController" type="Node" parent="."]
+script = ExtResource("13_interaction")
 
 [node name="SpriteRoot" type="Node2D" parent="." unique_id=1110208382]
 
@@ -54,3 +73,6 @@ script = ExtResource("10_water_motion")
 
 [node name="OneWayDashPiercer" type="Node" parent="." unique_id=1075897995]
 script = ExtResource("11_piercer")
+
+[node name="Stamina" type="Node" parent="."]
+script = ExtResource("14_stamina")
