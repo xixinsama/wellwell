@@ -1,7 +1,8 @@
-[gd_scene load_steps=3 format=3 uid="uid://d6sqanrtcnmo"]
+[gd_scene load_steps=4 format=3 uid="uid://d6sqanrtcnmo"]
 
 [ext_resource type="Script" path="res://addons/platformer_debug/runtime/debug_overlay_2d.gd" id="1_overlay"]
 [ext_resource type="Script" path="res://addons/platformer_debug/runtime/debug_visualizer_2d.gd" id="2_visualizer"]
+[ext_resource type="PackedScene" path="res://addons/platformer_debug/runtime/tas_tool.tscn" id="3_tas"]
 
 [node name="DebugOverlay" type="Node2D"]
 script = ExtResource("1_overlay")
@@ -9,3 +10,6 @@ script = ExtResource("1_overlay")
 [node name="Visualizer" type="Node2D" parent="."]
 z_index = 120
 script = ExtResource("2_visualizer")
+
+[node name="TasTool" parent="." instance=ExtResource("3_tas")]
+player_path = NodePath("../../Player")

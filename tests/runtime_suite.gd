@@ -21,6 +21,7 @@ const TESTS: Array[Script] = [
 	preload("res://tests/platformer_kit/world/test_world_contract_independence.gd"),
 	preload("res://tests/platformer_kit/save/test_save_contracts.gd"),
 	preload("res://tests/platformer_debug/test_debug_contract.gd"),
+	preload("res://tests/platformer_debug/test_tas_input_source.gd"),
 	preload("res://tests/platformer_abilities/test_ability_runtime.gd"),
 	preload("res://tests/platformer_abilities/test_ability_pickup.gd"),
 	preload("res://tests/platformer_abilities/test_dash_ability.gd"),

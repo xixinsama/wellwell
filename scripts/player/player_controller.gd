@@ -96,6 +96,10 @@ func set_input_source(value: RefCounted) -> bool:
 	return true
 
 
+func get_input_source() -> RefCounted:
+	return _input_source
+
+
 func get_movement_context() -> RefCounted:
 	return _movement_context
 
