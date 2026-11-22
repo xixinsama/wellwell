@@ -24,6 +24,9 @@ Replace concrete platform scripts with a `PlatformBody2D` host and child compone
 - Falling platform: add `FallMotionComponent2D` and optionally `RiderTriggerComponent2D`.
 - Moving-then-falling platform: combine waypoint, fall, and rider-trigger components.
 - Conveyor: add `ConveyorSurfaceComponent2D`.
+- Fog shadow: add `FogOccluderComponent2D` under the platform body. It publishes
+  the body's collision footprint to the `fog_occluder` group, so the platform
+  hides what is behind it from the fog without a second size to maintain.
 - One-way platform: remove the framework script and set `CollisionShape2D.one_way_collision = true`.
 
 Do not add platform velocity to `CharacterBody2D.velocity`. The character motor owns relative velocity, `get_platform_velocity()` reports support transport, and `get_real_velocity()` reports collision-corrected world movement.
@@ -33,6 +36,27 @@ Do not add platform velocity to `CharacterBody2D.velocity`. The character motor 
 Convert the old target to `PackedVector2Array([Vector2.ZERO, target_offset])`
 and set `travel_speed` to `target_offset.length() / (cycle_duration / 2.0)`.
 Use `PING_PONG` to preserve the old return trip.
+
+## World Stack Storage
+
+`WorldData.world_stack` is gone. A world that referenced its own stack formed an
+unloadable two-file cycle (the stack lists the world back), which made the world
+catalog fail to load. The editor now finds the stack next to the world as
+`<world>_stack.tres`; keep the stack resource at that path and remove any
+`world_stack = ...` line from saved worlds.
+
+## Fog Door Migration
+
+`scripts/world/fog_door.gd` is gone. `scenes/world/fog_door.tscn` keeps its path
+and its `Node2D` root but is now composed of `Body` (`StaticBody2D`),
+`DoorComponent2D` and `FogOccluderComponent2D`:
+
+- Remove room-instance overrides that assign the old script or the removed
+  `door_id` export; both would otherwise fail to resolve.
+- Re-bake rooms that instance the prefab. Door state stays runtime-only.
+- A custom door is a `StaticBody2D` plus `DoorComponent2D` (point
+  `body_path` / `sense_path` at the body and the sense area) and, for a sight
+  blocker, a `FogOccluderComponent2D` in `DoorComponent2D.occluder_paths`.
 
 ## Save Integration
 
@@ -50,6 +74,27 @@ room_template_scene="res://scenes/rooms/template/level_template.tscn"
 ```
 
 Source rooms remain authored scenes. Generated room scenes and `.tres` files remain bake outputs; world placement belongs to `WorldData`.
+
+### World Terrain Storage
+
+Terrain is authored once per world, not per room:
+
+| Before | Now |
+| --- | --- |
+| Each room source owned its `RoomContent/Terrain` cells | `scenes/worlds/<world_id>/terrain.tscn` owns every cell in world cell coordinates |
+| Baking packed the room's own terrain | Baking slices the room's cell rectangle out of the world terrain |
+| World editor painted terrain with a brush | **Edit Terrain** opens the terrain scene in the normal Godot editor; **Sync Terrain** re-slices and re-bakes every room |
+
+Room source scenes keep an empty `RoomContent/Terrain` (the authoring contract
+still requires the layers), but their cells are ignored at bake time. Run
+`tools/migrate_world_terrain.gd` (dry-run first) to move existing room terrain
+into the world scenes and clear the room cells; it backs every modified scene up
+to `resources/worlds/_migration_backup/`.
+
+The World editor can also create rooms (**Draw Room**), merge the selection into
+one room (**Merge**, the union must be a rectangle) and split a room at a chunk
+boundary (**Split**). Both partition operations use new room ids and back the
+world and the replaced room assets up before touching them.
 
 ## Verification
 
