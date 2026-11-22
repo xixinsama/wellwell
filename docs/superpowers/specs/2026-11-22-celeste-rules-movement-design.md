@@ -47,7 +47,8 @@ Hold toward a wall to attach. The attach state is the grab state.
 | Hold toward wall | Grab / hold | `v = 0`; -10 stamina/s |
 | Toward + up | Climb up | `v.y = -45`; -45.45 stamina/s |
 | Toward + down | Climb down | `v.y = +80`; no stamina cost |
-| Toward + jump | Climb jump | `v.y = jump_speed`; -27.5 stamina |
+| Toward + jump | Wall jump away | `v = (±130, jump_speed)`; no stamina |
+| Toward + up + jump | Climb jump | `v.y = jump_speed`; -27.5 stamina |
 | Away/neutral + jump | Wall jump | `v = (±130, jump_speed)`; no stamina |
 | Climb jump, then away within 0.2 s | Convert to wall jump | `v.x = ±130`; refund 27.5 |
 | Up-dash + wall + jump during dash attack | Wallbounce | `v = (±170, -160)` |
@@ -56,9 +57,11 @@ Hold toward a wall to attach. The attach state is the grab state.
 
 Rules:
 
+- Attaching snaps the body flush to the wall, including the side of a moving
+  platform. A moving wall carries the player while attached.
 - A wall jump applies a 0.16 s forced horizontal velocity and a 0.16 s
-  auto-grab lockout. Releasing the lockout requires the player to stop holding
-  toward the wall or wait.
+  auto-grab lockout **on the wall that was just left only**. The opposite wall
+  can be grabbed immediately, which is what makes left/right chains smooth.
 - A climb jump deducts 27.5 stamina immediately. If the player presses away
   within 0.2 s, the jump converts to a wall jump and refunds the stamina.
 - Tired threshold is 20 stamina. A tired player cannot start a new grab but may

@@ -73,7 +73,7 @@ instead of hand-drawn.
 - S / Down: down input, fast fall, and duck
 - Space / Z: jump
 - X: dash
-- Hold toward a wall to grab/climb; hold away or neutral and press jump to wall jump
+- Hold toward a wall to grab/climb; press jump to wall jump away, or hold up + jump to climb jump
 - F1: cycle grid overlay
 - `[` / `]`: choose a tuning field during play
 - `-` / `=`: decrease or increase the selected tuning field during play

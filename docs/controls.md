@@ -48,19 +48,24 @@ Swimming refills the dash while the normal cooldown applies.
 ## Wall movement (no grab button)
 
 Hold the direction toward a wall to attach. There is no separate grab input.
+Attaching pulls the body flush against the wall, and a moving platform keeps
+carrying the player while attached.
 
 - Hold toward the wall: grab and hold position; stamina drains at 10/s.
 - Toward + up: climb up; stamina drains at 45.45/s.
 - Toward + down: climb down; no stamina cost.
-- Toward + jump: climb jump straight up; costs 27.5 stamina.
+- Toward + jump: **wall jump away**; costs no stamina. This is the normal way
+  to alternate between two walls.
+- Toward + up + jump: climb jump straight up; costs 27.5 stamina.
 - Away or neutral + jump: wall jump away; costs no stamina.
 - Climb jump, then press away within 0.2 s: converts to a wall jump and refunds
   the 27.5 stamina.
 - Stamina at 20 or below: cannot start a new grab.
 - Stamina at 0 while holding toward the wall: wall slide (fall cap 20 -> 160
   over 1.2 s).
-- A wall jump locks auto-grab for 0.16 s so holding toward the wall cannot
-  immediately reattach.
+- A wall jump locks auto-grab only on the wall that was just left (0.16 s), so
+  the opposite wall can be grabbed immediately and left/right chains stay
+  smooth.
 
 ## Advanced jumps
 
