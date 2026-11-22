@@ -13,3 +13,10 @@ exports/
 docs/artifacts/*.png
 
 .superpowers/
+
+# one-time world terrain migration backups
+resources/worlds/_migration_backup/
+
+# merge/split world backups
+resources/worlds/_partition_backup/
+resources/worlds/*/merge_backup/
