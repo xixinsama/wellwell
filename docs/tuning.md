@@ -46,6 +46,10 @@ The supplied Dash is
 
 ## Wall and Stamina
 
+Wall movement is unlocked by the `climb` ability
+(`addons/platformer_abilities/abilities/climb/default_climb.tres`). Without it,
+the player never enters `WALL_GRAB` / `WALL_SLIDE`, so grab, climb, wall slide,
+wall jump and wallbounce are all disabled together.
 - `wall_check_distance`: horizontal wall probe (`3 px`).
 - `wallbounce_check_distance`: wider wallbounce probe (`5 px`).
 - `wall_jump_speed`: push-away speed (`130`).

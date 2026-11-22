@@ -34,7 +34,7 @@ godot --path . res://examples/movement_lab/movement_lab_debug.tscn
 - 8x8 block player visual.
 - Jump buffer, coyote time, variable jump height, apex half gravity, air control, and fast fall.
 - Celeste-style dash (freeze, end speed, dash-attack window), super/hyper/wavedash, and wallbounce.
-- No-grab wall grab, climb, wall slide, stamina, wall jump, and climb-jump conversion.
+- No-grab wall grab, climb, wall slide, stamina, wall jump, and climb-jump conversion, unlocked by the Climb ability.
 - Global hit-stop and moving-platform lift caps.
 - Optional **Celeste Momentum** Game setting (off by default): preserves pre-dash speed and enables the 1.2x Ultra chain.
 - Optional **Realtime Save** Game setting (off by default): resumes at the exact position and velocity where the previous session ended, while death still returns to the last checkpoint.

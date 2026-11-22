@@ -113,8 +113,14 @@ tables and a symptom table lives in `docs/components-tutorial.md`.
   `CharacterMotor2D`; `DASH`, `WALL_GRAB` and `WALL_SLIDE` are player-side
   states so Platformer Kit does not own stamina or the player graph.
 - No grab action exists. Holding toward a wall attaches; up/down climbs;
-  toward + jump is a climb jump; away/neutral + jump is a wall jump. The 0.2 s
+  toward + jump is a wall jump; toward + up + jump is a climb jump. The 0.2 s
   climb-jump conversion refunds the stamina, matching Celeste's forgiveness.
+- Wall movement is gated by the `climb` ability:
+  `addons/platformer_abilities/abilities/climb/default_climb.tres`. Grant it
+  through the same ability pickup path as Dash; without it the player never
+  enters the wall states, so grab, climb, wall slide, wall jump and wallbounce
+  are all locked. The player scene authors the definition so main-game
+  progression can restore an unlocked Climb on load.
 - `GameFreeze` is the global hit-stop autoload. It buffers jump/dash edges while
   frozen so instant super/hyper inputs are not lost.
 - The optional Game setting **Celeste Momentum** (`celeste_momentum_enabled`,

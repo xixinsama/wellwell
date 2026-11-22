@@ -47,9 +47,20 @@ Swimming refills the dash while the normal cooldown applies.
 
 ## Wall movement (no grab button)
 
+Wall movement is an **unlockable Climb ability**. Until it is granted, holding
+toward a wall does nothing: no grab, wall slide, wall jump or wallbounce.
+
 Hold the direction toward a wall to attach. There is no separate grab input.
 Attaching pulls the body flush against the wall, and a moving platform keeps
 carrying the player while attached.
+
+The Climb ability is authored as
+`addons/platformer_abilities/abilities/climb/default_climb.tres`. Grant it with
+an `ability_pickup.tscn` instance (same pattern as the Dash pickup) or the
+ready-made `addons/platformer_abilities/entities/climb_pickup.tscn`, or directly
+through `player.grant_ability_definition()`. Standalone lab/gallery scenes
+auto-install authored abilities; the main game removes Climb until progression
+has unlocked it.
 
 - Hold toward the wall: grab and hold position; stamina drains at 10/s.
 - Toward + up: climb up; stamina drains at 45.45/s.
