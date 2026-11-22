@@ -131,6 +131,27 @@ func set_respawn(room_id: String, spawn_id: String, position: Vector2 = Vector2.
     queue_commit()
 
 
+func set_resume_state(position: Vector2, velocity: Vector2, immediate := false) -> bool:
+    if current_snapshot == null:
+        return false
+    if not current_snapshot.set_resume_state(position, velocity):
+        return false
+    if immediate:
+        return commit()
+    queue_commit()
+    return true
+
+
+func clear_resume_state(immediate := false) -> bool:
+    if current_snapshot == null:
+        return false
+    current_snapshot.clear_resume_state()
+    if immediate:
+        return commit()
+    queue_commit()
+    return true
+
+
 func queue_commit(delay_seconds: float = 0.35) -> void:
     if _commit_timer == null:
         commit()

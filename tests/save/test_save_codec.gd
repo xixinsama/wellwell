@@ -20,6 +20,8 @@ func run() -> Array[String]:
 	_assert_invalid_data_is_rejected(failures)
 	_assert_invalid_load_does_not_mutate_existing_snapshot(failures)
 	_assert_commits_announce_the_snapshot_before_writing(failures)
+	_assert_resume_state_round_trip(failures)
+	_assert_invalid_resume_state_is_optional(failures)
 	return failures
 
 
@@ -116,3 +118,40 @@ func _assert_commits_announce_the_snapshot_before_writing(failures: Array[String
 		elif not bool(storage.written.get_entity_state("world:room:entity").get("persisted", false)):
 			failures.append("quick save wrote before runtime persistence listeners ran")
 	manager.free()
+
+
+func _assert_resume_state_round_trip(failures: Array[String]) -> void:
+	var snapshot: RefCounted = SAVE_SNAPSHOT.new()
+	snapshot.slot = 1
+	if not snapshot.has_method("set_resume_state"):
+		failures.append("SaveSnapshot is missing set_resume_state")
+		return
+	if not snapshot.call("set_resume_state", Vector2(12, 34), Vector2(5, -6)):
+		failures.append("SaveSnapshot rejected a finite resume transform")
+	var codec: RefCounted = SAVE_CODEC.new()
+	var decoded: RefCounted = codec.decode(codec.encode(snapshot), 1)
+	if decoded == null:
+		failures.append("resume state round trip lost the snapshot")
+		return
+	if decoded.get("has_resume") != true:
+		failures.append("resume state flag did not round trip")
+	if Vector2(decoded.get("resume_position")) != Vector2(12, 34):
+		failures.append("resume position did not round trip")
+	if Vector2(decoded.get("resume_velocity")) != Vector2(5, -6):
+		failures.append("resume velocity did not round trip")
+	decoded.call("clear_resume_state")
+	if decoded.get("has_resume") == true or not (decoded.to_dictionary().get("player_resume", {}) as Dictionary).is_empty():
+		failures.append("clear_resume_state left data behind")
+
+
+func _assert_invalid_resume_state_is_optional(failures: Array[String]) -> void:
+	var snapshot: RefCounted = SAVE_SNAPSHOT.new()
+	snapshot.slot = 1
+	snapshot.world_id = "kept_world"
+	var data: Dictionary = snapshot.to_dictionary()
+	data["player_resume"] = {"position": {"x": "bad", "y": 0}, "velocity": {"x": 0, "y": 0}}
+	var decoded: RefCounted = SAVE_CODEC.new().decode(JSON.stringify(data), 1)
+	if decoded == null:
+		failures.append("malformed optional resume data rejected the whole save")
+	elif decoded.world_id != "kept_world" or decoded.get("has_resume") == true:
+		failures.append("malformed optional resume data was not ignored")
