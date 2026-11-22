@@ -29,6 +29,7 @@ func run() -> Array[String]:
 	_assert_unlinked_door_refuses_to_travel(failures)
 	_assert_portal_dispatch(failures)
 	_assert_shuttle_dispatch(failures)
+	_assert_interact_mode_uses_the_interactable(failures)
 	_assert_arrival_disarm_rearms_after_exit(failures)
 	return failures
 
@@ -44,6 +45,13 @@ func _assert_scene_contract(failures: Array[String]) -> void:
 	var area := door.get_node("ActivationArea") as Area2D
 	if area.collision_layer != 0 or area.collision_mask != 2:
 		failures.append("WorldDoor activation area does not detect the player collision layer")
+	# The player's InteractionDetector finds candidates through area_entered, so
+	# the Interactable must stay monitorable.
+	var interactable := door.get_node("Interactable") as Area2D
+	if interactable.collision_layer != 4:
+		failures.append("WorldDoor Interactable is not on the interactable layer")
+	if not interactable.monitorable:
+		failures.append("WorldDoor Interactable is not monitorable; the player detector cannot see it")
 	var arrival := door.get_node("ArrivalSpawn")
 	if String(arrival.get("spawn_id")) != "portal_a":
 		failures.append("WorldDoor arrival spawn does not answer to the door entity_id")
@@ -161,6 +169,43 @@ func _assert_shuttle_dispatch(failures: Array[String]) -> void:
 		failures.append("SHUTTLE door did not travel")
 	if host.calls != [["world_b", "room_b", "shuttle_b"]]:
 		failures.append("SHUTTLE door did not use the cross-world travel path")
+	host.free()
+
+
+## INTERACT mode is driven by the door's Interactable area; CONTACT mode keeps
+## that area disabled so a player prompt never appears for it.
+func _assert_interact_mode_uses_the_interactable(failures: Array[String]) -> void:
+	var snapshot: RefCounted = SAVE_SNAPSHOT.new()
+	var host := FakePortalHost.new()
+	add_child(host)
+	var door := _make_door({
+		"entity_id": "interact_a",
+		"activation_mode": 1,
+		"target_room_id": "room_b",
+		"target_door_id": "interact_b",
+	}, host, snapshot)
+	if door == null:
+		host.free()
+		return
+	var interactable := door.get_node_or_null("Interactable")
+	if interactable == null:
+		failures.append("INTERACT door has no Interactable area")
+	elif not bool(interactable.get("enabled")):
+		failures.append("INTERACT door did not enable its Interactable area")
+	else:
+		interactable.call("interact", null)
+		if host.calls != [["room_b", "interact_b"]]:
+			failures.append("INTERACT door did not travel when its Interactable fired")
+	var contact := _make_door({
+		"entity_id": "contact_a",
+		"activation_mode": 0,
+		"target_room_id": "room_b",
+		"target_door_id": "contact_b",
+	}, host, snapshot)
+	if contact != null:
+		var contact_area := contact.get_node_or_null("Interactable")
+		if contact_area != null and bool(contact_area.get("enabled")):
+			failures.append("CONTACT door left its Interactable area enabled")
 	host.free()
 
 

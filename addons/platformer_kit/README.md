@@ -25,12 +25,14 @@ All `class_name` declarations under this addon are source-level public in `0.x`.
 | --- | --- | --- |
 | Core | `StateMachine`, `ScopedEventBus`, `TagContainer`, `GameEvent` | State transitions, scoped events, and tag queries |
 | Character | `CharacterIntent`, `CharacterMotor2D`, `MovementContext`, `MovementProfile`, `CharacterSensors` | `CharacterMotor2D.step(intent, context, profile, delta)` |
-| Platforms | `PlatformBody2D`, `WaypointMotionComponent2D`, `FallMotionComponent2D`, `RiderTriggerComponent2D`, `ConveyorSurfaceComponent2D` | `advance_motion()`, `reset_platform()`, `activate()`, `reset_component()` |
+| Platforms | `PlatformBody2D`, `WaypointMotionComponent2D`, `FallMotionComponent2D`, `ElevatorMotionComponent2D`, `RiderTriggerComponent2D`, `ConveyorSurfaceComponent2D`, `FogOccluderComponent2D` | `advance_motion()`, `reset_platform()`, `activate()`, `reset_component()`, `is_occluding()`, `get_world_rect()` |
 | Interaction | `Interactable`, `InteractionDetector` | `can_interact()`, `interact()`, `get_best_candidate()` |
 | Camera | `PixelCamera2D` | `bind_target()`, `set_camera_mode()`, `set_room_bounds()`, `add_shake()` |
 | Save | `PlatformerSaveManager`, `SaveSnapshot`, `SaveStorage`, `PersistentId`, `Saveable` | Slot operations, `commit()`, entity/module state serialization |
 | World | `RoomData`, `WorldData`, `WorldGraph`, `WorldSession`, `WorldRuntime`, `RoomRuntime` | Room lookup, graph construction, session startup, streaming, and transitions |
 | Entities | `WorldEntity`, `SpawnPoint`, `RoomEntrance`, `SavePoint`, `HazardEntity`, `PickupEntity` | Stable-ID state capture and room integration |
+| Doors | `DoorComponent2D` | `set_closed()`, `toggle()`, `door_opened`, `door_closed` |
+| Hidden walls | `PhantomWallComponent2D` | `reveal()`, `reset_component()`, `wall_revealed`, `is_occluding()`, `get_world_rect()` |
 
 Resources such as `MovementProfile`, `RoomData`, `WorldData`, `RegionData`, and `RoomConnectionData` are data contracts. Prefer `.tres` instances over hard-coded game tuning.
 
@@ -50,6 +52,12 @@ Connect through these signals or the listed public methods. Do not call undersco
 ## Platform Composition
 
 Create an `AnimatableBody2D` with `PlatformBody2D`, then add direct child components. Components can be combined; for example, a platform can use both `WaypointMotionComponent2D` and `FallMotionComponent2D`. Waypoints are local offsets, start with `(0, 0)`, and support `PING_PONG` or `CYCLE` traversal plus a pause at every arrival. Use `CollisionShape2D.one_way_collision` for native one-way behavior. Character relative velocity remains separate from `get_platform_velocity()` and `get_real_velocity()`.
+
+Add `FogOccluderComponent2D` under the body when the platform should hide what is behind it. It answers the fog's `is_occluding()` / `get_world_rect()` contract with the host's collision footprint, joins the `fog_occluder` group, and refreshes the `fog_of_war` group only when the footprint crosses an 8 px cell. The kit never imports the Metroidvania addon: the wiring is the group names and the two methods.
+
+A door is a `StaticBody2D` plus `DoorComponent2D` (size, state, collision, interaction, panel) and, when it should block sight, a `FogOccluderComponent2D` listed in `DoorComponent2D.occluder_paths`.
+
+A phantom wall is a `TileMapLayer` with collision disabled and `PhantomWallComponent2D` attached: the painted cells look like terrain, can be walked through, block sight while the wall stands, and fade out when a character touches them. `scenes/world/phantom_wall.tscn` is the prefab. Erase the matching `SolidTiles` cells when authoring, or the old collision keeps the player out.
 
 ## World Entities
 

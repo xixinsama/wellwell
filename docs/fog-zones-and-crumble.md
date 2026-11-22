@@ -292,17 +292,63 @@ if present.
 ## Doors
 
 `scenes/world/fog_door.tscn` is a 1x2 (configurable) door placed under
-`RoomContent/Entities`:
+`RoomContent/Entities`. It is a prefab built from components rather than a
+bespoke script:
 
-- While closed it is a `StaticBody2D` on the world layer (blocks movement) and a
-  fog occluder (blocks sight), so the space behind it stays dark.
-- Interact (`E` / pad `X`) within its sensing area toggles it. Opening removes
-  both the collision and the sight blocker, so the room behind lights up.
-- The node joins the `fog_occluder` group; the fog reads
-  `is_occluding()`/`get_world_rect()`. Any future occluder only needs those two
-  methods and the group.
+- `Body` — `StaticBody2D` on the world layer. `DoorComponent2D` disables its
+  shape while the door is open.
+- `Door` — `DoorComponent2D` (`addons/platformer_kit/world/components/`): owns
+  `size_cells`, `closed`, `blocks_sight`, `interactive` and the panel drawing.
+  Interact (`E` / pad `X`) inside the sense area toggles it.
+- `FogOccluder` — `FogOccluderComponent2D`
+  (`addons/platformer_kit/platforms/components/`): while the door is closed and
+  `blocks_sight` is on, it joins the `fog_occluder` group so the space behind the
+  panel stays dark. Opening clears the sight blocker with the collision, so the
+  room behind lights up.
 - Door state is runtime-only; it resets when the room reloads.
-- `size_cells`, `blocks_sight`, `interactive` and `door_id` are exported.
+
+When building a door of your own, give `DoorComponent2D.occluder_paths` the
+`FogOccluderComponent2D` that should blink with it. The door never talks to the
+fog directly.
+
+## The occlusion contract
+
+Any node the fog should treat as a wall needs three things:
+
+1. membership in the `fog_occluder` group;
+2. `is_occluding() -> bool`;
+3. `get_world_rect() -> Rect2` in pixels, or `get_occluder_cells()` (plus an
+   optional `get_occluder_one_way_cells()`) in world fog cells.
+
+Call `get_tree().call_group("fog_of_war", "request_refresh")` after the blocker
+changes. `FogOccluderComponent2D` does all of this for a body: add it under a
+`StaticBody2D` / `AnimatableBody2D` — a falling or sliding platform, a door, a
+crate — and the body's collision footprint hides what is behind it. It refreshes
+only when the footprint crosses an 8 px cell, so a moving platform does not
+rebuild the mask every frame.
+
+Exploration stays monotonic: a blocker stops a cell from being revealed, but it
+cannot push a cell the player already saw this visit back into darkness.
+
+## Phantom walls
+
+`scenes/world/phantom_wall.tscn` is a single `TileMapLayer` node with collision
+disabled and `PhantomWallComponent2D` attached. Instance it under
+`RoomContent/Entities` and paint the wall on the instance root:
+
+- The tiles come from the room's own tileset, so the wall reads exactly like the
+  surrounding terrain; because the layer does not collide, the player walks into
+  it and straight through.
+- While the wall stands it blocks sight: the component publishes the painted
+  cells to the `fog_occluder` group, so the pocket behind stays dark.
+- A body touching the wall reveals it: the painting fades out (or disappears at
+  once with `fade_seconds = 0`), the sight blocker stands down, and the fog
+  refreshes so the space behind lights up.
+- State is runtime-only; the wall is back the next time the room loads.
+- Authoring: erase the same cells from `Terrain/SolidTiles`. The phantom layer
+  replaces the solid wall; leaving the old tiles keeps the player out.
+- Set `reveal_on_contact = false` and call `reveal()` yourself to gate the secret
+  behind an ability, a switch or a cutscene.
 
 ## Sliding puzzle pieces
 
@@ -355,6 +401,8 @@ To iterate:
 - `tests/world/test_crumble_runtime.gd` — shake/break/respawn timing, both
   crumble tiles, non-crumble tiles, room-switch restore, clear-room restore.
 - `tests/world/test_fog_door.gd` — occlusion flag, world rect, collision toggle.
+- `tests/world/test_phantom_wall.gd` — no collision, footprint from painted
+  cells, reveal clears occlusion and hides the painting, reset restores it.
 
 Run:
 

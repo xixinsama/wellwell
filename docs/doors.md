@@ -21,12 +21,14 @@ There are two kinds:
    bidirectional by construction.
 4. A `SHUTTLE` door also needs `target_world` (the other `WorldData` resource).
    Put one door in each world; each names the other.
-5. Keep `ArrivalSpawn` clear of `ActivationArea`. The default sits 20px to the
-   right of the door, outside the 20px-wide sensor. The actor is placed on that
-   marker, so if it overlapped the sensor the actor would arrive standing in the
-   door and be sent straight back.
-6. `activation_mode = INTERACT` swaps contact for the interact key (E / pad X)
-   and exposes the door's `Interactable` area.
+5. Keep `ArrivalSpawn` clear of `ActivationArea`. The default sits 24px below the
+   door, outside the 26px-tall sensor. The actor is placed on that marker, so if it
+   overlapped the sensor the actor would arrive standing in the door and be sent
+   straight back.
+6. `activation_mode = INTERACT` swaps contact for the interact key (E / pad X):
+   the door enables its `Interactable` area, the player's `InteractionDetector`
+   selects it, and the HUD prompt shows the current binding above the door.
+   `CONTACT` leaves that area disabled, so no prompt ever appears for it.
 
 ## What happens at runtime
 
@@ -68,8 +70,8 @@ again.
   resource instead of the rooms — one row per world with its `Z` index, `▲ ▼` to
   change its height, `✕` to remove it and `+ World` to add another. Layer 0 is the
   bottom slice; the world being edited is highlighted. The stack is a real
-  resource (`WorldStack`, e.g. `resources/worlds/<world>_stack.tres`) referenced
-  from `WorldData.world_stack`; the view draws exactly its layers and nothing
+  resource (`WorldStack`, e.g. `resources/worlds/<world>_stack.tres`) found next
+  to its world; the view draws exactly its layers and nothing
   else. Adding the first layer creates and saves that resource next to the world.
 - Unmatched links are red dashed in both views and also produce one
   `... link ... is unmatched` warning in the Output panel.

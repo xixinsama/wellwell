@@ -4,6 +4,10 @@ const FOG_VISIBILITY: Script = preload("res://addons/metroidvania_kit/map/discov
 const FOG_OF_WAR: Script = preload("res://addons/metroidvania_kit/map/discovery/fog_of_war.gd")
 const FOG_ZONE: Script = preload("res://scripts/world/fog_zone.gd")
 const ROOM_DATA: Script = preload("res://addons/platformer_kit/world/data/room_data.gd")
+const FOG_OCCLUDER: Script = preload(
+	"res://addons/platformer_kit/platforms/components/fog_occluder_component_2d.gd"
+)
+const PHANTOM_WALL: PackedScene = preload("res://scenes/world/phantom_wall.tscn")
 
 const SOLID_TILE := Vector2i(0, 0)
 const ONE_WAY_TILE := Vector2i(1, 0)
@@ -105,6 +109,8 @@ func run() -> Array[String]:
 	_assert_partial_overlap_lights_both_sides(failures)
 	_assert_sub_cell_zone_edge_refreshes(failures)
 	_assert_door_occludes_sight(failures)
+	_assert_platform_occluder_blocks_sight(failures)
+	_assert_phantom_wall_opens_sight(failures)
 	_assert_cell_occluder_participates(failures)
 	_assert_room_switch_clears_state(failures)
 	_assert_mask_matches_lit_cells(failures)
@@ -590,6 +596,81 @@ func _assert_door_occludes_sight(failures: Array[String]) -> void:
 	if opened.has(Vector2i(3, 1)):
 		failures.append("open door kept blocking sight")
 	door.free()
+	root.free()
+
+
+func _assert_platform_occluder_blocks_sight(failures: Array[String]) -> void:
+	# A platform is not a tile: without the component the fog sees straight
+	# through it. Moving it one body width must move its shadow cell as well.
+	var root := Node2D.new()
+	var terrain := _make_terrain({})
+	root.add_child(terrain)
+	var body := StaticBody2D.new()
+	body.position = Vector2(24.0, 8.0)
+	var shape_node := CollisionShape2D.new()
+	var rectangle := RectangleShape2D.new()
+	rectangle.size = Vector2(8.0, 16.0)
+	shape_node.shape = rectangle
+	shape_node.position = Vector2(4.0, 8.0)
+	body.add_child(shape_node)
+	root.add_child(body)
+	var occluder: Node = FOG_OCCLUDER.new()
+	body.add_child(occluder)
+	var fog: Node2D = FOG_OF_WAR.new() as Node2D
+	fog.cell_size = Vector2i(8, 8)
+	fog.chunk_size_pixels = Vector2i(320, 180)
+	root.add_child(fog)
+	add_child(root)
+	var room: Resource = _make_room("platform_room", Vector2i.ZERO, Vector2i(1, 1))
+	fog.call("bind_room", room, terrain, Vector2i.ZERO)
+	var blockers: Dictionary = fog.call("_collect_sight")
+	if not blockers.has(Vector2i(3, 1)):
+		failures.append("a platform with the fog occluder did not block sight")
+	body.position = Vector2(96.0, 8.0)
+	if not bool(occluder.call("refresh_if_moved")):
+		failures.append("the moving platform did not report a crossed fog cell")
+	var moved: Dictionary = fog.call("_collect_sight")
+	if moved.has(Vector2i(3, 1)):
+		failures.append("the old platform shadow survived the move")
+	if not moved.has(Vector2i(12, 1)):
+		failures.append("the moved platform did not block sight at its new cell")
+	occluder.call("set_blocking", false)
+	fog.call("request_refresh")
+	var opened: Dictionary = fog.call("_collect_sight")
+	if opened.has(Vector2i(12, 1)):
+		failures.append("a disabled platform occluder kept blocking sight")
+	root.free()
+
+
+func _assert_phantom_wall_opens_sight(failures: Array[String]) -> void:
+	# The secret lives behind a wall that is painted but never solid: until it is
+	# touched, its cells must stop the sight fill from reaching the pocket.
+	var root := Node2D.new()
+	var terrain := _make_terrain({})
+	root.add_child(terrain)
+	var wall := PHANTOM_WALL.instantiate() as TileMapLayer
+	wall.position = Vector2(24.0, 8.0)
+	wall.set_cell(Vector2i(0, 0), 0, Vector2i(0, 0))
+	wall.set_cell(Vector2i(0, 1), 0, Vector2i(0, 0))
+	root.add_child(wall)
+	var fog: Node2D = FOG_OF_WAR.new() as Node2D
+	fog.cell_size = Vector2i(8, 8)
+	fog.chunk_size_pixels = Vector2i(320, 180)
+	root.add_child(fog)
+	add_child(root)
+	var room: Resource = _make_room("phantom_room", Vector2i.ZERO, Vector2i(1, 1))
+	fog.call("bind_room", room, terrain, Vector2i.ZERO)
+	var blockers: Dictionary = fog.call("_collect_sight")
+	for cell: Vector2i in [Vector2i(3, 1), Vector2i(3, 2)]:
+		if not blockers.has(cell):
+			failures.append("phantom wall cell %s did not block sight" % cell)
+	wall.set("fade_seconds", 0.0)
+	wall.call("reveal")
+	fog.call("request_refresh")
+	var opened: Dictionary = fog.call("_collect_sight")
+	for cell: Vector2i in [Vector2i(3, 1), Vector2i(3, 2)]:
+		if opened.has(cell):
+			failures.append("revealed phantom wall cell %s still blocked sight" % cell)
 	root.free()
 
 
