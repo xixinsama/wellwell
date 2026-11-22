@@ -90,6 +90,18 @@ Game → **Celeste Momentum** is off by default. When enabled:
 
 The toggle applies immediately to the player.
 
+## Settings: Realtime Save
+
+Game → **Realtime Save** is off by default. When enabled, the game records the
+player's position and velocity every two seconds and flushes the save when the
+window closes. Continuing that slot resumes at the exact room and spot where
+the session ended.
+
+Death is unchanged: kill zones and hazards still return the player to the last
+checkpoint, not the live position. Disabling the setting returns the next start
+to the normal checkpoint behavior. If the process is killed before the final
+flush, at most about two seconds of movement are lost.
+
 ## Debug
 
 - F1: cycle grid overlay between hidden, 8px, and 16px.
@@ -102,14 +114,23 @@ The toggle applies immediately to the player.
 The debug overlay includes an input TAS. It records one `CharacterIntent` per
 physics tick and replays it through the player's input source.
 
+- Ctrl+R: start recording from the current spot, or stop the active recording.
+- Ctrl+P: play the recording from its start, or stop playback.
+- Ctrl+S: stop recording if needed, then save the clip to
+  `user://tas_recording.json`.
 - F5: show/hide the TAS panel.
-- F6: start/stop recording (resets the player to the recording start).
-- F7: play the recorded input.
+- F6: start/stop recording (same as Ctrl+R).
+- F7: play/stop the recorded input (same as Ctrl+P).
 - F8: clear the recording.
 - F9: toggle 0.25x slow motion.
-- F10: save the recording to `user://tas_recording.json`.
+- F10: save the recording (same as Ctrl+S).
 - F11: load that recording.
 - F12: reset the player to the recording start.
+
+A clip remembers the world and room where recording began. Playback refuses to
+start in a different room so the player is never teleported into a room that is
+not loaded. The payload also keeps the old fields, so recordings made before
+this guard still load.
 
 The demo scene `examples/tas_demo/tas_demo.tscn` replays two recorded clips and
 shows the speed caps. Regenerate the clips with:

@@ -37,7 +37,8 @@ godot --path . res://examples/movement_lab/movement_lab_debug.tscn
 - No-grab wall grab, climb, wall slide, stamina, wall jump, and climb-jump conversion.
 - Global hit-stop and moving-platform lift caps.
 - Optional **Celeste Momentum** Game setting (off by default): preserves pre-dash speed and enables the 1.2x Ultra chain.
-- Debug-overlay TAS (record/replay/save input; `F5`-`F12`) and a recorded dash-jump speed-cap demo.
+- Optional **Realtime Save** Game setting (off by default): resumes at the exact position and velocity where the previous session ended, while death still returns to the last checkpoint.
+- Debug-overlay TAS (record/replay/save input; `Ctrl+R` / `Ctrl+P` / `Ctrl+S`, plus `F5`-`F12`) and a recorded dash-jump speed-cap demo.
 - Pixel-quantized camera.
 - Debug HUD and grid overlay.
 - Source rooms under `scenes/rooms/source/`, baked runtime/terrain outputs, and `WorldData` placement resources.

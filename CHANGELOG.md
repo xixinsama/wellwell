@@ -15,8 +15,12 @@ All notable Platformer Kit changes are recorded here. The project follows Semant
 - Optional **Celeste Momentum** Game setting (off by default): a dash preserves
   a higher pre-dash horizontal speed, and a down-diagonal ground hit applies
   the 1.2x Ultra multiplier for chained-ultra speed growth.
+- Optional **Realtime Save** Game setting (off by default): captures the player
+  position and velocity every two seconds and on quit, then resumes that exact
+  spot next session. Death still returns to the last checkpoint.
 - Debug-overlay input TAS (record/replay/save/slow motion) and a recorded
-  dash-jump speed-cap demo.
+  dash-jump speed-cap demo. `Ctrl+R` records/stops, `Ctrl+P` plays/stops, and
+  `Ctrl+S` saves; the original `F5`-`F12` shortcuts remain.
 - World-centric terrain: each world now owns one authored terrain scene
   (`scenes/worlds/<world_id>/terrain.tscn`) edited with the normal Godot TileMap
   tools; **Sync Terrain** slices it into per-room runtime terrain and re-bakes the

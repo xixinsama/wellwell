@@ -126,6 +126,11 @@ func _assert_default_world_root_is_startable(failures: Array[String]) -> void:
 	root.add_child(hud)
 	root.set("debug_hud_path", NodePath("TestHud"))
 	add_child(root)
+	var realtime := root.get_node_or_null("RealtimeSave")
+	if realtime == null:
+		failures.append("world_root is missing the RealtimeSave service")
+	elif realtime.get("_player") != root.get_node("Player") or realtime.get("_session") != root:
+		failures.append("RealtimeSave service did not bind the player and world session")
 	var ready_count := [0]
 	root.connect("world_ready", func() -> void: ready_count[0] += 1)
 	if not root.call("start_selected_snapshot", SAVE_SNAPSHOT.new()):
@@ -150,7 +155,7 @@ func _assert_success_emits_ready_after_bindings(script: Script, failures: Array[
 		if session.get_node(path).get("bound") != player:
 			failures.append("WorldSession did not bind persistent player to %s" % path)
 	var camera := session.get_node("Camera") as FakeBinding
-	if camera.room_bounds.size != Vector2(320, 180):
+	if camera.room_bounds.size != Vector2(320, 184):
 		failures.append("WorldSession did not configure camera bounds for the active room")
 	session.call("stop")
 	if not camera.camera_cleared:

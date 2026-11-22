@@ -268,11 +268,14 @@ func _assert_transactional_start_flow(failures: Array[String]) -> void:
 	if slots.error_text.is_empty():
 		failures.append("failed world startup did not surface an error in save slots")
 	game_root.succeeds = true
+	manager.snapshot.set_resume_state(Vector2(32, 16), Vector2.ZERO)
 	menu.call("_start_game", 2)
 	if menu.visible or manager.selected_slot != 2 or manager.activate_count != 1:
 		failures.append("successful world startup did not activate the slot and hide the menu")
 	if game_root.persistence_source != manager:
 		failures.append("main menu did not inject persistence into the world session")
+	if manager.snapshot.has_resume:
+		failures.append("main menu kept stale resume data while realtime save was off")
 	menu.free()
 
 func _assert_world_selection_flow(failures: Array[String]) -> void:

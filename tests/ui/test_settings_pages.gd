@@ -12,6 +12,7 @@ const MASTER_BUS := 0
 func run() -> Array[String]:
 	var failures: Array[String] = []
 	_assert_catalog(failures)
+	_assert_realtime_translation(failures)
 	_assert_generic_settings_api(failures)
 	_assert_video_settings(failures)
 	_assert_focus_mute(failures)
@@ -66,6 +67,17 @@ func _assert_catalog(failures: Array[String]) -> void:
 		failures.append("realtime save must be a Game toggle")
 	elif bool(realtime.default_value):
 		failures.append("realtime save must default to off")
+
+
+func _assert_realtime_translation(failures: Array[String]) -> void:
+	var source := load("res://localization/menu.zh_CN.translation") as Translation
+	if source == null:
+		failures.append("Chinese menu translation is missing")
+		return
+	if source.get_message("SETTINGS_REALTIME_SAVE") != "实时存档":
+		failures.append("realtime save label is missing from the Chinese translation")
+	if source.get_message("SETTINGS_DESC_REALTIME_SAVE").is_empty():
+		failures.append("realtime save description is missing from the Chinese translation")
 
 
 func _assert_generic_settings_api(failures: Array[String]) -> void:
