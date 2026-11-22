@@ -17,8 +17,13 @@ room template, and which "assets" are baked or generated instead of hand-drawn.
 - `addons/metroidvania_kit/`: optional progression, map discovery, fog, and fast travel.
 - `scripts/world/fog_zone.gd` + `scenes/world/fog_zone.tscn`: authored dark/light
   fog rectangles placed under `RoomContent/Entities`.
-- `scripts/world/fog_door.gd` + `scenes/world/fog_door.tscn`: a door that blocks
-  movement and sight while closed.
+- `scenes/world/fog_door.tscn`: a door assembled from `DoorComponent2D`
+  (`addons/platformer_kit/world/components/`) and `FogOccluderComponent2D`
+  (`addons/platformer_kit/platforms/components/`). The occluder component also
+  gives any platform or solid body a sight shadow.
+- `scenes/world/phantom_wall.tscn`: a `TileMapLayer` with collision disabled and
+  `PhantomWallComponent2D` attached — a secret wall that looks like terrain, can
+  be walked through, hides what is behind it until touched, then fades out.
 - `scripts/world/crumble_runtime.gd`: drives the crumble tiles painted in
   `SolidTiles` for the active room.
 - `scripts/world/backdrop_field.gd` + `scripts/shaders/backdrop_drift.gdshader`:
@@ -52,6 +57,11 @@ room template, and which "assets" are baked or generated instead of hand-drawn.
 - `game/player/one_way_dash_piercer.gd`: player component that lets a cardinal
   dash cross a one-way surface travelling in the direction it blocks (tile
   one-ways on the `one_way` layer, node one-ways by collision exception).
+- `scripts/player/player_controller.gd`: NORMAL/DASH/WALL_GRAB/WALL_SLIDE
+  orchestration, super/hyper/wavedash and wallbounce resolution.
+- `scripts/player/player_stamina.gd` and `player_motion_rules.gd`: stamina
+  economy and pure Celeste rule math.
+- `scripts/globals/game_freeze.gd`: global hit-stop autoload used by dash start.
 - `game/`: project-specific composition and authored map data.
 - `resources/worlds/test_world.tres`: exploration test world (water hall with two
   pools, gas lab, gas trail room, fog zones, glass, crumble platforms, two-screen
@@ -60,6 +70,8 @@ room template, and which "assets" are baked or generated instead of hand-drawn.
 ## Authoring
 
 - `scenes/rooms/template/level_template.tscn`: empty room authoring template.
+- `scenes/worlds/<world_id>/terrain.tscn`: the world's single authored terrain scene (terrain layers only, world cell coordinates). Edit it with **Edit Terrain**, then **Sync Terrain** slices it into every room.
+- `scenes/levels/generated/<world_id>/`: room source scenes created by **Draw Room**, Merge or Split.
 - `scenes/puzzle/puzzle_tile_piece.tscn`: reusable tile-authored sliding region (background, walls, one-way platforms, and `VoidTiles` for movable void sliders).
 - `scenes/puzzle/puzzle_void_zone.tscn`: legacy static player-only void region for puzzle boards (sliders may cross; the player cannot enter in jump mode).
 - `scenes/rooms/source/`: editable room source scenes. Do not hand-edit generated files.
@@ -76,7 +88,7 @@ room template, and which "assets" are baked or generated instead of hand-drawn.
 
 ## Conventions
 
-One chunk is `320x180` pixels. Room geometry is local to its source scene. `WorldRoomPlacementData` stores an integer chunk origin; `RoomConnectionData` stores an entrance-to-spawn transition. A generated room is stale when its source fingerprint differs, so bake the room before baking its world.
+One chunk is `320x180` pixels, which is 40x22.5 cells at 8 px, so a room's world cell rectangle is snapped to the global cell grid: each chunk row is 23 or 22 cells tall and a two-row room is 45 cells (see `docs/world-alignment.md` and `RoomGrid`). Room geometry is local to its source scene. `WorldRoomPlacementData` stores an integer chunk origin; `RoomConnectionData` stores an entrance-to-spawn transition. A generated room is stale when its source fingerprint differs, so bake the room before baking its world. Baking takes the room's live chunk origin and crops terrain cells outside its cell frame.
 
 ## Verification
 
