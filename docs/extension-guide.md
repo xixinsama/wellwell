@@ -117,6 +117,11 @@ tables and a symptom table lives in `docs/components-tutorial.md`.
   climb-jump conversion refunds the stamina, matching Celeste's forgiveness.
 - `GameFreeze` is the global hit-stop autoload. It buffers jump/dash edges while
   frozen so instant super/hyper inputs are not lost.
+- The optional Game setting **Celeste Momentum** (`celeste_momentum_enabled`,
+  off by default) makes a dash preserve higher pre-dash horizontal speed and
+  applies the 1.2x Ultra multiplier when a down-diagonal dash touches the
+  ground. Keep it a setting rather than a hard-coded template rule: it can
+  produce unbounded speeds and changes level pacing.
 - `EnvironmentProbe.lift_velocity` excludes a conveyor's
   `constant_linear_velocity`; `PlayerController` sets
   `platform_on_leave = DO_NOTHING` and applies capped lift itself.

@@ -80,6 +80,16 @@ carrying the player while attached.
 Stamina is 110. It refills on landing, entering water, and respawning/loading a
 save. There is no stamina bar yet; the hero animation can expose the state.
 
+## Settings: Celeste Momentum
+
+Game → **Celeste Momentum** is off by default. When enabled:
+
+- a dash keeps a higher pre-dash horizontal speed instead of resetting to 240;
+- a down-diagonal dash that touches the ground applies the Ultra `x1.2`
+  multiplier and ends, letting chained ultras exceed 325 px/s.
+
+The toggle applies immediately to the player.
+
 ## Debug
 
 - F1: cycle grid overlay between hidden, 8px, and 16px.

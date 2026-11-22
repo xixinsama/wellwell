@@ -52,11 +52,26 @@ The supplied Dash is
 - `wall_jump_force_time`: forced horizontal input lock (`0.16 s`).
 - `wall_grab_lockout`: auto-grab lock after a wall jump (`0.16 s`).
 - `wall_climb_speed` / `climb_down_speed`: wall climb rates (`45` / `80`).
-- `climb_speed`: ladder speed, kept separate at `72`.- `wall_slide_start_speed` / `wall_slide_time`: wall slide cap (`20 -> 160`
+- `climb_speed`: ladder speed, kept separate at `72`.
+- `wall_slide_start_speed` / `wall_slide_time`: wall slide cap (`20 -> 160`
   over `1.2 s`).
 - `max_stamina`, `stamina_grab_drain`, `stamina_climb_drain`,
   `stamina_tired_threshold`, `climb_jump_stamina`,
   `climb_jump_convert_time`: stamina economy.
+
+## Celeste Momentum (optional)
+
+The Game setting `celeste_momentum_enabled` is **off by default**. When it is
+on, two extra rules are enabled:
+
+- A dash keeps the pre-dash horizontal speed when it is larger than the dash
+  speed and points in the same direction.
+- A down-diagonal dash that touches the ground applies the Ultra `x1.2`
+  multiplier, zeroes vertical speed, and finishes the dash. This allows
+  chained ultras to exceed the normal 325 px/s hyper exit speed.
+
+Turn it on in Settings → Game → Celeste Momentum. It applies live to the
+player controller.
 
 ## Advanced Jumps
 
