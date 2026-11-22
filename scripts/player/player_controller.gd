@@ -786,6 +786,17 @@ func respawn_at(pos: Vector2) -> void:
 	sprite_root.scale = Vector2.ONE
 
 
+## Restore a live-save transform without changing the checkpoint used by death.
+## Transient action state is intentionally reset; position and linear velocity
+## are enough to continue from the same spot.
+func resume_at(pos: Vector2, restored_velocity: Vector2, checkpoint_position := Vector2.INF) -> void:
+	respawn_at(pos)
+	if checkpoint_position.is_finite():
+		spawn_position = checkpoint_position
+	velocity = restored_velocity if restored_velocity.is_finite() else Vector2.ZERO
+	_world_velocity = velocity
+
+
 func play_hurt_effect() -> void:
 	if _motion_effects != null:
 		_motion_effects.call("play_hurt")

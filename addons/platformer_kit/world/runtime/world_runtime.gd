@@ -51,39 +51,58 @@ func setup_session(data: Resource, snapshot: RefCounted, player: Node2D = null) 
 	if not _is_world_data(data) or not _is_save_snapshot(snapshot):
 		return false
 	var reset_respawn: bool = snapshot.world_id != data.world_id
+	var resume := _resolve_resume(data, snapshot)
+	var has_resume := not resume.is_empty()
 	var initial_room_id: String = data.start_room_id
 	var initial_spawn_id: String = data.start_spawn_id
-	if snapshot.world_id == data.world_id:
+	var initial_chunk := _get_room_origin_chunk(data, initial_room_id)
+	if has_resume:
+		initial_room_id = String(resume["room_id"])
+		initial_spawn_id = snapshot.respawn_spawn_id
+		initial_chunk = resume["chunk"]
+	elif snapshot.world_id == data.world_id:
 		if data.has_room(snapshot.respawn_room_id) and not snapshot.respawn_spawn_id.is_empty():
 			initial_room_id = snapshot.respawn_room_id
 			initial_spawn_id = snapshot.respawn_spawn_id
 		elif data.has_room(snapshot.current_room_id):
 			initial_room_id = snapshot.current_room_id
 
-	var staged_value: Variant = _stage_world(data, initial_room_id, _get_room_origin_chunk(data, initial_room_id), snapshot)
+	var staged_value: Variant = _stage_world(data, initial_room_id, initial_chunk, snapshot)
 	if staged_value == null:
 		return false
 	var staged_rooms := staged_value as Dictionary
-	var spawn := _get_spawn_point_from_rooms(staged_rooms, initial_room_id, initial_spawn_id)
-	if not initial_spawn_id.is_empty() and spawn == null:
-		_free_staged_rooms(staged_rooms)
-		staged_value = _stage_world(
-			data,
-			data.start_room_id,
-			_get_room_origin_chunk(data, data.start_room_id),
-			snapshot
-		)
-		if staged_value == null:
-			return false
-		staged_rooms = staged_value as Dictionary
-		initial_room_id = data.start_room_id
-		initial_spawn_id = data.start_spawn_id
+	var spawn: Node2D = null
+	if not has_resume:
 		spawn = _get_spawn_point_from_rooms(staged_rooms, initial_room_id, initial_spawn_id)
 		if not initial_spawn_id.is_empty() and spawn == null:
 			_free_staged_rooms(staged_rooms)
+			staged_value = _stage_world(
+				data,
+				data.start_room_id,
+				_get_room_origin_chunk(data, data.start_room_id),
+				snapshot
+			)
+			if staged_value == null:
+				return false
+			staged_rooms = staged_value as Dictionary
+			initial_room_id = data.start_room_id
+			initial_spawn_id = data.start_spawn_id
+			spawn = _get_spawn_point_from_rooms(staged_rooms, initial_room_id, initial_spawn_id)
+			if not initial_spawn_id.is_empty() and spawn == null:
+				_free_staged_rooms(staged_rooms)
+				return false
+			reset_respawn = true
+	if has_resume:
+		if not _align_staged_world_to_position(
+			data,
+			initial_room_id,
+			Vector2(resume["position"]),
+			snapshot,
+			staged_rooms
+		):
+			_free_staged_rooms(staged_rooms)
 			return false
-		reset_respawn = true
-	if spawn != null and not _align_staged_world_to_spawn(
+	elif spawn != null and not _align_staged_world_to_spawn(
 		data,
 		initial_room_id,
 		spawn,
@@ -97,7 +116,9 @@ func setup_session(data: Resource, snapshot: RefCounted, player: Node2D = null) 
 	_player = player
 	_persistence_suspended = true
 	_commit_world(data, initial_room_id, staged_rooms)
-	if spawn != null:
+	if has_resume:
+		_restore_player_resume(resume, snapshot)
+	elif spawn != null:
 		_respawn_player(spawn.global_position)
 	_initialize_snapshot(initial_room_id, initial_spawn_id, spawn, reset_respawn)
 	_persistence_suspended = false
@@ -365,6 +386,30 @@ func _stage_missing_rooms(
 	return staged
 
 
+## Optional live-save transform. Resume data is only trusted when it belongs to
+## the same world and resolves to a real room; otherwise the normal spawn path
+## runs unchanged.
+func _resolve_resume(data: Resource, snapshot: RefCounted) -> Dictionary:
+	if snapshot == null or not bool(snapshot.get("has_resume")):
+		return {}
+	if snapshot.world_id != data.world_id:
+		return {}
+	var target := Vector2(snapshot.get("resume_position"))
+	var speed := Vector2(snapshot.get("resume_velocity"))
+	if not target.is_finite() or not speed.is_finite():
+		return {}
+	var local_position := to_local(target)
+	var room_id: String = data.get_room_id_at_world_position(local_position, snapshot.current_room_id)
+	if room_id.is_empty():
+		return {}
+	return {
+		"position": target,
+		"velocity": speed,
+		"room_id": room_id,
+		"chunk": data.get_chunk_at_world_position(local_position),
+	}
+
+
 func _align_staged_world_to_spawn(
 	data: Resource,
 	room_id: String,
@@ -372,8 +417,18 @@ func _align_staged_world_to_spawn(
 	state_source: Object,
 	staged: Dictionary
 ) -> bool:
-	var spawn_chunk: Vector2i = data.get_chunk_at_world_position(to_local(spawn.global_position))
-	var target_ids: Array[String] = data.get_resident_room_ids(spawn_chunk, room_id)
+	return _align_staged_world_to_position(data, room_id, spawn.global_position, state_source, staged)
+
+
+func _align_staged_world_to_position(
+	data: Resource,
+	room_id: String,
+	world_position: Vector2,
+	state_source: Object,
+	staged: Dictionary
+) -> bool:
+	var target_chunk: Vector2i = data.get_chunk_at_world_position(to_local(world_position))
+	var target_ids: Array[String] = data.get_resident_room_ids(target_chunk, room_id)
 	for target_id: String in target_ids:
 		if staged.has(target_id):
 			continue
@@ -500,6 +555,26 @@ func _respawn_player(respawn_position: Vector2) -> void:
 		_player.call("respawn_at", respawn_position)
 	else:
 		_player.global_position = respawn_position
+
+
+func _restore_player_resume(resume: Dictionary, snapshot: RefCounted) -> bool:
+	if not is_instance_valid(_player):
+		_player = null
+		return false
+	var target := Vector2(resume.get("position", Vector2.ZERO))
+	var speed := Vector2(resume.get("velocity", Vector2.ZERO))
+	var checkpoint := Vector2.INF
+	if not snapshot.respawn_room_id.is_empty():
+		checkpoint = snapshot.respawn_position
+	if _player.has_method("resume_at"):
+		_player.call("resume_at", target, speed, checkpoint)
+		return true
+	_respawn_player(target)
+	if "velocity" in _player:
+		_player.set("velocity", speed)
+	if checkpoint.is_finite() and "spawn_position" in _player:
+		_player.set("spawn_position", checkpoint)
+	return true
 
 
 func _get_room_origin_chunk(data: Resource, room_id: String) -> Vector2i:

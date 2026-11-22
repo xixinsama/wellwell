@@ -15,8 +15,16 @@ const MISSING_PATH := "user://missing_world_runtime_room_fixture.tscn"
 
 class TestPlayer extends Node2D:
 	var respawn_count := 0
+	var velocity := Vector2.ZERO
+	var spawn_position := Vector2.ZERO
 	func respawn_at(target: Vector2) -> void:
 		global_position = target
+		spawn_position = target
+		respawn_count += 1
+	func resume_at(target: Vector2, restored_velocity: Vector2, checkpoint_position: Vector2) -> void:
+		global_position = target
+		velocity = restored_velocity
+		spawn_position = checkpoint_position
 		respawn_count += 1
 
 
@@ -40,6 +48,8 @@ func run() -> Array[String]:
 	_assert_explicit_placements_drive_residency(failures)
 	_assert_failed_stage_preserves_active_world(failures)
 	_assert_session_restores_persistent_entities(failures)
+	_assert_session_restores_resume_transform(failures)
+	_assert_invalid_resume_falls_back_to_spawn(failures)
 	_assert_entity_save_request_reaches_persistence(failures)
 	_assert_connection_transition_uses_target_spawn(failures)
 	_remove_fixture()
@@ -119,6 +129,53 @@ func _assert_session_restores_persistent_entities(failures: Array[String]) -> vo
 		var pickup: Node = runtime.get_room_runtime("room_a").get_entity("pickup_01")
 		if pickup == null or not bool(pickup.get("collected")):
 			failures.append("world runtime did not restore persistent entity state")
+	runtime.free()
+	player.free()
+
+
+func _assert_session_restores_resume_transform(failures: Array[String]) -> void:
+	var world := _make_world([["room_a", Vector2i.ZERO, FIXTURE_PATH]])
+	var snapshot: RefCounted = SAVE_SNAPSHOT.new()
+	snapshot.world_id = world.world_id
+	snapshot.current_room_id = "room_a"
+	snapshot.respawn_room_id = "room_a"
+	snapshot.respawn_spawn_id = "entry"
+	snapshot.respawn_position = Vector2(8, 12)
+	if not snapshot.set_resume_state(Vector2(100, 50), Vector2(30, -40)):
+		failures.append("snapshot rejected the resume fixture")
+		return
+	var player := TestPlayer.new()
+	var runtime := WORLD_RUNTIME.new() as Node2D
+	if not runtime.setup_session(world, snapshot, player):
+		failures.append("world runtime rejected the resume fixture")
+	else:
+		if player.global_position != Vector2(100, 50):
+			failures.append("world runtime did not resume the exact player position")
+		if player.velocity != Vector2(30, -40):
+			failures.append("world runtime did not resume the saved velocity")
+		if player.spawn_position != Vector2(8, 12):
+			failures.append("resume path replaced the checkpoint respawn")
+		if runtime.get_current_room_id() != "room_a":
+			failures.append("resume path lost the saved room")
+	runtime.free()
+	player.free()
+
+
+func _assert_invalid_resume_falls_back_to_spawn(failures: Array[String]) -> void:
+	var world := _make_world([["room_a", Vector2i.ZERO, FIXTURE_PATH]])
+	var snapshot: RefCounted = SAVE_SNAPSHOT.new()
+	snapshot.world_id = world.world_id
+	snapshot.current_room_id = "room_a"
+	snapshot.respawn_room_id = "room_a"
+	snapshot.respawn_spawn_id = "entry"
+	snapshot.respawn_position = Vector2(8, 12)
+	snapshot.set_resume_state(Vector2(9999, 9999), Vector2.ZERO)
+	var player := TestPlayer.new()
+	var runtime := WORLD_RUNTIME.new() as Node2D
+	if not runtime.setup_session(world, snapshot, player):
+		failures.append("world runtime rejected the fallback fixture")
+	elif player.global_position != Vector2(8, 12):
+		failures.append("out-of-world resume data did not fall back to the spawn")
 	runtime.free()
 	player.free()
 
