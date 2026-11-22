@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="WorldData" format=3 uid="uid://qwahurn8urga"]
+[gd_resource type="Resource" script_class="WorldData" format=3 uid="uid://bqdi8h6nuipmu"]
 
 [ext_resource type="Script" uid="uid://b1ws1oeewd0ks" path="res://addons/platformer_kit/world/data/world_room_placement_data.gd" id="1_r5a6v"]
 [ext_resource type="Resource" uid="uid://dtq1tkqtexvr6" path="res://resources/rooms/generated/room_00_00.tres" id="2_lks8w"]

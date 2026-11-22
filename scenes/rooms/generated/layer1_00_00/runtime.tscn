@@ -1,0 +1,41 @@
+[gd_scene format=4 uid="uid://bd3d2cxmxoywu"]
+
+[ext_resource type="Script" path="res://addons/platformer_kit/world/entities/spawn_point.gd" id="1_ptft3"]
+[ext_resource type="PackedScene" path="res://scenes/world/phantom_wall.tscn" id="2_25b0c"]
+[ext_resource type="TileSet" path="res://resources/tilesets/primordial_tileset.tres" id="3_3sh5p"]
+[ext_resource type="Script" path="res://addons/platformer_kit/world/components/phantom_wall_component_2d.gd" id="4_sbwgk"]
+[ext_resource type="PackedScene" path="res://addons/platformer_kit/world/entities/world_door.tscn" id="5_hht7l"]
+[ext_resource type="Script" path="res://addons/platformer_kit/world/entities/world_door.gd" id="6_8ar21"]
+[ext_resource type="Resource" path="res://resources/worlds/dash_world.tres" id="7_qxkvw"]
+
+[node name="RoomRuntimeContent" type="Node2D" unique_id=1835612062]
+
+[node name="Entities" type="Node2D" parent="." unique_id=675389323]
+
+[node name="StartSpawn" type="Marker2D" parent="Entities" unique_id=1913954360]
+position = Vector2(60, 80)
+script = ExtResource("1_ptft3")
+spawn_id = "start"
+
+[node name="PhantomWall" type="TileMapLayer" parent="Entities" unique_id=1508444816 instance=ExtResource("2_25b0c")]
+position = Vector2(56, 0)
+tile_map_data = PackedByteArray("AAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAACAAAAAAAAAAAAAAADAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAEAAEAAAAAAAAAAAADAAEAAAAAAAAAAAACAAEAAAAAAAAAAAABAAEAAAAAAAAAAAAAAAEAAAAAAAAAAAA=")
+tile_set = ExtResource("3_3sh5p")
+collision_enabled = false
+script = ExtResource("4_sbwgk")
+
+[node name="WorldDoor" type="Node2D" parent="Entities" unique_id=1654413615 instance=ExtResource("5_hht7l")]
+z_index = 2
+position = Vector2(76, 80)
+script = ExtResource("6_8ar21")
+door_kind = 1
+activation_mode = 1
+target_world = ExtResource("7_qxkvw")
+target_room_id = "start_dash_01"
+target_door_id = "layer0_door0"
+entity_id = "layer1_door0"
+persistent_id = &"layer1_door0"
+entity_type = "world_door"
+persistent = true
+
+[node name="Foreground" type="Node2D" parent="." unique_id=1868122260]

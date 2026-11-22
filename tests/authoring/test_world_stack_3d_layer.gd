@@ -40,6 +40,7 @@ func run() -> Array[String]:
 	_assert_empty_payload(script, failures)
 	_assert_layer_count(script, failures)
 	_assert_focus_frames_stack(script, failures)
+	_assert_reset_view(script, failures)
 	_assert_world_at(script, failures)
 	_assert_pan_routing(script, failures)
 	_assert_orbit_and_click(script, failures)
@@ -51,7 +52,7 @@ func run() -> Array[String]:
 
 func _assert_api(layer: Control, failures: Array[String]) -> void:
 	var required: Array[StringName] = [
-		&"set_stack", &"focus_stack", &"get_camera", &"get_layer_count", &"world_at",
+		&"set_stack", &"focus_stack", &"reset_view", &"get_camera", &"get_layer_count", &"world_at",
 		&"get_cursor_readout",
 	]
 	for method: StringName in required:
@@ -140,6 +141,35 @@ func _assert_focus_frames_stack(script: Script, failures: Array[String]) -> void
 				)
 				layer.free()
 				return
+	layer.free()
+
+
+## Reset View is the 3D counterpart of the flat canvas reset: back to the default
+## orbit, then frame the whole stack again.
+func _assert_reset_view(script: Script, failures: Array[String]) -> void:
+	var layer := _new_layer(script)
+	layer.call("set_stack", _payload(3))
+	layer.call("reset_view")
+	var camera: Object = layer.call("get_camera")
+	if camera == null:
+		failures.append("reset_view left the layer without a camera")
+		layer.free()
+		return
+	var framed_zoom := float(camera.get("zoom"))
+	var framed_offset: Vector2 = camera.get("offset")
+	camera.call("orbit", Vector2(120.0, -50.0))
+	camera.call("zoom_by", 0.4)
+	camera.set("offset", Vector2(240.0, -120.0))
+	layer.call("reset_view")
+	if not is_equal_approx(float(camera.get("yaw")), -0.46) \
+			or not is_equal_approx(float(camera.get("pitch")), 1.02):
+		failures.append(
+			"reset_view did not restore the default orbit: yaw=%s pitch=%s"
+			% [camera.get("yaw"), camera.get("pitch")]
+		)
+	if not is_equal_approx(float(camera.get("zoom")), framed_zoom) \
+			or not (camera.get("offset") as Vector2).is_equal_approx(framed_offset):
+		failures.append("reset_view did not refit the stack")
 	layer.free()
 
 

@@ -176,6 +176,13 @@ func focus_stack() -> void:
 	queue_redraw()
 
 
+## Back to the default orbit and framed again: the 3D counterpart of the flat
+## canvas reset.
+func reset_view() -> void:
+	_camera.reset_angles()
+	focus_stack()
+
+
 func get_camera() -> WorldStackCamera:
 	return _camera
 

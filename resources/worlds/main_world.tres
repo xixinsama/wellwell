@@ -1,32 +1,32 @@
-[gd_resource type="Resource" script_class="WorldData" format=3 uid="uid://chjbbce5mh3kv"]
+[gd_resource type="Resource" script_class="WorldData" format=3 uid="uid://4w7hayyapevx"]
 
-[ext_resource type="Script" uid="uid://b1ws1oeewd0ks" path="res://addons/platformer_kit/world/data/world_room_placement_data.gd" id="1_4ruvn"]
-[ext_resource type="Resource" uid="uid://b2yiakc6ln8rh" path="res://resources/rooms/generated/main_room_02_00.tres" id="2_5y7l6"]
-[ext_resource type="Resource" uid="uid://dsknf4c5rvidw" path="res://resources/rooms/generated/main_room_01_00.tres" id="2_53asa"]
-[ext_resource type="Resource" uid="uid://dm25j5xwmd3y0" path="res://resources/rooms/generated/template_room.tres" id="3_5y7l6"]
-[ext_resource type="Script" uid="uid://dkcwb87qn5n2c" path="res://addons/platformer_kit/world/data/world_data.gd" id="4_4sf1x"]
+[ext_resource type="Script" uid="uid://b1ws1oeewd0ks" path="res://addons/platformer_kit/world/data/world_room_placement_data.gd" id="1_53asa"]
+[ext_resource type="Resource" uid="uid://dsknf4c5rvidw" path="res://resources/rooms/generated/main_room_01_00.tres" id="2_5y7l6"]
+[ext_resource type="Resource" uid="uid://b2yiakc6ln8rh" path="res://resources/rooms/generated/main_room_02_00.tres" id="3_4sf1x"]
+[ext_resource type="Resource" uid="uid://dm25j5xwmd3y0" path="res://resources/rooms/generated/template_room.tres" id="4_pw8pd"]
+[ext_resource type="Script" uid="uid://dkcwb87qn5n2c" path="res://addons/platformer_kit/world/data/world_data.gd" id="5_puqxc"]
 
-[sub_resource type="Resource" id="Resource_53asa"]
-script = ExtResource("1_4ruvn")
-room_id = "main_room_02_00"
-origin_chunk = Vector2i(2, 0)
-
-[sub_resource type="Resource" id="Resource_5y7l6"]
-script = ExtResource("1_4ruvn")
+[sub_resource type="Resource" id="Resource_eis35"]
+script = ExtResource("1_53asa")
 room_id = "main_room_01_00"
 origin_chunk = Vector2i(1, 0)
 
-[sub_resource type="Resource" id="Resource_4sf1x"]
-script = ExtResource("1_4ruvn")
+[sub_resource type="Resource" id="Resource_bj843"]
+script = ExtResource("1_53asa")
+room_id = "main_room_02_00"
+origin_chunk = Vector2i(2, 0)
+
+[sub_resource type="Resource" id="Resource_x121t"]
+script = ExtResource("1_53asa")
 room_id = "template_room"
 
 [resource]
-script = ExtResource("4_4sf1x")
+script = ExtResource("5_puqxc")
 world_id = "main_world"
 display_name = "滑块回廊"
 description = "滑块解谜、虚空推动与手柄选块"
 start_room_id = "template_room"
 start_spawn_id = "start"
-rooms = Array[Resource]([ExtResource("2_5y7l6"), ExtResource("2_53asa"), ExtResource("3_5y7l6")])
-placements = Array[Resource]([SubResource("Resource_53asa"), SubResource("Resource_5y7l6"), SubResource("Resource_4sf1x")])
+rooms = Array[Resource]([ExtResource("2_5y7l6"), ExtResource("3_4sf1x"), ExtResource("4_pw8pd")])
+placements = Array[Resource]([SubResource("Resource_eis35"), SubResource("Resource_bj843"), SubResource("Resource_x121t")])
 tags = PackedStringArray()
