@@ -104,6 +104,8 @@ func travel_to_world(world: WorldData, room_id: String, door_id: String) -> bool
 	_active_snapshot.current_room_id = room_id
 	_active_snapshot.respawn_room_id = room_id
 	_active_snapshot.respawn_spawn_id = door_id
+	if _active_snapshot.has_method("clear_resume_state"):
+		_active_snapshot.clear_resume_state()
 	if not start(world, _active_snapshot):
 		_restore_travel_snapshot(previous)
 		return false
@@ -301,6 +303,9 @@ func _capture_travel_snapshot() -> Dictionary:
 		"respawn_room_id": _active_snapshot.respawn_room_id,
 		"respawn_spawn_id": _active_snapshot.respawn_spawn_id,
 		"respawn_position": _active_snapshot.respawn_position,
+		"has_resume": _active_snapshot.has_resume,
+		"resume_position": _active_snapshot.resume_position,
+		"resume_velocity": _active_snapshot.resume_velocity,
 	}
 
 
@@ -312,6 +317,9 @@ func _restore_travel_snapshot(previous: Dictionary) -> void:
 	_active_snapshot.respawn_room_id = String(previous.get("respawn_room_id", ""))
 	_active_snapshot.respawn_spawn_id = String(previous.get("respawn_spawn_id", ""))
 	_active_snapshot.respawn_position = previous.get("respawn_position", Vector2.ZERO)
+	_active_snapshot.has_resume = bool(previous.get("has_resume", false))
+	_active_snapshot.resume_position = previous.get("resume_position", Vector2.ZERO)
+	_active_snapshot.resume_velocity = previous.get("resume_velocity", Vector2.ZERO)
 
 
 ## The landing door must not fire before the actor steps out of it.

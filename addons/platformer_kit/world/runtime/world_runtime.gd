@@ -51,6 +51,8 @@ func setup_session(data: Resource, snapshot: RefCounted, player: Node2D = null) 
 	if not _is_world_data(data) or not _is_save_snapshot(snapshot):
 		return false
 	var reset_respawn: bool = snapshot.world_id != data.world_id
+	if reset_respawn and snapshot.has_method("clear_resume_state"):
+		snapshot.clear_resume_state()
 	var resume := _resolve_resume(data, snapshot)
 	var has_resume := not resume.is_empty()
 	var initial_room_id: String = data.start_room_id

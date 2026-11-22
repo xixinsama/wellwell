@@ -58,6 +58,9 @@ func capture_now(immediate := false) -> bool:
 		return false
 	if _save_manager.get("current_snapshot") == null:
 		return false
+	var session_snapshot := _session_snapshot()
+	if session_snapshot != null and _save_manager.get("current_snapshot") != session_snapshot:
+		return false
 	var current_position: Vector2 = _player.global_position
 	var current_velocity := Vector2.ZERO
 	if "velocity" in _player:
@@ -79,6 +82,9 @@ func flush() -> bool:
 	if not is_instance_valid(_player) or not is_instance_valid(_save_manager):
 		return false
 	if _save_manager.get("current_snapshot") == null:
+		return false
+	var session_snapshot := _session_snapshot()
+	if session_snapshot != null and _save_manager.get("current_snapshot") != session_snapshot:
 		return false
 	if not _save_manager.has_method("set_resume_state"):
 		return false
@@ -105,8 +111,7 @@ func _process(delta: float) -> void:
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_WM_CLOSE_REQUEST:
-		flush()
-		_close_flushed = true
+		_close_flushed = flush()
 
 
 func _exit_tree() -> void:
@@ -157,8 +162,18 @@ func _clear_resume() -> void:
 	_last_velocity = Vector2.INF
 	if not is_instance_valid(_save_manager) or _save_manager.get("current_snapshot") == null:
 		return
+	var session_snapshot := _session_snapshot()
+	if session_snapshot != null and _save_manager.get("current_snapshot") != session_snapshot:
+		return
 	if _save_manager.has_method("clear_resume_state"):
 		_save_manager.call("clear_resume_state", true)
+
+
+func _session_snapshot() -> RefCounted:
+	if not is_instance_valid(_session):
+		return null
+	var value: Variant = _session.get("_active_snapshot")
+	return value as RefCounted
 
 
 func _on_settings_changed() -> void:

@@ -190,6 +190,7 @@ func _assert_shuttle_travel_swaps_world_session(failures: Array[String]) -> void
 		return
 	snapshot.respawn_room_id = "room_a"
 	snapshot.respawn_spawn_id = "entry"
+	snapshot.set_resume_state(Vector2(4, 8), Vector2.ZERO)
 	var travels: Array = []
 	session.connect("world_travel_completed", func(from_id: String, to_id: String) -> void:
 		travels.append([from_id, to_id])
@@ -204,6 +205,8 @@ func _assert_shuttle_travel_swaps_world_session(failures: Array[String]) -> void
 		failures.append("shuttle replaced the active save snapshot object")
 	if snapshot.world_id != "world_b" or snapshot.current_room_id != "room_b":
 		failures.append("shuttle did not point the snapshot at the destination world and room")
+	if snapshot.has_resume:
+		failures.append("shuttle kept stale resume data from the previous world")
 	if snapshot.respawn_room_id != "room_b" or snapshot.respawn_spawn_id != "door_b":
 		failures.append("shuttle did not seed the respawn identity with the arrival door")
 	var player := session.get_node("Player") as Node2D
@@ -231,6 +234,7 @@ func _assert_shuttle_failure_restores_snapshot(failures: Array[String]) -> void:
 	snapshot.respawn_room_id = "room_a"
 	snapshot.respawn_spawn_id = "entry"
 	snapshot.respawn_position = Vector2(8, 12)
+	snapshot.set_resume_state(Vector2(16, 32), Vector2(1, 2))
 	var terrain := session.get_node("Terrain") as FakeTerrain
 	terrain.setup_world_ids.clear()
 	if session.call("travel_to_world", _missing_artifact_world(), "room_b", "door_b"):
@@ -241,6 +245,8 @@ func _assert_shuttle_failure_restores_snapshot(failures: Array[String]) -> void:
 		failures.append("failed shuttle did not restore the snapshot respawn identity")
 	if snapshot.respawn_position != Vector2(8, 12):
 		failures.append("failed shuttle did not restore the snapshot respawn position")
+	if not snapshot.has_resume or snapshot.resume_position != Vector2(16, 32):
+		failures.append("failed shuttle did not restore the snapshot resume transform")
 	if session.get("_active_world") != world_a:
 		failures.append("failed shuttle replaced the active world")
 	session.free()

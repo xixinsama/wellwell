@@ -50,6 +50,7 @@ func run() -> Array[String]:
 	_assert_session_restores_persistent_entities(failures)
 	_assert_session_restores_resume_transform(failures)
 	_assert_invalid_resume_falls_back_to_spawn(failures)
+	_assert_world_change_clears_stale_resume(failures)
 	_assert_entity_save_request_reaches_persistence(failures)
 	_assert_connection_transition_uses_target_spawn(failures)
 	_remove_fixture()
@@ -178,6 +179,19 @@ func _assert_invalid_resume_falls_back_to_spawn(failures: Array[String]) -> void
 		failures.append("out-of-world resume data did not fall back to the spawn")
 	runtime.free()
 	player.free()
+
+
+func _assert_world_change_clears_stale_resume(failures: Array[String]) -> void:
+	var world := _make_world([["room_a", Vector2i.ZERO, FIXTURE_PATH]])
+	var snapshot: RefCounted = SAVE_SNAPSHOT.new()
+	snapshot.world_id = "previous_world"
+	snapshot.set_resume_state(Vector2(100, 50), Vector2.ZERO)
+	var runtime := WORLD_RUNTIME.new() as Node2D
+	if not runtime.setup_session(world, snapshot):
+		failures.append("world runtime rejected a cross-world save")
+	elif snapshot.has_resume:
+		failures.append("cross-world start kept stale resume data")
+	runtime.free()
 
 
 func _assert_connection_transition_uses_target_spawn(failures: Array[String]) -> void:

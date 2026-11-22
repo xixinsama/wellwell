@@ -21,6 +21,13 @@ class FakeSettings extends Node:
 		settings_changed.emit()
 
 
+class FakeSession extends Node:
+	signal world_ready
+	signal world_start_failed(errors: Array[String])
+
+	var _active_snapshot: RefCounted
+
+
 class FakeManager extends Node:
 	var current_snapshot: RefCounted = SAVE_SNAPSHOT.new()
 	var set_calls := 0
@@ -107,7 +114,25 @@ func run() -> Array[String]:
 	if bool(service.call("capture_now")):
 		failures.append("realtime save captured while the session was inactive")
 
+	var session := FakeSession.new()
+	add_child(session)
+	var stale_snapshot: RefCounted = SAVE_SNAPSHOT.new()
+	session._active_snapshot = SAVE_SNAPSHOT.new()
+	manager.current_snapshot = stale_snapshot
+	service.call("bind_sources", player, manager, settings, session)
+	service.call("set_active", true)
+	var stale_writes := manager.set_calls
+	player.global_position = Vector2(120, 64)
+	if bool(service.call("capture_now")):
+		failures.append("realtime save wrote into a snapshot that was not active")
+	if manager.set_calls != stale_writes:
+		failures.append("stale snapshot guard still reached the save manager")
+	manager.current_snapshot = session._active_snapshot
+	if not bool(service.call("capture_now")):
+		failures.append("realtime save did not capture after the slot became active")
+
 	_cleanup(service, player, manager, settings)
+	session.free()
 	return failures
 
 
