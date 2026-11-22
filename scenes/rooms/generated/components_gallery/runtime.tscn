@@ -1,0 +1,236 @@
+[gd_scene format=3 uid="uid://b0bp8lgccynf"]
+
+[ext_resource type="Script" path="res://addons/platformer_kit/world/entities/spawn_point.gd" id="1_gy8r4"]
+[ext_resource type="Script" path="res://addons/platformer_kit/platforms/platform_body_2d.gd" id="2_x8wn4"]
+[ext_resource type="Script" path="res://addons/platformer_kit/platforms/components/elevator_motion_component_2d.gd" id="3_ju7c4"]
+[ext_resource type="Script" path="res://addons/platformer_kit/platforms/components/rider_trigger_component_2d.gd" id="4_q73aw"]
+[ext_resource type="Script" path="res://addons/platformer_kit/platforms/components/conveyor_surface_component_2d.gd" id="5_h072y"]
+[ext_resource type="Script" path="res://addons/platformer_kit/platforms/components/waypoint_motion_component_2d.gd" id="6_85yjx"]
+[ext_resource type="Script" path="res://addons/platformer_kit/platforms/components/fog_occluder_component_2d.gd" id="7_waso0"]
+[ext_resource type="Script" path="res://addons/platformer_kit/platforms/components/fall_motion_component_2d.gd" id="8_s0ts5"]
+[ext_resource type="PackedScene" path="res://scenes/world/fog_door.tscn" id="9_jotl7"]
+[ext_resource type="PackedScene" path="res://scenes/world/phantom_wall.tscn" id="10_1msqr"]
+[ext_resource type="TileSet" path="res://resources/tilesets/primordial_tileset.tres" id="11_h1vss"]
+[ext_resource type="Script" path="res://addons/platformer_kit/world/components/phantom_wall_component_2d.gd" id="12_f12vr"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_wy1h4"]
+size = Vector2(24, 8)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_ghns8"]
+size = Vector2(28, 12)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_c5gk1"]
+size = Vector2(32, 8)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_jucs8"]
+size = Vector2(24, 8)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_g3oqy"]
+size = Vector2(24, 8)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_b5hah"]
+size = Vector2(28, 12)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_e2du3"]
+size = Vector2(24, 8)
+
+[node name="RoomRuntimeContent" type="Node2D" unique_id=842821056]
+
+[node name="Entities" type="Node2D" parent="." unique_id=67458297]
+
+[node name="StartSpawn" type="Marker2D" parent="Entities" unique_id=1304770520]
+position = Vector2(16, 160)
+script = ExtResource("1_gy8r4")
+spawn_id = "start"
+
+[node name="01_Elevator" type="AnimatableBody2D" parent="Entities" unique_id=1379036715]
+position = Vector2(24, 152)
+script = ExtResource("2_x8wn4")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Entities/01_Elevator" unique_id=1538516351]
+position = Vector2(12, 4)
+shape = SubResource("RectangleShape2D_wy1h4")
+
+[node name="Visual" type="Polygon2D" parent="Entities/01_Elevator" unique_id=2068493583]
+color = Color(0.3, 0.43, 0.52, 1)
+polygon = PackedVector2Array(0, 0, 24, 0, 24, 8, 0, 8)
+
+[node name="ElevatorMotion" type="Node" parent="Entities/01_Elevator" unique_id=988586271]
+script = ExtResource("3_ju7c4")
+travel = Vector2(0, -48)
+
+[node name="RiderTrigger" type="Area2D" parent="Entities/01_Elevator" unique_id=1346103225]
+collision_layer = 0
+collision_mask = 2
+monitorable = false
+script = ExtResource("4_q73aw")
+target_paths = Array[NodePath]([NodePath("../ElevatorMotion")])
+trigger_once = false
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Entities/01_Elevator/RiderTrigger" unique_id=564859099]
+position = Vector2(12, 0)
+shape = SubResource("RectangleShape2D_ghns8")
+
+[node name="02_Conveyor" type="AnimatableBody2D" parent="Entities" unique_id=625551072]
+position = Vector2(56, 152)
+script = ExtResource("2_x8wn4")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Entities/02_Conveyor" unique_id=170404272]
+position = Vector2(16, 4)
+shape = SubResource("RectangleShape2D_c5gk1")
+
+[node name="Visual" type="Polygon2D" parent="Entities/02_Conveyor" unique_id=1211096350]
+color = Color(0.3, 0.78, 0.82, 1)
+polygon = PackedVector2Array(0, 0, 32, 0, 32, 8, 0, 8)
+
+[node name="ConveyorSurface" type="Node" parent="Entities/02_Conveyor" unique_id=1304509741]
+script = ExtResource("5_h072y")
+
+[node name="03_Waypoint" type="AnimatableBody2D" parent="Entities" unique_id=473100324]
+position = Vector2(128, 144)
+script = ExtResource("2_x8wn4")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Entities/03_Waypoint" unique_id=750475478]
+position = Vector2(12, 4)
+shape = SubResource("RectangleShape2D_jucs8")
+
+[node name="Visual" type="Polygon2D" parent="Entities/03_Waypoint" unique_id=1293943161]
+color = Color(0.95, 0.7, 0.24, 1)
+polygon = PackedVector2Array(0, 0, 24, 0, 24, 8, 0, 8)
+
+[node name="WaypointMotion" type="Node" parent="Entities/03_Waypoint" unique_id=859172471]
+script = ExtResource("6_85yjx")
+waypoints = PackedVector2Array(0, 0, 48, 0)
+travel_speed = 32.0
+arrival_pause_seconds = 0.4
+
+[node name="FogOccluder" type="Node2D" parent="Entities/03_Waypoint" unique_id=190986462]
+script = ExtResource("7_waso0")
+body_path = NodePath("..")
+
+[node name="04_Falling" type="AnimatableBody2D" parent="Entities" unique_id=851750445]
+position = Vector2(336, 136)
+script = ExtResource("2_x8wn4")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Entities/04_Falling" unique_id=2051650912]
+position = Vector2(12, 4)
+shape = SubResource("RectangleShape2D_g3oqy")
+
+[node name="Visual" type="Polygon2D" parent="Entities/04_Falling" unique_id=1801518818]
+color = Color(0.91, 0.34, 0.34, 1)
+polygon = PackedVector2Array(0, 0, 24, 0, 24, 8, 0, 8)
+
+[node name="FallMotion" type="Node" parent="Entities/04_Falling" unique_id=846387422]
+script = ExtResource("8_s0ts5")
+activation_delay = 0.2
+
+[node name="RiderTrigger" type="Area2D" parent="Entities/04_Falling" unique_id=73819768]
+collision_layer = 0
+collision_mask = 2
+monitorable = false
+script = ExtResource("4_q73aw")
+target_paths = Array[NodePath]([NodePath("../FallMotion")])
+trigger_once = false
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Entities/04_Falling/RiderTrigger" unique_id=1792758419]
+position = Vector2(12, 0)
+shape = SubResource("RectangleShape2D_b5hah")
+
+[node name="07_OneWayPlatform" type="StaticBody2D" parent="Entities" unique_id=1169821723]
+position = Vector2(96, 136)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Entities/07_OneWayPlatform" unique_id=762956600]
+position = Vector2(12, 4)
+shape = SubResource("RectangleShape2D_e2du3")
+one_way_collision = true
+
+[node name="Visual" type="Polygon2D" parent="Entities/07_OneWayPlatform" unique_id=1281660615]
+color = Color(0.45, 0.75, 0.45, 1)
+polygon = PackedVector2Array(0, 0, 24, 0, 24, 8, 0, 8)
+
+[node name="05_Door" type="Node2D" parent="Entities" unique_id=227758927 instance=ExtResource("9_jotl7")]
+z_index = 2
+position = Vector2(384, 144)
+
+[node name="06_PhantomWall" type="TileMapLayer" parent="Entities" unique_id=175900389 instance=ExtResource("10_1msqr")]
+position = Vector2(480, 144)
+tile_map_data = PackedByteArray(0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0)
+tile_set = ExtResource("11_h1vss")
+collision_enabled = false
+script = ExtResource("12_f12vr")
+
+[node name="Signs" type="Node2D" parent="Entities" unique_id=476459105]
+
+[node name="_Label_3" type="Label" parent="Entities/Signs" unique_id=115840996]
+modulate = Color(1, 1, 1, 0.75)
+offset_left = 16.0
+offset_top = 64.0
+offset_right = 16.0
+offset_bottom = 64.0
+theme_override_font_sizes/font_size = 8
+text = "Copy one station into your own room"
+
+[node name="_Label_4" type="Label" parent="Entities/Signs" unique_id=591414177]
+modulate = Color(1, 1, 1, 0.75)
+offset_left = 24.0
+offset_top = 88.0
+offset_right = 24.0
+offset_bottom = 88.0
+theme_override_font_sizes/font_size = 8
+text = "01 ELEVATOR"
+
+[node name="_Label_5" type="Label" parent="Entities/Signs" unique_id=2062765119]
+modulate = Color(1, 1, 1, 0.75)
+offset_left = 56.0
+offset_top = 88.0
+offset_right = 56.0
+offset_bottom = 88.0
+theme_override_font_sizes/font_size = 8
+text = "02 CONVEYOR"
+
+[node name="_Label_6" type="Label" parent="Entities/Signs" unique_id=987554263]
+modulate = Color(1, 1, 1, 0.75)
+offset_left = 128.0
+offset_top = 88.0
+offset_right = 128.0
+offset_bottom = 88.0
+theme_override_font_sizes/font_size = 8
+text = "03 WAYPOINT + FOG"
+
+[node name="_Label_7" type="Label" parent="Entities/Signs" unique_id=1426987001]
+modulate = Color(1, 1, 1, 0.75)
+offset_left = 96.0
+offset_top = 88.0
+offset_right = 96.0
+offset_bottom = 88.0
+theme_override_font_sizes/font_size = 8
+text = "07 ONE-WAY"
+
+[node name="_Label_8" type="Label" parent="Entities/Signs" unique_id=1162107174]
+modulate = Color(1, 1, 1, 0.75)
+offset_left = 336.0
+offset_top = 88.0
+offset_right = 336.0
+offset_bottom = 88.0
+theme_override_font_sizes/font_size = 8
+text = "04 FALLING"
+
+[node name="_Label_9" type="Label" parent="Entities/Signs" unique_id=1600103287]
+modulate = Color(1, 1, 1, 0.75)
+offset_left = 384.0
+offset_top = 88.0
+offset_right = 384.0
+offset_bottom = 88.0
+theme_override_font_sizes/font_size = 8
+text = "05 DOOR [E]"
+
+[node name="_Label_10" type="Label" parent="Entities/Signs" unique_id=582445476]
+modulate = Color(1, 1, 1, 0.75)
+offset_left = 480.0
+offset_top = 88.0
+offset_right = 480.0
+offset_bottom = 88.0
+theme_override_font_sizes/font_size = 8
+text = "06 PHANTOM WALL"
+
+[node name="Foreground" type="Node2D" parent="." unique_id=301195537]
