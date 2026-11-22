@@ -134,6 +134,14 @@ func grant_ability_definition(definition: Resource) -> bool:
 	return _ability_loadout != null and bool(_ability_loadout.call("grant_ability_definition", definition))
 
 
+func has_ability(ability_id: StringName) -> bool:
+	return _ability_loadout != null and _ability_loadout.has_method("has_ability") and bool(_ability_loadout.call("has_ability", ability_id))
+
+
+func _has_climb_ability() -> bool:
+	return has_ability(&"climb")
+
+
 func is_on_ladder() -> bool:
 	return _ladder_motion != null and bool(_ladder_motion.call("is_on_ladder"))
 
@@ -327,7 +335,7 @@ func _step_dash(intent: RefCounted, delta: float) -> bool:
 func _try_dash_jump(intent: RefCounted) -> bool:
 	if _movement_context.dash_attack_remaining <= 0.0:
 		return false
-	if _dash_direction.y < -0.5:
+	if _dash_direction.y < -0.5 and _has_climb_ability():
 		var wall_side := _find_wall(_profile().wallbounce_check_distance)
 		if wall_side != 0:
 			_apply_wallbounce(-wall_side)
@@ -379,6 +387,8 @@ func _try_advanced_jump(intent: RefCounted) -> bool:
 	if _movement_context.dash_attack_remaining <= 0.0:
 		return false
 	if _dash_direction.y < -0.5:
+		if not _has_climb_ability():
+			return false
 		var wall_side := _find_wall(_profile().wallbounce_check_distance)
 		if wall_side != 0:
 			_apply_wallbounce(-wall_side)
@@ -395,6 +405,8 @@ func _try_advanced_jump(intent: RefCounted) -> bool:
 
 
 func _try_enter_wall(intent: RefCounted) -> bool:
+	if not _has_climb_ability():
+		return false
 	if is_on_floor():
 		return false
 	var direction := _wall_input_direction(intent)
@@ -418,6 +430,9 @@ func _try_enter_wall(intent: RefCounted) -> bool:
 
 
 func _step_wall(intent: RefCounted, delta: float) -> bool:
+	if not _has_climb_ability():
+		_leave_wall(true)
+		return false
 	if is_on_floor() or _wall_input_direction(intent) != _wall_direction:
 		_leave_wall(true)
 		return false

@@ -118,6 +118,11 @@ func get_dash_definition() -> Resource:
 	return runtime.call("get_definition") as Resource
 
 
+func has_ability(ability_id: StringName) -> bool:
+	var controller := _get_controller()
+	return controller != null and bool(controller.call("has_ability", ability_id))
+
+
 ## Restores the Dash charge count. The controller calls this every physics frame
 ## while the player touches the ground or swims, so water makes the dash
 ## effectively unlimited while the Dash runtime still owns the count.

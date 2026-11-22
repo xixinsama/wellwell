@@ -15,6 +15,9 @@ All notable Platformer Kit changes are recorded here. The project follows Semant
 - Optional **Celeste Momentum** Game setting (off by default): a dash preserves
   a higher pre-dash horizontal speed, and a down-diagonal ground hit applies
   the 1.2x Ultra multiplier for chained-ultra speed growth.
+- Climb is now an unlockable ability (`default_climb.tres`): wall grab, climb,
+  wall slide, wall jump and wallbounce stay locked until it is granted, using
+  the same pickup/progression path as Dash.
 - Optional **Realtime Save** Game setting (off by default): captures the player
   position and velocity every two seconds and on quit, then resumes that exact
   spot next session. Death still returns to the last checkpoint.

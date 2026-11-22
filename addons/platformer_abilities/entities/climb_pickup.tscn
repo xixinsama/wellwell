@@ -1,0 +1,7 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="PackedScene" path="res://addons/platformer_abilities/entities/ability_pickup.tscn" id="1_pickup"]
+[ext_resource type="Resource" path="res://addons/platformer_abilities/abilities/climb/default_climb.tres" id="2_climb"]
+
+[node name="ClimbPickup" instance=ExtResource("1_pickup")]
+ability_definition = ExtResource("2_climb")

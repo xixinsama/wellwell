@@ -14,6 +14,7 @@
 [ext_resource type="Script" uid="uid://bljvgf2s1jie0" path="res://addons/platformer_kit/interaction/interaction_detector.gd" id="12_detector"]
 [ext_resource type="Script" path="res://game/interaction/player_interaction_controller.gd" id="13_interaction"]
 [ext_resource type="Script" path="res://scripts/player/player_stamina.gd" id="14_stamina"]
+[ext_resource type="Resource" path="res://addons/platformer_abilities/abilities/climb/default_climb.tres" id="15_climb"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_gmlin"]
 size = Vector2(6, 6)
@@ -57,7 +58,7 @@ animation = &"idle"
 
 [node name="AbilityLoadout" type="Node" parent="." unique_id=1039003736]
 script = ExtResource("3_loadout")
-ability_definitions = Array[Resource]([ExtResource("5_dash")])
+ability_definitions = Array[Resource]([ExtResource("5_dash"), ExtResource("15_climb")])
 
 [node name="AbilityController" type="Node" parent="AbilityLoadout" unique_id=1623685778]
 script = ExtResource("4_controller")

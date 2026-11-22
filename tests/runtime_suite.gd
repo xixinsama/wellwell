@@ -26,6 +26,7 @@ const TESTS: Array[Script] = [
 	preload("res://tests/platformer_abilities/test_ability_runtime.gd"),
 	preload("res://tests/platformer_abilities/test_ability_pickup.gd"),
 	preload("res://tests/platformer_abilities/test_dash_ability.gd"),
+	preload("res://tests/platformer_abilities/test_climb_ability.gd"),
 	preload("res://tests/game/test_player_ability_loadout.gd"),
 	preload("res://tests/game/test_one_way_dash_pierce.gd"),
 	preload("res://tests/game/test_player_interaction.gd"),
