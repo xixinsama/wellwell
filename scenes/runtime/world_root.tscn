@@ -22,6 +22,7 @@
 [ext_resource type="TileSet" path="res://resources/tilesets/primordial_tileset_normal.tres" id="19_normal_tileset"]
 [ext_resource type="Script" uid="uid://dc46t71srlh6s" path="res://scripts/world/backdrop_shadow.gd" id="19_shadow"]
 [ext_resource type="Script" uid="uid://4mvblpmovy5n" path="res://scripts/world/dust_field.gd" id="20_dust"]
+[ext_resource type="Script" path="res://scripts/save/realtime_save_service.gd" id="21_realtime"]
 
 [node name="WorldRoot" type="Node2D" unique_id=1531965248]
 script = ExtResource("1_session")
@@ -94,6 +95,9 @@ player_path = NodePath("../Player")
 
 [node name="MetroidvaniaPersistenceBridge" type="Node" parent="." unique_id=2072378855]
 script = ExtResource("7_persistence_bridge")
+
+[node name="RealtimeSave" type="Node" parent="."]
+script = ExtResource("21_realtime")
 
 [node name="DebugOverlay" parent="." unique_id=801280615 instance=ExtResource("8_debug_overlay")]
 hud_path = NodePath("../../../../HUD/DebugHud")

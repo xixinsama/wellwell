@@ -49,7 +49,7 @@ func _assert_catalog(failures: Array[String]) -> void:
 		failures.append("controls section should contain the input mapping action")
 	for expected_key: StringName in [
 		&"locale", &"fog_enabled", &"camera_shake_enabled", &"one_way_drop_enabled",
-		&"atmosphere_enabled", &"celeste_momentum_enabled",
+		&"atmosphere_enabled", &"celeste_momentum_enabled", &"realtime_save_enabled",
 		&"master_volume", &"music_volume", &"sfx_volume", &"mute_on_focus_loss",
 		&"display_mode", &"resolution_scale", &"vsync_enabled", &"fps_limit",
 		&"input_mapping",
@@ -59,6 +59,13 @@ func _assert_catalog(failures: Array[String]) -> void:
 	var momentum: SettingsDefinition = CATALOG.find_definition(&"celeste_momentum_enabled")
 	if momentum == null or bool(momentum.default_value):
 		failures.append("Celeste momentum must default to off")
+	var realtime: SettingsDefinition = CATALOG.find_definition(&"realtime_save_enabled")
+	if realtime == null:
+		failures.append("settings catalog is missing realtime_save_enabled")
+	elif realtime.section != CATALOG.GAME or realtime.kind != DEFINITION.KIND_TOGGLE:
+		failures.append("realtime save must be a Game toggle")
+	elif bool(realtime.default_value):
+		failures.append("realtime save must default to off")
 
 
 func _assert_generic_settings_api(failures: Array[String]) -> void:
@@ -72,6 +79,11 @@ func _assert_generic_settings_api(failures: Array[String]) -> void:
 	manager.set_value(&"fog_enabled", false)
 	if bool(manager.get_value(&"fog_enabled")):
 		failures.append("generic settings API did not store toggle values")
+	if manager.has_method("is_realtime_save_enabled") and manager.call("is_realtime_save_enabled"):
+		failures.append("realtime save must start disabled")
+	manager.set_value(&"realtime_save_enabled", true)
+	if not manager.has_method("is_realtime_save_enabled") or not bool(manager.call("is_realtime_save_enabled")):
+		failures.append("realtime save setting did not apply through the settings API")
 	manager.set_value(&"display_mode", "sideways")
 	if String(manager.get_value(&"display_mode")) != "windowed":
 		failures.append("generic settings API accepted an unknown option value")

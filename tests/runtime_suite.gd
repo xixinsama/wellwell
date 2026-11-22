@@ -73,6 +73,7 @@ const TESTS: Array[Script] = [
 	preload("res://tests/save/test_save_codec.gd"),
 	preload("res://tests/save/test_save_storage.gd"),
 	preload("res://tests/save/test_save_slots.gd"),
+	preload("res://tests/save/test_realtime_save.gd"),
 	preload("res://tests/world/test_fog_visibility.gd"),
 	preload("res://tests/world/test_crumble_runtime.gd"),
 	preload("res://tests/world/test_fog_door.gd"),

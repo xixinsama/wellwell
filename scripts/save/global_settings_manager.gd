@@ -166,6 +166,16 @@ func set_celeste_momentum_enabled(enabled: bool) -> void:
     set_value(&"celeste_momentum_enabled", enabled)
 
 
+## Resume at the exact position and velocity where the previous session ended.
+## Off by default so checkpoints remain the only respawn rule until opted in.
+func is_realtime_save_enabled() -> bool:
+    return bool(get_value(&"realtime_save_enabled"))
+
+
+func set_realtime_save_enabled(enabled: bool) -> void:
+    set_value(&"realtime_save_enabled", enabled)
+
+
 func is_mute_on_focus_loss_enabled() -> bool:
     return bool(get_value(&"mute_on_focus_loss"))
 

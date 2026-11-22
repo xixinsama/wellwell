@@ -98,12 +98,23 @@ func _resolve_save_manager() -> Node:
 func _resolve_game_root() -> Node:
     return _game_root_override if is_instance_valid(_game_root_override) else get_node_or_null(game_root_path)
 
+
+func _realtime_save_enabled() -> bool:
+    if not is_inside_tree():
+        return false
+    var settings := get_node_or_null("/root/GlobalSettings")
+    if settings == null or not settings.has_method("is_realtime_save_enabled"):
+        return false
+    return bool(settings.call("is_realtime_save_enabled"))
+
 func _start_game(slot: int, world: WorldData = null) -> void:
     var manager := _resolve_save_manager()
     var game_root := _resolve_game_root()
     if manager == null or game_root == null or not game_root.has_method("start_selected_snapshot"):
         return
     var snapshot: RefCounted = manager.prepare_slot(slot) if manager.has_method("prepare_slot") else null
+    if snapshot != null and not _realtime_save_enabled():
+        snapshot.clear_resume_state()
     if game_root.has_method("bind_persistence_source"):
         game_root.call("bind_persistence_source", manager)
     var started := false

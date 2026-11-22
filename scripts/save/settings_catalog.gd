@@ -138,6 +138,14 @@ static func _build_definitions() -> void:
 			"CelesteMomentumToggle",
 			"SETTINGS_DESC_CELESTE_MOMENTUM"
 		),
+		SettingsDefinition.toggle(
+			&"realtime_save_enabled",
+			GAME,
+			"SETTINGS_REALTIME_SAVE",
+			false,
+			"RealtimeSaveToggle",
+			"SETTINGS_DESC_REALTIME_SAVE"
+		),
 		SettingsDefinition.slider(
 			&"master_volume",
 			AUDIO,
