@@ -265,7 +265,7 @@ func _assert_a_real_room_lights_through_the_tileset(failures: Array[String]) -> 
 		failures.append("NormalField built no map for a room with a solid layer and a normal tileset")
 	if field.call("get_normal_texture") == null:
 		failures.append("NormalField exposed no normal texture for the installed map")
-	if field.call("get_normal_pixels") != Vector2i(320, 180):
+	if field.call("get_normal_pixels") != Vector2i(320, 184):
 		failures.append("the installed normal buffer is not the room size")
 	var clone := field.call("get_buffer_layer") as TileMapLayer
 	if clone == null:

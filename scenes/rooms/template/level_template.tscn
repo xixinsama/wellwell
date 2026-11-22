@@ -10,10 +10,11 @@
 [ext_resource type="PackedScene" uid="uid://xdpcjsmnvhkj" path="res://addons/platformer_debug/runtime/debug_hud.tscn" id="6_qmbol"]
 [ext_resource type="Script" uid="uid://jvu53oscg1ib" path="res://addons/metroidvania_kit/map/discovery/fog_of_war.gd" id="7_qmbol"]
 [ext_resource type="PackedScene" uid="uid://d6sqanrtcnmo" path="res://addons/platformer_debug/runtime/debug_overlay_2d.tscn" id="8_debug_overlay"]
-[ext_resource type="Script" path="res://scripts/world/ladder_tile_area_builder.gd" id="9_ladder_builder"]
-[ext_resource type="Script" path="res://scripts/world/crumble_runtime.gd" id="10_crumble"]
-[ext_resource type="Script" path="res://addons/fluid_kit/runtime/water/water_field.gd" id="11_water"]
-[ext_resource type="Script" path="res://addons/fluid_kit/runtime/gas/atmosphere.gd" id="12_atmosphere"]
+[ext_resource type="Script" uid="uid://cdmjx61en7xio" path="res://scripts/world/ladder_tile_area_builder.gd" id="9_ladder_builder"]
+[ext_resource type="Script" uid="uid://bcvhavis06bpg" path="res://scripts/world/crumble_runtime.gd" id="10_crumble"]
+[ext_resource type="Script" uid="uid://dleqflojm4oba" path="res://addons/fluid_kit/runtime/water/water_field.gd" id="11_water"]
+[ext_resource type="Script" uid="uid://fqwahtimacjq" path="res://addons/fluid_kit/runtime/gas/atmosphere.gd" id="12_atmosphere"]
+[ext_resource type="Script" path="res://scripts/world/spike_hazard_area_builder.gd" id="13_spike_hazard"]
 
 [node name="RoomAuthoringRoot" type="Node2D" unique_id=1018949667]
 script = ExtResource("1_f53rw")
@@ -45,13 +46,17 @@ tile_set = ExtResource("3_t1ns4")
 tile_set = ExtResource("3_t1ns4")
 collision_enabled = false
 
-[node name="LadderAreaBuilder" type="Node2D" parent="RoomContent/Terrain"]
+[node name="LadderAreaBuilder" type="Node2D" parent="RoomContent/Terrain" unique_id=2054308359]
 script = ExtResource("9_ladder_builder")
+
+[node name="SpikeHazardAreaBuilder" type="Node2D" parent="RoomContent/Terrain" unique_id=2054308360]
+script = ExtResource("13_spike_hazard")
 
 [node name="Entities" type="Node2D" parent="RoomContent" unique_id=190854283]
 
 [node name="StartSpawn" type="Marker2D" parent="RoomContent/Entities" unique_id=1039911569]
 script = ExtResource("4_wyn2e")
+spawn_id = "start"
 
 [node name="Foreground" type="Node2D" parent="RoomContent" unique_id=577070235]
 
@@ -60,6 +65,7 @@ script = ExtResource("4_wyn2e")
 [node name="Player" parent="PreviewOnly" unique_id=43758805 instance=ExtResource("3_mfms0")]
 
 [node name="PixelCamera2D" type="Camera2D" parent="PreviewOnly" unique_id=420423]
+position = Vector2(160, 90)
 zoom = Vector2(4, 4)
 process_callback = 0
 position_smoothing_enabled = true
@@ -67,10 +73,10 @@ script = ExtResource("4_q26ly")
 target_path = NodePath("../Player")
 metadata/_custom_type_script = "uid://cfv5j6giqea6p"
 
-[node name="WaterField" type="Node2D" parent="PreviewOnly"]
+[node name="WaterField" type="Node2D" parent="PreviewOnly" unique_id=1188018848]
 script = ExtResource("11_water")
 
-[node name="Atmosphere" type="Node2D" parent="PreviewOnly"]
+[node name="Atmosphere" type="Node2D" parent="PreviewOnly" unique_id=2107661703]
 script = ExtResource("12_atmosphere")
 
 [node name="FogOfWar" type="Node2D" parent="PreviewOnly" unique_id=1324736546]
@@ -82,7 +88,7 @@ terrain_path = NodePath("../../RoomContent/Terrain")
 
 [node name="GridOverlay" parent="PreviewOnly" unique_id=778597302 instance=ExtResource("5_wyn2e")]
 
-[node name="CrumbleRuntime" type="Node2D" parent="PreviewOnly"]
+[node name="CrumbleRuntime" type="Node2D" parent="PreviewOnly" unique_id=383064970]
 script = ExtResource("10_crumble")
 player_path = NodePath("../Player")
 terrain_path = NodePath("../../RoomContent/Terrain")

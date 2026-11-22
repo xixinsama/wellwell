@@ -2,7 +2,7 @@
 
 一间房的可见地面由三个 `TileMapLayer` 组成：它们都挂在 `RoomContent/Terrain`（烘焙产物里是 `Terrain`）下、共用同一张图集、`z_index` 都是 0。本文讲这三层分别是什么、为什么拆成三层，以及**每个系统到底读哪一层**。
 
-场景出处：模板 `scenes/rooms/template/level_template.tscn:35-49`；烘焙产物 `scenes/rooms/generated/light_lab/terrain.tscn:10-26`（根节点 `RoomTerrain`，`Terrain` 直接挂在根下，子节点依次是三层瓦片加一个 `LadderAreaBuilder`）。
+场景出处：模板 `scenes/rooms/template/level_template.tscn:35-52`；烘焙产物 `scenes/rooms/generated/light_lab/terrain.tscn:10-26`（根节点 `RoomTerrain`，`Terrain` 直接挂在根下，子节点依次是三层瓦片加 `LadderAreaBuilder` 与 `SpikeHazardAreaBuilder`）。
 
 ## 三层各自是什么
 
@@ -43,34 +43,66 @@
 | `WaterGrid` | `SolidTiles`（整格） | 单元水体的实心格，墙把水体积拿走 | `addons/fluid_kit/runtime/water/water_grid.gd:124`、`:492-504` |
 | `TerrainHighlight` | `SolidTiles`（碰撞多边形） | 沿轮廓画内侧高光，并按 hero 可达空气只亮一侧 | `scripts/world/terrain_highlight.gd:30`、`:214-243` |
 | `LadderAreaBuilder` | `Terrain` 下**所有**层，按 `source_id` + `(0,7)` 认梯子 | 合并成 `LadderZone`（`Area2D`） | `scripts/world/ladder_tile_area_builder.gd:7-8`、`:19-45` |
+| `SpikeHazardAreaBuilder` | `Terrain` 下**所有**层，按 `source_id` + `(0,8)` 认尖刺 | 按备选朝向生成半格 `Killzone`（`Area2D`） | `scripts/world/spike_hazard_area_builder.gd` |
 | `CrumbleRuntime` | `SolidTiles`，外加旧层 `CrumbleTiles`/`CrumbleOneWayTiles` | 找出 `(3,0)`/`(3,4)` 的可塌格子 | `scripts/world/crumble_runtime.gd:27-29`、`:73-79` |
 | `BackdropField` | **不读瓦片**，只把 `Terrain/BackTiles` 当 `CanvasItem` 调 `modulate` | 画背景板；和"读瓦片"是两回事 | `scripts/world/backdrop_field.gd:126-130` |
 | `WorldTerrainRuntime` | `Terrain` 下三层是否齐全 | 不齐就不载入这间房 | `addons/platformer_kit/world/runtime/world_terrain_runtime.gd:84-93` |
 
 ## 图集与碰撞
 
-`primordial_tileset.tres` 只有**一个**图集源（source id `0`，`.tres:193`），`texture_region_size = Vector2i(8, 8)`、`tile_size = Vector2i(8, 8)`（`.tres:13`、`:185`）。共 22 个图集坐标、55 个图块条目（22 个基础朝向 + 33 个额外变体），两个物理层：`physics_layer_0`（`collision_layer = 1`，整块实心）与 `physics_layer_1`（`collision_layer = 16`，单向）（`.tres:186-189`）。
+`primordial_tileset.tres` 只有**一个**图集源（source id `0`），`texture_region_size = Vector2i(8, 8)`、`tile_size = Vector2i(8, 8)`（图集源与 `[resource]` 段）。共 23 个图集坐标、59 个图块条目（23 个基础朝向 + 36 个额外变体），两个物理层：`physics_layer_0`（`collision_layer = 1`，整块实心）与 `physics_layer_1`（`collision_layer = 16`，单向）。
 
 | 类别 | 图集坐标 | 备注 |
 | :--- | :--- | :--- |
-| 实心 | `(0,0)` `(1,0)` `(3,0)` `(0,3)` 整格；`(0,1)` 4 个朝向（斜坡）；`(0,2)` 4 个朝向（半砖） | 6 个坐标 / 12 个条目 |
+| 实心 | `(0,0)` `(1,0)` `(3,0)` `(0,3)` 整格；`(0,1)` 4 个朝向（斜坡）；`(0,2)` 4 个朝向（半砖）；自动地形 `(4,0)` `(4,1)` `(5,0)` `(5,1)` 全部 13 个条目（整格碰撞） | 10 个坐标 / 25 个条目 |
 | 单向 | `(0,4)/0`、`(1,4)/0`、`(1,4)/1`、`(2,4)/0`、`(3,4)/0` | 5 个条目；`(0,4)` 和 `(2,4)` 的另外 3 个朝向**没有**多边形 |
-| 无碰撞 | `(0,5)` `(0,6)` `(0,7)` `(0,8)` `(1,5)` `(2,5)` `(3,5)` `(4,0)` `(4,1)` `(4,5)` `(5,1)` `(5,5)` | 梯子 `(0,7)`、藤蔓/贴花、自动地形角块 |
+| 危险 | `(0,8)` 4 个朝向（朝上/右/下/左） | 无实体碰撞；每个格子由 `SpikeHazardAreaBuilder` 生成 `8x4`（侧向 `4x8`）的 `Killzone`，接触后回到 `spawn_position` |
+| 无碰撞 | `(0,5)` `(0,6)` `(0,7)` `(1,5)` `(2,5)` `(3,5)` `(4,5)` `(5,5)` | 梯子 `(0,7)`、藤蔓/贴花、测试底色 |
 
 以上数字是把 `.tres` 载入 Godot 后用 `TileSetAtlasSource.get_tiles_count()` / `get_alternative_tiles_count()` / `TileData.get_collision_polygons_count()` 数出来的，不是猜的。
 
-**测试用瓦片（`(3,5)` / `(4,5)` / `(5,5)` / `(4,0)` / `(4,1)` / `(5,1)`）。** 这几块是为了在干净的底色上看光照、气体、抖动而加的，全部**没有碰撞多边形**：
+**测试用瓦片（`(3,5)` / `(4,5)` / `(5,5)`）。** 这三块是为了在干净的底色上看光照、气体、抖动而加的，全部**没有碰撞多边形**：
 
 | 坐标 | 内容 | 用途 |
 | :--- | :--- | :--- |
 | `(3,5)` | 纯白底 + 右侧/下侧各 1px 格线（亮度 255，格线 0） | 铺满就是 8px 网格的纯白背景，光照/气体/阴影在这种空白底上最容易看清 |
 | `(4,5)` | 同样的网格，中灰 | 同上，低一档亮度 |
 | `(5,5)` | 1 像素棋盘格（255 / 39 交替） | 深色抖动底，用来对比"颗粒背景"和"纯色背景" |
-| `(4,0)` `(4,1)` `(5,1)` | 自动地形角块（带 `terrain_set = 0` 的 peering bit，各 4 个翻转备选） | 自动拼接用的边角 |
 
 因为它们没有碰撞多边形，放进 `SolidTiles` 时：玩家可以穿过、光照/描边/迷雾不把它们当实心，**但气体和水会**（见"容易忘的点"的"两套判据"）。当"看得见的墙"用的话，需要先在图集里给它们画碰撞多边形。
 
-**备选（alternative）为什么存在。** 斜坡和半砖需要多个朝向，编辑器用 `flip_h`/`flip_v`/`transpose` 组合出变体（例如 `(0,1)` 一共 4 个朝向，`.tres:18-29`），单向平台 `(1,4)` 甚至有 8 个（`.tres:56-80`）。另一类是自动地形用的角块：`(4,0)`、`(4,1)`、`(5,1)` 带 `terrain_set = 0` 的 peering bit（`.tres:118-179`），它们也没有碰撞多边形。
+`(4,0)`–`(5,1)` 不是测试底色：它们是自动地形的 13 个条目，全部带整格碰撞，用法见下一节。
+
+**备选（alternative）为什么存在。** 斜坡和半砖需要多个朝向，编辑器用 `flip_h`/`flip_v`/`transpose` 组合出变体（例如 `(0,1)` 一共 4 个朝向，`.tres:18-29`），单向平台 `(1,4)` 甚至有 8 个（`.tres:56-80`）。另一类是自动地形：`(4,0)`–`(5,1)` 的 13 个条目带 `terrain_set = 0`，每个备选都有整格碰撞（见下一节）。
+
+**尖刺（`(0,8)`）。** 基础图块朝上，`/1` 朝右、`/2` 朝下、`/3` 朝左，按 `flip_h`/`flip_v`/`transpose` 依次旋转。四块都**没有**实体碰撞多边形：尖刺不挡玩家、不挡光、不进描边和迷雾；`SpikeHazardAreaBuilder` 读取每个格子的备选标志，在尖刺本体所在的半格生成 `Killzone`（贴地/天花板 `8x4`，贴墙 `4x8`）。碰到后先 `respawn_at(spawn_position)` 再播放受伤粒子。因为它没有多边形，气体/水仍会把该格当实心，和梯子/贴花一致。
+
+## 自动地形（`(4,0)`–`(5,1)`）
+
+这 13 个条目是给"厚实心区域"自动描边用的：在 `SolidTiles` 上刷一片至少 2 格厚的实心区域，外缘会自动换成直边/凸角/内角块，填充用 `(5,0)/0`。地形集只有一个（`terrain_set = 0`，`mode = 0` 匹配四边和四角，terrain 0）。
+
+规则是 **bit 表示"同种地形继续延伸的方向"**，描边画在朝空气的那一侧：
+
+| 图块 | 画面 | peering bits |
+| :--- | :--- | :--- |
+| `(4,0)/0` | 上描边 | 左、右、下、左下、右下 |
+| `(4,0)/1` | 下描边 | 左、右、上、左上、右上 |
+| `(4,0)/2` | 左描边 | 上、下、右、右上、右下 |
+| `(4,0)/3` | 右描边 | 上、下、左、左上、左下 |
+| `(4,1)/0` | 上+右凸角 | 左、下、左下 |
+| `(4,1)/1` | 下+右凸角 | 左、上、左上 |
+| `(4,1)/2` | 上+左凸角 | 右、下、右下 |
+| `(4,1)/3` | 下+左凸角 | 右、上、右上 |
+| `(5,1)/0` | 左上内角 | 除"左上"外全部 |
+| `(5,1)/1` | 左下内角 | 除"左下"外全部 |
+| `(5,1)/2` | 右上内角 | 除"右上"外全部 |
+| `(5,1)/3` | 右下内角 | 除"右下"外全部 |
+| `(5,0)/0` | 填充 | 全部 8 位 |
+
+- 直边块必须保留"对侧"那一位（上边块保留 `bottom`），否则会和凸角块同时匹配，Godot 会选错；填充块 8 位全开，因此只在四周都是同种地形时使用。
+- 13 个条目（含翻转备选）都带整格碰撞，放在 `SolidTiles` 里能站、挡光、进描边和迷雾。
+- 不支持 1 格厚的薄墙/细线：没有"上下双描边、端点、T 形交叉"的美术，Godot 会退回最接近的边块，可能缺一侧描边。
+- 测试在 `tests/world/test_tileset_terrain.gd`：用 `set_cells_terrain_connect` 刷实心块和凹口，断言每个位置选到的图块。
 
 **法线图集是从这张反照率烘出来的，不接受手绘。** `scripts/tools/bake_tileset_normals.gd:1-17` 的说明和流程：读 `assets/images/primordial_tileset.png` → 推出法线 → 写 `primordial_tileset_normal.png` → 按反照率的**结构**重建 `primordial_tileset_normal.tres`（同坐标、同备选顺序、同翻转标志）。加一块新瓦片到反照率之后必须重跑：
 
@@ -114,8 +146,9 @@ $godot = "D:\Godot4\Godot_v4.7.2-stable_win64.exe\Godot_v4.7.2-stable_win64.exe"
 
 - **三层 z 都是 0**，它们之间的先后只靠树序：`BackTiles` → `SolidTiles` → `DetailTiles` → `LadderAreaBuilder`。给某层单独调 `z_index` 会把它抬到整帧的别处去，地形不需要这么干。
 - **`DetailTiles` 在 `SolidTiles` 之后画**，所以它是前景：放在这里的瓦片会盖住实心墙。
-- **`LadderAreaBuilder` 是 `Terrain` 下的一个 `Node2D`，自己什么都不画**（`level_template.tscn:48-49`、`terrain.tscn:25-26`）。它只在 `_ready()` 里 `rebuild()` 一次（`ladder_tile_area_builder.gd:11-13`），运行时改瓦片不会自动重算（`test_ladder_tiles.gd:36` 是手动调）；烘焙产物里它的子节点是空的，`LadderZone` 全部运行时生成（`test_ladder_tiles.gd:76-80`）。
-- **"实心"有两套判据。** 光/描边/迷雾看碰撞多边形，气体/水看格子有没有瓦片。所以一块没有多边形的装饰瓦片（梯子 `(0,7)`、自动地形角块 `(4,0)` 等）不挡玩家、不挡光、不挡视线，却会被气体和水当成实心格。
+- **`LadderAreaBuilder` 是 `Terrain` 下的一个 `Node2D`，自己什么都不画**（`level_template.tscn:48-49`、`terrain.tscn:25-26`）。它只在 `_ready()` 里 `rebuild()` 一次（`ladder_tile_area_builder.gd:11-13`），运行时改瓦片不会自动重算（`test_ladder_tiles.gd:36` 是手动调）；烘焙产物里它的子节点是空的，`LadderZone` 全部运行时生成（`test_ladder_tiles.gd:76-80`）。`SpikeHazardAreaBuilder` 用同样的方式工作，只是按 `(0,8)` 生成半格 `Killzone`。
+- **"实心"有两套判据。** 光/描边/迷雾看碰撞多边形，气体/水看格子有没有瓦片。所以一块没有多边形的装饰瓦片（梯子 `(0,7)`、藤蔓 `(1,5)`、测试底色 `(3,5)` 等）不挡玩家、不挡光、不挡视线，却会被气体和水当成实心格。
+- **尖刺是触发区，不是墙。** `(0,8)` 没有碰撞多边形，玩家会走进尖刺底部，由半格 `Killzone` 送回 `spawn_position`；不要为了"挡人"再给它加实体碰撞，否则会同时改变气体/水判据和重生手感。
 - **`BackTiles` 忘了关碰撞就是一层看不见的碰撞墙。** 模板和多数烘焙房间是关的；`gas_field_lab` 早先的脚本生成器用默认参数建层（`collision_enabled = true`），现已修正为 `false` 并重新烘焙（实测 `BackTiles` / `DetailTiles` 都是 `false`、`SolidTiles` 是 `true`）。自己写房间生成器时记得显式关掉这两层。
 - **旧房间可能多于三层。** `GlassTiles`、`VisionBlockTiles`、`MarkerTiles`、`CrumbleTiles`、`CrumbleOneWayTiles` 仍被 `world_terrain_runtime.gd:6-9` 和部分系统兼容读取，但模板只要求三层（`room_baker.gd:14`）；新房间不要依赖这些旧层。
 - **`CrumbleRuntime` 认的是图集坐标而不是层**：`(3,0)` 既是完整实心砖又是可塌砖（`crumble_runtime.gd:27-29`），所以"这块砖会不会塌"不能只看层，得看图集坐标。

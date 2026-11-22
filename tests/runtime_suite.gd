@@ -127,6 +127,7 @@ const TESTS: Array[Script] = [
 	preload("res://tests/player/test_player_motion_effects.gd"),
 	preload("res://tests/player/test_celeste_movement_rules.gd"),
 	preload("res://tests/world/test_killzone.gd"),
+	preload("res://tests/world/test_spike_hazard.gd"),
 	preload("res://tests/platformer_kit/character/test_ladder_motion.gd"),
 	preload("res://tests/world/test_ladder_tiles.gd"),
 	preload("res://tests/world/test_cell_rect_merger.gd"),
