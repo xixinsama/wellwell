@@ -6,27 +6,28 @@
 [ext_resource type="Script" path="res://addons/fluid_kit/runtime/gas/fog_light.gd" id="4_oaneh"]
 [ext_resource type="Script" path="res://scripts/world/fog_zone.gd" id="5_jcmdf"]
 
-[node name="RoomRuntimeContent" type="Node2D" unique_id=111229087]
+[node name="RoomRuntimeContent" type="Node2D" unique_id=54723922]
 
-[node name="Entities" type="Node2D" parent="." unique_id=753701755]
+[node name="Entities" type="Node2D" parent="." unique_id=1386971108]
 
-[node name="StartSpawn" type="Marker2D" parent="Entities" unique_id=1955266583]
+[node name="StartSpawn" type="Marker2D" parent="Entities" unique_id=609327944]
 position = Vector2(40, 168)
 script = ExtResource("1_6dnrx")
+spawn_id = "start"
 
-[node name="GasField" type="Node2D" parent="Entities" unique_id=1743372592]
+[node name="GasField" type="Node2D" parent="Entities" unique_id=1964364154]
 position = Vector2(160, 96)
 script = ExtResource("2_kwm4r")
 decay = 0.32
 
-[node name="TrailWalker" type="Node2D" parent="Entities" unique_id=1514919383]
+[node name="TrailWalker" type="Node2D" parent="Entities" unique_id=612024981]
 position = Vector2(160, 96)
 script = ExtResource("3_j8s4p")
 emit_radius = 13.0
 emit_rate = 6.0
 backward_speed = 105.0
 
-[node name="TrailLightTop" type="Node2D" parent="Entities" unique_id=1804125342]
+[node name="TrailLightTop" type="Node2D" parent="Entities" unique_id=1017262057]
 position = Vector2(80, 48)
 script = ExtResource("4_oaneh")
 light_id = "trail_top"
@@ -34,10 +35,10 @@ radius = 96.0
 energy = 0.9
 color = Color(1, 0.9, 0.72, 1)
 
-[node name="TrailRoomLight" type="Node2D" parent="Entities" unique_id=711350894]
+[node name="TrailRoomLight" type="Node2D" parent="Entities" unique_id=1749700862]
 script = ExtResource("5_jcmdf")
 mode = 1
 size_cells = Vector2i(40, 23)
 zone_id = "gas_trail_lit"
 
-[node name="Foreground" type="Node2D" parent="." unique_id=1510965232]
+[node name="Foreground" type="Node2D" parent="." unique_id=1694493780]

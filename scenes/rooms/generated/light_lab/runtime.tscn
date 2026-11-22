@@ -6,15 +6,16 @@
 [ext_resource type="Script" path="res://addons/fluid_kit/runtime/gas/gas_vent.gd" id="4_bjbk1"]
 [ext_resource type="Script" path="res://scripts/world/fog_zone.gd" id="5_i8f34"]
 
-[node name="RoomRuntimeContent" type="Node2D" unique_id=1009668978]
+[node name="RoomRuntimeContent" type="Node2D" unique_id=627589502]
 
-[node name="Entities" type="Node2D" parent="." unique_id=1548759796]
+[node name="Entities" type="Node2D" parent="." unique_id=759859975]
 
-[node name="StartSpawn" type="Marker2D" parent="Entities" unique_id=484960601]
+[node name="StartSpawn" type="Marker2D" parent="Entities" unique_id=1988569437]
 position = Vector2(24, 144)
 script = ExtResource("1_ai8pr")
+spawn_id = "start"
 
-[node name="SwingingLamp" type="Node2D" parent="Entities" unique_id=475101668]
+[node name="SwingingLamp" type="Node2D" parent="Entities" unique_id=201800540]
 position = Vector2(144, 40)
 script = ExtResource("2_iyjjq")
 light_id = "swing"
@@ -26,7 +27,7 @@ swing_speed = 0.22
 flicker = 0.12
 flicker_speed = 5.0
 
-[node name="PoolLamp" type="Node2D" parent="Entities" unique_id=1143096506]
+[node name="PoolLamp" type="Node2D" parent="Entities" unique_id=1564255979]
 position = Vector2(256, 96)
 script = ExtResource("2_iyjjq")
 light_id = "pool"
@@ -38,7 +39,7 @@ flicker = 0.2
 lens_radius = 48.0
 lens_strength = 0.48
 
-[node name="UnoccludedGlow" type="Node2D" parent="Entities" unique_id=2147223582]
+[node name="UnoccludedGlow" type="Node2D" parent="Entities" unique_id=144469662]
 position = Vector2(48, 96)
 script = ExtResource("2_iyjjq")
 light_id = "glow"
@@ -49,7 +50,7 @@ flicker = 0.25
 flicker_speed = 7.0
 casts_shadows = false
 
-[node name="Firefly0" type="Node2D" parent="Entities" unique_id=1660623132]
+[node name="Firefly0" type="Node2D" parent="Entities" unique_id=1033710506]
 position = Vector2(40, 32)
 script = ExtResource("2_iyjjq")
 light_id = "firefly0"
@@ -62,7 +63,7 @@ flicker = 0.45
 flicker_speed = 3.0
 casts_shadows = false
 
-[node name="Firefly1" type="Node2D" parent="Entities" unique_id=1190503242]
+[node name="Firefly1" type="Node2D" parent="Entities" unique_id=291781833]
 position = Vector2(88, 72)
 script = ExtResource("2_iyjjq")
 light_id = "firefly1"
@@ -75,7 +76,7 @@ flicker = 0.45
 flicker_speed = 4.0
 casts_shadows = false
 
-[node name="Firefly2" type="Node2D" parent="Entities" unique_id=1425126518]
+[node name="Firefly2" type="Node2D" parent="Entities" unique_id=1053159002]
 position = Vector2(136, 112)
 script = ExtResource("2_iyjjq")
 light_id = "firefly2"
@@ -88,7 +89,7 @@ flicker = 0.45
 flicker_speed = 5.0
 casts_shadows = false
 
-[node name="Firefly3" type="Node2D" parent="Entities" unique_id=940864768]
+[node name="Firefly3" type="Node2D" parent="Entities" unique_id=56181194]
 position = Vector2(184, 56)
 script = ExtResource("2_iyjjq")
 light_id = "firefly3"
@@ -100,7 +101,7 @@ wander_speed = 0.21
 flicker = 0.45
 casts_shadows = false
 
-[node name="Firefly4" type="Node2D" parent="Entities" unique_id=1436939241]
+[node name="Firefly4" type="Node2D" parent="Entities" unique_id=1180099094]
 position = Vector2(232, 96)
 script = ExtResource("2_iyjjq")
 light_id = "firefly4"
@@ -113,7 +114,7 @@ flicker = 0.45
 flicker_speed = 7.0
 casts_shadows = false
 
-[node name="Firefly5" type="Node2D" parent="Entities" unique_id=695143674]
+[node name="Firefly5" type="Node2D" parent="Entities" unique_id=1570849926]
 position = Vector2(40, 40)
 script = ExtResource("2_iyjjq")
 light_id = "firefly5"
@@ -126,13 +127,13 @@ flicker = 0.45
 flicker_speed = 8.0
 casts_shadows = false
 
-[node name="PoolFluid" type="Node2D" parent="Entities" unique_id=2142599411]
+[node name="PoolFluid" type="Node2D" parent="Entities" unique_id=35143680]
 position = Vector2(240, 48)
 script = ExtResource("3_c6jex")
 size_cells = Vector2i(9, 13)
 region_id = "pool"
 
-[node name="RightVent" type="Node2D" parent="Entities" unique_id=1556803472]
+[node name="RightVent" type="Node2D" parent="Entities" unique_id=394786631]
 position = Vector2(40, 112)
 script = ExtResource("4_bjbk1")
 channel = 0
@@ -141,7 +142,7 @@ radius = 60.0
 jet_speed = 1200.0
 vent_id = "lab_right"
 
-[node name="DarkPocket" type="Node2D" parent="Entities" unique_id=212491600]
+[node name="DarkPocket" type="Node2D" parent="Entities" unique_id=795283269]
 position = Vector2(168, 128)
 script = ExtResource("5_i8f34")
 size_cells = Vector2i(9, 7)
@@ -149,4 +150,4 @@ zone_id = "lab_dark_pocket"
 restore_on_exit = true
 focus_room = true
 
-[node name="Foreground" type="Node2D" parent="." unique_id=200843101]
+[node name="Foreground" type="Node2D" parent="." unique_id=1541940952]

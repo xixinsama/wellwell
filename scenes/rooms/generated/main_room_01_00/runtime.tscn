@@ -6,15 +6,16 @@
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_mrvaw"]
 size = Vector2(148, 16)
 
-[node name="RoomRuntimeContent" type="Node2D" unique_id=6877475]
+[node name="RoomRuntimeContent" type="Node2D" unique_id=880041843]
 
-[node name="Entities" type="Node2D" parent="." unique_id=1666394798]
+[node name="Entities" type="Node2D" parent="." unique_id=1249551313]
 
-[node name="StartSpawn" type="Marker2D" parent="Entities" unique_id=1197456698]
+[node name="StartSpawn" type="Marker2D" parent="Entities" unique_id=886039309]
 position = Vector2(52, 152)
 script = ExtResource("1_l68oc")
+spawn_id = "start"
 
-[node name="ResetZone" type="Area2D" parent="Entities" unique_id=47398687]
+[node name="ResetZone" type="Area2D" parent="Entities" unique_id=1791091954]
 position = Vector2(88, 184)
 collision_layer = 4
 collision_mask = 2
@@ -23,8 +24,8 @@ script = ExtResource("2_u6ah2")
 spawn_point_path = NodePath("../StartSpawn")
 metadata/_custom_type_script = "uid://502ixw2kyit1"
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Entities/ResetZone" unique_id=413964906]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Entities/ResetZone" unique_id=1630177515]
 position = Vector2(66, 4)
 shape = SubResource("RectangleShape2D_mrvaw")
 
-[node name="Foreground" type="Node2D" parent="." unique_id=2052634413]
+[node name="Foreground" type="Node2D" parent="." unique_id=672772924]

@@ -3,15 +3,16 @@
 [ext_resource type="Script" path="res://addons/platformer_kit/world/entities/spawn_point.gd" id="1_8g4kh"]
 [ext_resource type="Script" path="res://scripts/world/fog_zone.gd" id="2_fbm48"]
 
-[node name="RoomRuntimeContent" type="Node2D" unique_id=717320688]
+[node name="RoomRuntimeContent" type="Node2D" unique_id=167470123]
 
-[node name="Entities" type="Node2D" parent="." unique_id=1472397548]
+[node name="Entities" type="Node2D" parent="." unique_id=969896583]
 
-[node name="StartSpawn" type="Marker2D" parent="Entities" unique_id=400342339]
+[node name="StartSpawn" type="Marker2D" parent="Entities" unique_id=2038101043]
 position = Vector2(72, 112)
 script = ExtResource("1_8g4kh")
+spawn_id = "start"
 
-[node name="FogZone" type="Node2D" parent="Entities" unique_id=1428338372]
+[node name="FogZone" type="Node2D" parent="Entities" unique_id=2143955230]
 position = Vector2(184, 128)
 script = ExtResource("2_fbm48")
 size_cells = Vector2i(4, 3)
@@ -19,7 +20,7 @@ zone_id = "FogZone"
 restore_on_exit = true
 metadata/_custom_type_script = "uid://dtxrrjgropat6"
 
-[node name="FogZone2" type="Node2D" parent="Entities" unique_id=256680337]
+[node name="FogZone2" type="Node2D" parent="Entities" unique_id=392492495]
 position = Vector2(152, 56)
 script = ExtResource("2_fbm48")
 mode = 1
@@ -27,7 +28,7 @@ size_cells = Vector2i(3, 3)
 zone_id = "FogZone2"
 metadata/_custom_type_script = "uid://dtxrrjgropat6"
 
-[node name="FogZone3" type="Node2D" parent="Entities" unique_id=1834083506]
+[node name="FogZone3" type="Node2D" parent="Entities" unique_id=1537321581]
 position = Vector2(144, 88)
 script = ExtResource("2_fbm48")
 size_cells = Vector2i(5, 4)
@@ -36,4 +37,4 @@ restore_on_exit = true
 focus_room = true
 metadata/_custom_type_script = "uid://dtxrrjgropat6"
 
-[node name="Foreground" type="Node2D" parent="." unique_id=2132754280]
+[node name="Foreground" type="Node2D" parent="." unique_id=1516094799]

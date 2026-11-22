@@ -7,9 +7,9 @@
 [ext_resource type="Script" path="res://addons/platformer_kit/world/entities/save_point.gd" id="5_o8akd"]
 [ext_resource type="Script" path="res://addons/platformer_kit/world/entities/spawn_point.gd" id="6_3igum"]
 
-[node name="RoomRuntimeContent" type="Node2D" unique_id=2126582169]
+[node name="RoomRuntimeContent" type="Node2D" unique_id=1735918719]
 
-[node name="Entities" type="Node2D" parent="." unique_id=1376244811]
+[node name="Entities" type="Node2D" parent="." unique_id=1785520531]
 
 [node name="AbilityPickup" type="Node2D" parent="Entities" unique_id=261258473 instance=ExtResource("1_60fuk")]
 position = Vector2(93, 315)
@@ -27,7 +27,8 @@ active_color = Color(1.6364455e-06, 0.95945245, 0.23636574, 1)
 entity_id = "checkpoint"
 persistent_id = &"checkpoint"
 
-[node name="StartSpawn" type="Marker2D" parent="Entities" unique_id=987069367]
+[node name="StartSpawn" type="Marker2D" parent="Entities" unique_id=1455539676]
 script = ExtResource("6_3igum")
+spawn_id = "start"
 
-[node name="Foreground" type="Node2D" parent="." unique_id=1253729287]
+[node name="Foreground" type="Node2D" parent="." unique_id=311449551]

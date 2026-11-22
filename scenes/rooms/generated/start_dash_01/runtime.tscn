@@ -1,12 +1,37 @@
 [gd_scene format=3 uid="uid://c2urybphtcud6"]
 
-[ext_resource type="Script" path="res://addons/platformer_kit/world/entities/spawn_point.gd" id="1_m4686"]
+[ext_resource type="Script" path="res://addons/platformer_kit/world/entities/spawn_point.gd" id="1_px16g"]
+[ext_resource type="PackedScene" path="res://addons/platformer_kit/world/entities/world_door.tscn" id="2_lqbn7"]
+[ext_resource type="Script" path="res://addons/platformer_kit/world/entities/world_door.gd" id="3_8r7je"]
+[ext_resource type="Resource" path="res://resources/worlds/dash_world_layer1.tres" id="4_kqph6"]
+[ext_resource type="PackedScene" path="res://scenes/world/number_pickup.tscn" id="5_xm55p"]
+[ext_resource type="Script" path="res://game/entities/number_pickup.gd" id="6_ou5fb"]
 
-[node name="RoomRuntimeContent" type="Node2D" unique_id=159497433]
+[node name="RoomRuntimeContent" type="Node2D" unique_id=220390978]
 
-[node name="Entities" type="Node2D" parent="." unique_id=1284747492]
+[node name="Entities" type="Node2D" parent="." unique_id=1722104713]
 
-[node name="StartSpawn" type="Marker2D" parent="Entities" unique_id=1083275486]
-script = ExtResource("1_m4686")
+[node name="StartSpawn" type="Marker2D" parent="Entities" unique_id=1066858149]
+position = Vector2(32, 80)
+script = ExtResource("1_px16g")
+spawn_id = "start"
 
-[node name="Foreground" type="Node2D" parent="." unique_id=1912282088]
+[node name="WorldDoor" type="Node2D" parent="Entities" unique_id=1654413615 instance=ExtResource("2_lqbn7")]
+z_index = 2
+position = Vector2(80, 80)
+script = ExtResource("3_8r7je")
+door_kind = 1
+activation_mode = 1
+target_world = ExtResource("4_kqph6")
+target_room_id = "layer1_00_00"
+target_door_id = "layer1_door0"
+entity_id = "layer0_door0"
+persistent_id = &"layer0_door0"
+entity_type = "world_door"
+persistent = true
+
+[node name="NumberPickup" type="Node2D" parent="Entities" unique_id=678217691 instance=ExtResource("5_xm55p")]
+position = Vector2(128, 72)
+script = ExtResource("6_ou5fb")
+
+[node name="Foreground" type="Node2D" parent="." unique_id=108730641]
