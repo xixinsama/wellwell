@@ -7,5 +7,9 @@ var wall_left := false
 var wall_right := false
 var floor_normal := Vector2.UP
 var floor_velocity := Vector2.ZERO
+## Platform motion that should be inherited by a jump. A conveyor's constant
+## surface velocity is deliberately excluded.
+var lift_velocity := Vector2.ZERO
 var on_moving_platform := false
+var on_lift_platform := false
 var platform_id := StringName()

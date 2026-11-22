@@ -54,16 +54,16 @@ func run() -> Array[String]:
 	intent.jump_pressed = true
 	intent.jump_held = true
 	component.call("apply_motion", context, intent, profile, 0.1, true, false)
-	if context.velocity.y != -220.0 or not bool(context.just_jumped):
+	if context.velocity.y != -120.0 or not bool(context.just_jumped):
 		failures.append("ladder jump did not use profile jump_speed")
 	intent.jump_pressed = false
 	context.velocity.y = -100.0
 	component.call("apply_motion", context, intent, profile, 0.1, true, false)
-	if not is_equal_approx(context.velocity.y, -24.0):
+	if not is_equal_approx(context.velocity.y, -10.0):
 		failures.append("held ladder jump must apply ordinary upward gravity")
 	intent.jump_pressed = true
 	component.call("apply_motion", context, intent, profile, 0.1, true, false)
-	if context.velocity.y != -220.0:
+	if context.velocity.y != -120.0:
 		failures.append("repeated ladder jump was rejected")
 	intent.jump_pressed = false
 	intent.vertical_axis = 1.0

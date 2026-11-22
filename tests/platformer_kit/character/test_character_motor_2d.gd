@@ -15,11 +15,14 @@ func run() -> Array[String]:
 	if not failures.is_empty():
 		return failures
 	_assert_horizontal_motion(failures)
+	_assert_over_speed_friction(failures)
 	_assert_gravity_and_terminal_velocity(failures)
 	_assert_jump_buffer(failures)
 	_assert_coyote_time(failures)
 	_assert_air_jump(failures)
 	_assert_variable_jump(failures)
+	_assert_lift_caps(failures)
+	_assert_tick_rate_equivalence(failures)
 	return failures
 
 
@@ -28,30 +31,40 @@ func _assert_horizontal_motion(failures: Array[String]) -> void:
 	fixture.intent.move_axis = 1.0
 	fixture.environment.grounded = true
 	fixture.motor.step(fixture.context, fixture.intent, fixture.environment, fixture.profile, 0.1)
-	if not is_equal_approx(fixture.context.velocity.x, 85.0):
+	if not is_equal_approx(fixture.context.velocity.x, 100.0):
 		failures.append("CharacterMotor2D used the wrong grounded acceleration")
 	fixture.context.velocity.x = 100.0
 	fixture.intent.move_axis = 0.0
 	fixture.motor.step(fixture.context, fixture.intent, fixture.environment, fixture.profile, 0.05)
-	if not is_equal_approx(fixture.context.velocity.x, 45.0):
+	if not is_equal_approx(fixture.context.velocity.x, 50.0):
 		failures.append("CharacterMotor2D used the wrong grounded deceleration")
 	fixture.context.velocity.x = 0.0
 	fixture.intent.move_axis = 1.0
 	fixture.environment.grounded = false
 	fixture.motor.step(fixture.context, fixture.intent, fixture.environment, fixture.profile, 0.1)
-	if not is_equal_approx(fixture.context.velocity.x, 60.0):
+	if not is_equal_approx(fixture.context.velocity.x, 65.0):
 		failures.append("CharacterMotor2D used the wrong air acceleration")
+
+
+func _assert_over_speed_friction(failures: Array[String]) -> void:
+	var fixture := _fixture()
+	fixture.environment.grounded = false
+	fixture.context.velocity.x = 200.0
+	fixture.intent.move_axis = 1.0
+	fixture.motor.step(fixture.context, fixture.intent, fixture.environment, fixture.profile, 0.1)
+	if not is_equal_approx(fixture.context.velocity.x, 174.0):
+		failures.append("CharacterMotor2D used the wrong air over-speed friction")
 
 
 func _assert_gravity_and_terminal_velocity(failures: Array[String]) -> void:
 	var fixture := _fixture()
-	fixture.intent.jump_held = true
+	fixture.intent.jump_held = false
 	fixture.motor.step(fixture.context, fixture.intent, fixture.environment, fixture.profile, 0.1)
-	if not is_equal_approx(fixture.context.velocity.y, 76.0):
+	if not is_equal_approx(fixture.context.velocity.y, 90.0):
 		failures.append("CharacterMotor2D used the wrong base gravity")
 	fixture.context.velocity.y = 290.0
 	fixture.motor.step(fixture.context, fixture.intent, fixture.environment, fixture.profile, 1.0)
-	if not is_equal_approx(fixture.context.velocity.y, 300.0):
+	if not is_equal_approx(fixture.context.velocity.y, 160.0):
 		failures.append("CharacterMotor2D exceeded terminal velocity")
 
 
@@ -98,6 +111,7 @@ func _assert_air_jump(failures: Array[String]) -> void:
 	fixture.intent.jump_pressed = false
 	fixture.motor.step(fixture.context, fixture.intent, fixture.environment, fixture.profile, 0.01)
 	fixture.context.velocity.y = 30.0
+	fixture.context.var_jump_remaining = 0.0
 	fixture.intent.jump_pressed = true
 	fixture.motor.step(fixture.context, fixture.intent, fixture.environment, fixture.profile, 0.01)
 	if fixture.context.just_jumped or fixture.context.velocity.y < 30.0:
@@ -117,14 +131,48 @@ func _assert_air_jump(failures: Array[String]) -> void:
 func _assert_variable_jump(failures: Array[String]) -> void:
 	var held := _fixture()
 	held.context.velocity.y = -100.0
+	held.context.var_jump_remaining = 0.2
+	held.context.var_jump_speed = -100.0
 	held.intent.jump_held = true
 	held.motor.step(held.context, held.intent, held.environment, held.profile, 0.05)
 	var released := _fixture()
 	released.context.velocity.y = -100.0
+	released.context.var_jump_remaining = 0.2
+	released.context.var_jump_speed = -100.0
 	released.intent.jump_held = false
 	released.motor.step(released.context, released.intent, released.environment, released.profile, 0.05)
 	if released.context.velocity.y <= held.context.velocity.y:
-		failures.append("CharacterMotor2D did not increase gravity after jump release")
+		failures.append("CharacterMotor2D did not drop the variable-jump clamp after release")
+
+
+func _assert_lift_caps(failures: Array[String]) -> void:
+	var fixture := _fixture()
+	fixture.environment.grounded = true
+	fixture.environment.lift_velocity = Vector2(999.0, -999.0)
+	fixture.intent.jump_pressed = true
+	fixture.intent.jump_held = true
+	fixture.motor.step(fixture.context, fixture.intent, fixture.environment, fixture.profile, 0.01)
+	if not is_equal_approx(fixture.context.velocity.x, 250.0):
+		failures.append("CharacterMotor2D did not cap horizontal lift")
+	if not is_equal_approx(fixture.context.velocity.y, -250.0):
+		failures.append("CharacterMotor2D did not cap upward lift")
+
+
+func _assert_tick_rate_equivalence(failures: Array[String]) -> void:
+	var sixty := _fixture()
+	var one_twenty := _fixture()
+	for _index: int in range(60):
+		sixty.intent.move_axis = 1.0
+		sixty.environment.grounded = true
+		sixty.motor.step(sixty.context, sixty.intent, sixty.environment, sixty.profile, 1.0 / 60.0)
+	for _index: int in range(120):
+		one_twenty.intent.move_axis = 1.0
+		one_twenty.environment.grounded = true
+		one_twenty.motor.step(
+			one_twenty.context, one_twenty.intent, one_twenty.environment, one_twenty.profile, 1.0 / 120.0
+		)
+	if not is_equal_approx(sixty.context.velocity.x, one_twenty.context.velocity.x):
+		failures.append("CharacterMotor2D behaves differently at 60 Hz and 120 Hz")
 
 
 func _fixture() -> Dictionary:
@@ -135,4 +183,3 @@ func _fixture() -> Dictionary:
 		"intent": (load(INTENT_PATH) as Script).new(),
 		"profile": (load(PROFILE_PATH) as Script).new(),
 	}
-
