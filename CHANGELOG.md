@@ -20,7 +20,8 @@ All notable Platformer Kit changes are recorded here. The project follows Semant
   spot next session. Death still returns to the last checkpoint.
 - Debug-overlay input TAS (record/replay/save/slow motion) and a recorded
   dash-jump speed-cap demo. `Ctrl+R` records/stops, `Ctrl+P` plays/stops, and
-  `Ctrl+S` saves; the original `F5`-`F12` shortcuts remain.
+  `Ctrl+S` saves; the original `F5`-`F12` shortcuts remain. The TAS status panel
+  now lives in the HUD-space debug overlay, outside the gameplay SubViewport.
 - World-centric terrain: each world now owns one authored terrain scene
   (`scenes/worlds/<world_id>/terrain.tscn`) edited with the normal Godot TileMap
   tools; **Sync Terrain** slices it into per-room runtime terrain and re-bakes the

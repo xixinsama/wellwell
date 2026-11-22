@@ -1,6 +1,7 @@
 extends Node
 
 const TAS_SCENE := preload("res://addons/platformer_debug/runtime/tas_tool.tscn")
+const TAS_PANEL_SCENE := preload("res://addons/platformer_debug/runtime/tas_panel.tscn")
 const TEST_RECORDING := "user://tas_hotkey_test.json"
 
 
@@ -26,6 +27,8 @@ func run() -> Array[String]:
 	var player := FakePlayer.new()
 	player.name = "Player"
 	add_child(player)
+	var panel := TAS_PANEL_SCENE.instantiate() as Control
+	add_child(panel)
 	var tool := TAS_SCENE.instantiate() as Node
 	tool.set("player_path", NodePath("../Player"))
 	tool.set("recording_path", TEST_RECORDING)
@@ -33,8 +36,23 @@ func run() -> Array[String]:
 	var tas: RefCounted = tool.get("_tas")
 	if tas == null:
 		failures.append("TAS tool did not bind a fake player")
-		_cleanup(tool, player)
+		_cleanup(tool, player, panel)
 		return failures
+	tool.call("_resolve_panel")
+	if tool.get("_external_panel") != panel:
+		failures.append("TAS tool did not bind the HUD-space TAS panel")
+	if not panel.visible:
+		failures.append("TAS tool did not show the HUD-space panel")
+	var internal_layer := tool.get_node_or_null("Layer") as CanvasLayer
+	if internal_layer != null and internal_layer.visible:
+		failures.append("TAS tool kept its SubViewport-space panel visible")
+
+	_press_key(tool, KEY_F5, false)
+	if panel.visible:
+		failures.append("F5 did not hide the HUD-space TAS panel")
+	_press_key(tool, KEY_F5, false)
+	if not panel.visible:
+		failures.append("F5 did not restore the HUD-space TAS panel")
 
 	_press_key(tool, KEY_R, true)
 	if not bool(tas.call("is_recording")):
@@ -65,7 +83,7 @@ func run() -> Array[String]:
 	if not bool(tas.call("is_recording")):
 		failures.append("F6 stopped working after the Ctrl shortcuts were added")
 
-	_cleanup(tool, player)
+	_cleanup(tool, player, panel)
 	_remove_recording()
 	return failures
 
@@ -79,9 +97,11 @@ func _press_key(tool: Node, keycode: Key, ctrl: bool) -> void:
 	tool.call("_unhandled_input", event)
 
 
-func _cleanup(tool: Node, player: Node) -> void:
+func _cleanup(tool: Node, player: Node, panel: Node = null) -> void:
 	tool.free()
 	player.free()
+	if panel != null:
+		panel.free()
 
 
 func _remove_recording() -> void:

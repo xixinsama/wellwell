@@ -64,6 +64,9 @@ room template, and which "assets" are baked or generated instead of hand-drawn.
 - `scripts/globals/game_freeze.gd`: global hit-stop autoload used by dash start.
 - `addons/platformer_debug/runtime/tas_tool.gd`: record/replay input TAS shown
   in the debug overlay; `examples/tas_demo/` replays recorded movement clips.
+- `addons/platformer_debug/runtime/tas_panel.gd` + `tas_panel.tscn`: HUD-space
+  TAS status panel embedded in `debug_hud.tscn`, outside the gameplay
+  SubViewport; the tool falls back to its internal panel when none is bound.
 - `scripts/save/realtime_save_service.gd`: game-layer live-save recorder under
   `WorldRoot`; captures the player transform while the Realtime Save Game
   setting is on.

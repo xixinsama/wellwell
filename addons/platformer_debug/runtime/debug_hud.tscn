@@ -1,6 +1,7 @@
 [gd_scene format=3 uid="uid://xdpcjsmnvhkj"]
 
 [ext_resource type="Script" uid="uid://cvl8r3ckkvwjv" path="res://addons/platformer_debug/runtime/debug_hud.gd" id="1_debug_hud"]
+[ext_resource type="PackedScene" path="res://addons/platformer_debug/runtime/tas_panel.tscn" id="2_tas_panel"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBox_debug_panel"]
 bg_color = Color(0.03529412, 0.047058824, 0.05490196, 0.36078432)
@@ -56,3 +57,5 @@ layout_mode = 2
 theme_override_colors/font_color = Color(0.88, 0.92, 0.91, 1)
 theme_override_font_sizes/font_size = 10
 text = "Debug"
+
+[node name="TasPanel" parent="." instance=ExtResource("2_tas_panel")]

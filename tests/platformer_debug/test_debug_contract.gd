@@ -7,6 +7,8 @@ const VISUALIZER_PATH := "res://addons/platformer_debug/runtime/debug_visualizer
 const DEBUG_MAP_PATH := "res://addons/platformer_debug/runtime/debug_map.gd"
 const GRID_OVERLAY_PATH := "res://addons/platformer_debug/runtime/grid_overlay.gd"
 const TUNING_HOTKEYS_PATH := "res://addons/platformer_debug/runtime/tuning_hotkeys.gd"
+const TAS_PANEL_PATH := "res://addons/platformer_debug/runtime/tas_panel.gd"
+const TAS_PANEL_SCENE_PATH := "res://addons/platformer_debug/runtime/tas_panel.tscn"
 const HUD_SCENE_PATH := "res://addons/platformer_debug/runtime/debug_hud.tscn"
 const DEBUG_MAP_SCENE_PATH := "res://addons/platformer_debug/runtime/debug_map.tscn"
 const GRID_OVERLAY_SCENE_PATH := "res://addons/platformer_debug/runtime/grid_overlay.tscn"
@@ -65,11 +67,12 @@ func _assert_addon_contract(failures: Array[String]) -> void:
 		DEBUG_MAP_PATH,
 		GRID_OVERLAY_PATH,
 		TUNING_HOTKEYS_PATH,
+		TAS_PANEL_PATH,
 	]:
 		var script := load(path) as Script
 		if script == null or not script.can_instantiate():
 			failures.append("platformer_debug script could not be loaded: %s" % path)
-	for path: String in [HUD_SCENE_PATH, DEBUG_MAP_SCENE_PATH, GRID_OVERLAY_SCENE_PATH, OVERLAY_SCENE_PATH]:
+	for path: String in [HUD_SCENE_PATH, DEBUG_MAP_SCENE_PATH, GRID_OVERLAY_SCENE_PATH, TAS_PANEL_SCENE_PATH, OVERLAY_SCENE_PATH]:
 		if load(path) as PackedScene == null:
 			failures.append("platformer_debug scene could not be loaded: %s" % path)
 	var hud_scene := load(HUD_SCENE_PATH) as PackedScene
@@ -77,6 +80,11 @@ func _assert_addon_contract(failures: Array[String]) -> void:
 		var hud_instance := hud_scene.instantiate()
 		if hud_instance.find_child("DebugPanel", true, false) == null:
 			failures.append("debug HUD scene has no compact panel container")
+		var tas_panel := hud_instance.find_child("TasPanel", true, false) as Control
+		if tas_panel == null:
+			failures.append("debug HUD scene has no HUD-space TAS panel")
+		elif tas_panel.visible:
+			failures.append("debug HUD TAS panel must wait for a bound TAS tool")
 		hud_instance.free()
 
 
@@ -167,6 +175,22 @@ func _assert_game_overlay_binding(failures: Array[String]) -> void:
 func _assert_game_scene_wiring(failures: Array[String]) -> void:
 	_assert_overlay_wiring(WORLD_ROOT_PATH, "world_root", failures)
 	_assert_overlay_wiring(LEVEL_TEMPLATE_PATH, "level_template", failures)
+	_assert_tas_panel_is_hud_space(failures)
+
+
+func _assert_tas_panel_is_hud_space(failures: Array[String]) -> void:
+	var packed := load("res://scenes/app/main.tscn") as PackedScene
+	if packed == null:
+		failures.append("main scene could not be loaded")
+		return
+	var main := packed.instantiate()
+	var panel := main.find_child("TasPanel", true, false) as Control
+	var gameplay_viewport := main.find_child("SubViewport", true, false) as SubViewport
+	if panel == null:
+		failures.append("main scene has no HUD-space TAS panel")
+	elif gameplay_viewport != null and gameplay_viewport.is_ancestor_of(panel):
+		failures.append("TAS panel must live outside the gameplay SubViewport")
+	main.free()
 
 
 func _assert_overlay_wiring(scene_path: String, label: String, failures: Array[String]) -> void:

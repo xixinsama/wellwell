@@ -112,7 +112,9 @@ flush, at most about two seconds of movement are lost.
 ## TAS (debug overlay)
 
 The debug overlay includes an input TAS. It records one `CharacterIntent` per
-physics tick and replays it through the player's input source.
+physics tick and replays it through the player's input source. Its status panel
+is part of the HUD-space debug overlay, outside the 320 × 180 gameplay
+SubViewport, so the text stays crisp at the window's native resolution.
 
 - Ctrl+R: start recording from the current spot, or stop the active recording.
 - Ctrl+P: play the recording from its start, or stop playback.

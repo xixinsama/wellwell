@@ -9,6 +9,7 @@ extends Node
 const TAS_INPUT_SOURCE := preload("res://addons/platformer_debug/runtime/tas_input_source.gd")
 
 @export var player_path: NodePath = NodePath("../Player")
+@export var panel_path: NodePath = NodePath()
 @export var start_visible := true
 @export var slow_scale := 0.25
 @export var recording_path := "user://tas_recording.json"
@@ -18,6 +19,7 @@ var _base_source: RefCounted
 var _tas: RefCounted
 var _world_session: Node
 var _world_runtime: Node
+var _external_panel: Node
 var _start_position := Vector2.ZERO
 var _start_world_id := ""
 var _start_room_id := ""
@@ -33,8 +35,9 @@ var _status := ""
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_visible = start_visible
-	_apply_visible()
 	_resolve_player()
+	_resolve_panel.call_deferred()
+	_apply_visible()
 
 
 func _process(_delta: float) -> void:
@@ -111,6 +114,21 @@ func _resolve_world() -> void:
 		node = node.get_parent()
 	if _world_session != null:
 		_world_runtime = _world_session.get_node_or_null("WorldRuntime")
+
+
+func _resolve_panel() -> void:
+	if is_instance_valid(_external_panel):
+		return
+	var candidate: Node = null
+	if panel_path != NodePath():
+		candidate = get_node_or_null(panel_path)
+	if candidate == null and is_inside_tree():
+		candidate = get_tree().get_first_node_in_group("tas_panel")
+	if candidate == null or not candidate.has_method("set_lines"):
+		return
+	_external_panel = candidate
+	_apply_visible()
+	_update_label()
 
 
 func _current_world_id() -> String:
@@ -297,7 +315,9 @@ func _update_speed() -> void:
 
 
 func _update_label() -> void:
-	if _label == null:
+	if _tas == null:
+		return
+	if _label == null and _external_panel == null:
 		return
 	var mode := "IDLE"
 	if _tas.is_recording():
@@ -320,9 +340,14 @@ func _update_label() -> void:
 	lines.append("Ctrl+R rec  Ctrl+P play")
 	lines.append("Ctrl+S save  F6/F7/F10")
 	lines.append("F8 clear  F9 slow  F11 load")
-	_label.text = "\n".join(lines)
+	if _external_panel != null:
+		_external_panel.call("set_lines", lines)
+	elif _label != null:
+		_label.text = "\n".join(lines)
 
 
 func _apply_visible() -> void:
 	if _layer != null:
-		_layer.visible = _visible
+		_layer.visible = _visible and _external_panel == null
+	if _external_panel != null:
+		_external_panel.visible = _visible
