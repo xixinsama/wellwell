@@ -86,3 +86,24 @@ save. There is no stamina bar yet; the hero animation can expose the state.
 - F3: toggle the runtime debug overlay.
 - `[` / `]`: select a tuning field.
 - `-` / `=`: adjust the selected field while the game is running.
+
+## TAS (debug overlay)
+
+The debug overlay includes an input TAS. It records one `CharacterIntent` per
+physics tick and replays it through the player's input source.
+
+- F5: show/hide the TAS panel.
+- F6: start/stop recording (resets the player to the recording start).
+- F7: play the recorded input.
+- F8: clear the recording.
+- F9: toggle 0.25x slow motion.
+- F10: save the recording to `user://tas_recording.json`.
+- F11: load that recording.
+- F12: reset the player to the recording start.
+
+The demo scene `examples/tas_demo/tas_demo.tscn` replays two recorded clips and
+shows the speed caps. Regenerate the clips with:
+
+```bash
+godot --headless --path . -s res://tools/build_tas_demo_recordings.gd
+```

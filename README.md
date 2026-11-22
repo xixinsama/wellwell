@@ -36,6 +36,7 @@ godot --path . res://examples/movement_lab/movement_lab_debug.tscn
 - Celeste-style dash (freeze, end speed, dash-attack window), super/hyper/wavedash, and wallbounce.
 - No-grab wall grab, climb, wall slide, stamina, wall jump, and climb-jump conversion.
 - Global hit-stop and moving-platform lift caps.
+- Debug-overlay TAS (record/replay/save input; `F5`-`F12`) and a recorded dash-jump speed-cap demo.
 - Pixel-quantized camera.
 - Debug HUD and grid overlay.
 - Source rooms under `scenes/rooms/source/`, baked runtime/terrain outputs, and `WorldData` placement resources.

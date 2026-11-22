@@ -62,6 +62,8 @@ room template, and which "assets" are baked or generated instead of hand-drawn.
 - `scripts/player/player_stamina.gd` and `player_motion_rules.gd`: stamina
   economy and pure Celeste rule math.
 - `scripts/globals/game_freeze.gd`: global hit-stop autoload used by dash start.
+- `addons/platformer_debug/runtime/tas_tool.gd`: record/replay input TAS shown
+  in the debug overlay; `examples/tas_demo/` replays recorded movement clips.
 - `game/`: project-specific composition and authored map data.
 - `resources/worlds/test_world.tres`: exploration test world (water hall with two
   pools, gas lab, gas trail room, fog zones, glass, crumble platforms, two-screen
