@@ -21,19 +21,30 @@ var _hyper_frames: Array[Dictionary] = []
 var _phase := 0
 var _timer := 0.0
 var _max_speed := 0.0
+var _previous_momentum := false
 
 
 func _ready() -> void:
+	var settings := get_node_or_null("/root/GlobalSettings")
+	if settings != null and settings.has_method("set_celeste_momentum_enabled"):
+		_previous_momentum = bool(settings.call("is_celeste_momentum_enabled"))
+		settings.call("set_celeste_momentum_enabled", true)
 	_super_frames = _load_frames(SUPER_PATH)
 	_hyper_frames = _load_frames(HYPER_PATH)
 	_tas = TAS_INPUT.new(null)
 	player.call("set_input_source", _tas)
 	player.call("respawn_at", START)
-	title_label.text = "TAS: can dash-jump accelerate forever?"
+	title_label.text = "Celeste Momentum ON — TAS dash-jump loop"
 	status_label.text = "SUPER CHAIN"
 	_phase = 0
 	_timer = 1.2
 	queue_redraw()
+
+
+func _exit_tree() -> void:
+	var settings := get_node_or_null("/root/GlobalSettings")
+	if settings != null and settings.has_method("set_celeste_momentum_enabled"):
+		settings.call("set_celeste_momentum_enabled", _previous_momentum)
 
 
 func _physics_process(delta: float) -> void:
