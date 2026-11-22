@@ -39,6 +39,8 @@ SETTINGS_ONE_WAY_DROP,Drop Through Platforms,下穿单向平台
 SETTINGS_DESC_ONE_WAY_DROP,Press down to fall through one-way platforms,按下方向键穿过单向平台
 SETTINGS_ONE_WAY_SIGHT,One-way Platforms Block Sight,单向平台遮挡视线
 SETTINGS_DESC_ONE_WAY_SIGHT,"A one-way platform hides the space below it when you stand on top",站在单向平台上方时，下方空间视为封闭并变黑
+SETTINGS_CELESTE_MOMENTUM,Celeste Momentum,蔚蓝动量
+SETTINGS_DESC_CELESTE_MOMENTUM,"Keep pre-dash speed and apply the 1.2x ultra on down-diagonal ground hits",保留冲刺前的更高水平速度；下斜冲刺撞地时额外 ×1.2
 SETTINGS_MASTER_VOLUME,Master Volume,主音量
 SETTINGS_MUSIC_VOLUME,Music Volume,音乐音量
 SETTINGS_SFX_VOLUME,Sound Volume,音效音量

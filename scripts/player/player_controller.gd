@@ -43,9 +43,11 @@ var _dash_direction := Vector2.ZERO
 var _dash_remaining := 0.0
 var _dash_speed := 240.0
 var _dash_end_speed := 160.0
+var _dash_preserved_x := 0.0
 var _dash_refill_delay := 0.0
 var _dash_just_started := false
 var _dash_jump_buffered := false
+var _ultra_applied := false
 var _ducking := false
 var _current_move_axis := 0.0
 
@@ -265,6 +267,7 @@ func _wants_dash(intent: RefCounted) -> bool:
 func _start_dash(intent: RefCounted) -> bool:
 	if _ability_loadout == null or not _ability_loadout.has_method("try_start_dash"):
 		return false
+	var prior_velocity: Vector2 = _movement_context.velocity
 	if not bool(_ability_loadout.call("try_start_dash", intent, _environment, facing)):
 		return false
 	var runtime := _ability_loadout.call("get_dash_runtime") as RefCounted
@@ -274,11 +277,20 @@ func _start_dash(intent: RefCounted) -> bool:
 	_dash_direction = Vector2(runtime.call("get_dash_direction"))
 	_dash_speed = maxf(0.0, float(definition.get("dash_speed")))
 	_dash_end_speed = maxf(0.0, float(definition.get("end_speed")))
+	_dash_preserved_x = 0.0
+	if (
+		_celeste_momentum_enabled()
+		and absf(prior_velocity.x) > _dash_speed
+		and not is_zero_approx(_dash_direction.x)
+		and signf(prior_velocity.x) == signf(_dash_direction.x)
+	):
+		_dash_preserved_x = prior_velocity.x
 	_dash_remaining = maxf(0.01, float(definition.get("dash_duration")))
 	_movement_context.dash_attack_remaining = maxf(0.0, float(definition.get("dash_attack_seconds")))
 	_dash_refill_delay = maxf(0.0, float(definition.get("refill_cooldown_seconds")))
 	_dash_just_started = true
 	_dash_jump_buffered = false
+	_ultra_applied = false
 	_ducking = false
 	_movement_context.ducking = false
 	_movement_context.force_move_x_remaining = 0.0
@@ -302,7 +314,10 @@ func _step_dash(intent: RefCounted, delta: float) -> bool:
 			_dash_jump_buffered = false
 			return true
 	_dash_remaining = maxf(_dash_remaining - delta, 0.0)
-	_movement_context.velocity = _dash_direction * _dash_speed + _capped_lift()
+	var dash_velocity := _dash_direction * _dash_speed
+	if not is_zero_approx(_dash_preserved_x):
+		dash_velocity.x = _dash_preserved_x
+	_movement_context.velocity = dash_velocity + _capped_lift()
 	if _dash_remaining <= 0.0:
 		_movement_context.velocity = _dash_direction * _dash_end_speed
 		_finish_dash()
@@ -337,6 +352,8 @@ func _finish_dash() -> void:
 	_state = PlayerMotionState.State.NORMAL
 	_dash_remaining = 0.0
 	_dash_just_started = false
+	_dash_preserved_x = 0.0
+	_ultra_applied = false
 
 
 func _apply_wallbounce(away_direction: int) -> void:
@@ -605,6 +622,16 @@ func _post_move(_delta: float) -> void:
 	if _state == PlayerMotionState.State.DASH and is_on_floor() and _dash_direction.y > 0.5:
 		_ducking = true
 		_movement_context.ducking = true
+		if (
+			_celeste_momentum_enabled()
+			and not _ultra_applied
+			and not _movement_context.velocity.is_zero_approx()
+		):
+			_ultra_applied = true
+			_movement_context.velocity.x *= 1.2
+			_movement_context.velocity.y = 0.0
+			velocity = _movement_context.velocity
+			_finish_dash()
 	if is_on_floor() and _stamina != null:
 		_stamina.call("refill")
 	var in_water := _water_motion != null and bool(_water_motion.call("is_in_water"))
@@ -705,6 +732,13 @@ func _profile() -> MOVEMENT_PROFILE:
 	return tuning as MOVEMENT_PROFILE
 
 
+func _celeste_momentum_enabled() -> bool:
+	var settings := get_node_or_null("/root/GlobalSettings")
+	if settings == null or not settings.has_method("is_celeste_momentum_enabled"):
+		return false
+	return bool(settings.call("is_celeste_momentum_enabled"))
+
+
 func _reset_motion_state() -> void:
 	_state = PlayerMotionState.State.NORMAL
 	_dash_direction = Vector2.ZERO
@@ -712,6 +746,8 @@ func _reset_motion_state() -> void:
 	_dash_refill_delay = 0.0
 	_dash_just_started = false
 	_dash_jump_buffered = false
+	_dash_preserved_x = 0.0
+	_ultra_applied = false
 	_ducking = false
 	_wall_direction = 0
 	_wall_body = null

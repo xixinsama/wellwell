@@ -156,6 +156,16 @@ func set_one_way_occlusion_enabled(enabled: bool) -> void:
     set_value(&"one_way_occludes_sight", enabled)
 
 
+## Celeste-style momentum: a dash keeps a higher pre-dash horizontal speed,
+## and a down-diagonal ground hit applies the 1.2x ultra multiplier.
+func is_celeste_momentum_enabled() -> bool:
+    return bool(get_value(&"celeste_momentum_enabled"))
+
+
+func set_celeste_momentum_enabled(enabled: bool) -> void:
+    set_value(&"celeste_momentum_enabled", enabled)
+
+
 func is_mute_on_focus_loss_enabled() -> bool:
     return bool(get_value(&"mute_on_focus_loss"))
 

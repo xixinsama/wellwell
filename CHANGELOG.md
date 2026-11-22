@@ -12,6 +12,11 @@ All notable Platformer Kit changes are recorded here. The project follows Semant
   super/hyper/wavedash/wallbounce, global hit-stop, and platform lift caps.
   Tuning lives in `MovementProfile` and the Dash resource; no grab action is
   required.
+- Optional **Celeste Momentum** Game setting (off by default): a dash preserves
+  a higher pre-dash horizontal speed, and a down-diagonal ground hit applies
+  the 1.2x Ultra multiplier for chained-ultra speed growth.
+- Debug-overlay input TAS (record/replay/save/slow motion) and a recorded
+  dash-jump speed-cap demo.
 - World-centric terrain: each world now owns one authored terrain scene
   (`scenes/worlds/<world_id>/terrain.tscn`) edited with the normal Godot TileMap
   tools; **Sync Terrain** slices it into per-room runtime terrain and re-bakes the

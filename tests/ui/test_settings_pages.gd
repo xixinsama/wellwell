@@ -49,13 +49,16 @@ func _assert_catalog(failures: Array[String]) -> void:
 		failures.append("controls section should contain the input mapping action")
 	for expected_key: StringName in [
 		&"locale", &"fog_enabled", &"camera_shake_enabled", &"one_way_drop_enabled",
-		&"atmosphere_enabled",
+		&"atmosphere_enabled", &"celeste_momentum_enabled",
 		&"master_volume", &"music_volume", &"sfx_volume", &"mute_on_focus_loss",
 		&"display_mode", &"resolution_scale", &"vsync_enabled", &"fps_limit",
 		&"input_mapping",
 	]:
 		if CATALOG.find_definition(expected_key) == null:
 			failures.append("settings catalog is missing key: %s" % expected_key)
+	var momentum: SettingsDefinition = CATALOG.find_definition(&"celeste_momentum_enabled")
+	if momentum == null or bool(momentum.default_value):
+		failures.append("Celeste momentum must default to off")
 
 
 func _assert_generic_settings_api(failures: Array[String]) -> void:

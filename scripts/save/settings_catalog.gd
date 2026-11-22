@@ -130,6 +130,14 @@ static func _build_definitions() -> void:
 			"OneWaySightToggle",
 			"SETTINGS_DESC_ONE_WAY_SIGHT"
 		),
+		SettingsDefinition.toggle(
+			&"celeste_momentum_enabled",
+			GAME,
+			"SETTINGS_CELESTE_MOMENTUM",
+			false,
+			"CelesteMomentumToggle",
+			"SETTINGS_DESC_CELESTE_MOMENTUM"
+		),
 		SettingsDefinition.slider(
 			&"master_volume",
 			AUDIO,

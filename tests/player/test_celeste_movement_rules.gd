@@ -21,6 +21,7 @@ func run() -> Array[String]:
 	var failures: Array[String] = []
 	_assert_rule_velocities(failures)
 	_assert_dash_state(failures)
+	_assert_momentum_preserves_dash(failures)
 	_assert_standalone_dash_install(failures)
 	_assert_advanced_jumps(failures)
 	_assert_dash_jump_rules(failures)
@@ -126,6 +127,38 @@ func _assert_dash_jump_rules(failures: Array[String]) -> void:
 		failures.append("ducking dash jump was rejected")
 	elif not Vector2(context.get("velocity")).is_equal_approx(Vector2(325, -60)):
 		failures.append("dash jump did not produce hyper velocity")
+	player.free()
+
+
+func _assert_momentum_preserves_dash(failures: Array[String]) -> void:
+	var settings := get_node_or_null("/root/GlobalSettings")
+	if settings == null or not settings.has_method("is_celeste_momentum_enabled"):
+		failures.append("GlobalSettings has no Celeste momentum toggle")
+		return
+	var previous := bool(settings.call("is_celeste_momentum_enabled"))
+	settings.call("set_celeste_momentum_enabled", true)
+	var packed := load(PLAYER_SCENE_PATH) as PackedScene
+	if packed == null:
+		settings.call("set_celeste_momentum_enabled", previous)
+		return
+	var player := packed.instantiate() as CharacterBody2D
+	add_child(player)
+	player.set_physics_process(false)
+	player.call("grant_ability_definition", load(DASH_PATH))
+	player.velocity = Vector2(325.0, 0.0)
+	var intent: RefCounted = (load(INTENT_PATH) as Script).new()
+	intent.call("press_action", &"dash")
+	intent.set("move_axis", 1.0)
+	player.call("set_input_source", StubInput.new(intent))
+	player.call("_physics_process", 1.0 / 60.0)
+	var freeze := get_node_or_null("/root/GameFreeze")
+	if freeze != null:
+		freeze.call("release")
+	player.call("_physics_process", 1.0 / 60.0)
+	var context: RefCounted = player.call("get_movement_context")
+	if not Vector2(context.get("velocity")).is_equal_approx(Vector2(325.0, 0.0)):
+		failures.append("Celeste momentum did not preserve pre-dash horizontal speed")
+	settings.call("set_celeste_momentum_enabled", previous)
 	player.free()
 
 
