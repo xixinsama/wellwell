@@ -226,6 +226,7 @@ func _physics_process(delta: float) -> void:
 	_update_dash_recharge(delta)
 	_update_one_way_piercing()
 	_recover_visual(delta)
+	_apply_corner_correction(delta)
 
 	move_and_slide()
 	var landed := _has_motion_sample and not was_on_floor and is_on_floor()
@@ -606,6 +607,42 @@ func _apply_ability_motion(intent: RefCounted) -> bool:
 ## Dashes that travel in the direction a one-way surface blocks pass through it
 ## (down through a floor platform, sideways through a vertical one). The
 ## game-specific piercer component owns that rule.
+func _apply_corner_correction(delta: float) -> void:
+	if velocity.is_zero_approx():
+		return
+	var motion := velocity * delta
+	var collision := KinematicCollision2D.new()
+	if not test_move(global_transform, motion, collision):
+		return
+	var normal := collision.get_normal()
+	if velocity.y < 0.0 and normal.y > 0.7:
+		_try_upward_corner(motion)
+	elif _state == PlayerMotionState.State.DASH and absf(_dash_direction.y) < 0.5:
+		if absf(normal.x) > 0.7:
+			_try_dash_corner(motion)
+
+
+func _try_upward_corner(motion: Vector2) -> void:
+	var limit := maxi(1, int(_profile().corner_correction))
+	var first := -1 if velocity.x <= 0.0 else 1
+	for side: int in [first, -first]:
+		for offset_px: int in range(1, limit + 1):
+			var offset := Vector2(float(side * offset_px), -1.0)
+			if not test_move(global_transform.translated(offset), motion):
+				global_position += offset
+				return
+
+
+func _try_dash_corner(motion: Vector2) -> void:
+	var limit := maxi(1, int(_profile().corner_correction))
+	for offset_px: int in range(1, limit + 1):
+		for direction: int in [-1, 1]:
+			var offset := Vector2(0.0, float(direction * offset_px))
+			if not test_move(global_transform.translated(offset), motion):
+				global_position += offset
+				return
+
+
 func _update_one_way_piercing() -> void:
 	if _one_way_piercer == null:
 		return
