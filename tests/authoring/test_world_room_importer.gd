@@ -19,7 +19,7 @@ class FakeRoomBaker:
 	var fail_save := false
 	var save_count := 0
 
-	func stage(source_root: Node, source_path: String) -> Dictionary:
+	func stage(source_root: Node, source_path: String, _origin_chunk: Variant = null, _world_terrain_path: String = "") -> Dictionary:
 		if fail_stage or source_root.has_meta("invalid"):
 			return _failure("invalid room source")
 		var room := ROOM_DATA.new() as Resource

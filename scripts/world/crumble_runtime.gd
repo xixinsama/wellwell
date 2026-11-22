@@ -63,9 +63,10 @@ func bind_room_with_origin(room_data: Resource, terrain_root: Node, origin_chunk
 	if terrain == null:
 		return false
 	var size_chunks: Vector2i = room_data.get("room_size_chunks")
+	var cell_rect := RoomGrid.get_room_cell_rect(origin_chunk, size_chunks)
 	var room_rect := Rect2(
-		Vector2(origin_chunk * Vector2i(320, 180)),
-		Vector2(size_chunks * Vector2i(320, 180))
+		Vector2(cell_rect.position * RoomGrid.DEFAULT_CELL_SIZE),
+		Vector2(cell_rect.size * RoomGrid.DEFAULT_CELL_SIZE)
 	)
 	return _bind_terrain(terrain, room_rect)
 

@@ -70,8 +70,8 @@ func _assert_room_runtime_instances_scene_and_applies_position(failures: Array[S
 		failures.append("room runtime did not load a valid room")
 	if runtime.get_room_id() != "room_a":
 		failures.append("room runtime returned the wrong room id")
-	if runtime.position != Vector2(640, 180):
-		failures.append("room runtime did not apply chunk-derived world position")
+	if runtime.position != Vector2(640, 184):
+		failures.append("room runtime did not apply cell-aligned world position")
 	if runtime.get_room_instance() == null:
 		failures.append("room runtime did not keep the room instance")
 	if runtime.get_layer_node("SolidTiles") == null:
@@ -116,7 +116,7 @@ func _assert_room_runtime_exposes_spawns_and_transition_requests(failures: Array
 		failures.append("room runtime did not expose spawn lookup")
 	else:
 		var spawn: Node2D = runtime.call("get_spawn_point", "entry") as Node2D
-		if spawn == null or spawn.global_position != Vector2(648.0, 192.0):
+		if spawn == null or spawn.global_position != Vector2(648.0, 196.0):
 			failures.append("room runtime did not resolve the room-local spawn position")
 		if runtime.call("get_spawn_point", "missing") != null:
 			failures.append("room runtime resolved an unknown spawn")

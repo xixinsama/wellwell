@@ -29,6 +29,29 @@ func run() -> Array[String]:
 	)
 	if rect != Rect2i(80, 23, 120, 45):
 		failures.append("multi-chunk room cell rect must use exact 960x360 pixel extent")
+	var odd_row: Rect2i = room_grid.call(
+		"get_room_cell_rect", Vector2i(0, 1), Vector2i.ONE, Vector2i(8, 8), Vector2i(320, 180)
+	)
+	if odd_row != Rect2i(0, 23, 40, 22):
+		failures.append("odd chunk row must be 22 cells: %s" % str(odd_row))
+	var even_row: Rect2i = room_grid.call(
+		"get_room_cell_rect", Vector2i(0, 2), Vector2i.ONE, Vector2i(8, 8), Vector2i(320, 180)
+	)
+	if even_row != Rect2i(0, 45, 40, 23):
+		failures.append("even chunk row must be 23 cells: %s" % str(even_row))
+	var two_rows: Rect2i = room_grid.call(
+		"get_room_cell_rect", Vector2i(0, 0), Vector2i(1, 2), Vector2i(8, 8), Vector2i(320, 180)
+	)
+	if two_rows != Rect2i(0, 0, 40, 45):
+		failures.append("two chunk rows must be 45 cells: %s" % str(two_rows))
+	var blocks: Array = room_grid.call(
+		"get_room_block_cell_rects", Vector2i(0, 0), Vector2i(2, 2), Vector2i(8, 8), Vector2i(320, 180)
+	)
+	if blocks != [
+		Rect2i(0, 0, 40, 23), Rect2i(40, 0, 40, 23),
+		Rect2i(0, 23, 40, 22), Rect2i(40, 23, 40, 22),
+	]:
+		failures.append("2x2 block frames must alternate 23/22 rows: %s" % str(blocks))
 	_assert_room_data_is_room_local(failures)
 	_assert_world_data_owns_room_cell_rects(failures)
 	return failures

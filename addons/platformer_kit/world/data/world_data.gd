@@ -10,20 +10,31 @@ const REGION_DATA_SCRIPT: Script = preload("res://addons/platformer_kit/world/re
 const WORLD_GRAPH_SCRIPT: Script = preload("res://addons/platformer_kit/world/graph/world_graph.gd")
 const DEFAULT_CHUNK_SIZE_PIXELS := Vector2i(320, 180)
 const DEFAULT_CELL_SIZE := Vector2i(8, 8)
+const TERRAIN_SCENE_DIRECTORY := "res://scenes/worlds/"
 
 @export var world_id := ""
 @export var display_name := ""
 @export_multiline var description := ""
 @export var start_room_id := ""
 @export var start_spawn_id := ""
+## Optional override. Empty means the convention
+## `res://scenes/worlds/<world_id>/terrain.tscn`.
+@export_file("*.tscn") var terrain_scene_path := ""
 @export var rooms: Array[Resource] = []
 @export var placements: Array[Resource] = []
 @export var connections: Array[Resource] = []
 @export var regions: Array[Resource] = []
 @export var tags: PackedStringArray = []
-## Authoring only: the stack this world belongs to (see [WorldStack]). The editor
-## draws and edits that stack; the runtime never reads it.
-@export var world_stack: WorldStack
+
+
+## The single authored terrain scene for this world, shared by every room. The
+## bake slices it per room; the world editor opens it for editing.
+func get_terrain_scene_path() -> String:
+	if not terrain_scene_path.is_empty():
+		return terrain_scene_path
+	if world_id.is_empty():
+		return ""
+	return "%s%s/terrain.tscn" % [TERRAIN_SCENE_DIRECTORY, world_id]
 
 
 func get_room(room_id: String) -> Resource:
@@ -111,12 +122,32 @@ func get_room_chunk_rect(room_id: String) -> Rect2i:
 	return Rect2i(get_room_origin_chunk(room_id), room.room_size_chunks)
 
 
+## The room's world rectangle in pixels, snapped to the cell grid.
+##
+## Uses the canonical room cell rectangle (see [RoomGrid]), so a room on an odd
+## chunk row starts at the rounded cell boundary instead of 4 px off the grid.
+## Use [method get_room_chunk_rect] for the placement unit.
 func get_room_pixel_rect(
 	room_id: String,
-	chunk_size_pixels: Vector2i = DEFAULT_CHUNK_SIZE_PIXELS
+	chunk_size_pixels: Vector2i = DEFAULT_CHUNK_SIZE_PIXELS,
+	cell_size: Vector2i = DEFAULT_CELL_SIZE
 ) -> Rect2i:
-	var chunk_rect := get_room_chunk_rect(room_id)
-	return Rect2i(chunk_rect.position * chunk_size_pixels, chunk_rect.size * chunk_size_pixels)
+	var cell_rect := get_room_cell_rect(room_id, cell_size, chunk_size_pixels)
+	return Rect2i(cell_rect.position * cell_size, cell_rect.size * cell_size)
+
+
+## Local cell rectangles, one per block of the room (see [RoomGrid]).
+func get_room_block_cell_rects(
+	room_id: String,
+	cell_size: Vector2i = DEFAULT_CELL_SIZE,
+	chunk_size_pixels: Vector2i = DEFAULT_CHUNK_SIZE_PIXELS
+) -> Array[Rect2i]:
+	var room := get_room(room_id)
+	if room == null:
+		return []
+	return ROOM_GRID.get_room_block_cell_rects(
+		get_room_origin_chunk(room_id), room.room_size_chunks, cell_size, chunk_size_pixels
+	)
 
 
 func get_room_cell_rect(

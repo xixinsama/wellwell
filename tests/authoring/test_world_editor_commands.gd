@@ -14,6 +14,10 @@ const CONTROLLER_SOURCE_PATH := "res://tests/authoring/test_editor_controller_so
 ## Stack fixtures live in user:// so the test never writes into the project.
 const STACK_WORLD_PATH := "user://test_editor_stack_world.tres"
 const STACK_PATH := "user://test_editor_stack_world_stack.tres"
+## A world deliberately absent from world_catalog.tres: New World creates such
+## worlds, so the stack has to be able to layer them anyway.
+const STACK_EXTRA_WORLD_PATH := "user://test_editor_stack_extra_world.tres"
+const STACK_SCAN_DIRECTORY := "user://"
 const EDITOR_DEPENDENCY_PATHS: Array[String] = [
     "res://addons/platformer_kit/world/data/world_data.gd",
     "res://addons/platformer_kit/world/data/room_data.gd",
@@ -51,7 +55,7 @@ class FakeUndo:
 class FakeRoomBaker:
     var save_count := 0
     var staged_room: Resource
-    func stage(_source: Node, _path: String) -> Dictionary:
+    func stage(_source: Node, _path: String, _origin_chunk: Variant = null, _world_terrain_path: String = "") -> Dictionary:
         return {
             "ok": true,
             "errors": [],
@@ -100,6 +104,16 @@ class FakeCanvas extends Control:
         portal_links = links.duplicate()
 
 
+class FakeViewCommands extends Control:
+    var calls: Array[String] = []
+    func focus_all() -> void:
+        calls.append("focus_all")
+    func reset_view() -> void:
+        calls.append("reset_view")
+    func focus_stack() -> void:
+        calls.append("focus_stack")
+
+
 class FakeEditorInterface:
     var opened_path := ""
     var inherited := false
@@ -136,6 +150,9 @@ func run() -> Array[String]:
     _assert_move_command(failures)
     _assert_status_bar_chunk_field(failures)
     _assert_stack_layers(failures)
+    _assert_stack_accepts_uncatalogued_world(failures)
+    _assert_stacked_world_reloads(failures)
+    _assert_view_commands_route_to_the_3d_view(failures)
     _assert_add_remove_commands(failures)
     _assert_connection_commands(failures)
     _assert_rebake_sync_and_overlap_connection_geometry(failures)
@@ -522,6 +539,109 @@ func _assert_stack_layers(failures: Array[String]) -> void:
         DirAccess.remove_absolute(ProjectSettings.globalize_path(STACK_WORLD_PATH))
     if FileAccess.file_exists(STACK_PATH):
         DirAccess.remove_absolute(ProjectSettings.globalize_path(STACK_PATH))
+
+
+## The New World dialog writes a WorldData resource but never touches
+## world_catalog.tres. The stack menu must still offer that world, otherwise a
+## freshly created world can never be layered in the 3D view.
+func _assert_stack_accepts_uncatalogued_world(failures: Array[String]) -> void:
+    var main := (load(DOCK_PATH) as Script).new() as Control
+    main.set("stack_world_directory", STACK_SCAN_DIRECTORY)
+    var world: Resource = WORLD_DATA.new()
+    world.world_id = "main_world"
+    world.resource_path = STACK_WORLD_PATH
+    world.rooms.assign([_make_room("room_a", [], ["start"])])
+    world.set_room_origin_chunk("room_a", Vector2i.ZERO)
+    var extra: Resource = WORLD_DATA.new()
+    extra.world_id = "outside_catalog_world"
+    extra.display_name = "Outside Catalog"
+    extra.rooms.assign([_make_room("room_b", [], ["start"])])
+    extra.set_room_origin_chunk("room_b", Vector2i.ZERO)
+    if ResourceSaver.save(extra, STACK_EXTRA_WORLD_PATH) != OK:
+        failures.append("could not write the uncatalogued world fixture")
+    main.call("set_world_data", world)
+    var candidates: Array = main.call("get_stack_candidate_worlds")
+    var candidate_ids: Array[String] = []
+    for value: Variant in candidates:
+        candidate_ids.append(String((value as Resource).get("world_id")))
+    if not candidate_ids.has("outside_catalog_world"):
+        failures.append("the stack candidates ignored a world outside the catalog: %s" % str(candidate_ids))
+    main.call("add_layer", "outside_catalog_world")
+    _assert_layer_ids(
+        main,
+        ["main_world", "outside_catalog_world"],
+        "a world outside the world catalog can join the stack",
+        failures
+    )
+    main.free()
+    if FileAccess.file_exists(STACK_EXTRA_WORLD_PATH):
+        DirAccess.remove_absolute(ProjectSettings.globalize_path(STACK_EXTRA_WORLD_PATH))
+    if FileAccess.file_exists(STACK_PATH):
+        DirAccess.remove_absolute(ProjectSettings.globalize_path(STACK_PATH))
+
+
+## A world must not save a reference to its own stack: the stack references the
+## world back, and Godot's text loader cannot resolve the cycle, so both files
+## fail to load and the catalog (and the world-select screen) goes down with them.
+## The stack lives next to the world as `<world>_stack.tres` instead.
+func _assert_stacked_world_reloads(failures: Array[String]) -> void:
+    var main := (load(DOCK_PATH) as Script).new() as Control
+    var service: Object = WORLD_RESOURCE_SERVICE.new()
+    service.call("set_allow_user_paths", true)
+    main.call("set_world_resource_service_adapter", service)
+    var world: Resource = WORLD_DATA.new()
+    world.world_id = "stack_reload_world"
+    world.resource_path = STACK_WORLD_PATH
+    world.rooms.assign([_make_room("room_a", [], ["start"])])
+    main.call("set_world_data", world)
+    main.call("add_layer", "loop_world")
+    if main.call("get_world_stack") == null:
+        failures.append("a stacked world lost its stack")
+    var saved: Dictionary = main.call("save_world")
+    if not bool(saved.get("ok", false)):
+        failures.append("could not save the stacked world: %s" % str(saved.get("errors", [])))
+    var reloaded := ResourceLoader.load(
+        STACK_WORLD_PATH, "", ResourceLoader.CACHE_MODE_IGNORE
+    ) as WorldData
+    if reloaded == null:
+        failures.append("a world that owns a stack could not be reloaded")
+    else:
+        main.call("set_world_data", reloaded)
+        var found := main.call("get_world_stack") as Resource
+        if found == null:
+            failures.append("the stack was not found next to its world: %s" % STACK_PATH)
+        elif found.get_world_ids() != (["stack_reload_world", "loop_world"] as Array):
+            failures.append("the reloaded stack lost its layers: %s" % str(found.get_world_ids()))
+    main.free()
+    if FileAccess.file_exists(STACK_WORLD_PATH):
+        DirAccess.remove_absolute(ProjectSettings.globalize_path(STACK_WORLD_PATH))
+    if FileAccess.file_exists(STACK_PATH):
+        DirAccess.remove_absolute(ProjectSettings.globalize_path(STACK_PATH))
+
+
+## Focus All / Reset View act on whatever view is in front. The 3D stack replaces
+## the flat canvas, so routing them to the hidden canvas does nothing visible.
+func _assert_view_commands_route_to_the_3d_view(failures: Array[String]) -> void:
+    var main := (load(DOCK_PATH) as Script).new() as Control
+    var canvas := FakeViewCommands.new()
+    var stack_view := FakeViewCommands.new()
+    main.set("canvas", canvas)
+    main.set("_stack_3d_view", stack_view)
+    main.set("_view_3d", true)
+    main.call("focus_all")
+    main.call("reset_view")
+    if not canvas.calls.is_empty():
+        failures.append("3D view commands still reached the hidden 2D canvas: %s" % str(canvas.calls))
+    if stack_view.calls != (["focus_stack", "reset_view"] as Array[String]):
+        failures.append("3D view commands did not reach the stack view: %s" % str(stack_view.calls))
+    main.set("_view_3d", false)
+    main.call("focus_all")
+    main.call("reset_view")
+    if canvas.calls != (["focus_all", "reset_view"] as Array[String]):
+        failures.append("2D view commands did not reach the canvas: %s" % str(canvas.calls))
+    canvas.free()
+    stack_view.free()
+    main.free()
 
 
 func _assert_layer_ids(main: Control, expected: Array[String], label: String, failures: Array[String]) -> void:

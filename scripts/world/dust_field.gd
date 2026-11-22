@@ -94,8 +94,12 @@ func bind_room_with_origin(room_data: Variant, _terrain_root: Node, origin_chunk
 		chunks = Vector2i(sizes)
 	if chunks.x <= 0 or chunks.y <= 0:
 		chunks = Vector2i.ONE
-	_room_pixels = chunks * CHUNK_PIXELS
-	_room_rect = Rect2(Vector2(origin_chunk * CHUNK_PIXELS), Vector2(_room_pixels))
+	var cell_rect := RoomGrid.get_room_cell_rect(origin_chunk, chunks)
+	_room_pixels = cell_rect.size * RoomGrid.DEFAULT_CELL_SIZE
+	_room_rect = Rect2(
+		Vector2(cell_rect.position * RoomGrid.DEFAULT_CELL_SIZE),
+		Vector2(_room_pixels)
+	)
 	_room_bound = true
 	_time = 0.0
 	_seed_motes()

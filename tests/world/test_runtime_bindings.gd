@@ -68,7 +68,7 @@ func _assert_fog_binds_explicit_room_context(failures: Array[String]) -> void:
 	room.room_size_chunks = Vector2i.ONE
 	if not fog.bind_room_with_origin(room, terrain, Vector2i(2, 1)):
 		failures.append("FogOfWar rejected explicit room and terrain context")
-	elif fog.level_id != "room_b" or fog.map_origin_cell != Vector2i(80, 23) or fog.map_size_cells != Vector2i(40, 23):
+	elif fog.level_id != "room_b" or fog.map_origin_cell != Vector2i(80, 23) or fog.map_size_cells != Vector2i(40, 22):
 		failures.append("FogOfWar did not derive exact room fog bounds")
 	elif not fog.is_cell_explored(Vector2i(80, 23)):
 		failures.append("FogOfWar did not restore exploration for the explicit room")

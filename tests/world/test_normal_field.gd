@@ -37,7 +37,7 @@ func _assert_binding_without_a_layer(failures: Array[String]) -> void:
 		failures.append("NormalField reported an authored map without a NormalTiles layer")
 	if field.call("get_normal_texture") != null:
 		failures.append("NormalField exposed a texture for a room without normals")
-	if field.call("get_normal_pixels") != Vector2i(320, 180):
+	if field.call("get_normal_pixels") != Vector2i(320, 184):
 		failures.append("NormalField built the wrong room size %s" % str(field.call("get_normal_pixels")))
 	for child: Node in field.get_children():
 		if child is SubViewport:
@@ -55,7 +55,7 @@ func _assert_clone_matches_the_authored_layer(failures: Array[String]) -> void:
 	field.call("bind_room_with_origin", _make_room(Vector2i.ONE), rig["room"], Vector2i.ZERO)
 	if not bool(field.call("has_normal_map")):
 		failures.append("NormalField did not report the authored normal map")
-	if field.call("get_normal_pixels") != Vector2i(320, 180):
+	if field.call("get_normal_pixels") != Vector2i(320, 184):
 		failures.append("normal buffer is not the room size")
 	if field.call("get_normal_texture") == null:
 		failures.append("NormalField did not expose the normal buffer texture")
@@ -64,7 +64,7 @@ func _assert_clone_matches_the_authored_layer(failures: Array[String]) -> void:
 		failures.append("NormalField did not build its normal viewport")
 		rig["root"].free()
 		return
-	if viewport.size != Vector2i(320, 180):
+	if viewport.size != Vector2i(320, 184):
 		failures.append("normal viewport is not the room size")
 	if viewport.render_target_update_mode == SubViewport.UPDATE_ALWAYS:
 		failures.append("normal viewport repaints every frame instead of once per room")
@@ -138,7 +138,7 @@ func _assert_handshake_reaches_the_light_materials(failures: Array[String]) -> v
 			failures.append("%s pass did not receive normal_mode 2" % label)
 		if material.get_shader_parameter("normal_tex") != authored:
 			failures.append("%s pass did not receive the authored normal texture" % label)
-		if material.get_shader_parameter("normal_pixels") != Vector2(320, 180):
+		if material.get_shader_parameter("normal_pixels") != Vector2(320, 184):
 			failures.append("%s pass received the wrong normal buffer size" % label)
 		# Authored normals describe the art's real bevels, so the field scales the
 		# strength by `authored_relief_gain` to match the derived mode's range.
@@ -173,7 +173,7 @@ func _assert_authored_mode_falls_back_without_a_map(failures: Array[String]) -> 
 	# Flat mode is the explicit way back to the pre-normal look and must cost the
 	# shader nothing, so the strength is what turns the feature off.
 	field.set("relief_strength", 0.0)
-	field.call("set_normal_field", null, Vector2i(320, 180), Vector2i.ZERO)
+	field.call("set_normal_field", null, Vector2i(320, 184), Vector2i.ZERO)
 	if int(field.call("get_effective_normal_mode")) != 0:
 		failures.append("relief_strength 0 did not switch the relief off")
 	rig["root"].free()
@@ -207,7 +207,7 @@ func _assert_rebinding_replaces_the_buffer(failures: Array[String]) -> void:
 	field.call("bind_room_with_origin", _make_room(Vector2i.ONE), rig["room"], Vector2i.ZERO)
 	var first: Texture2D = field.call("get_normal_texture")
 	field.call("bind_room_with_origin", _make_room(Vector2i(2, 1)), rig["room"], Vector2i.ZERO)
-	if field.call("get_normal_pixels") != Vector2i(640, 180):
+	if field.call("get_normal_pixels") != Vector2i(640, 184):
 		failures.append("rebinding did not resize the normal buffer")
 	if field.call("get_normal_texture") == first:
 		failures.append("rebinding kept the old normal buffer texture")

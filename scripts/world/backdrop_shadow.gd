@@ -118,8 +118,9 @@ func bind_room_with_origin(room_data: Variant, terrain_root: Node, origin_chunk:
 	if chunks.x <= 0 or chunks.y <= 0:
 		chunks = Vector2i.ONE
 	clear_room()
-	_room_origin_pixels = origin_chunk * CHUNK_PIXELS
-	_room_pixels = chunks * CHUNK_PIXELS
+	var cell_rect := RoomGrid.get_room_cell_rect(origin_chunk, chunks)
+	_room_origin_pixels = cell_rect.position * RoomGrid.DEFAULT_CELL_SIZE
+	_room_pixels = cell_rect.size * RoomGrid.DEFAULT_CELL_SIZE
 	_room_bound = true
 	var layer := _find_layer(terrain_root)
 	if layer != null:

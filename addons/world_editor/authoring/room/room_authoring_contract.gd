@@ -31,9 +31,13 @@ static func validate(root: Node) -> Dictionary:
 		errors.append("room_size_chunks must be positive on both axes")
 	if room_content != null:
 		var ids := _validate_unique_ids(room_content, errors)
+		var spawns: Dictionary = ids.get("spawns", {})
 		var preview_spawn_id := String(root.get("preview_spawn_id"))
-		if not preview_spawn_id.is_empty() and not (ids.get("spawns", {}) as Dictionary).has(preview_spawn_id):
-			errors.append("preview_spawn_id does not reference a SpawnPoint: %s" % preview_spawn_id)
+		if not preview_spawn_id.is_empty() and not spawns.has(preview_spawn_id):
+			if spawns.is_empty():
+				errors.append("preview_spawn_id does not reference a SpawnPoint: %s" % preview_spawn_id)
+			else:
+				warnings.append("preview_spawn_id %s is stale; the first spawn is used instead" % preview_spawn_id)
 	return {"errors": errors, "warnings": warnings}
 
 

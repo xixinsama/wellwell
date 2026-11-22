@@ -107,7 +107,7 @@ func _assert_shadow_sits_between_plate_and_tiles(failures: Array[String]) -> voi
 			var material := quad.material as ShaderMaterial
 			if material.get_shader_parameter("mask_tex") == null:
 				failures.append("shadow shader was not given the silhouette")
-			if material.get_shader_parameter("mask_pixels") != Vector2(320.0, 180.0):
+			if material.get_shader_parameter("mask_pixels") != Vector2(320.0, 184.0):
 				failures.append("shadow shader got the wrong mask size")
 			if float(material.get_shader_parameter("strength")) <= 0.0:
 				failures.append("shadow shader got no strength")

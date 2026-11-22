@@ -177,7 +177,11 @@ func bind_room_with_origin(room_data: Variant, terrain_root: Node, origin_chunk:
 	if _terrain == null:
 		return true
 	_solid_tiles = _terrain.get_node_or_null("SolidTiles") as TileMapLayer
-	_room_rect = Rect2(Vector2(origin_chunk) * CHUNK_PIXELS, Vector2(room_chunks) * CHUNK_PIXELS)
+	var room_cell_rect := RoomGrid.get_room_cell_rect(origin_chunk, room_chunks)
+	_room_rect = Rect2(
+		Vector2(room_cell_rect.position) * Vector2(RoomGrid.DEFAULT_CELL_SIZE),
+		Vector2(room_cell_rect.size) * Vector2(RoomGrid.DEFAULT_CELL_SIZE)
+	)
 	_columns = maxi(int(ceil(_room_rect.size.x / CELL_PIXELS)), 1)
 	_rows = maxi(int(ceil(_room_rect.size.y / CELL_PIXELS)), 1)
 	_solid_mask = _build_solid_mask()

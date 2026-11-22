@@ -7,6 +7,9 @@ const WORLD_BAKER := preload("res://addons/world_editor/authoring/world/world_ba
 const ROOM_BAKER := preload("res://addons/world_editor/authoring/room/room_baker.gd")
 const WORLD_RESOURCE_SERVICE := preload("res://addons/world_editor/authoring/world/world_resource_service.gd")
 const WORLD_ROOM_IMPORTER := preload("res://addons/world_editor/authoring/world/world_room_importer.gd")
+const ROOM_PARTITION := preload("res://addons/world_editor/authoring/world/room_partition_operations.gd")
+const PARTITION_WORKFLOW := preload("res://addons/world_editor/authoring/world/room_partition_workflow.gd")
+const TERRAIN_PATCH_DIR := "res://resources/rooms/terrain_patches/"
 const CONNECTION_DATA := preload("res://addons/platformer_kit/world/data/room_connection_data.gd")
 const TEMPLATE_SCENE_SETTING := "world_editor/room_template_scene"
 const ROOM_STATUS := preload("res://addons/world_editor/authoring/world/room_status_service.gd")
@@ -20,6 +23,10 @@ const CHUNK_PIXELS_F := Vector2(320.0, 180.0)
 const WORLD_STACK_MODEL := preload("res://addons/world_editor/authoring/world/world_stack_model.gd")
 ## Catalog the stacked-world view lists; missing/unreadable degrades to no rows.
 const WORLD_CATALOG_PATH := "res://resources/worlds/world_catalog.tres"
+## Folder scanned for worlds that exist on disk but are not in the catalog yet
+## (New World writes exactly that). Overridable for forks with their own layout.
+const WORLD_DIRECTORY := "res://resources/worlds/"
+var stack_world_directory := WORLD_DIRECTORY
 
 var world_data: WorldData
 var selected_room_id := ""
@@ -30,6 +37,12 @@ var _model: RefCounted = WORLD_LAYOUT_MODEL.new()
 var _room_baker: Object = ROOM_BAKER.new()
 var _world_resources: Object = WORLD_RESOURCE_SERVICE.new()
 var _world_room_importer: Object = WORLD_ROOM_IMPORTER.new()
+var _partition: Object = ROOM_PARTITION.new()
+var _workflow: Object = PARTITION_WORKFLOW.new()
+var _split_dialog: ConfirmationDialog
+var _split_axis: OptionButton
+var _split_index: SpinBox
+var _split_room_id := ""
 var _undo_redo: Object
 var _editor_interface: Object
 var _transaction_busy := false
@@ -49,6 +62,9 @@ var _view_3d := false
 var _stack_3d_view: Control
 var _stack_model := WORLD_STACK_MODEL.new()
 var _stack_3d_payload: Dictionary = {}
+## Session cache for the edited world's stack; see [method get_world_stack].
+var _stack_cache: WorldStack
+var _stack_cache_path := ""
 ## Layer ids shown while the world has no saved order yet; only written to the
 ## resource when the author edits the stack.
 var _stack_default_order: Array[String] = []
@@ -85,6 +101,11 @@ func _ready() -> void:
     %NewRoom.pressed.connect(create_room_wizard)
     %BakeStale.pressed.connect(bake_stale_rooms)
     %AddExisting.pressed.connect(add_existing)
+    %DrawRoom.toggled.connect(_on_draw_room_toggled)
+    %MergeRooms.pressed.connect(merge_selected_rooms)
+    %SplitRoom.pressed.connect(split_selected_room)
+    if canvas.has_signal("room_draw_requested"):
+        canvas.connect("room_draw_requested", create_room_from_rect)
     %ValidateWorld.pressed.connect(validate_world)
     %BakeWorld.pressed.connect(bake_world)
     %OpenSource.pressed.connect(open_selected_source)
@@ -103,6 +124,8 @@ func _ready() -> void:
     inspector.action_requested.connect(_on_room_action)
     %RoomsToggle.toggled.connect(func(on: bool) -> void: room_list_panel.visible = on)
     %InspectorToggle.toggled.connect(func(on: bool) -> void: inspector_panel.visible = on)
+    %EditTerrain.pressed.connect(edit_terrain)
+    %SyncTerrain.pressed.connect(sync_terrain)
     if is_instance_valid(view_mode_3d):
         view_mode_3d.toggled.connect(set_view_mode_3d)
     chunk_go.pressed.connect(_on_chunk_go)
@@ -121,6 +144,8 @@ func _ready() -> void:
 func set_world_data(value: WorldData, preserve_selection := false) -> void:
     world_data = value
     _stack_default_order.clear()
+    _stack_cache = null
+    _stack_cache_path = ""
     if not preserve_selection or world_data == null or not world_data.has_room(selected_room_id):
         selected_room_id = ""
     selected_room_ids.clear()
@@ -260,6 +285,212 @@ func new_world() -> void:
     %NewWorldDialog.popup_centered_ratio(0.7)
 
 
+func _on_draw_room_toggled(enabled: bool) -> void:
+    if enabled and (world_data == null or world_data.resource_path.is_empty()):
+        %DrawRoom.set_pressed_no_signal(false)
+        _show_result(_failure("Select or create a saved WorldData resource first"))
+        return
+    if is_instance_valid(canvas):
+        canvas.call("set_room_draw_mode", enabled)
+
+
+## Creates a new room from a drawn chunk rectangle: an entities-only source scene
+## from the template, a placement, and a first bake sliced from the world terrain.
+func create_room_from_rect(chunk_rect: Rect2i) -> Dictionary:
+    if world_data == null or world_data.resource_path.is_empty():
+        return _fail_and_show("Select or create a saved WorldData resource first")
+    if chunk_rect.size.x <= 0 or chunk_rect.size.y <= 0:
+        return _fail_and_show("Drag a room rectangle first")
+    var overlap := _overlapping_room_for(chunk_rect)
+    if not overlap.is_empty():
+        return _fail_and_show("Room rectangle overlaps '%s'" % overlap)
+    var terrain_path := world_data.get_terrain_scene_path()
+    if terrain_path.is_empty() or not FileAccess.file_exists(terrain_path):
+        var create_error := _create_world_terrain(terrain_path)
+        if not create_error.is_empty():
+            return _fail_and_show(create_error)
+    var room_id := _unique_room_id(chunk_rect)
+    var source_dir := "res://scenes/levels/generated/%s/" % world_data.world_id
+    var source_path := source_dir + room_id + ".tscn"
+    var source := _new_room_source(room_id, chunk_rect)
+    if source == null:
+        return _fail_and_show("Could not instantiate the room template")
+    var save_error := _save_new_room_source(source, source_path, source_dir)
+    if not save_error.is_empty():
+        source.free()
+        return _fail_and_show(save_error)
+    _set_transaction_busy(true)
+    var result: Dictionary = _world_room_importer.call(
+        "import_room", world_data, source, source_path, chunk_rect.position
+    )
+    source.free()
+    _set_transaction_busy(false)
+    if bool(result.get("ok", false)):
+        var imported_world := result.get("world") as WorldData
+        var imported_room := result.get("room") as RoomData
+        if imported_world == null or imported_room == null:
+            result = _failure("Room importer returned incomplete saved resources")
+        else:
+            set_world_data(imported_world)
+            select_room(imported_room.room_id)
+            if is_instance_valid(canvas):
+                canvas.call("focus_room", imported_room.room_id)
+            _register_import_history(result)
+    %DrawRoom.set_pressed_no_signal(false)
+    if is_instance_valid(canvas):
+        canvas.call("set_room_draw_mode", false)
+    _show_result(result)
+    return result
+
+
+func _show_dict(result: Dictionary) -> Dictionary:
+    _show_result(result)
+    return result
+
+
+func _fail_and_show(message: String) -> Dictionary:
+    var result := _failure(message)
+    _show_result(result)
+    return result
+
+
+func _new_room_source(room_id: String, chunk_rect: Rect2i) -> Node:
+    var template_path := String(ProjectSettings.get_setting(TEMPLATE_SCENE_SETTING, ""))
+    if template_path.is_empty() or not ResourceLoader.exists(template_path, "PackedScene"):
+        return null
+    var packed := ResourceLoader.load(template_path, "PackedScene") as PackedScene
+    if packed == null:
+        return null
+    var source := packed.instantiate()
+    source.set("room_id", room_id)
+    source.set("display_name", room_id)
+    source.set("room_size_chunks", chunk_rect.size)
+    source.set("world_origin_chunk", chunk_rect.position)
+    source.set("world_origin_known", true)
+    var spawn := source.get_node_or_null("RoomContent/Entities/StartSpawn") as Node2D
+    if spawn != null:
+        var cell_rect := RoomGrid.get_room_cell_rect(chunk_rect.position, chunk_rect.size)
+        spawn.position = Vector2(cell_rect.size * RoomGrid.DEFAULT_CELL_SIZE) * 0.5
+    return source
+
+
+func _save_new_room_source(source: Node, path: String, directory: String) -> String:
+    var dir_error := DirAccess.make_dir_recursive_absolute(
+        ProjectSettings.globalize_path(directory)
+    )
+    if dir_error != OK and dir_error != ERR_ALREADY_EXISTS:
+        return "Could not create %s" % directory
+    var scene := PackedScene.new()
+    if scene.pack(source) != OK:
+        return "Could not pack the new room scene"
+    if ResourceSaver.save(scene, path) != OK:
+        return "Could not save %s" % path
+    return ""
+
+
+func _overlapping_room_for(chunk_rect: Rect2i) -> String:
+    for room_id: String in world_data.get_room_ids():
+        var room := world_data.get_room(room_id)
+        if room == null:
+            continue
+        var other := Rect2i(world_data.get_room_origin_chunk(room_id), room.room_size_chunks)
+        if other.intersects(chunk_rect):
+            return room_id
+    return ""
+
+
+func _unique_room_id(chunk_rect: Rect2i) -> String:
+    var base := "room_%d_%d" % [chunk_rect.position.x, chunk_rect.position.y]
+    var candidate := base
+    var index := 2
+    while world_data.has_room(candidate) or FileAccess.file_exists(
+        "res://scenes/levels/generated/%s/%s.tscn" % [world_data.world_id, candidate]
+    ):
+        candidate = "%s_%d" % [base, index]
+        index += 1
+    return candidate
+
+
+# --- World terrain ------------------------------------------------------------
+
+## Opens the world's single terrain scene in the normal Godot editor. The scene
+## contains only terrain layers, so the native TileMap palette, autotiling and
+## undo all work there; save it, then press Sync Terrain.
+func edit_terrain() -> void:
+    if world_data == null or world_data.world_id.is_empty():
+        _show_result(_failure("Select or create a saved WorldData resource first"))
+        return
+    var path := world_data.get_terrain_scene_path()
+    if path.is_empty():
+        _show_result(_failure("World has no terrain scene path"))
+        return
+    if not FileAccess.file_exists(path):
+        var create_error := _create_world_terrain(path)
+        if not create_error.is_empty():
+            _show_result(_failure(create_error))
+            return
+        if is_instance_valid(canvas):
+            canvas.call("sync_preview")
+        _show_result({"ok": true, "errors": [], "warnings": ["Created %s" % path]})
+    if _editor_interface != null and _editor_interface.has_method("open_scene_from_path"):
+        _editor_interface.open_scene_from_path(path)
+
+
+func _create_world_terrain(path: String) -> String:
+    var template_path := "res://scenes/worlds/terrain_template.tscn"
+    if not ResourceLoader.exists(template_path, "PackedScene"):
+        return "Terrain template is missing: %s" % template_path
+    var packed := ResourceLoader.load(template_path, "PackedScene") as PackedScene
+    if packed == null:
+        return "Could not load the terrain template"
+    var instance := packed.instantiate()
+    if instance == null:
+        return "Could not instantiate the terrain template"
+    var scene := PackedScene.new()
+    var pack_error := scene.pack(instance)
+    instance.free()
+    if pack_error != OK:
+        return "Could not pack the terrain template"
+    var dir_error := DirAccess.make_dir_recursive_absolute(
+        ProjectSettings.globalize_path(path.get_base_dir())
+    )
+    if dir_error != OK and dir_error != ERR_ALREADY_EXISTS:
+        return "Could not create %s" % path.get_base_dir()
+    if ResourceSaver.save(scene, path) != OK:
+        return "Could not save %s" % path
+    return ""
+
+
+## Re-slices every room from the saved world terrain scene and re-bakes it, so
+## the runtime, the world view and the room preview all show the same terrain.
+func sync_terrain() -> Dictionary:
+    if world_data == null:
+        return _show_terrain_result(false, ["Select a WorldData first"], [])
+    var terrain_path := world_data.get_terrain_scene_path()
+    if terrain_path.is_empty() or not FileAccess.file_exists(terrain_path):
+        return _show_terrain_result(false, ["Edit and save the world terrain scene first"], [])
+    var room_ids: Array[String] = []
+    room_ids.assign(world_data.get_room_ids())
+    var errors: Array[String] = []
+    var warnings: Array[String] = []
+    for room_id: String in room_ids:
+        var result := _bake_room(room_id)
+        for warning: Variant in result.get("warnings", []):
+            warnings.append(String(warning))
+        if not bool(result.get("ok", false)):
+            for error: Variant in result.get("errors", []):
+                errors.append(String(error))
+    if is_instance_valid(canvas):
+        canvas.call("sync_preview")
+    return _show_terrain_result(errors.is_empty(), errors, warnings)
+
+
+func _show_terrain_result(ok: bool, errors: Array[String], warnings: Array[String]) -> Dictionary:
+    var result := {"ok": ok, "errors": errors, "warnings": warnings}
+    _show_result(result)
+    return result
+
+
 func save_world() -> Dictionary:
     if world_data == null:
         var failure := _failure("No WorldData selected")
@@ -273,10 +504,16 @@ func save_world() -> Dictionary:
 
 
 func focus_all() -> void:
+    if _view_3d and _stack_3d_view != null and is_instance_valid(_stack_3d_view):
+        _stack_3d_view.call("focus_stack")
+        return
     canvas.call("focus_all")
 
 
 func reset_view() -> void:
+    if _view_3d and _stack_3d_view != null and is_instance_valid(_stack_3d_view):
+        _stack_3d_view.call("reset_view")
+        return
     canvas.call("reset_view")
 
 
@@ -371,7 +608,13 @@ func _bake_room(room_id: String) -> Dictionary:
         var failure := {"ok": false, "errors": ["No room source selected"], "warnings": []}
         _show_result(failure)
         return failure
-    var result: Dictionary = _room_baker.call("bake", root, room.source_scene_path)
+    var result: Dictionary = _room_baker.call(
+        "bake",
+        root,
+        room.source_scene_path,
+        world_data.get_room_origin_chunk(room_id),
+        world_data.get_terrain_scene_path()
+    )
     root.free()
     if bool(result.get("ok", false)):
         var outputs: Dictionary = result.get("outputs", {})
@@ -398,6 +641,149 @@ func _bake_selection() -> void:
     for room_id: String in selected_room_ids.duplicate():
         _bake_room(room_id)
 
+
+# --- Merge / split rooms ------------------------------------------------------
+
+## Merges the selected rooms into one new room, all new ids. See
+## [RoomPartitionWorkflow]: the union must be a rectangle and the world terrain is
+## never modified.
+func merge_selected_rooms() -> Dictionary:
+    var ids: Array[String] = []
+    for value: Variant in selected_room_ids:
+        var room_id := String(value)
+        if world_data != null and world_data.has_room(room_id):
+            ids.append(room_id)
+    if ids.size() < 2:
+        return _fail_and_show("Select at least two rooms")
+    var union_result: Dictionary = _partition.call("merge_rect", world_data, ids)
+    if not bool(union_result.get("ok", false)):
+        return _fail_and_show(String(union_result.get("error", "invalid selection")))
+    var rect: Rect2i = union_result["rect"]
+    var new_id := _unique_partition_id("merged_%d_%d" % [rect.position.x, rect.position.y])
+    var result: Dictionary = _workflow.call(
+        "merge", world_data, ids, new_id, _workflow.call("source_path_for", world_data, new_id)
+    )
+    return _apply_partition_result(result, "merge")
+
+
+## Splits the selected room at a chunk boundary the author picks (middle by
+## default). The dialog offers the axis and the cut position.
+func split_selected_room() -> Dictionary:
+    if selected_room_ids.size() != 1:
+        return _fail_and_show("Select exactly one room to split")
+    var room_id := selected_room_ids[0]
+    var room := null if world_data == null else world_data.get_room(room_id)
+    if room == null:
+        return _fail_and_show("Select exactly one room to split")
+    if room.room_size_chunks.x < 2 and room.room_size_chunks.y < 2:
+        return _fail_and_show(
+            "This room is one chunk on both axes; it cannot be split on a chunk boundary"
+        )
+    var dialog := _ensure_split_dialog()
+    _populate_split_dialog(room_id, room)
+    dialog.popup_centered(Vector2i(320, 150))
+    return {"ok": true, "errors": [], "warnings": []}
+
+
+func _ensure_split_dialog() -> ConfirmationDialog:
+    if is_instance_valid(_split_dialog):
+        return _split_dialog
+    _split_dialog = ConfirmationDialog.new()
+    _split_dialog.title = "Split Room"
+    _split_dialog.ok_button_text = "Split"
+    add_child(_split_dialog)
+    var grid := GridContainer.new()
+    grid.columns = 2
+    _split_dialog.add_child(grid)
+    grid.add_child(_make_label("Direction"))
+    _split_axis = OptionButton.new()
+    _split_axis.add_item("Horizontal cut (left / right)", 0)
+    _split_axis.add_item("Vertical cut (top / bottom)", 1)
+    _split_axis.item_selected.connect(_on_split_axis_selected)
+    grid.add_child(_split_axis)
+    grid.add_child(_make_label("Cut after chunk"))
+    _split_index = SpinBox.new()
+    _split_index.min_value = 1
+    _split_index.step = 1
+    grid.add_child(_split_index)
+    _split_dialog.confirmed.connect(_on_split_confirmed)
+    return _split_dialog
+
+
+func _populate_split_dialog(room_id: String, room: RoomData) -> void:
+    _split_room_id = room_id
+    var horizontal := room.room_size_chunks.x > 1
+    _split_axis.select(0 if horizontal else 1)
+    _split_axis.set_item_disabled(0, room.room_size_chunks.x < 2)
+    _split_axis.set_item_disabled(1, room.room_size_chunks.y < 2)
+    _update_split_index_range(room, horizontal)
+
+
+func _update_split_index_range(room: RoomData, horizontal: bool) -> void:
+    var extent := room.room_size_chunks.x if horizontal else room.room_size_chunks.y
+    _split_index.max_value = maxi(1, extent - 1)
+    _split_index.value = maxi(1, int(extent / 2))
+
+
+func _on_split_axis_selected(_index: int) -> void:
+    if world_data == null:
+        return
+    var room := world_data.get_room(_split_room_id)
+    if room != null:
+        _update_split_index_range(room, _split_axis.selected == 0)
+
+
+func _on_split_confirmed() -> void:
+    var axis := "x" if _split_axis.selected == 0 else "y"
+    _apply_split(_split_room_id, axis, int(_split_index.value))
+
+
+func _apply_split(room_id: String, axis: String, index: int) -> Dictionary:
+    var room := null if world_data == null else world_data.get_room(room_id)
+    if room == null:
+        return _fail_and_show("Select exactly one room to split")
+    var new_ids: Array[String] = [
+        _unique_partition_id(room_id + "_a"),
+        _unique_partition_id(room_id + "_b"),
+    ]
+    var paths: Array[String] = []
+    for new_id: String in new_ids:
+        paths.append(String(_workflow.call("source_path_for", world_data, new_id)))
+    var result: Dictionary = _workflow.call("split", world_data, room_id, axis, index, new_ids, paths)
+    return _apply_partition_result(result, "split")
+
+
+func _make_label(text: String) -> Label:
+    var label := Label.new()
+    label.text = text
+    return label
+
+
+func _apply_partition_result(result: Dictionary, action: String) -> Dictionary:
+    if not bool(result.get("ok", false)):
+        return _show_dict(result)
+    var new_world := result.get("world") as WorldData
+    if new_world == null:
+        return _fail_and_show("Partition %s returned no world" % action)
+    set_world_data(new_world)
+    var new_ids: Array = result.get("new_room_ids", [])
+    if not new_ids.is_empty():
+        select_room(String(new_ids[0]))
+        if is_instance_valid(canvas):
+            canvas.call("focus_room", String(new_ids[0]))
+    _refresh()
+    return _show_dict(result)
+
+
+func _unique_partition_id(base: String) -> String:
+    var candidate := base
+    var index := 2
+    while world_data.has_room(candidate) or FileAccess.file_exists(
+        String(_workflow.call("source_path_for", world_data, candidate))
+    ):
+        candidate = "%s_%d" % [base, index]
+        index += 1
+    return candidate
 
 func _validate_selection() -> void:
     for room_id: String in selected_room_ids.duplicate():
@@ -428,6 +814,31 @@ func open_source_room(room_id: String) -> void:
     var room: Resource = null if world_data == null else world_data.get_room(room_id)
     if room != null and _editor_interface != null and not room.source_scene_path.is_empty():
         _editor_interface.open_scene_from_path(room.source_scene_path)
+        _sync_room_origin_after_open(room_id, room.source_scene_path)
+
+
+## Writes the room's world origin into the source scene once it is the edited
+## scene, so the cell frame in the room scene knows its parity. The property is
+## saved with the scene; the world editor's bake always passes the live placement
+## explicitly, so a stale copy can never crop the wrong cells.
+func _sync_room_origin_after_open(room_id: String, source_path: String) -> void:
+    if world_data == null or not is_inside_tree():
+        return
+    var origin := world_data.get_room_origin_chunk(room_id)
+    for _attempt: int in 30:
+        await get_tree().process_frame
+        if not is_inside_tree() or _editor_interface == null or not _editor_interface.has_method("get_edited_scene_root"):
+            return
+        var root := _editor_interface.call("get_edited_scene_root") as Node
+        if root == null or String(root.scene_file_path) != source_path:
+            continue
+        if root.get("world_origin_chunk") == null:
+            return
+        root.set("world_origin_chunk", origin)
+        root.set("world_origin_known", true)
+        if root is CanvasItem:
+            (root as CanvasItem).queue_redraw()
+        return
 
 
 func _apply_move(room_id: String, origin_chunk: Vector2i) -> void:
@@ -858,9 +1269,14 @@ func _on_stack_world_picked(world_id: String) -> void:
     if world_data != null and world_data.world_id == world_id:
         target = world_data
     else:
-        target = _find_catalog_world(world_id)
+        for world: WorldData in get_stack_worlds():
+            if world != null and world.world_id == world_id:
+                target = world
+                break
     if target == null:
-        _show_result(_failure("world is not in the catalog: %s" % world_id))
+        target = _find_stack_world(world_id)
+    if target == null:
+        _show_result(_failure("world is not available: %s" % world_id))
         return
     _set_view_mode_button(false)
     set_view_mode_3d(false)
@@ -907,7 +1323,12 @@ func build_stack_3d_payload() -> Dictionary:
     var all_doors: Array[Dictionary] = []
     for index: int in range(worlds.size()):
         var world: WorldData = worlds[index]
-        var annotations: Dictionary = _annotations if world == world_data else _annotations_for_world(world)
+        # The stack reloads worlds from disk, so identity is not guaranteed: the
+        # edited world is the one with the same id.
+        var annotations: Dictionary = (
+            _annotations if world.world_id == world_data.world_id
+            else _annotations_for_world(world)
+        )
         var rooms: Array[Dictionary] = []
         var bounds := Rect2()
         var has_bounds := false
@@ -977,9 +1398,54 @@ func _world_catalog_worlds() -> Array[WorldData]:
     return worlds
 
 
-func _find_catalog_world(world_id: String) -> WorldData:
+## Worlds the stack can layer: the catalog first (its order is authored), then
+## any other WorldData saved under [member stack_world_directory]. The editor can
+## open a world that was never registered in the catalog �?New World writes
+## exactly that �?so the stack must offer it too. Deduplicated by world_id.
+func get_stack_candidate_worlds() -> Array[WorldData]:
+    var worlds: Array[WorldData] = []
+    var seen: Dictionary = {}
     for world: WorldData in _world_catalog_worlds():
-        if world.world_id == world_id:
+        if world == null or world.world_id.is_empty() or seen.has(world.world_id):
+            continue
+        seen[world.world_id] = true
+        worlds.append(world)
+    for world: WorldData in _worlds_in_directory():
+        if world == null or world.world_id.is_empty() or seen.has(world.world_id):
+            continue
+        seen[world.world_id] = true
+        worlds.append(world)
+    return worlds
+
+
+## WorldData resources saved in [member stack_world_directory], sorted by file
+## name so the add menu keeps a stable order between runs.
+func _worlds_in_directory() -> Array[WorldData]:
+    var worlds: Array[WorldData] = []
+    var directory := DirAccess.open(stack_world_directory)
+    if directory == null:
+        return worlds
+    var files: Array[String] = []
+    directory.list_dir_begin()
+    var entry := directory.get_next()
+    while not entry.is_empty():
+        if not directory.current_is_dir() and entry.get_extension().to_lower() == "tres":
+            files.append(entry)
+        entry = directory.get_next()
+    directory.list_dir_end()
+    files.sort()
+    for file_name: String in files:
+        var resource := ResourceLoader.load(stack_world_directory.path_join(file_name))
+        if resource is WorldData and not (resource as WorldData).world_id.is_empty():
+            worlds.append(resource as WorldData)
+    return worlds
+
+
+func _find_stack_world(world_id: String) -> WorldData:
+    if world_id.is_empty():
+        return null
+    for world: WorldData in get_stack_candidate_worlds():
+        if world != null and world.world_id == world_id:
             return world
     return null
 
@@ -989,24 +1455,52 @@ func _find_catalog_world(world_id: String) -> WorldData:
 const WORLD_STACK_SCRIPT := preload("res://addons/platformer_kit/world/data/world_stack_data.gd")
 
 ## The stack this world belongs to, or null when it is not stacked with anything.
+##
+## The stack lives next to the world as `<world>_stack.tres` and is found by that
+## convention. A resource reference from the world back to its own stack made the
+## pair cyclic, and Godot's text resource loader cannot resolve a cycle: loading
+## either file failed with "referenced non-existent resource", which took the
+## whole world catalog (and the world-select screen) down with it.
 func get_world_stack() -> WorldStack:
-    return null if world_data == null else world_data.world_stack
+    if world_data == null:
+        return null
+    var path := _stack_path_for(world_data)
+    if path.is_empty():
+        return null
+    if _stack_cache != null and is_instance_valid(_stack_cache) and _stack_cache_path == path:
+        return _stack_cache
+    if not ResourceLoader.exists(path):
+        _stack_cache = null
+        _stack_cache_path = ""
+        return null
+    var loaded := ResourceLoader.load(path, "WorldStack") as WorldStack
+    _stack_cache = loaded
+    _stack_cache_path = path
+    return loaded
+
+
+## `<base_dir>/<world_basename>_stack.tres`, or "" for an unsaved world.
+static func _stack_path_for(world: WorldData) -> String:
+    if world == null or world.resource_path.is_empty() or world.resource_path.get_extension() != "tres":
+        return ""
+    return "%s/%s_stack.tres" % [
+        world.resource_path.get_base_dir(),
+        world.resource_path.get_file().get_basename()
+    ]
 
 
 ## Creates and saves a stack resource for the edited world on demand, so adding
 ## the first layer is one click instead of a manual resource step.
 func ensure_world_stack() -> WorldStack:
+    var existing := get_world_stack()
+    if existing != null:
+        return existing
     if world_data == null:
         return null
-    if world_data.world_stack != null:
-        return world_data.world_stack
-    if world_data.resource_path.is_empty() or world_data.resource_path.get_extension() != "tres":
+    var path := _stack_path_for(world_data)
+    if path.is_empty():
         _show_result(_failure(WorldEditorLocalization.t("WE_STACK_NEEDS_SAVED_WORLD")))
         return null
-    var path := "%s/%s_stack.tres" % [
-        world_data.resource_path.get_base_dir(),
-        world_data.resource_path.get_file().get_basename()
-    ]
     var stack: WorldStack = WORLD_STACK_SCRIPT.new() as WorldStack
     stack.stack_id = "%s_stack" % world_data.world_id
     stack.display_name = "%s Stack" % _world_label(world_data)
@@ -1014,12 +1508,13 @@ func ensure_world_stack() -> WorldStack:
     if ResourceSaver.save(stack, path) != OK:
         _show_result(_failure(WorldEditorLocalization.t("WE_STACK_SAVE_FAILED", [path])))
         return null
-    stack = ResourceLoader.load(path, "WorldStack", ResourceLoader.CACHE_MODE_IGNORE) as WorldStack
-    if stack == null:
-        _show_result(_failure(WorldEditorLocalization.t("WE_STACK_SAVE_FAILED", [path])))
-        return null
-    world_data.world_stack = stack
-    world_data.emit_changed()
+    # `ResourceSaver.save` does not claim the path for the instance; without this
+    # the caller sees an empty `resource_path` and later saves go nowhere.
+    stack.take_over_path(path)
+    # Keep this exact instance cached: the caller mutates it next, and
+    # `_after_stack_change()` has to save the mutation, not a reread.
+    _stack_cache = stack
+    _stack_cache_path = path
     return stack
 
 
@@ -1037,16 +1532,21 @@ func get_stack_worlds() -> Array[WorldData]:
     for world: WorldData in stack.layers:
         if world != null:
             result.append(world)
-    if not result.has(world_data):
+    var has_current := false
+    for world: WorldData in result:
+        if world.world_id == world_data.world_id:
+            has_current = true
+            break
+    if not has_current:
         result.insert(0, world_data)
     return result
 
 
 func add_layer(world_id: String) -> void:
-    if world_data == null:
+    if world_data == null or world_id.is_empty() or world_id == world_data.world_id:
         return
-    var world := _find_catalog_world(world_id)
-    if world == null or world == world_data:
+    var world := _find_stack_world(world_id)
+    if world == null:
         return
     var stack := get_world_stack()
     if stack == null:
@@ -1099,10 +1599,15 @@ func _on_layer_add_pressed() -> void:
         menu.index_pressed.connect(_on_layer_add_selected)
     menu.clear()
     var stacked := get_stack_worlds()
-    for world: WorldData in _world_catalog_worlds():
+    var stacked_ids: Dictionary = {}
+    for world: WorldData in stacked:
+        stacked_ids[world.world_id] = true
+    if world_data != null:
+        stacked_ids[world_data.world_id] = true
+    for world: WorldData in get_stack_candidate_worlds():
         if world == null or world.world_id.is_empty():
             continue
-        if stacked.has(world) or world == world_data:
+        if stacked_ids.has(world.world_id):
             continue
         menu.add_item(_world_label(world), menu.item_count)
         menu.set_item_metadata(menu.item_count - 1, world.world_id)
@@ -1169,7 +1674,7 @@ func _refresh_layer_panel() -> void:
 func _append_layer_row(z: int, world: WorldData, is_bottom: bool, layer_count: int) -> void:
     var row := HBoxContainer.new()
     row.add_theme_constant_override("separation", 4)
-    var is_current := world == world_data
+    var is_current := world_data != null and world.world_id == world_data.world_id
     var badge := Label.new()
     badge.text = "Z%d" % z
     badge.custom_minimum_size.x = 34

@@ -128,7 +128,11 @@ func bind_room_with_origin(room_data: Variant, terrain_root: Node, origin_chunk:
 	_solid_tiles = _terrain.get_node_or_null("SolidTiles") as TileMapLayer
 	if _solid_tiles == null:
 		return true
-	_room_rect = Rect2(Vector2(origin_chunk) * CHUNK_PIXELS, Vector2(room_chunks) * CHUNK_PIXELS)
+	var room_cell_rect := RoomGrid.get_room_cell_rect(origin_chunk, room_chunks)
+	_room_rect = Rect2(
+		Vector2(room_cell_rect.position) * Vector2(RoomGrid.DEFAULT_CELL_SIZE),
+		Vector2(room_cell_rect.size) * Vector2(RoomGrid.DEFAULT_CELL_SIZE)
+	)
 	var basins := _collect_nodes(BASIN_GROUP, _room_rect)
 	if basins.is_empty():
 		return true

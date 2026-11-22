@@ -56,6 +56,24 @@ tooltip_text = "Select or create a WorldData resource first"
 disabled = true
 text = "Add Existing"
 
+[node name="DrawRoom" type="CheckButton" parent="CommandBar"]
+unique_name_in_owner = true
+layout_mode = 2
+tooltip_text = "Drag on the canvas to create a room at that chunk rectangle"
+text = "Draw Room"
+
+[node name="MergeRooms" type="Button" parent="CommandBar"]
+unique_name_in_owner = true
+layout_mode = 2
+tooltip_text = "Merge the selected rooms; their union must be a rectangle"
+text = "Merge"
+
+[node name="SplitRoom" type="Button" parent="CommandBar"]
+unique_name_in_owner = true
+layout_mode = 2
+tooltip_text = "Split the selected room at the middle chunk boundary"
+text = "Split"
+
 [node name="SeparatorA" type="VSeparator" parent="CommandBar"]
 layout_mode = 2
 
@@ -128,6 +146,31 @@ layout_mode = 2
 tooltip_text = "Show the room inspector"
 button_pressed = true
 text = "Inspector"
+
+[node name="TerrainBar" type="HBoxContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="TerrainTitle" type="Label" parent="TerrainBar"]
+layout_mode = 2
+text = "Terrain"
+
+[node name="EditTerrain" type="Button" parent="TerrainBar"]
+unique_name_in_owner = true
+layout_mode = 2
+tooltip_text = "Open the world's terrain scene in the normal Godot editor"
+text = "Edit Terrain"
+
+[node name="SyncTerrain" type="Button" parent="TerrainBar"]
+unique_name_in_owner = true
+layout_mode = 2
+tooltip_text = "Slice the saved world terrain into every room and re-bake them"
+text = "Sync Terrain"
+
+[node name="TerrainHint" type="Label" parent="TerrainBar"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 0.55)
+text = "Edit and save the terrain scene in Godot, then Sync"
 
 [node name="Workspace" type="HSplitContainer" parent="."]
 unique_name_in_owner = true

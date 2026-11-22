@@ -77,7 +77,8 @@ func _instantiate_terrain(room: Resource, origin_chunk: Vector2i = Vector2i.ZERO
 		instance.free()
 		return null
 	instance.name = room.room_id
-	instance.position = Vector2(origin_chunk * Vector2i(320, 180))
+	var cell_rect := RoomGrid.get_room_cell_rect(origin_chunk, room.room_size_chunks)
+	instance.position = Vector2(cell_rect.position * RoomGrid.DEFAULT_CELL_SIZE)
 	return instance
 
 

@@ -6,6 +6,7 @@ const ROOM_AUTHORING_CONTRACT: Script = preload("res://addons/world_editor/autho
 const ROOM_BAKE_MANIFEST: Script = preload("res://addons/world_editor/authoring/room/room_bake_manifest.gd")
 const ROOM_BAKE_PATHS: Script = preload("res://addons/world_editor/authoring/room/room_bake_paths.gd")
 const ROOM_DATA: Script = preload("res://addons/platformer_kit/world/data/room_data.gd")
+const ROOM_GRID: Script = preload("res://addons/platformer_kit/world/data/room_grid.gd")
 
 const DUPLICATE_FLAGS := Node.DUPLICATE_SIGNALS | Node.DUPLICATE_GROUPS | Node.DUPLICATE_SCRIPTS | Node.DUPLICATE_USE_INSTANTIATION
 const TERRAIN_CHILD_NAMES: Array[String] = ["Background", "Terrain"]
@@ -13,6 +14,8 @@ const RUNTIME_EXCLUDED_CHILD_NAMES: Array[String] = ["Background", "Terrain"]
 const REQUIRED_RUNTIME_CHILD_NAMES: Array[String] = ["Entities", "Foreground"]
 const REQUIRED_TERRAIN_LAYER_NAMES: Array[String] = ["BackTiles", "SolidTiles", "DetailTiles"]
 const RESOURCE_PRESENTATION_PROPERTIES: Array[String] = ["resource_path", "resource_scene_unique_id"]
+
+var _world_terrain_cache: Dictionary = {}
 
 
 func validate(source_root: Node) -> Dictionary:
@@ -26,7 +29,15 @@ func validate(source_root: Node) -> Dictionary:
 	return _result(errors.is_empty(), errors, warnings)
 
 
-func stage(source_root: Node, source_path: String) -> Dictionary:
+## [param origin_chunk] is the room's world placement. [param world_terrain_path]
+## is the world's single authored terrain scene; when given, the room terrain is
+## sliced from it instead of packing the room source's own Terrain node.
+func stage(
+	source_root: Node,
+	source_path: String,
+	origin_chunk: Variant = null,
+	world_terrain_path: String = ""
+) -> Dictionary:
 	var validation := validate(source_root)
 	if not validation["ok"]:
 		return validation
@@ -37,9 +48,21 @@ func stage(source_root: Node, source_path: String) -> Dictionary:
 	var room_content: Node = source_root.get_node_or_null("RoomContent")
 	if room_content == null:
 		return _failure("missing direct RoomContent node during staging", warnings)
-	var terrain_scene_result := _pack_terrain_scene(room_content)
+	var crop_origin := _resolve_crop_origin(source_root, origin_chunk)
+	var size_chunks := _room_size_chunks(source_root)
+	var terrain_scene_result := _pack_terrain_scene(
+		room_content, crop_origin, size_chunks, world_terrain_path
+	)
 	if not terrain_scene_result["ok"]:
 		return _with_warnings(terrain_scene_result, warnings)
+	if world_terrain_path.is_empty():
+		var cropped := int(terrain_scene_result.get("cropped_cells", 0))
+		if cropped > 0:
+			warnings.append("cropped %d terrain cell(s) outside the room's cell frame" % cropped)
+	else:
+		warnings.append_array(_source_terrain_ignored_warning(room_content))
+	if crop_origin != null:
+		warnings.append_array(_entity_frame_warnings(source_root, crop_origin, size_chunks))
 	var runtime_scene_result := _pack_runtime_scene(room_content)
 	if not runtime_scene_result["ok"]:
 		return _with_warnings(runtime_scene_result, warnings)
@@ -100,8 +123,13 @@ func save_staged(staged: Dictionary) -> Dictionary:
 	return _replace_transactionally(outputs, staged_paths, warnings)
 
 
-func bake(source_root: Node, source_path: String) -> Dictionary:
-	var staged := stage(source_root, source_path)
+func bake(
+	source_root: Node,
+	source_path: String,
+	origin_chunk: Variant = null,
+	world_terrain_path: String = ""
+) -> Dictionary:
+	var staged := stage(source_root, source_path, origin_chunk, world_terrain_path)
 	if not staged["ok"]:
 		return staged
 	return save_staged(staged)
@@ -113,8 +141,20 @@ func get_source_fingerprint(source_path: String) -> String:
 	return FileAccess.get_sha256(source_path)
 
 
-func _pack_terrain_scene(room_content: Node) -> Dictionary:
-	return _pack_scene(room_content, "RoomTerrain", TERRAIN_CHILD_NAMES)
+## Terrain for a room comes from the world's single terrain scene: the room's
+## cell rectangle is sliced out and shifted to room-local cells. Without a world
+## terrain scene the legacy path packs the room source's own Terrain node.
+func _pack_terrain_scene(
+	room_content: Node,
+	crop_origin: Variant = null,
+	crop_size_chunks: Vector2i = Vector2i.ZERO,
+	world_terrain_path: String = ""
+) -> Dictionary:
+	if world_terrain_path.is_empty():
+		return _pack_scene(
+			room_content, "RoomTerrain", TERRAIN_CHILD_NAMES, crop_origin, crop_size_chunks
+		)
+	return _pack_sliced_terrain(room_content, crop_origin, crop_size_chunks, world_terrain_path)
 
 
 func _pack_runtime_scene(room_content: Node) -> Dictionary:
@@ -126,9 +166,16 @@ func _pack_runtime_scene(room_content: Node) -> Dictionary:
 	return _pack_scene(room_content, "RoomRuntimeContent", child_names)
 
 
-func _pack_scene(room_content: Node, root_name: String, child_names: Array[String]) -> Dictionary:
+func _pack_scene(
+	room_content: Node,
+	root_name: String,
+	child_names: Array[String],
+	crop_origin: Variant = null,
+	crop_size_chunks: Vector2i = Vector2i.ZERO
+) -> Dictionary:
 	var root := Node2D.new()
 	root.name = root_name
+	var cropped := 0
 	for child_name: String in child_names:
 		var source_child: Node = room_content.get_node_or_null(child_name)
 		if source_child == null:
@@ -138,6 +185,8 @@ func _pack_scene(room_content: Node, root_name: String, child_names: Array[Strin
 		if duplicate == null:
 			root.free()
 			return _failure("could not duplicate RoomContent child: %s" % child_name)
+		if crop_origin != null:
+			cropped += _crop_tile_layers(duplicate, Vector2i(crop_origin), crop_size_chunks)
 		root.add_child(duplicate)
 		_assign_owner_recursive(duplicate, root)
 	var scene := PackedScene.new()
@@ -150,7 +199,192 @@ func _pack_scene(room_content: Node, root_name: String, child_names: Array[Strin
 		"errors": [],
 		"warnings": [],
 		"scene": scene,
+		"cropped_cells": cropped,
 	}
+
+
+## Builds the room's terrain scene by slicing the world terrain at the room's
+## cell rectangle. The room source contributes its Background and its non-tile
+## Terrain children (ladder builders, etc.); the tile cells come from the world.
+func _pack_sliced_terrain(
+	room_content: Node,
+	origin_chunk: Variant,
+	size_chunks: Vector2i,
+	world_terrain_path: String
+) -> Dictionary:
+	if origin_chunk == null:
+		return _failure("world terrain slicing needs the room's world origin")
+	var world_layers := _world_terrain_layers(world_terrain_path)
+	if world_layers.is_empty():
+		return _failure("world terrain scene has no tile layers: %s" % world_terrain_path)
+	var root := Node2D.new()
+	root.name = "RoomTerrain"
+	var background := room_content.get_node_or_null("Background")
+	if background != null:
+		root.add_child(background.duplicate(DUPLICATE_FLAGS))
+	var source_terrain := room_content.get_node_or_null("Terrain")
+	var terrain: Node2D
+	if source_terrain != null:
+		terrain = source_terrain.duplicate(DUPLICATE_FLAGS) as Node2D
+	else:
+		terrain = Node2D.new()
+	terrain.name = "Terrain"
+	root.add_child(terrain)
+	var cell_rect: Rect2i = ROOM_GRID.get_room_cell_rect(Vector2i(origin_chunk), size_chunks)
+	for layer_name: String in world_layers:
+		var info: Dictionary = world_layers[layer_name]
+		var layer := _find_tile_layer(terrain, layer_name)
+		if layer == null:
+			layer = TileMapLayer.new()
+			layer.name = layer_name
+			terrain.add_child(layer)
+		layer.tile_set = info["tile_set"]
+		layer.clear()
+		var cells: Dictionary = info["cells"]
+		for world_cell: Vector2i in cells:
+			if not cell_rect.has_point(world_cell):
+				continue
+			var tile: Array = cells[world_cell]
+			layer.set_cell(
+				world_cell - cell_rect.position,
+				int(tile[0]),
+				Vector2i(tile[1]),
+				int(tile[2])
+			)
+	for child: Node in root.get_children():
+		_assign_owner_recursive(child, root)
+	var scene := PackedScene.new()
+	var pack_error := scene.pack(root)
+	root.free()
+	if pack_error != OK:
+		return _failure("could not pack sliced room terrain")
+	return {"ok": true, "errors": [], "warnings": [], "scene": scene, "cropped_cells": 0}
+
+
+## Loads the world terrain once per file hash and flattens every tile layer into
+## `{layer name: {world cell: [source_id, atlas, alternative]}}`.
+func _world_terrain_layers(world_terrain_path: String) -> Dictionary:
+	var hash := ""
+	if FileAccess.file_exists(world_terrain_path):
+		hash = FileAccess.get_sha256(world_terrain_path)
+	if _world_terrain_cache.has(world_terrain_path):
+		var cached: Dictionary = _world_terrain_cache[world_terrain_path]
+		if String(cached.get("hash", "")) == hash:
+			return cached["layers"]
+	var layers: Dictionary = {}
+	if ResourceLoader.exists(world_terrain_path, "PackedScene"):
+		var packed := ResourceLoader.load(
+			world_terrain_path, "PackedScene", ResourceLoader.CACHE_MODE_IGNORE
+		) as PackedScene
+		if packed != null:
+			var instance := packed.instantiate()
+			var tile_layers: Array[TileMapLayer] = []
+			_collect_tile_layers(instance, tile_layers)
+			for layer: TileMapLayer in tile_layers:
+				var cells: Dictionary = {}
+				for cell: Vector2i in layer.get_used_cells():
+					cells[cell] = [
+						layer.get_cell_source_id(cell),
+						layer.get_cell_atlas_coords(cell),
+						layer.get_cell_alternative_tile(cell),
+					]
+				layers[String(layer.name)] = {"tile_set": layer.tile_set, "cells": cells}
+			instance.free()
+	_world_terrain_cache[world_terrain_path] = {"hash": hash, "layers": layers}
+	return layers
+
+
+func _source_terrain_ignored_warning(room_content: Node) -> Array[String]:
+	var warnings: Array[String] = []
+	var source_terrain := room_content.get_node_or_null("Terrain")
+	if source_terrain == null:
+		return warnings
+	var layers: Array[TileMapLayer] = []
+	_collect_tile_layers(source_terrain, layers)
+	for layer: TileMapLayer in layers:
+		if not layer.get_used_cells().is_empty():
+			warnings.append(
+				"room source terrain is ignored; the world terrain scene is the source of truth"
+			)
+			break
+	return warnings
+
+
+func _find_tile_layer(node: Node, layer_name: String) -> TileMapLayer:
+	if node is TileMapLayer and String(node.name) == layer_name:
+		return node as TileMapLayer
+	for child: Node in node.get_children():
+		var found := _find_tile_layer(child, layer_name)
+		if found != null:
+			return found
+	return null
+
+
+## Removes cells that fall outside the room's per-block cell frames. Frames come
+## from the room's world placement, so an odd chunk row bakes 22 rows and an even
+## one 23 — the extra cells the author painted simply do not exist in the game.
+func _crop_tile_layers(node: Node, origin_chunk: Vector2i, size_chunks: Vector2i) -> int:
+	if size_chunks.x <= 0 or size_chunks.y <= 0:
+		return 0
+	var block_rects: Array[Rect2i] = ROOM_GRID.get_room_block_cell_rects(origin_chunk, size_chunks)
+	var layers: Array[TileMapLayer] = []
+	_collect_tile_layers(node, layers)
+	var dropped := 0
+	for layer: TileMapLayer in layers:
+		for cell: Vector2i in layer.get_used_cells():
+			if not ROOM_GRID.is_local_cell_inside(cell, block_rects):
+				layer.erase_cell(cell)
+				dropped += 1
+	return dropped
+
+
+func _collect_tile_layers(node: Node, layers: Array[TileMapLayer]) -> void:
+	if node is TileMapLayer:
+		layers.append(node as TileMapLayer)
+	for child: Node in node.get_children():
+		_collect_tile_layers(child, layers)
+
+
+## Entities are not cropped; sitting outside the frame is a warning so the author
+## can move them instead of losing them silently.
+func _entity_frame_warnings(
+	source_root: Node,
+	origin_chunk: Vector2i,
+	size_chunks: Vector2i
+) -> Array[String]:
+	var warnings: Array[String] = []
+	var entities := source_root.get_node_or_null("RoomContent/Entities")
+	if entities == null:
+		return warnings
+	var block_rects: Array[Rect2i] = ROOM_GRID.get_room_block_cell_rects(origin_chunk, size_chunks)
+	var cell_size := float(ROOM_GRID.DEFAULT_CELL_SIZE.x)
+	for child: Node in entities.get_children():
+		var entity := child as Node2D
+		if entity == null:
+			continue
+		var cell := Vector2i(
+			floori(entity.position.x / cell_size),
+			floori(entity.position.y / cell_size)
+		)
+		if not ROOM_GRID.is_local_cell_inside(cell, block_rects):
+			warnings.append("entity '%s' sits outside the room's cell frame" % entity.name)
+	return warnings
+
+
+func _resolve_crop_origin(source_root: Node, origin_chunk: Variant) -> Variant:
+	if origin_chunk != null:
+		return Vector2i(origin_chunk)
+	var known: Variant = source_root.get("world_origin_known")
+	if known is bool and bool(known):
+		return Vector2i(source_root.get("world_origin_chunk"))
+	return null
+
+
+func _room_size_chunks(source_root: Node) -> Vector2i:
+	var size: Variant = source_root.get("room_size_chunks")
+	if size is Vector2i:
+		return Vector2i(maxi(1, (size as Vector2i).x), maxi(1, (size as Vector2i).y))
+	return Vector2i.ONE
 
 
 ## Claims the duplicated room tree for the packed scene.

@@ -4,10 +4,8 @@ extends RefCounted
 ## Turns the fog's saved exploration ("room:x,y" ids in world cell coordinates)
 ## into per-room local cells the map renderers can draw.
 ##
-## Fog cells are global: room_origin_chunk * CELLS_PER_CHUNK + local cell.
-## This class converts them back so a room can be drawn on its own origin.
-
-const CELLS_PER_CHUNK := Vector2i(40, 23)
+## Fog cells are global world cells; the room's canonical cell origin comes from
+## [MapDefinitionBuilder], so a 22-cell odd chunk row matches the fog exactly.
 
 var version := -1
 
@@ -24,7 +22,7 @@ func refresh(explored_cell_ids: Array[String], definition: Resource) -> void:
 		if room == null:
 			continue
 		var room_id := String(room.get("room_id"))
-		origins[room_id] = Vector2i(room.get("map_position")) * CELLS_PER_CHUNK
+		origins[room_id] = MapDefinitionBuilder.room_cell_origin(room)
 	for cell_id: String in explored_cell_ids:
 		var separator := cell_id.rfind(":")
 		if separator <= 0:
@@ -60,7 +58,7 @@ func ratio(room_id: String, definition: Resource) -> float:
 	var room: Resource = definition.call("get_room", StringName(room_id)) if definition != null else null
 	if room == null:
 		return 0.0
-	var size := Vector2i(room.get("map_size")) * CELLS_PER_CHUNK
+	var size := MapDefinitionBuilder.room_cell_size(room)
 	var total := size.x * size.y
 	if total <= 0:
 		return 0.0

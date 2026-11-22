@@ -6,7 +6,6 @@ extends Control
 ## black so the world keeps its silhouette without leaking any content.
 
 const SNAPSHOT: Script = preload("res://addons/metroidvania_kit/map/data/room_terrain_snapshot.gd")
-const CELLS_PER_CHUNK := Vector2i(40, 23)
 
 const COLOR_ROOM_BACKGROUND := Color(0.016, 0.020, 0.030, 1.0)
 const COLOR_UNEXPLORED_ROOM := Color(0.085, 0.10, 0.14, 1.0)
@@ -103,8 +102,8 @@ func _world_cell_bounds() -> Rect2i:
 	for room: Resource in definition.get("rooms"):
 		if room == null:
 			continue
-		var origin: Vector2i = Vector2i(room.get("map_position")) * CELLS_PER_CHUNK
-		var room_rect := Rect2i(origin, Vector2i(room.get("map_size")) * CELLS_PER_CHUNK)
+		var origin: Vector2i = MapDefinitionBuilder.room_cell_origin(room)
+		var room_rect := Rect2i(origin, MapDefinitionBuilder.room_cell_size(room))
 		bounds = room_rect if first else bounds.merge(room_rect)
 		first = false
 	return bounds
@@ -121,8 +120,8 @@ func _draw() -> void:
 		if room == null:
 			continue
 		var room_id := String(room.get("room_id"))
-		var origin: Vector2i = Vector2i(room.get("map_position")) * CELLS_PER_CHUNK
-		var room_size: Vector2i = Vector2i(room.get("map_size")) * CELLS_PER_CHUNK
+		var origin: Vector2i = MapDefinitionBuilder.room_cell_origin(room)
+		var room_size: Vector2i = MapDefinitionBuilder.room_cell_size(room)
 		var top_left := (Vector2(origin) - _center_cell) * zoom + view_center
 		var rect := Rect2(top_left, Vector2(room_size) * zoom)
 		if not rect.intersects(Rect2(Vector2.ZERO, size)):
@@ -168,7 +167,7 @@ func build_room_image(room: Resource) -> Image:
 	if room == null:
 		return null
 	var room_id := String(room.get("room_id"))
-	var room_size: Vector2i = Vector2i(room.get("map_size")) * CELLS_PER_CHUNK
+	var room_size: Vector2i = MapDefinitionBuilder.room_cell_size(room)
 	if room_size.x <= 0 or room_size.y <= 0:
 		return null
 	var metadata: Dictionary = room.get("metadata") if room.get("metadata") != null else {}

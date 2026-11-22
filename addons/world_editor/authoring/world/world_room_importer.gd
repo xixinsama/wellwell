@@ -35,11 +35,15 @@ func set_layout_model_adapter(value: Object) -> void:
 ## working) asks for the first free chunk scanning row-major from (0, 0); any
 ## real chunk is still pushed to the nearest free chunk so two imports never
 ## stack on the same cells.
+## [param force_origin] imports at [param desired_origin] even when that rectangle
+## is occupied. Merge/split use it to place the new room(s) before the old rooms
+## are removed from the world.
 func import_room(
     world: WorldData,
     source_root: Node,
     source_path: String,
-    desired_origin: Vector2i = AUTO_ORIGIN
+    desired_origin: Vector2i = AUTO_ORIGIN,
+    force_origin: bool = false
 ) -> Dictionary:
     if not _is_world_data(world):
         return _failure("world is not WorldData")
@@ -56,7 +60,18 @@ func import_room(
         or source_path.get_extension().to_lower() != "tscn":
         return _failure("room source path must be a res:// .tscn file", world.resource_path)
 
-    var staged: Dictionary = _room_baker.call("stage", source_root, source_path)
+    var before_state: Dictionary = _layout_model.call("capture_world_state", world)
+    var candidate := world.duplicate(true) as WorldData
+    var declared_size := _declared_room_size(source_root)
+    var provisional: Resource = ROOM_DATA_SCRIPT.new()
+    provisional.room_size_chunks = declared_size
+    var import_origin := desired_origin
+    if not force_origin:
+        import_origin = _resolve_import_origin(candidate, provisional, desired_origin)
+
+    var staged: Dictionary = _room_baker.call(
+        "stage", source_root, source_path, import_origin, world.get_terrain_scene_path()
+    )
     if not bool(staged.get("ok", false)):
         return _from_dependency_failure(staged, world.resource_path)
     var staged_room := staged.get("room_data") as RoomData
@@ -66,9 +81,28 @@ func import_room(
     if not output_error.is_empty():
         return _failure(output_error, world.resource_path)
 
-    var before_state: Dictionary = _layout_model.call("capture_world_state", world)
-    var candidate := world.duplicate(true) as WorldData
-    var import_origin := _resolve_import_origin(candidate, staged_room, desired_origin)
+    # The provisional size comes from the source root; if the manifest disagrees,
+    # re-resolve so the room cannot be placed on an occupied chunk.
+    var staged_size := Vector2i(
+        maxi(1, staged_room.room_size_chunks.x),
+        maxi(1, staged_room.room_size_chunks.y)
+    )
+    if staged_size != declared_size:
+        if not force_origin:
+            import_origin = _resolve_import_origin(candidate, staged_room, desired_origin)
+        staged = _room_baker.call(
+            "stage", source_root, source_path, import_origin, world.get_terrain_scene_path()
+        )
+        if not bool(staged.get("ok", false)):
+            return _from_dependency_failure(staged, world.resource_path)
+        staged_room = staged.get("room_data") as RoomData
+        manifest = staged.get("manifest", {})
+        outputs = staged.get("outputs", {})
+        output_error = _validate_staged_outputs(staged_room, manifest, outputs)
+        if not output_error.is_empty():
+            return _failure(output_error, world.resource_path)
+
+    _sync_source_origin(source_root, import_origin)
     var add_result: Dictionary = _layout_model.call("add_room", candidate, staged_room, import_origin)
     if not bool(add_result.get("ok", false)):
         return _from_dependency_failure(add_result, world.resource_path)
@@ -136,6 +170,25 @@ func import_room(
     result["before_state"] = before_state
     result["after_state"] = _layout_model.call("capture_world_state", saved_world)
     return result
+
+
+func _declared_room_size(source_root: Node) -> Vector2i:
+    var size: Variant = source_root.get("room_size_chunks")
+    if size is Vector2i:
+        return Vector2i(maxi(1, (size as Vector2i).x), maxi(1, (size as Vector2i).y))
+    return Vector2i.ONE
+
+
+## Records the placement in the source scene so its cell frame knows the parity.
+## The live scene (when the author imported the open scene) keeps this until it is
+## saved; the baked crop always uses the placement passed to stage/bake.
+func _sync_source_origin(source_root: Node, origin_chunk: Vector2i) -> void:
+    if source_root == null or source_root.get("world_origin_chunk") == null:
+        return
+    source_root.set("world_origin_chunk", origin_chunk)
+    source_root.set("world_origin_known", true)
+    if source_root is CanvasItem:
+        (source_root as CanvasItem).queue_redraw()
 
 
 func _resolve_import_origin(world: WorldData, room: RoomData, desired_origin: Vector2i) -> Vector2i:

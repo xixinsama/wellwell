@@ -1,0 +1,38 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="TileSet" uid="uid://ct7c6ejoixgkq" path="res://resources/tilesets/primordial_tileset.tres" id="1_tileset"]
+
+[node name="WorldTerrain" type="Node2D"]
+
+[node name="Terrain" type="Node2D" parent="."]
+
+[node name="BackTiles" type="TileMapLayer" parent="Terrain"]
+tile_set = ExtResource("1_tileset")
+collision_enabled = false
+
+[node name="SolidTiles" type="TileMapLayer" parent="Terrain"]
+tile_set = ExtResource("1_tileset")
+
+[node name="DetailTiles" type="TileMapLayer" parent="Terrain"]
+tile_set = ExtResource("1_tileset")
+collision_enabled = false
+
+[node name="GlassTiles" type="TileMapLayer" parent="Terrain"]
+tile_set = ExtResource("1_tileset")
+collision_enabled = false
+
+[node name="VisionBlockTiles" type="TileMapLayer" parent="Terrain"]
+tile_set = ExtResource("1_tileset")
+collision_enabled = false
+
+[node name="MarkerTiles" type="TileMapLayer" parent="Terrain"]
+tile_set = ExtResource("1_tileset")
+collision_enabled = false
+
+[node name="CrumbleTiles" type="TileMapLayer" parent="Terrain"]
+tile_set = ExtResource("1_tileset")
+collision_enabled = false
+
+[node name="CrumbleOneWayTiles" type="TileMapLayer" parent="Terrain"]
+tile_set = ExtResource("1_tileset")
+collision_enabled = false

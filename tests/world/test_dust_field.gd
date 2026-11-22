@@ -43,7 +43,7 @@ func _assert_motes_stay_inside_the_room(failures: Array[String]) -> void:
 	add_child(field)
 	field.call("bind_room_with_origin", _make_room(), null, Vector2i(2, 1))
 	var rect: Rect2 = field.call("get_room_rect")
-	if rect.position != Vector2(640.0, 180.0) or rect.size != Vector2(320.0, 180.0):
+	if rect.position != Vector2(640.0, 184.0) or rect.size != Vector2(320.0, 176.0):
 		failures.append("DustField built the wrong room rect %s" % str(rect))
 	# Drift for a long time: wrapping has to keep every mote inside the rect.
 	for step: int in 400:

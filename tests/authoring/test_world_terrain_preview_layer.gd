@@ -30,10 +30,10 @@ func run() -> Array[String]:
 	if container == null:
 		failures.append("terrain preview did not create a room container")
 	else:
-		if container.position != Vector2(-320, 360) + Vector2(320, 180):
-			failures.append("terrain preview container did not use placement pixel origin")
-		if container.size != Vector2(640, 180):
-			failures.append("terrain preview container size did not match room chunks")
+		# The clip container spans the layer; the terrain instance carries the
+		# placement transform, so zooming in can never clip along a straight edge.
+		if container.position != Vector2.ZERO:
+			failures.append("terrain preview container did not span the layer")
 		if container.mouse_filter != Control.MOUSE_FILTER_IGNORE or not container.clip_contents:
 			failures.append("terrain preview container was not clipped and input-transparent")
 		if container.z_index < 0:
@@ -42,6 +42,8 @@ func run() -> Array[String]:
 		if terrain == null:
 			failures.append("terrain preview container did not instantiate generated terrain")
 		else:
+			if not (terrain as Node2D).position.is_equal_approx(Vector2(-320, 360) + Vector2(320, 180)):
+				failures.append("terrain preview did not use the placement pixel origin")
 			if not terrain.visible:
 				failures.append("terrain preview root was hidden by layer filtering")
 			for layer_name: String in LAYER_NAMES:

@@ -439,17 +439,16 @@ func set_light_field(texture: Texture2D, pixels: Vector2i, _origin_pixels: Vecto
 
 
 func set_room_chunks(room_origin_chunk: Vector2i, room_size_chunks: Vector2i) -> void:
-	var cells_per_chunk := _cells_per_chunk()
-	map_origin_cell = Vector2i(
-		room_origin_chunk.x * cells_per_chunk.x,
-		room_origin_chunk.y * cells_per_chunk.y
+	# Room bounds come from the canonical room cell rectangle, not from
+	# `origin * cells_per_chunk`: a chunk is 22.5 cells tall, so the rounded cell
+	# rect is 23 or 22 cells per row and matches where the room actually sits.
+	var cell_rect := RoomGrid.get_room_cell_rect(
+		room_origin_chunk, room_size_chunks, cell_size, chunk_size_pixels
 	)
-	_room_origin_pixels = room_origin_chunk * chunk_size_pixels
-	_room_size_pixels = room_size_chunks * chunk_size_pixels
-	map_size_cells = Vector2i(
-		ceili(float(_room_size_pixels.x) / float(cell_size.x)),
-		ceili(float(_room_size_pixels.y) / float(cell_size.y))
-	)
+	map_origin_cell = cell_rect.position
+	map_size_cells = cell_rect.size
+	_room_origin_pixels = cell_rect.position * cell_size
+	_room_size_pixels = cell_rect.size * cell_size
 	_has_exact_room_bounds = true
 	_release_mask()
 	_last_view_bounds = Rect2i()
@@ -1294,13 +1293,6 @@ func _release_mask() -> void:
 	_mask_base_dirty = true
 	if _mask_sprite != null:
 		_mask_sprite.texture = null
-
-
-func _cells_per_chunk() -> Vector2i:
-	return Vector2i(
-		ceili(float(chunk_size_pixels.x) / float(cell_size.x)),
-		ceili(float(chunk_size_pixels.y) / float(cell_size.y))
-	)
 
 
 func _is_inside_map(cell: Vector2i) -> bool:

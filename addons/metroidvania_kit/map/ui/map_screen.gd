@@ -171,8 +171,8 @@ func _room_at_cell(cell: Vector2i) -> String:
 	for room: Resource in definition.get("rooms"):
 		if room == null:
 			continue
-		var origin: Vector2i = Vector2i(room.get("map_position")) * Vector2i(40, 23)
-		var room_rect := Rect2i(origin, Vector2i(room.get("map_size")) * Vector2i(40, 23))
+		var origin: Vector2i = MapDefinitionBuilder.room_cell_origin(room)
+		var room_rect := Rect2i(origin, MapDefinitionBuilder.room_cell_size(room))
 		if room_rect.has_point(cell):
 			return String(room.get("room_id"))
 	return ""

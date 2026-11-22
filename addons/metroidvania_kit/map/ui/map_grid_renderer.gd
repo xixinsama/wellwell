@@ -5,8 +5,6 @@ extends Control
 ## exploration ratio, so the world shape is always readable while unvisited
 ## space stays nearly black.
 
-const CELLS_PER_CHUNK := Vector2i(40, 23)
-
 const COLOR_BACKGROUND := Color(0.028, 0.036, 0.052, 1.0)
 const COLOR_UNEXPLORED := Color(0.10, 0.125, 0.17, 1.0)
 const COLOR_ROOM := Color(0.30, 0.40, 0.54, 1.0)
@@ -132,8 +130,8 @@ func _draw() -> void:
 	var rect := room_rect(current)
 	if rect.size.x <= 0.0 or rect.size.y <= 0.0:
 		return
-	var room_size_cells: Vector2i = Vector2i(current.get("map_size")) * CELLS_PER_CHUNK
-	var origin_cells: Vector2i = Vector2i(current.get("map_position")) * CELLS_PER_CHUNK
+	var room_size_cells: Vector2i = MapDefinitionBuilder.room_cell_size(current)
+	var origin_cells: Vector2i = MapDefinitionBuilder.room_cell_origin(current)
 	var local := Vector2(_player_cell - origin_cells) / Vector2(room_size_cells)
 	var point := rect.position + local * rect.size
 	var size_px := roundf(player_icon_px * maxf(1.0, zoom / 2.0))

@@ -75,8 +75,12 @@ func run() -> Array[String]:
 	only_spawn.spawn_id = "start"
 	mismatched_preview.get_node("RoomContent/Entities").add_child(only_spawn)
 	var mismatched_preview_result: Dictionary = RoomAuthoringContractScript.validate(mismatched_preview)
-	if not _contains_error(mismatched_preview_result, "preview_spawn_id does not reference a SpawnPoint: preview_a"):
-		failures.append("unknown preview_spawn_id was not rejected")
+	if not _contains_warning(mismatched_preview_result, "preview_spawn_id preview_a is stale; the first spawn is used instead"):
+		failures.append("stale preview_spawn_id was not reported as a warning")
+	if not (mismatched_preview_result.get("errors", []) as Array).is_empty():
+		failures.append("stale preview_spawn_id should fall back instead of failing: %s" % mismatched_preview_result.get("errors"))
+	if mismatched_preview.get_manifest().get("preview_spawn_id") != "start":
+		failures.append("manifest did not resolve the stale preview_spawn_id to the first spawn")
 	mismatched_preview.free()
 
 	var missing_root_children = _make_root()
@@ -207,5 +211,12 @@ func _make_root():
 func _contains_error(result: Dictionary, expected: String) -> bool:
 	for error: String in result.get("errors", []):
 		if error == expected:
+			return true
+	return false
+
+
+func _contains_warning(result: Dictionary, expected: String) -> bool:
+	for warning: String in result.get("warnings", []):
+		if warning == expected:
 			return true
 	return false

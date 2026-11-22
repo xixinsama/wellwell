@@ -39,7 +39,7 @@ func _assert_binding_builds_the_field(failures: Array[String]) -> void:
 		return
 	if not bool(field.call("is_room_bound")):
 		failures.append("LightField did not report the room as bound")
-	if field.call("get_light_pixels") != Vector2i(320, 180):
+	if field.call("get_light_pixels") != Vector2i(320, 184):
 		failures.append("LightField built the wrong room size %s" % str(field.call("get_light_pixels")))
 	if field.call("get_light_texture") == null:
 		failures.append("LightField did not expose a light map texture")
@@ -62,7 +62,7 @@ func _assert_binding_builds_the_field(failures: Array[String]) -> void:
 	if viewport == null:
 		failures.append("LightField did not build its light viewport")
 	else:
-		if viewport.size != Vector2i(320, 180):
+		if viewport.size != Vector2i(320, 184):
 			failures.append("light viewport is not the room size")
 		if not viewport.render_target_update_mode == SubViewport.UPDATE_ALWAYS:
 			failures.append("light viewport does not repaint every frame")
@@ -174,7 +174,7 @@ func _assert_rebinding_replaces_the_field(failures: Array[String]) -> void:
 	field.call("bind_room_with_origin", _make_room(Vector2i.ONE), rig["room"], Vector2i.ZERO)
 	var first: Texture2D = field.call("get_light_texture")
 	field.call("bind_room_with_origin", _make_room(Vector2i(2, 1)), rig["room"], Vector2i.ZERO)
-	if field.call("get_light_pixels") != Vector2i(640, 180):
+	if field.call("get_light_pixels") != Vector2i(640, 184):
 		failures.append("rebinding did not resize the light map")
 	if field.call("get_light_texture") == first:
 		failures.append("rebinding kept the old light map texture")

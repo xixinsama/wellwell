@@ -62,11 +62,14 @@ func setup_preview(authoring_root: Node = null) -> bool:
 	var fog := get_node_or_null(fog_path)
 	var debug_hud := get_node_or_null(debug_hud_path)
 	var room_content := root.get_node_or_null("RoomContent")
-	var spawn := _find_spawn_point(room_content, String(root.get("preview_spawn_id")))
+	var preview_spawn_id := String(root.get("preview_spawn_id"))
+	if root.has_method("resolve_preview_spawn_id"):
+		preview_spawn_id = String(root.call("resolve_preview_spawn_id"))
+	var spawn := _find_spawn_point(room_content, preview_spawn_id)
 	if player == null or camera == null or fog == null or debug_hud == null or spawn == null:
 		return false
 
-	_ensure_preview_snapshot(String(root.get("room_id")), String(root.get("preview_spawn_id")), spawn.global_position)
+	_ensure_preview_snapshot(String(root.get("room_id")), preview_spawn_id, spawn.global_position)
 	_setup_preview_entities(room_content, String(root.get("room_id")))
 	player.global_position = spawn.global_position
 	_bind_target(camera, player)

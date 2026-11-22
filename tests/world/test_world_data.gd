@@ -38,7 +38,7 @@ func _assert_chunk_and_cell_bounds_use_world_placement(failures: Array[String]) 
 	var world := _make_world([room])
 	if world.get_room_chunk_rect("room_a") != Rect2i(2, 1, 3, 2):
 		failures.append("world chunk bounds were wrong")
-	if world.get_room_pixel_rect("room_a") != Rect2i(640, 180, 960, 360):
+	if world.get_room_pixel_rect("room_a") != Rect2i(640, 184, 960, 360):
 		failures.append("world pixel bounds were wrong")
 	if world.get_room_cell_rect("room_a") != Rect2i(80, 23, 120, 45):
 		failures.append("world cell bounds did not use exact chunk cell dimensions")

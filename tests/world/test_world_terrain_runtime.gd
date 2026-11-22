@@ -72,10 +72,10 @@ func _assert_setup_positions_and_idempotence(runtime_script: Script, failures: A
 	if terrain_a == null or terrain_b == null:
 		failures.append("world terrain runtime did not expose both room terrain instances")
 	else:
-		if terrain_a.position != Vector2(640.0, -180.0):
-			failures.append("room_a terrain position was not origin chunk * (320, 180)")
-		if terrain_b.position != Vector2(-320.0, 540.0):
-			failures.append("room_b terrain position was not origin chunk * (320, 180)")
+		if terrain_a.position != Vector2(640.0, -184.0):
+			failures.append("room_a terrain position was not cell-aligned")
+		if terrain_b.position != Vector2(-320.0, 544.0):
+			failures.append("room_b terrain position was not cell-aligned")
 	var first_a := terrain_a
 	var equivalent_world: Resource = _make_world([
 		_make_room("room_a", Vector2i(2, -1), TERRAIN_A_PATH),

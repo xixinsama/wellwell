@@ -6,6 +6,11 @@ extends Resource
 @export var region_id: StringName
 @export var map_position := Vector2i.ZERO
 @export var map_size := Vector2i.ONE
+## Canonical world cell rectangle (see RoomGrid). [member map_position] and
+## [member map_size] stay the chunk-based schematic lattice; any renderer that
+## works in world cells reads these so fog cells and terrain agree on odd rows.
+@export var cell_origin := Vector2i.ZERO
+@export var cell_size := Vector2i.ZERO
 @export var hidden_on_map := false
 @export var metadata: Dictionary = {}
 

@@ -33,6 +33,11 @@ static func from_world(world: Resource) -> Resource:
 		map_room.region_id = StringName(String(room.get("region_id"))) if _has_property(room, "region_id") else StringName()
 		map_room.map_position = world.get_room_origin_chunk(room_id)
 		map_room.map_size = room.room_size_chunks
+		var cell_rect: Rect2i = RoomGrid.get_room_cell_rect(
+			map_room.map_position, room.room_size_chunks
+		)
+		map_room.cell_origin = cell_rect.position
+		map_room.cell_size = cell_rect.size
 		map_room.metadata = {
 			"terrain_scene_path": String(room.terrain_scene_path),
 			"display_name": String(room.display_name),
@@ -68,10 +73,16 @@ static func from_world(world: Resource) -> Resource:
 
 
 static func room_cell_origin(room: Resource) -> Vector2i:
+	var stored_size: Variant = room.get("cell_size")
+	if stored_size is Vector2i and (stored_size as Vector2i) != Vector2i.ZERO:
+		return Vector2i(room.get("cell_origin"))
 	return Vector2i(room.get("map_position")) * CELLS_PER_CHUNK
 
 
 static func room_cell_size(room: Resource) -> Vector2i:
+	var stored_size: Variant = room.get("cell_size")
+	if stored_size is Vector2i and (stored_size as Vector2i) != Vector2i.ZERO:
+		return Vector2i(stored_size)
 	return Vector2i(room.get("map_size")) * CELLS_PER_CHUNK
 
 

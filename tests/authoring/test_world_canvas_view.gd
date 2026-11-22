@@ -119,10 +119,10 @@ func _assert_canvas_uses_view_transform(view_script: Script, failures: Array[Str
 	view.set("zoom", 0.5)
 	canvas.set("_view", view)
 	var rect: Rect2 = canvas.call("_room_rect", Vector2i(1, 1), Vector2i(2, 3))
-	if not rect.position.is_equal_approx(Vector2(500, 350)):
-		failures.append("canvas room position did not use WorldCanvasView")
-	if not rect.size.is_equal_approx(Vector2(320, 270)):
-		failures.append("canvas room size did not use WorldCanvasView zoom")
+	if not rect.position.is_equal_approx(Vector2(500, 352)):
+		failures.append("canvas room position did not use the cell-aligned view origin")
+	if not rect.size.is_equal_approx(Vector2(320, 268)):
+		failures.append("canvas room size did not use the cell-aligned room extent")
 	canvas.free()
 
 
@@ -243,7 +243,7 @@ func _assert_canvas_navigation(failures: Array[String]) -> void:
 		failures.append("Focus All did not center the exact union of room bounds")
 	if not canvas.call("focus_room", "room_a"):
 		failures.append("focus_room rejected an existing room")
-	if not Vector2(view.get("view_center_world_pixels")).is_equal_approx(Vector2(160, 90)):
+	if not Vector2(view.get("view_center_world_pixels")).is_equal_approx(Vector2(160, 92)):
 		failures.append("focus_room did not center the selected room")
 	if canvas.call("focus_room", "missing_room"):
 		failures.append("focus_room accepted a missing room")

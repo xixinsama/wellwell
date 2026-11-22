@@ -44,7 +44,8 @@ func setup_room(
 	_world_id = world_id
 	_origin_chunk = Vector2i(origin_chunk)
 	name = room_data.room_id
-	position = Vector2(_origin_chunk * ROOM_GRID.DEFAULT_CHUNK_SIZE_PIXELS)
+	var cell_rect: Rect2i = ROOM_GRID.get_room_cell_rect(_origin_chunk, room_data.room_size_chunks)
+	position = Vector2(cell_rect.position * ROOM_GRID.DEFAULT_CELL_SIZE)
 	add_child(_room_instance)
 	_setup_entities()
 	return true

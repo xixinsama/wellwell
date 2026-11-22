@@ -32,6 +32,7 @@ const SUBTLE_LABEL_COLOR := Color(0.66, 0.72, 0.82)
 
 signal selection_changed(room_ids: Array, primary: String)
 signal delete_requested
+signal room_draw_requested(chunk_rect: Rect2i)
 
 var _main: Control
 var _preview: Control
@@ -57,6 +58,10 @@ var _box_selecting := false
 var _box_additive := false
 var _box_start := Vector2.ZERO
 var _box_current := Vector2.ZERO
+var _room_draw_mode := false
+var _draw_active := false
+var _draw_start_chunk := Vector2i.ZERO
+var _draw_current_chunk := Vector2i.ZERO
 
 
 func set_main_screen(value: Control) -> void:
@@ -386,6 +391,7 @@ func _draw() -> void:
                     Color(0.95, 0.78, 0.2)
                 )
     _draw_box_selection()
+    _draw_room_draw_preview()
     _draw_portal_links()
     _draw_overlays(world)
 
@@ -449,6 +455,26 @@ func _draw_box_selection() -> void:
     draw_rect(rect, BOX_OUTLINE, false, 1.0)
 
 
+func _draw_room_draw_preview() -> void:
+    if not _room_draw_mode or not _draw_active:
+        return
+    var chunk_rect := get_drawn_chunk_rect()
+    var world_origin := Vector2(chunk_rect.position) * CHUNK_PIXELS
+    var screen_origin: Vector2 = _view.call("world_to_screen", world_origin, size)
+    var screen_rect := Rect2(screen_origin, Vector2(chunk_rect.size) * CHUNK_PIXELS * get_zoom())
+    draw_rect(screen_rect, Color(0.35, 0.9, 0.75, 0.16), true)
+    draw_rect(screen_rect, Color(0.35, 0.9, 0.75, 0.9), false, 1.0)
+    draw_string(
+        ThemeDB.fallback_font,
+        screen_rect.position + Vector2(4.0, 14.0),
+        "%dx%d" % [chunk_rect.size.x, chunk_rect.size.y],
+        HORIZONTAL_ALIGNMENT_LEFT,
+        -1,
+        12,
+        Color(0.35, 0.9, 0.75, 1.0)
+    )
+
+
 func _gui_input(event: InputEvent) -> void:
     if event is InputEventKey and event.pressed and not event.echo:
         if event.keycode == KEY_ESCAPE:
@@ -477,6 +503,17 @@ func _gui_input(event: InputEvent) -> void:
         if event.pressed:
             grab_focus()
         update_cursor(event.position)
+        if _room_draw_mode and event.button_index == MOUSE_BUTTON_LEFT:
+            if event.pressed:
+                _draw_active = true
+                _draw_start_chunk = _chunk_at_screen(event.position)
+                _draw_current_chunk = _draw_start_chunk
+            elif _draw_active:
+                _draw_active = false
+                room_draw_requested.emit(get_drawn_chunk_rect())
+            queue_redraw()
+            accept_event()
+            return
         if event.button_index == MOUSE_BUTTON_WHEEL_UP and event.pressed:
             _view.call("zoom_at", event.position, 1.2, size)
             _notify_view_changed()
@@ -504,7 +541,11 @@ func _gui_input(event: InputEvent) -> void:
     elif event is InputEventMouseMotion:
         update_cursor(event.position)
         _set_hovered_room(_room_at_screen_position(event.position))
-        if _box_selecting:
+        if _room_draw_mode and _draw_active:
+            _draw_current_chunk = _chunk_at_screen(event.position)
+            queue_redraw()
+            accept_event()
+        elif _box_selecting:
             _box_current = event.position
             queue_redraw()
             accept_event()
@@ -536,6 +577,39 @@ func _begin_box_select(mouse_position: Vector2, additive: bool) -> void:
     _box_start = mouse_position
     _box_current = mouse_position
     queue_redraw()
+
+
+## Draw-a-room mode: drag a chunk rectangle on empty canvas and the editor creates
+## a new room there.
+func set_room_draw_mode(enabled: bool) -> void:
+    _room_draw_mode = enabled
+    _draw_active = false
+    mouse_default_cursor_shape = Control.CURSOR_CROSS if enabled else Control.CURSOR_ARROW
+    queue_redraw()
+
+
+func is_room_draw_mode() -> bool:
+    return _room_draw_mode
+
+
+func get_drawn_chunk_rect() -> Rect2i:
+    var min_chunk := Vector2i(
+        mini(_draw_start_chunk.x, _draw_current_chunk.x),
+        mini(_draw_start_chunk.y, _draw_current_chunk.y)
+    )
+    var chunk_size := Vector2i(
+        absi(_draw_start_chunk.x - _draw_current_chunk.x) + 1,
+        absi(_draw_start_chunk.y - _draw_current_chunk.y) + 1
+    )
+    return Rect2i(min_chunk, chunk_size)
+
+
+func _chunk_at_screen(mouse_position: Vector2) -> Vector2i:
+    var world_position: Vector2 = _view.call("screen_to_world", mouse_position, size)
+    return Vector2i(
+        floori(world_position.x / CHUNK_PIXELS.x),
+        floori(world_position.y / CHUNK_PIXELS.y)
+    )
 
 
 func _commit_box_select() -> void:
@@ -621,9 +695,15 @@ func _dragged_chunk(mouse_position: Vector2) -> Vector2i:
 
 
 func _room_rect(origin_chunk: Vector2i, size_chunks: Vector2i) -> Rect2:
-    var world_origin := Vector2(origin_chunk) * CHUNK_PIXELS
+    # Rooms sit on the rounded cell grid, so odd chunk rows start 4 px lower and
+    # a room is 176 or 184 px tall instead of always 180.
+    var cell_rect := RoomGrid.get_room_cell_rect(origin_chunk, size_chunks)
+    var world_origin := Vector2(cell_rect.position * RoomGrid.DEFAULT_CELL_SIZE)
     var screen_origin: Vector2 = _view.call("world_to_screen", world_origin, size)
-    return Rect2(screen_origin, Vector2(size_chunks) * CHUNK_PIXELS * get_zoom())
+    return Rect2(
+        screen_origin,
+        Vector2(cell_rect.size * RoomGrid.DEFAULT_CELL_SIZE) * get_zoom()
+    )
 
 
 func _draw_grid() -> void:
