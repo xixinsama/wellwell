@@ -52,8 +52,7 @@ The supplied Dash is
 - `wall_jump_force_time`: forced horizontal input lock (`0.16 s`).
 - `wall_grab_lockout`: auto-grab lock after a wall jump (`0.16 s`).
 - `wall_climb_speed` / `climb_down_speed`: wall climb rates (`45` / `80`).
-- `climb_speed`: ladder speed, kept separate at `72`.
-- `wall_slide_start_speed` / `wall_slide_time`: wall slide cap (`20 -> 160`
+- `climb_speed`: ladder speed, kept separate at `72`.- `wall_slide_start_speed` / `wall_slide_time`: wall slide cap (`20 -> 160`
   over `1.2 s`).
 - `max_stamina`, `stamina_grab_drain`, `stamina_climb_drain`,
   `stamina_tired_threshold`, `climb_jump_stamina`,
