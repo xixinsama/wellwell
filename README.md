@@ -29,10 +29,13 @@ godot --path . res://examples/movement_lab/movement_lab_debug.tscn
 
 - 1280x720 outer window.
 - 322x182 `SubViewport`, with 320x180 used as the safe gameplay frame.
-- 120 TPS physics.
+- 120 TPS physics by default; movement timers are expressed in seconds and also work at 60 TPS.
 - Tunable `CharacterBody2D` player.
 - 8x8 block player visual.
-- Jump buffer, coyote time, variable jump height, air control, and fast fall.
+- Jump buffer, coyote time, variable jump height, apex half gravity, air control, and fast fall.
+- Celeste-style dash (freeze, end speed, dash-attack window), super/hyper/wavedash, and wallbounce.
+- No-grab wall grab, climb, wall slide, stamina, wall jump, and climb-jump conversion.
+- Global hit-stop and moving-platform lift caps.
 - Pixel-quantized camera.
 - Debug HUD and grid overlay.
 - Source rooms under `scenes/rooms/source/`, baked runtime/terrain outputs, and `WorldData` placement resources.
@@ -53,6 +56,10 @@ without modifying the plugin.
 
 See [project structure](docs/project-structure.md) for ownership boundaries and verification commands.
 
+See the [components tutorial](docs/components-tutorial.md) for how to assemble
+platforms, fog occluders, doors and phantom walls, including the authoring
+gotchas.
+
 See [art layers](docs/art-layers.md) for the render stack from the backdrop plate upwards:
 what each layer draws, who owns it, why the systems live in `world_root.tscn` instead of
 the room template, and which "assets" (the normal atlas, the dither tile) are baked
@@ -63,8 +70,10 @@ instead of hand-drawn.
 - A / Left: move left
 - D / Right: move right
 - W / Up: up input
-- S / Down: down input and fast fall
+- S / Down: down input, fast fall, and duck
 - Space / Z: jump
+- X: dash
+- Hold toward a wall to grab/climb; hold away or neutral and press jump to wall jump
 - F1: cycle grid overlay
 - `[` / `]`: choose a tuning field during play
 - `-` / `=`: decrease or increase the selected tuning field during play

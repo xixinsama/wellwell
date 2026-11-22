@@ -53,11 +53,25 @@ reusing the overlay elsewhere. Set `toggle_keycode` to change the key, or
 ## Adding Mechanics
 
 Platform behavior is composed under `PlatformBody2D`: use
-`WaypointMotionComponent2D`, `FallMotionComponent2D`,
+`WaypointMotionComponent2D`, `FallMotionComponent2D`, `ElevatorMotionComponent2D`,
 `RiderTriggerComponent2D`, and `ConveyorSurfaceComponent2D` independently or
 together. Native one-way platforms only require
 `CollisionShape2D.one_way_collision`; set `one_way_collision_direction` when the
 platform must block a side other than down.
+
+Add `FogOccluderComponent2D` under the body when the platform should hide the
+space behind it from the fog. It publishes the body's collision footprint to the
+`fog_occluder` group and asks the fog to rebuild only when the footprint crosses
+an 8 px cell, so a sliding platform keeps its shadow without repainting the mask
+every frame. The same component serves doors and crates.
+
+Author a door from a `StaticBody2D` plus `DoorComponent2D` (state, collision,
+interaction and panel) and a `FogOccluderComponent2D`; `scenes/world/fog_door.tscn`
+is the shipped recipe. Both components live in the kit and reach the fog through
+group names only, so a project without `metroidvania_kit` can still use them.
+
+A step-by-step authoring walkthrough (Chinese) with the scene trees, export
+tables and a symptom table lives in `docs/components-tutorial.md`.
 
 ## Dash and One-Way Platforms
 
@@ -65,6 +79,9 @@ platform must block a side other than down.
   `DashAbilityDefinition.eight_directional` reads the vertical input too, and
   `direction_deadzone` / `direction_snap_degrees` keep the eight directions
   crisp. All Dash tuning stays in `default_dash.tres`.
+- The Dash also exposes `freeze_seconds`, `end_speed`, `dash_attack_seconds`
+  and `refill_cooldown_seconds`. `PlayerController` owns the global freeze and
+  uses the dash-attack window for super, hyper, wavedash and wallbounce.
 - `DashAbilityDefinition.max_charges` stores dashes like a jump count (0 =
   unlimited). The ability runtime owns the count and exposes `refill()`; the
   reference player calls `PlayerAbilityLoadout.update_dash_recharge()` from its
@@ -85,6 +102,24 @@ platform must block a side other than down.
   never mix a solid shape and a pierceable one-way shape on the same body.
 - The fog and map scanners classify one-way tiles by walking every TileSet
   physics layer, so new one-way layers stay supported without scanner changes.
+
+## Celeste Movement Rules
+
+- `MovementProfile` carries the rule layer: run acceleration, over-speed
+  `run_reduce`, `air_multiplier`, variable jump, apex half gravity, fall caps,
+  wall probes, stamina, super/hyper/wallbounce speeds and lift caps. Values are
+  per second and work at 60 or 120 physics ticks.
+- `PlayerController` is the state orchestrator. `NORMAL` uses
+  `CharacterMotor2D`; `DASH`, `WALL_GRAB` and `WALL_SLIDE` are player-side
+  states so Platformer Kit does not own stamina or the player graph.
+- No grab action exists. Holding toward a wall attaches; up/down climbs;
+  toward + jump is a climb jump; away/neutral + jump is a wall jump. The 0.2 s
+  climb-jump conversion refunds the stamina, matching Celeste's forgiveness.
+- `GameFreeze` is the global hit-stop autoload. It buffers jump/dash edges while
+  frozen so instant super/hyper inputs are not lost.
+- `EnvironmentProbe.lift_velocity` excludes a conveyor's
+  `constant_linear_velocity`; `PlayerController` sets
+  `platform_on_leave = DO_NOTHING` and applies capped lift itself.
 
 Configure `WaypointMotionComponent2D.waypoints` as offsets from the platform's
 authored position. Point zero must be `Vector2.ZERO`. Choose `PING_PONG` for
@@ -122,17 +157,52 @@ saved like a checkpoint, and the nested `ArrivalSpawn` is where the player lands
 — keep it clear of the activation sensor. Bake the source room after adding one.
 Full contract: `docs/doors.md`.
 
+## Numbered Collectibles
+
+Drop `scenes/world/number_pickup.tscn` under `RoomContent/Entities`, fill its
+`number` (unique inside that world) and bake. The pickup bobs, glows with an
+additive halo, and is collected on player contact; its collected state is saved
+with the room. `Collectibles` (autoload) scans the world's baked rooms at
+`world_ready`, so the collection screen knows every number without extra
+authoring: the HUD badge shows `collected / total`, and `collection_toggle`
+(default `J`) opens a full-screen grid where collected numbers are bright and
+missing ones stay dim. Numbers are per world; a shuttle trip switches the shown
+set. Full guide: `docs/collectibles.md`.
+
+## Interaction and Prompts
+
+`Interactable` areas (a door or checkpoint in `INTERACT` mode) are selected
+through one detector on the player:
+
+- `scenes/player/player.tscn` carries an `InteractionDetector` (Area2D, layer 0,
+  mask 4, 14x14 at the feet) and a `PlayerInteractionController`. The controller
+  fires the best candidate on a fresh `interact` press; remapping the action
+  through the Input Mapping addon keeps working because nothing reads a key code.
+- `scenes/ui/interaction_prompt.tscn` sits in `main.tscn`'s `HUD`, outside the
+  game SubViewport, so the glyph is drawn at window resolution. It follows the
+  selected interactable with the SubViewport's screen transform, shows the
+  binding for the last used device (`E` on keyboard, `X` on a pad), and hides
+  while the tree is paused, the player is control-locked, or nothing is in
+  range. `Main` binds the runtime player to it.
+- The prompt only appears for interactables whose `Interactable.enabled` is
+  true, so `CONTACT`-mode doors and checkpoints never show it.
+
 ## Level Hierarchy and Stacked Worlds
 
 The authoring hierarchy, bottom up: a **block** is one 1x1 chunk cell, a **room**
 is one or more blocks (`RoomData.room_size_chunks`), a **world** groups rooms
 with placements and connections (`WorldData`), and a **stack** is an ordered set
-of worlds drawn as parallel slices in the editor's 3D view (`WorldStack`,
-referenced from `WorldData.world_stack`). Stacks are authoring data — the runtime
+of worlds drawn as parallel slices in the editor's 3D view (`WorldStack`, saved
+next to its world as `<world>_stack.tres`). Stacks are authoring data — the runtime
 never reads them; they exist so several worlds can be seen and connected at once.
 Open a world in the World editor and press `3D`; the left column becomes the
 layer list (add, remove, reorder), and clicking a slice returns to that world in
-2D.
+2D. The add menu offers the worlds in `resources/worlds/world_catalog.tres` first
+and then any other `WorldData` saved in `resources/worlds/`, so a world created
+with **New World** can be layered before it is registered in the catalog (the
+catalog still decides what the game's world-select screen lists). **Focus All**
+frames the stack and **Reset View** restores the default orbit and frames it
+again while the 3D view is open.
 
 ## World Selection
 
@@ -254,11 +324,22 @@ See `docs/fog-zones-and-crumble.md` for the full rules and the test world.
   (explored cells stay on the map), and `focus_room` darkens the rest of the
   room towards the player while inside.
 - `scenes/world/fog_door.tscn` blocks movement and sight while closed; interact
-  toggles it. Occluders join the `fog_occluder` group and expose
-  `is_occluding()` and either `get_world_rect()` or `get_occluder_cells()` /
-  `get_occluder_one_way_cells()`. `PuzzlePiece` and `PuzzleTilePiece` already
-  implement the cell interface, so sliders block sight and refresh the fog as
-  they move without extra setup.
+  toggles it. It is a prefab of `DoorComponent2D` (state, collision, interaction,
+  panel) and `FogOccluderComponent2D` (sight), so an author can rebuild the same
+  door at another size or with other art.
+- Occluders join the `fog_occluder` group and expose `is_occluding()` and either
+  `get_world_rect()` or `get_occluder_cells()` /
+  `get_occluder_one_way_cells()`. `FogOccluderComponent2D` gives any platform or
+  solid body that behavior without extra wiring, and `PuzzlePiece` /
+  `PuzzleTilePiece` already implement the cell interface, so sliders block sight
+  and refresh the fog as they move.
+- Phantom walls: instance `scenes/world/phantom_wall.tscn` under
+  `RoomContent/Entities` and paint tiles on the instance root. The layer has
+  collision disabled and carries `PhantomWallComponent2D`, so the wall looks like
+  terrain, can be walked through, and blocks sight until the player touches it.
+  Erase the same cells from `Terrain/SolidTiles` — the painted wall replaces the
+  solid one. `reveal_on_contact` can be turned off and `reveal()` called from an
+  ability or a switch instead.
 - `CrumbleRuntime` shakes a crumble cell for 0.25 s, erases it, and writes it
   back after 1.5 s; leaving the room restores everything.
 - `scenes/levels/test/test_world_runner.tscn` starts the test world directly;

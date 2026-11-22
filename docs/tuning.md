@@ -4,42 +4,70 @@ The default tuning resource is:
 
 `res://resources/player/default_player_tuning.tres`
 
-Important fields:
+`PlayerTuning` extends `MovementProfile`; every value is expressed per second,
+so the same tuning works at 60 Hz and 120 Hz.
+
+## Horizontal
 
 - `max_speed`: horizontal run speed in source pixels per second.
-- `ground_accel`: acceleration while grounded.
-- `ground_decel`: deceleration while grounded.
-- `air_accel`: acceleration while airborne.
-- `air_decel`: deceleration while airborne.
-- `jump_speed`: initial upward jump velocity.
-- `gravity`: base gravity.
-- `fall_gravity_multiplier`: gravity multiplier while falling.
-- `jump_cut_gravity_multiplier`: gravity multiplier when the jump key is released during ascent.
-- `fast_fall_multiplier`: extra falling gravity while holding down.
-- `max_fall_speed`: terminal downward speed.
-- `jump_buffer_time`: how long a jump press is remembered.
-- `coyote_time`: how long ground jump remains valid after leaving a ledge.
+- `ground_acceleration` / `ground_deceleration`: grounded approach rates.
+- `air_acceleration` / `air_deceleration`: airborne approach rates.
+- `run_reduce`: friction while above `max_speed` and still pushing that way.
+- `air_multiplier`: scaling applied to `run_reduce` in the air.
 
-Movement authority belongs to `_physics_process()`. Keep physics positions and velocities as floats; use viewport scaling, texture settings, and camera rounding for pixel clarity.
+## Jump and Fall
+
+- `jump_speed`: initial jump velocity (`-120` keeps the previous ~32 px jump).
+- `jump_h_boost`: horizontal speed added on a running jump.
+- `var_jump_time`: how long holding jump clamps the rise.
+- `gravity`: base gravity.
+- `half_gravity_threshold`: vertical speed below which gravity is halved while
+  jump is held.
+- `max_fall_speed` / `fast_max_fall_speed`: normal and down-held fall caps.
+- `fast_max_accel`: how quickly the fall cap moves between the two values.
+- `jump_buffer_time` / `coyote_time`: forgiveness windows in seconds.
+- `lift_x_cap` / `lift_y_cap`: caps for inherited moving-platform momentum.
 
 ## Dash
 
-The supplied Dash is `res://addons/platformer_abilities/abilities/dash/default_dash.tres`
-(a `DashAbilityDefinition`):
+The supplied Dash is
+`res://addons/platformer_abilities/abilities/dash/default_dash.tres`:
 
-- `dash_speed`: dash velocity in source pixels per second (diagonals keep the same
-  speed because the direction is normalized).
-- `dash_duration`: how long the velocity override lasts.
-- `cooldown_seconds`: delay before the next dash.
-- `eight_directional`: read the vertical input as well; off keeps the legacy
-  horizontal-only dash.
-- `max_charges`: stored dashes before a refill (1 = one dash per landing, 0 =
-  unlimited). The player controller refills while grounded and while swimming;
-  the water refill runs every frame, which makes dashes unlimited there.
-- `direction_deadzone`: input shorter than this falls back to the facing direction.
-- `direction_snap_degrees`: snap the dash to this angle step (45 keeps the eight
-  directions crisp; 0 disables snapping).
+- `dash_speed`: dash velocity; diagonals are normalized.
+- `dash_duration`: how long the dash velocity lasts (`0.15`).
+- `freeze_seconds`: global hit-stop at dash start (`0.05`).
+- `end_speed`: speed kept when the dash expires (`160`).
+- `dash_attack_seconds`: super/hyper/wallbounce window (`0.3`).
+- `cooldown_seconds`: delay before another dash (`0.2`).
+- `refill_cooldown_seconds`: ground-refill suppression after a dash (`0.1`).
+- `max_charges`: stored dashes (1 by default).
+- `eight_directional`, `direction_deadzone`, `direction_snap_degrees`: input
+  shaping.
 
-Crossing a one-way platform is a game rule, not a Dash resource value:
-`game/player/one_way_dash_piercer.gd` activates only for cardinal dashes that
-travel in the direction the platform blocks.
+## Wall and Stamina
+
+- `wall_check_distance`: horizontal wall probe (`3 px`).
+- `wallbounce_check_distance`: wider wallbounce probe (`5 px`).
+- `wall_jump_speed`: push-away speed (`130`).
+- `wall_jump_force_time`: forced horizontal input lock (`0.16 s`).
+- `wall_grab_lockout`: auto-grab lock after a wall jump (`0.16 s`).
+- `wall_climb_speed` / `climb_down_speed`: wall climb rates (`45` / `80`).
+- `climb_speed`: ladder speed, kept separate at `72`.
+- `wall_slide_start_speed` / `wall_slide_time`: wall slide cap (`20 -> 160`
+  over `1.2 s`).
+- `max_stamina`, `stamina_grab_drain`, `stamina_climb_drain`,
+  `stamina_tired_threshold`, `climb_jump_stamina`,
+  `climb_jump_convert_time`: stamina economy.
+
+## Advanced Jumps
+
+- `super_jump_speed`: horizontal dash + jump (`260`).
+- `hyper_jump_speed` / `hyper_jump_vertical`: ducking dash + jump
+  (`325`, `-60`).
+- `wallbounce_speed` / `wallbounce_jump_speed`: up-dash wallbounce
+  (`170`, `-160`).
+- `dash_attack_time`: how long a dash can still convert into these jumps.
+
+Movement authority belongs to `_physics_process()`. Keep physics positions and
+velocities as floats; use viewport scaling, texture settings, and camera
+rounding for pixel clarity.
