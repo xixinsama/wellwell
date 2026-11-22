@@ -20,6 +20,7 @@ func run() -> Array[String]:
 	_assert_charge_limit(failures)
 	_assert_unlimited_charges(failures)
 	_assert_duration_and_cooldown(failures)
+	_assert_motion_tuning_fields(failures)
 	_assert_controller_ticks_in_physics(failures)
 	return failures
 
@@ -189,6 +190,19 @@ func _assert_duration_and_cooldown(failures: Array[String]) -> void:
 	default_runtime.tick(float(default_definition.cooldown_seconds))
 	if not default_runtime.can_activate(context):
 		failures.append("Dash did not become available after cooldown")
+
+
+func _assert_motion_tuning_fields(failures: Array[String]) -> void:
+	var default_definition: Resource = load(DEFAULT_DASH_PATH)
+	var runtime := _make_runtime(default_definition)
+	if not is_equal_approx(runtime.call("get_freeze_seconds"), 0.05):
+		failures.append("Dash did not expose its freeze duration")
+	if not is_equal_approx(runtime.call("get_end_speed"), 160.0):
+		failures.append("Dash did not expose its end speed")
+	if not is_equal_approx(runtime.call("get_dash_attack_seconds"), 0.3):
+		failures.append("Dash did not expose its dash-attack window")
+	if not is_equal_approx(runtime.call("get_refill_cooldown_seconds"), 0.1):
+		failures.append("Dash did not expose its refill cooldown")
 
 
 func _assert_controller_ticks_in_physics(failures: Array[String]) -> void:

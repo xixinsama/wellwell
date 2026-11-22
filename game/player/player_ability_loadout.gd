@@ -54,25 +54,52 @@ func get_motion_override(
 	environment: RefCounted,
 	facing: int
 ) -> Dictionary:
-	var controller := _get_controller()
-	if controller == null or intent == null:
+	if intent == null:
 		return {}
-	if intent.has_method("is_action_pressed") and intent.call("is_action_pressed", DASH_ID):
-		var context: RefCounted = ABILITY_CONTEXT.new()
-		context.set("actor", get_parent())
-		context.set("environment", environment)
-		context.set("data", {
-			"direction": Vector2(float(intent.get("move_axis")), float(intent.get("vertical_axis"))),
-			"facing": facing,
-		})
-		controller.call("try_activate", DASH_ID, context)
-	var runtime := controller.call("get_runtime", DASH_ID) as RefCounted
+	try_start_dash(intent, environment, facing)
+	var runtime := get_dash_runtime()
 	if runtime == null or not runtime.has_method("is_motion_overriding") or not runtime.call("is_motion_overriding"):
 		return {}
 	return {
 		"active": true,
 		"velocity": runtime.call("get_velocity_override"),
 	}
+
+
+## Starts the Dash from a CharacterIntent if its action was pressed this frame.
+## Returns true only when a new dash was activated.
+func try_start_dash(
+	intent: RefCounted,
+	environment: RefCounted,
+	facing: int
+) -> bool:
+	var controller := _get_controller()
+	if controller == null or intent == null:
+		return false
+	if not intent.has_method("is_action_pressed") or not intent.call("is_action_pressed", DASH_ID):
+		return false
+	var context: RefCounted = ABILITY_CONTEXT.new()
+	context.set("actor", get_parent())
+	context.set("environment", environment)
+	context.set("data", {
+		"direction": Vector2(float(intent.get("move_axis")), float(intent.get("vertical_axis"))),
+		"facing": facing,
+	})
+	return bool(controller.call("try_activate", DASH_ID, context))
+
+
+func get_dash_runtime() -> RefCounted:
+	var controller := _get_controller()
+	if controller == null:
+		return null
+	return controller.call("get_runtime", DASH_ID) as RefCounted
+
+
+func get_dash_definition() -> Resource:
+	var runtime := get_dash_runtime()
+	if runtime == null or not runtime.has_method("get_definition"):
+		return null
+	return runtime.call("get_definition") as Resource
 
 
 ## Restores the Dash charge count. The controller calls this every physics frame

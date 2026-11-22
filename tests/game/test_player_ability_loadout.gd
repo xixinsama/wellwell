@@ -16,6 +16,7 @@ func run() -> Array[String]:
 	_assert_dash_motion_override(failures)
 	_assert_eight_way_motion_override(failures)
 	_assert_dash_charge_recharge(failures)
+	_assert_try_start_dash(failures)
 	if not InputMap.has_action(&"dash"):
 		failures.append("reference game has no dash input action")
 	return failures
@@ -134,6 +135,27 @@ func _assert_dash_charge_recharge(failures: Array[String]) -> void:
 	var grounded_result: Dictionary = loadout.call("get_motion_override", air_intent, ENVIRONMENT.new(), 1)
 	if not bool(grounded_result.get("active", false)):
 		failures.append("Dash could not activate after a recharge")
+	controller.call("cancel", &"dash")
+	loadout.free()
+
+
+func _assert_try_start_dash(failures: Array[String]) -> void:
+	var fixture := _make_loadout()
+	var loadout: Node = fixture[0]
+	var controller: Node = fixture[1]
+	loadout.call("grant_ability_definition", DEFAULT_DASH)
+	var intent: RefCounted = INTENT.new()
+	intent.call("press_action", &"dash")
+	intent.set("move_axis", 1.0)
+	if not bool(loadout.call("try_start_dash", intent, ENVIRONMENT.new(), 1)):
+		failures.append("player loadout did not expose a dash start seam")
+	var runtime: RefCounted = loadout.call("get_dash_runtime")
+	if runtime == null:
+		failures.append("player loadout did not expose the dash runtime")
+	elif not is_equal_approx(float(runtime.call("get_end_speed")), 160.0):
+		failures.append("player loadout lost the dash end-speed tuning")
+	if bool(loadout.call("try_start_dash", INTENT.new(), ENVIRONMENT.new(), 1)):
+		failures.append("player loadout started a dash without a dash press")
 	controller.call("cancel", &"dash")
 	loadout.free()
 

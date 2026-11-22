@@ -37,6 +37,34 @@ func get_velocity_override() -> Vector2:
     return _velocity_override if active else Vector2.ZERO
 
 
+func get_definition() -> Resource:
+    return definition
+
+
+func get_freeze_seconds() -> float:
+    if definition == null:
+        return 0.0
+    return maxf(0.0, float(definition.get("freeze_seconds")))
+
+
+func get_end_speed() -> float:
+    if definition == null:
+        return 0.0
+    return maxf(0.0, float(definition.get("end_speed")))
+
+
+func get_dash_attack_seconds() -> float:
+    if definition == null:
+        return 0.0
+    return maxf(0.0, float(definition.get("dash_attack_seconds")))
+
+
+func get_refill_cooldown_seconds() -> float:
+    if definition == null:
+        return 0.0
+    return maxf(0.0, float(definition.get("refill_cooldown_seconds")))
+
+
 ## The normalized dash direction (one of the eight compass directions when the
 ## definition snaps to 45 degrees). Zero while the dash is inactive.
 func get_dash_direction() -> Vector2:
