@@ -21,6 +21,7 @@ var _map_markers: RefCounted
 
 @onready var viewport_container: SubViewportContainer = $SubViewportContainer
 @onready var sub_viewport: SubViewport = $SubViewportContainer/SubViewport
+@onready var interaction_prompt: Control = $HUD/InteractionPrompt
 
 
 func _ready() -> void:
@@ -30,6 +31,9 @@ func _ready() -> void:
     Globals.SVC = viewport_container
     var world_root := sub_viewport.get_node_or_null("WorldRoot")
     if world_root != null:
+        var player := world_root.get_node_or_null("Player") as Node2D
+        if interaction_prompt != null and player != null and interaction_prompt.has_method("bind_actor"):
+            interaction_prompt.call("bind_actor", player)
         var fog := world_root.get_node_or_null("FogOfWar")
         var crumble := world_root.get_node_or_null("CrumbleRuntime")
         var water := world_root.get_node_or_null("WaterField")
@@ -64,7 +68,13 @@ func _ready() -> void:
 ## never drift from the level placement or the baked terrain.
 func _on_world_ready() -> void:
     var world_root := sub_viewport.get_node_or_null("WorldRoot")
-    if world_root == null or _map_runtime == null:
+    if world_root == null:
+        return
+    var world := world_root.get("world_data") as WorldData
+    var collectibles := get_node_or_null("/root/Collectibles")
+    if world != null and collectibles != null and collectibles.has_method("scan_world"):
+        collectibles.call("scan_world", world)
+    if _map_runtime == null:
         return
     var definition: Resource = MAP_DEFINITION_BUILDER.from_world(world_root.get("world_data"))
     if definition != null:

@@ -11,6 +11,8 @@
 [ext_resource type="Script" path="res://game/map/map_host.gd" id="11_map_host"]
 [ext_resource type="Shader" path="res://scripts/shaders/crt_screen.gdshader" id="12_crt"]
 [ext_resource type="Script" path="res://scripts/ui/crt_overlay.gd" id="13_crt_overlay"]
+[ext_resource type="PackedScene" path="res://scenes/ui/interaction_prompt.tscn" id="14_interaction_prompt"]
+[ext_resource type="PackedScene" path="res://scenes/ui/collection_screen.tscn" id="15_collection"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_sugp2"]
 shader = ExtResource("2_jyhfs")
@@ -68,12 +70,16 @@ world_data = ExtResource("4_laar2")
 
 [node name="DebugHud" parent="HUD" unique_id=701379448 instance=ExtResource("7_debug_hud")]
 
+[node name="InteractionPrompt" parent="HUD" instance=ExtResource("14_interaction_prompt")]
+
 [node name="MainMenu" parent="HUD" unique_id=1874392128 instance=ExtResource("8_main_menu")]
 
 [node name="Settings" parent="HUD" unique_id=413671992 instance=ExtResource("9_settings")]
 
 [node name="MapHost" type="Node" parent="HUD" unique_id=1418352877]
 script = ExtResource("11_map_host")
+
+[node name="CollectionScreen" parent="HUD" instance=ExtResource("15_collection")]
 
 [node name="CrtOverlay" type="CanvasLayer" parent="." layer=128]
 script = ExtResource("13_crt_overlay")
