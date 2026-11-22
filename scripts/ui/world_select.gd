@@ -51,7 +51,9 @@ func _refresh() -> void:
 		list.remove_child(child)
 		child.queue_free()
 
-	var worlds: Array[WorldData] = catalog.get_worlds() if catalog != null else []
+	var worlds: Array[WorldData] = []
+	if catalog != null:
+		worlds = catalog.get_worlds()
 	if worlds.is_empty():
 		var empty := Label.new()
 		empty.text = tr("WORLD_SELECT_EMPTY")
