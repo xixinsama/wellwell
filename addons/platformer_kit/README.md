@@ -4,6 +4,27 @@ Platformer Kit is the reusable runtime foundation in this repository. It provide
 
 Godot 4.7 is the supported engine baseline for version `0.1.0`.
 
+| Item | Value |
+| --- | --- |
+| Godot | 4.7 |
+| Autoloads | `SaveManager` (`save/save_manager.gd`) is the only one the kit needs |
+| Optional modules | `abilities/` and `combat/` ship inside the kit; the game may leave them unused |
+| Editor plugin | `plugin.cfg` (no editor UI; safe to disable) |
+
+## Modules
+
+| Module | Path | Contents |
+| --- | --- | --- |
+| Core | `core/` | `StateMachine`, `ScopedEventBus`, `TagContainer`, `GameEvent` |
+| Character | `character/` | `CharacterIntent`, `CharacterMotor2D`, `MovementContext`, `MovementProfile`, sensors, ladder motion, input sources |
+| Platforms | `platforms/` | `PlatformBody2D` plus waypoint / fall / elevator / conveyor / rider / fog-occluder components |
+| Interaction | `interaction/` | `Interactable`, `InteractionDetector` |
+| Camera | `camera/` | `PixelCamera2D` |
+| Save | `save/` | `PlatformerSaveManager`, `SaveSnapshot`, `SaveCodec`, `SaveStorage`, `Saveable`, `PersistentId` |
+| World | `world/` | Room/world data contracts, glue, entities, doors, phantom walls, streaming, transitions, validation |
+| Abilities | `abilities/` | `AbilityController`, definitions/runtimes, Dash, Climb, pickups |
+| Combat | `combat/` | `HealthComponent`, `Hitbox`, `Hurtbox`, `DamageData`/`DamageEvent`, invulnerability, knockback |
+
 ## Dependency Rules
 
 Dependencies must point downward:
@@ -83,8 +104,39 @@ Run automated verification with:
 
 ```powershell
 godot --headless --path . -s res://tests/run_runtime_suite.gd
+godot --headless --path . -s res://tests/run_runtime_suite.gd -- --group=platformer_kit
 godot --headless --path . -s res://tools/validate_project.gd
 ```
+
+## Tests
+
+| Suite file | Covers |
+| --- | --- |
+| `tests/platformer_kit/test_kit_contract.gd` | State machine, event bus, tags, core primitives |
+| `tests/platformer_kit/character/test_character_motor_2d.gd` | Run/fall, over-speed friction, jump buffer, coyote, variable jump, lift caps, tick-rate equivalence |
+| `tests/platformer_kit/character/test_character_input.gd` | Intent, input source, movement profile, sensors |
+| `tests/platformer_kit/character/test_ladder_motion.gd` | Ladder component |
+| `tests/platformer_kit/platforms/test_platforms.gd` | Footprints, waypoint routes, composed motion, fall policies, riders, conveyor, native one-way |
+| `tests/platformer_kit/interaction/test_interaction.gd` | Detector/Interactable contract |
+| `tests/platformer_kit/save/test_save_contracts.gd` | Snapshot validation, entity/module state, commit ordering |
+| `tests/platformer_kit/world/test_world_contract_independence.gd` | World contracts without optional addons |
+| `tests/platformer_kit/abilities/test_abilities.gd` | Runtime, pickup, Climb, Dash composition |
+| `tests/platformer_kit/combat/test_combat_runtime.gd` | Health, hit/hurt routing, teams, invulnerability, knockback |
+
+## Known Limits
+
+- The kit is runtime only: no enemies, dialogue, animation player, or menuing; those
+  belong to the game composition.
+- Save slots are fixed to `1..3` (`SaveCodec`/`SaveStorage`/`SaveManager`). Change
+  all three together if a fork needs more.
+- Abilities and combat are modules: a game that does not instance
+  `AbilityController` / add `Hitbox`+`Hurtbox` pays nothing for them, but the kit
+  also does not auto-wire them into a player.
+- `PlatformBody2D` components assume an `AnimatableBody2D` host moved through
+  physics; teleporting the host directly skips `advance_motion()` bookkeeping.
+- The fog occluder communicates through group names and two methods; it does not
+  require the Metroidvania addon, so deleting that addon leaves harmless group
+  traffic.
 
 ## Compatibility
 

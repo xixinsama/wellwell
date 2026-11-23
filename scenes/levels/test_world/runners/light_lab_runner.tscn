@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" uid="uid://8n4kascr62qu" path="res://game/dev/test_world_runner.gd" id="1_runner"]
 [ext_resource type="PackedScene" uid="uid://hbo4lyjj1f0x" path="res://scenes/runtime/world_root.tscn" id="2_world"]
-[ext_resource type="Resource" uid="uid://cf7o1ofvihtfu" path="res://resources/worlds/test_world.tres" id="3_test_world"]
+[ext_resource type="Resource" uid="uid://ctasy4xgnsdmm" path="res://resources/worlds/test_world.tres" id="3_test_world"]
 [ext_resource type="PackedScene" uid="uid://xdpcjsmnvhkj" path="res://addons/platformer_debug/runtime/debug_hud.tscn" id="4_debug_hud"]
 [ext_resource type="PackedScene" path="res://scenes/ui/crt_overlay.tscn" id="5_crt"]
 

@@ -5,6 +5,13 @@ shallow-water solver, a conservative 2D cell fluid, a GPU 2D Navier-Stokes gas
 field with three densities, and the scene nodes to author, emit, disturb and
 light both.
 
+| Item | Value |
+| --- | --- |
+| Godot | 4.7 (Forward Plus for the GPU gas backend; the CPU fallback needs no RenderingDevice) |
+| Autoloads | none |
+| Editor plugin | `plugin.cfg` (no editor UI) |
+| Room integration | `WorldSession.register_room_extension()` + `bind_room_with_origin()` / `bind_room()` |
+
 - **Water** `WaterField` — conservative column water, spill gates, waterfalls,
   splashes, buoyancy/swimming hooks.
 - **Grid water** `WaterGrid` — 2D cell fluid: fill a region, let tile walls hold
@@ -451,21 +458,23 @@ template's tiles and player); the runtime itself does not.
 
 ## Tests
 
+Water and gas integrate with real rooms, so their tests live in `tests/world/`
+and run in the merged per-feature suites:
+
 ```powershell
-godot --headless --path . -s res://tests/run_test_script.gd -- res://tests/world/test_water_simulation.gd
-godot --headless --path . -s res://tests/run_test_script.gd -- res://tests/world/test_water_grid.gd
-godot --headless --path . -s res://tests/run_test_script.gd -- res://tests/world/test_water_grid_room.gd
-godot --headless --path . -s res://tests/run_test_script.gd -- res://tests/world/test_water_buoyancy.gd
-godot --headless --path . -s res://tests/run_test_script.gd -- res://tests/world/test_atmosphere_fog.gd
-godot --headless --path . -s res://tests/run_test_script.gd -- res://tests/world/test_atmosphere_settings.gd
-godot --headless --path . -s res://tests/run_test_script.gd -- res://tests/world/test_water_room_contract.gd
-godot --headless --path . -s res://tests/run_test_script.gd -- res://tests/world/test_gas_solver.gd
+godot --headless --path . -s res://tests/run_runtime_suite.gd -- --group=world
+# merged suites that own the cases
+godot --headless --path . -s res://tests/run_test_script.gd -- res://tests/world/test_world_water.gd
+godot --headless --path . -s res://tests/run_test_script.gd -- res://tests/world/test_world_gas.gd
+godot --headless --path . -s res://tests/run_test_script.gd -- res://tests/world/test_tilesets.gd
 ```
 
-All of them also run in `tests/runtime_suite.gd`. Headless has no `RenderingDevice`,
-so the gas falls back to the CPU `FogGrid` and the same tests cover that path — which
-is also why the GPU solver's own rules are checked structurally (shader data layout,
-uniform plumbing, resolution policy) rather than by running the shaders.
+`test_world_water.gd` covers the column model, grid water, gates, buoyancy,
+ripples and the baked rooms; `test_world_gas.gd` covers the CPU backend, GPU
+fallback selection, solver rules, dither seams and light sampling. Headless has no
+`RenderingDevice`, so the gas falls back to the CPU `FogGrid` — which is also why
+the GPU solver's own rules are checked structurally (shader data layout, uniform
+plumbing, resolution policy) rather than by running the shaders.
 
 ### Measuring the gas
 
@@ -507,4 +516,7 @@ way to A/B a kernel: the field itself has to be identical between the captures.
   player thinning), not a conserved quantity.
 - Viscosity is explicit diffusion, clamped for stability; values above ~10 start
   to look like honey at 30 Hz.
-- The gas grid is capped at 80x45 per room (4 px cells); water columns are 8 px.
+- The gas grid follows `Atmosphere.gas_cell_pixels` (1..8 world pixels, default 4)
+  with a hard ceiling of 1024 cells per axis: a bigger room gets more cells, not
+  a coarser field. Cell size is a plain exported number, so cost grows with the
+  square of the ratio. Water columns are fixed at 8 px.

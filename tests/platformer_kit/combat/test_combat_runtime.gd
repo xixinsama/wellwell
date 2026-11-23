@@ -75,6 +75,15 @@ func run() -> Array[String]:
 		failures.append("hitbox damaged a matching team")
 
 	ally_hurtbox.free()
+
+	var stale_hurtbox: Area2D = scripts[3].new()
+	var stale_health: Node = scripts[1].new()
+	stale_hurtbox.call("bind_components", stale_health, null, null)
+	stale_health.free()
+	if stale_hurtbox.call("receive_damage", damage, null, &"player"):
+		failures.append("hurtbox accepted damage with a freed health component")
+	stale_hurtbox.free()
+
 	hurtbox.free()
 	hitbox.free()
 	knockback.free()

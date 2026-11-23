@@ -5,21 +5,21 @@
 [ext_resource type="Script" path="res://game/world/fog_zone.gd" id="3_hqcya"]
 [ext_resource type="PackedScene" path="res://scenes/world/fog_door.tscn" id="4_7bfp7"]
 
-[node name="RoomRuntimeContent" type="Node2D" unique_id=2058922070]
+[node name="RoomRuntimeContent" type="Node2D" unique_id=1842853039]
 
-[node name="Entities" type="Node2D" parent="." unique_id=1856599618]
+[node name="Entities" type="Node2D" parent="." unique_id=575552187]
 
-[node name="StartSpawn" type="Marker2D" parent="Entities" unique_id=652159850]
+[node name="StartSpawn" type="Marker2D" parent="Entities" unique_id=205217858]
 position = Vector2(24, 152)
 script = ExtResource("1_f8ckw")
 spawn_id = "start"
 
-[node name="EastEntrance" type="Node2D" parent="Entities" unique_id=1308527559]
+[node name="EastEntrance" type="Node2D" parent="Entities" unique_id=974965759]
 position = Vector2(316, 152)
 script = ExtResource("2_i10ms")
 entity_id = "to_east"
 
-[node name="DarkZone" type="Node2D" parent="Entities" unique_id=1930438615]
+[node name="DarkZone" type="Node2D" parent="Entities" unique_id=284194849]
 position = Vector2(152, 144)
 script = ExtResource("3_hqcya")
 size_cells = Vector2i(8, 2)
@@ -27,7 +27,7 @@ zone_id = "start_dark"
 restore_on_exit = true
 focus_room = true
 
-[node name="LightZone" type="Node2D" parent="Entities" unique_id=1803307125]
+[node name="LightZone" type="Node2D" parent="Entities" unique_id=715928582]
 position = Vector2(104, 32)
 script = ExtResource("3_hqcya")
 mode = 1
@@ -35,8 +35,8 @@ size_cells = Vector2i(4, 3)
 zone_id = "start_light"
 reveal_on_enter = false
 
-[node name="ChamberDoor" type="Node2D" parent="Entities" unique_id=592686938 instance=ExtResource("4_7bfp7")]
+[node name="ChamberDoor" type="Node2D" parent="Entities" unique_id=2122530224 instance=ExtResource("4_7bfp7")]
 z_index = 2
 position = Vector2(264, 144)
 
-[node name="Foreground" type="Node2D" parent="." unique_id=1866401869]
+[node name="Foreground" type="Node2D" parent="." unique_id=673354029]

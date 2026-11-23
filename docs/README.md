@@ -8,6 +8,7 @@ dependency rules. Then pick the folder for the work in front of you.
 | Document | Use it when |
 | --- | --- |
 | [architecture.md](architecture.md) | You need to know where code belongs, what may depend on what, or which command proves a change. |
+| [addons.md](addons.md) | You need the addon inventory: what is project-built, what is vendored, versions, READMEs and tests. |
 | [extension-guide.md](extension-guide.md) | You are adding a mechanic and want the composition rules (player, platforms, doors, abilities, map, UI). |
 | [testing.md](testing.md) | You are running or writing tests, or a suite run left files behind. |
 | [roadmap.md](roadmap.md) | You are deciding what to build next, or checking the design references. |

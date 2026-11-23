@@ -25,6 +25,7 @@ class SaveCodecCase extends Node:
 		_assert_round_trip_preserves_module_state(failures)
 		_assert_invalid_data_is_rejected(failures)
 		_assert_invalid_load_does_not_mutate_existing_snapshot(failures)
+		_assert_non_finite_respawn_load_is_rejected(failures)
 		_assert_commits_announce_the_snapshot_before_writing(failures)
 		_assert_resume_state_round_trip(failures)
 		_assert_invalid_resume_state_is_optional(failures)
@@ -51,6 +52,19 @@ class SaveCodecCase extends Node:
 			failures.append("SaveSnapshot rejected valid respawn data")
 		elif snapshot.respawn_room_id != "room_a" or snapshot.respawn_spawn_id != "checkpoint" or snapshot.respawn_position != Vector2(12, 24):
 			failures.append("SaveSnapshot did not apply valid respawn data atomically")
+
+
+	func _assert_non_finite_respawn_load_is_rejected(failures: Array[String]) -> void:
+		var snapshot: RefCounted = SAVE_SNAPSHOT.new()
+		snapshot.slot = 1
+		snapshot.respawn_room_id = "kept_room"
+		var data: Dictionary = snapshot.to_dictionary()
+		data["respawn_position"] = {"x": INF, "y": 0.0}
+		var loaded: RefCounted = SAVE_SNAPSHOT.new().load_from_dictionary(data)
+		if loaded != null:
+			failures.append("snapshot accepted a non-finite respawn position on load")
+		if snapshot.respawn_room_id != "kept_room":
+			failures.append("rejected respawn load mutated the snapshot")
 
 
 	func _assert_round_trip_preserves_module_state(failures: Array[String]) -> void:
@@ -253,11 +267,31 @@ class SaveSlotsCase extends Node:
 		func delete_slot(_slot: int) -> bool:
 			return true
 
+	class OneSlotStorage extends RefCounted:
+		var stored: RefCounted
+		var written: RefCounted
+		var writes := 0
+
+		func read_slot(slot: int) -> RefCounted:
+			return stored if slot == 1 else null
+
+		func write_slot(snapshot: RefCounted) -> bool:
+			written = snapshot
+			writes += 1
+			if snapshot.slot == 2:
+				stored = snapshot
+			return true
+
+		func delete_slot(_slot: int) -> bool:
+			return true
+
 	func run() -> Array[String]:
 		var failures: Array[String] = []
 		_assert_manager_does_not_create_slot_on_ready(failures)
 		_assert_prepare_slot_does_not_persist_or_select(failures)
 		_assert_resume_api_uses_the_active_snapshot(failures)
+		_assert_copy_slot_is_atomic(failures)
+		_assert_manager_validates_respawn(failures)
 		var source: RefCounted = SAVE_SNAPSHOT.new()
 		source.slot = 1
 		source.world_id = "world_01"
@@ -325,6 +359,48 @@ class SaveSlotsCase extends Node:
 			failures.append("save manager rejected clearing resume data")
 		if snapshot.has_resume or storage.write_count != 2:
 			failures.append("clearing resume data did not persist the change")
+		manager.free()
+
+
+	func _assert_copy_slot_is_atomic(failures: Array[String]) -> void:
+		var storage := OneSlotStorage.new()
+		var source: RefCounted = SAVE_SNAPSHOT.new()
+		source.slot = 1
+		source.world_id = "world_02"
+		source.current_room_id = "room_b"
+		storage.stored = source
+		var manager: Node = SAVE_MANAGER.new()
+		manager.setup_storage(storage)
+		if not manager.copy_slot(1, 2):
+			failures.append("copy_slot rejected a valid source")
+		elif storage.written == null or storage.written.slot != 2 or storage.written.world_id != "world_02":
+			failures.append("copy_slot did not write the copied snapshot to the target slot")
+		var writes := storage.writes
+		if manager.copy_slot(3, 2):
+			failures.append("copy_slot copied an empty slot")
+		if storage.writes != writes:
+			failures.append("a failed copy_slot still wrote a slot")
+		manager.free()
+
+
+	func _assert_manager_validates_respawn(failures: Array[String]) -> void:
+		var storage := OneSlotStorage.new()
+		var manager: Node = SAVE_MANAGER.new()
+		manager.setup_storage(storage)
+		if manager.set_respawn("", "checkpoint", Vector2.ZERO):
+			failures.append("save manager accepted an empty respawn room")
+		var snapshot: RefCounted = SAVE_SNAPSHOT.new()
+		snapshot.slot = 1
+		manager.current_snapshot = snapshot
+		var writes := storage.writes
+		if manager.set_respawn("room_a", "checkpoint", Vector2(INF, 0)):
+			failures.append("save manager accepted a non-finite respawn position")
+		if storage.writes != writes or not snapshot.respawn_room_id.is_empty():
+			failures.append("rejected respawn data reached the snapshot or storage")
+		if not manager.set_respawn("room_a", "checkpoint", Vector2(8, 16)):
+			failures.append("save manager rejected valid respawn data")
+		if snapshot.respawn_position != Vector2(8, 16) or storage.writes != writes + 1:
+			failures.append("valid respawn data was not persisted")
 		manager.free()
 
 

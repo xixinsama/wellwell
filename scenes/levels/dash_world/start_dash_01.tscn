@@ -2,7 +2,7 @@
 
 [ext_resource type="PackedScene" uid="uid://oa5ui3h6fkhd" path="res://scenes/rooms/template/level_template.tscn" id="1_template"]
 [ext_resource type="PackedScene" uid="uid://5rckdc6d5s7b" path="res://addons/platformer_kit/world/entities/world_door.tscn" id="2_87sgd"]
-[ext_resource type="Resource" uid="uid://bqe1apf4dnff4" path="res://resources/worlds/dash_world_layer1.tres" id="3_s0vgu"]
+[ext_resource type="Resource" uid="uid://dspaciy0cewga" path="res://resources/worlds/dash_world_layer1.tres" id="3_s0vgu"]
 [ext_resource type="PackedScene" path="res://scenes/world/number_pickup.tscn" id="4_dw66b"]
 
 [node name="Room_start_dash_01" unique_id=1174233948 instance=ExtResource("1_template")]

@@ -129,6 +129,26 @@ All notable Platformer Kit changes are recorded here. The project follows Semant
 
 ### Fixed
 
+- `SaveManager.copy_slot()` now refuses a source snapshot that fails validation
+  instead of writing a default snapshot over the target slot.
+- `SaveManager.set_respawn()` validates the room id, spawn id and position through
+  `SaveSnapshot.set_respawn()`; invalid checkpoint data no longer reaches the
+  snapshot or the disk.
+- `SaveSnapshot` rejects a non-finite respawn position on load (previously only
+  the setter checked it), so a corrupt save cannot inject `INF`/`NaN`.
+- `SaveStorage.write_slot()` restores the backup when promoting the staged file
+  fails, and removes the staged file instead of leaving a stray `.tmp`.
+- `Hurtbox.receive_damage()` ignores freed health/invulnerability/knockback
+  components instead of calling into a freed object.
+- The New Room wizard and `create_room()` normalize the room id before writing
+  (an id with spaces or uppercase no longer produced a source scene that failed
+  to import).
+- Two stale resource UIDs (dash layer 1 world, test world runner) were corrected;
+  opening those scenes no longer logs an invalid-UID warning.
+- World cleanup: the project-built addons now each have a README
+  (`platformer_debug`, `metroidvania_kit`, `world_editor` added; `platformer_kit`
+  and `fluid_kit` extended), with a shared inventory in `docs/addons.md`.
+
 - World editor preview at high zoom: the terrain clip container was positioned at
   the world origin and sized to the viewport, so once the origin left the view its
   right/bottom edges cut the terrain off along a straight line (a rectangular bite

@@ -4,28 +4,28 @@
 [ext_resource type="Script" path="res://addons/platformer_kit/world/entities/room_entrance.gd" id="2_jtcc1"]
 [ext_resource type="Script" path="res://game/world/fog_zone.gd" id="3_endtx"]
 
-[node name="RoomRuntimeContent" type="Node2D" unique_id=423549873]
+[node name="RoomRuntimeContent" type="Node2D" unique_id=1605502274]
 
-[node name="Entities" type="Node2D" parent="." unique_id=141801565]
+[node name="Entities" type="Node2D" parent="." unique_id=1531752180]
 
-[node name="WestSpawn" type="Marker2D" parent="Entities" unique_id=470250789]
+[node name="WestSpawn" type="Marker2D" parent="Entities" unique_id=1178336182]
 position = Vector2(16, 152)
 script = ExtResource("1_fs77d")
 spawn_id = "from_west"
 
-[node name="WestEntrance" type="Node2D" parent="Entities" unique_id=1764202835]
+[node name="WestEntrance" type="Node2D" parent="Entities" unique_id=332635479]
 position = Vector2(8, 152)
 script = ExtResource("2_jtcc1")
 entity_id = "to_west"
 
-[node name="RightDark" type="Node2D" parent="Entities" unique_id=1365661635]
+[node name="RightDark" type="Node2D" parent="Entities" unique_id=2042982514]
 position = Vector2(464, 128)
 script = ExtResource("3_endtx")
 size_cells = Vector2i(12, 4)
 zone_id = "wide_dark"
 restore_on_exit = true
 
-[node name="RightLight" type="Node2D" parent="Entities" unique_id=1198904947]
+[node name="RightLight" type="Node2D" parent="Entities" unique_id=1296875416]
 position = Vector2(408, 48)
 script = ExtResource("3_endtx")
 mode = 1
@@ -33,4 +33,4 @@ size_cells = Vector2i(5, 3)
 zone_id = "wide_light"
 reveal_on_enter = false
 
-[node name="Foreground" type="Node2D" parent="." unique_id=1716048361]
+[node name="Foreground" type="Node2D" parent="." unique_id=626950352]

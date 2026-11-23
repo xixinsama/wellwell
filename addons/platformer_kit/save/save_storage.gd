@@ -46,6 +46,12 @@ func write_slot(snapshot: RefCounted) -> bool:
 		ProjectSettings.globalize_path(primary)
 	)
 	if promote_error != OK:
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(temporary))
+		if not FileAccess.file_exists(primary) and FileAccess.file_exists(backup):
+			DirAccess.rename_absolute(
+				ProjectSettings.globalize_path(backup),
+				ProjectSettings.globalize_path(primary)
+			)
 		return false
 
 	return read_slot(snapshot.slot) != null

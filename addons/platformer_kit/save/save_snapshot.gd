@@ -96,6 +96,9 @@ func load_from_dictionary(data: Dictionary) -> RefCounted:
 		return null
 	if not position_data.has("x") or not position_data.has("y"):
 		return null
+	var parsed_respawn := _read_vector(position_data)
+	if parsed_respawn == null:
+		return null
 	var parsed_entity_states: Dictionary[String, Dictionary] = {}
 	var entity_states: Variant = data.get("entity_states", {})
 	if not entity_states is Dictionary:
@@ -131,7 +134,7 @@ func load_from_dictionary(data: Dictionary) -> RefCounted:
 	current_room_id = String(data.get("current_room_id", ""))
 	respawn_room_id = String(data.get("respawn_room_id", ""))
 	respawn_spawn_id = String(data.get("respawn_spawn_id", ""))
-	respawn_position = Vector2(float(position_data["x"]), float(position_data["y"]))
+	respawn_position = parsed_respawn as Vector2
 	has_resume = parsed_has_resume
 	resume_position = parsed_resume_position
 	resume_velocity = parsed_resume_velocity
