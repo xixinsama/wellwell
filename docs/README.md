@@ -63,17 +63,17 @@ dependency rules. Then pick the folder for the work in front of you.
 
 | Feature | Code | Tests | Doc |
 | --- | --- | --- | --- |
-| Player motion, stamina, dash orchestration | `scripts/player/`, `addons/platformer_kit/character/` | `tests/player/`, `tests/platformer_kit/character/` | [controls](systems/controls.md), [tuning](systems/tuning.md) |
+| Player motion, stamina, dash orchestration | `game/player/`, `addons/platformer_kit/character/` | `tests/player/`, `tests/platformer_kit/character/` | [controls](systems/controls.md), [tuning](systems/tuning.md) |
 | Ability runtime (dash, climb, pickups) | `addons/platformer_kit/abilities/` | `tests/platformer_kit/abilities/` | [extension guide](extension-guide.md) |
 | Combat (health, hit, hurt, knockback) | `addons/platformer_kit/combat/` | `tests/platformer_kit/combat/` | [extension guide](extension-guide.md) |
 | Rooms, streaming, entities, save | `addons/platformer_kit/world/`, `addons/platformer_kit/save/` | `tests/world/`, `tests/save/` | [architecture](architecture.md) |
 | Room/world authoring and bake | `addons/world_editor/` | `tests/authoring/`, `tests/world_editor/` | [world painting](authoring/world-painting.md) |
 | Fog, map, progression | `addons/metroidvania_kit/` | `tests/metroidvania_kit/`, `tests/world/test_fog_*` | [map](systems/map.md), [fog](systems/fog-zones-and-crumble.md) |
 | Water and gas | `addons/fluid_kit/`, `game/player/player_water_motion.gd` | `tests/world/test_water_*`, `tests/world/test_gas_*` | [water](systems/water-and-mist.md) |
-| Lighting, backdrop, dust, CRT | `scripts/world/`, `scripts/shaders/` | `tests/world/test_light_field.gd`, `test_backdrop_*`, `test_dust_field.gd` | [rendering](rendering/art-layers.md) |
+| Lighting, backdrop, dust, CRT | `game/world/`, `game/shaders/` | `tests/world/test_light_field.gd`, `test_backdrop_*`, `test_dust_field.gd` | [rendering](rendering/art-layers.md) |
 | Pixel effects | `addons/pixelfx/`, `game/player/effects/` | `tests/player/test_player_motion_effects.gd` | [player effects](systems/player-effects.md) |
-| Sliding puzzle | `scripts/puzzle/`, `scenes/puzzle/` | `tests/puzzle/` | [puzzle mechanics](design/puzzle-mechanics.md) |
-| Menus, settings, HUD | `scenes/ui/`, `scripts/ui/` | `tests/ui/` | [controls](systems/controls.md) |
+| Sliding puzzle | `game/puzzle/`, `scenes/puzzle/` | `tests/puzzle/` | [puzzle mechanics](design/puzzle-mechanics.md) |
+| Menus, settings, HUD | `scenes/ui/`, `game/ui/` | `tests/ui/` | [controls](systems/controls.md) |
 | Input rebinding | `addons/input_mapping/` | `tests/input_mapping/` | — |
 | Collectibles and map host | `game/collectibles/`, `game/map/` | `tests/game/` | [collectibles](systems/collectibles.md) |
 

@@ -1,6 +1,6 @@
 extends Node
 
-const SETTINGS_MANAGER := preload("res://scripts/save/global_settings_manager.gd")
+const SETTINGS_MANAGER := preload("res://game/save/global_settings_manager.gd")
 const SAVE_SNAPSHOT := preload("res://addons/platformer_kit/save/save_snapshot.gd")
 
 const MENU_TRANSLATION_PATH := "res://localization/menu.csv"
@@ -247,7 +247,7 @@ func _assert_input_mapping_navigation_and_reset(failures: Array[String]) -> void
 
 
 func _assert_transactional_start_flow(failures: Array[String]) -> void:
-	var menu_script := load("res://scripts/ui/main_menu.gd") as Script
+	var menu_script := load("res://game/ui/main_menu.gd") as Script
 	var menu := menu_script.new() as Control
 	if not menu.has_method("bind_start_dependencies"):
 		failures.append("main menu is missing injectable transactional startup dependencies")
@@ -279,7 +279,7 @@ func _assert_transactional_start_flow(failures: Array[String]) -> void:
 	menu.free()
 
 func _assert_world_selection_flow(failures: Array[String]) -> void:
-	var menu_script := load("res://scripts/ui/main_menu.gd") as Script
+	var menu_script := load("res://game/ui/main_menu.gd") as Script
 	var menu := menu_script.new() as Control
 	var slots := FakeSlots.new()
 	var world_select := FakeWorldSelect.new()

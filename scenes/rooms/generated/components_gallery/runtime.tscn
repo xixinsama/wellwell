@@ -34,32 +34,32 @@ size = Vector2(28, 12)
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_e2du3"]
 size = Vector2(24, 8)
 
-[node name="RoomRuntimeContent" type="Node2D" unique_id=212147303]
+[node name="RoomRuntimeContent" type="Node2D" unique_id=13307591]
 
-[node name="Entities" type="Node2D" parent="." unique_id=1731973644]
+[node name="Entities" type="Node2D" parent="." unique_id=549800504]
 
-[node name="StartSpawn" type="Marker2D" parent="Entities" unique_id=749739411]
+[node name="StartSpawn" type="Marker2D" parent="Entities" unique_id=1451146440]
 position = Vector2(16, 160)
 script = ExtResource("1_gy8r4")
 spawn_id = "start"
 
-[node name="01_Elevator" type="AnimatableBody2D" parent="Entities" unique_id=1086248102]
+[node name="01_Elevator" type="AnimatableBody2D" parent="Entities" unique_id=455642931]
 position = Vector2(24, 152)
 script = ExtResource("2_x8wn4")
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Entities/01_Elevator" unique_id=151688979]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Entities/01_Elevator" unique_id=2021314939]
 position = Vector2(12, 4)
 shape = SubResource("RectangleShape2D_wy1h4")
 
-[node name="Visual" type="Polygon2D" parent="Entities/01_Elevator" unique_id=835327316]
+[node name="Visual" type="Polygon2D" parent="Entities/01_Elevator" unique_id=1520554597]
 color = Color(0.3, 0.43, 0.52, 1)
 polygon = PackedVector2Array(0, 0, 24, 0, 24, 8, 0, 8)
 
-[node name="ElevatorMotion" type="Node" parent="Entities/01_Elevator" unique_id=1628904131]
+[node name="ElevatorMotion" type="Node" parent="Entities/01_Elevator" unique_id=1724243876]
 script = ExtResource("3_ju7c4")
 travel = Vector2(0, -48)
 
-[node name="RiderTrigger" type="Area2D" parent="Entities/01_Elevator" unique_id=526889217]
+[node name="RiderTrigger" type="Area2D" parent="Entities/01_Elevator" unique_id=744467302]
 collision_layer = 0
 collision_mask = 2
 monitorable = false
@@ -67,64 +67,64 @@ script = ExtResource("4_q73aw")
 target_paths = Array[NodePath]([NodePath("../ElevatorMotion")])
 trigger_once = false
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Entities/01_Elevator/RiderTrigger" unique_id=1386855128]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Entities/01_Elevator/RiderTrigger" unique_id=1024754479]
 position = Vector2(12, 0)
 shape = SubResource("RectangleShape2D_ghns8")
 
-[node name="02_Conveyor" type="AnimatableBody2D" parent="Entities" unique_id=1569650145]
+[node name="02_Conveyor" type="AnimatableBody2D" parent="Entities" unique_id=1901084481]
 position = Vector2(56, 152)
 script = ExtResource("2_x8wn4")
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Entities/02_Conveyor" unique_id=1900425506]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Entities/02_Conveyor" unique_id=2051723530]
 position = Vector2(16, 4)
 shape = SubResource("RectangleShape2D_c5gk1")
 
-[node name="Visual" type="Polygon2D" parent="Entities/02_Conveyor" unique_id=1966738507]
+[node name="Visual" type="Polygon2D" parent="Entities/02_Conveyor" unique_id=1973419823]
 color = Color(0.3, 0.78, 0.82, 1)
 polygon = PackedVector2Array(0, 0, 32, 0, 32, 8, 0, 8)
 
-[node name="ConveyorSurface" type="Node" parent="Entities/02_Conveyor" unique_id=716967852]
+[node name="ConveyorSurface" type="Node" parent="Entities/02_Conveyor" unique_id=1597968770]
 script = ExtResource("5_h072y")
 
-[node name="03_Waypoint" type="AnimatableBody2D" parent="Entities" unique_id=744123259]
+[node name="03_Waypoint" type="AnimatableBody2D" parent="Entities" unique_id=1314528176]
 position = Vector2(128, 144)
 script = ExtResource("2_x8wn4")
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Entities/03_Waypoint" unique_id=1546266916]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Entities/03_Waypoint" unique_id=172518992]
 position = Vector2(12, 4)
 shape = SubResource("RectangleShape2D_jucs8")
 
-[node name="Visual" type="Polygon2D" parent="Entities/03_Waypoint" unique_id=576567235]
+[node name="Visual" type="Polygon2D" parent="Entities/03_Waypoint" unique_id=559405879]
 color = Color(0.95, 0.7, 0.24, 1)
 polygon = PackedVector2Array(0, 0, 24, 0, 24, 8, 0, 8)
 
-[node name="WaypointMotion" type="Node" parent="Entities/03_Waypoint" unique_id=590726938]
+[node name="WaypointMotion" type="Node" parent="Entities/03_Waypoint" unique_id=1993492036]
 script = ExtResource("6_85yjx")
 waypoints = PackedVector2Array(0, 0, 48, 0)
 travel_speed = 32.0
 arrival_pause_seconds = 0.4
 
-[node name="FogOccluder" type="Node2D" parent="Entities/03_Waypoint" unique_id=790790358]
+[node name="FogOccluder" type="Node2D" parent="Entities/03_Waypoint" unique_id=778942149]
 script = ExtResource("7_waso0")
 body_path = NodePath("..")
 
-[node name="04_Falling" type="AnimatableBody2D" parent="Entities" unique_id=596897870]
+[node name="04_Falling" type="AnimatableBody2D" parent="Entities" unique_id=1988009100]
 position = Vector2(336, 136)
 script = ExtResource("2_x8wn4")
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Entities/04_Falling" unique_id=13242680]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Entities/04_Falling" unique_id=653670087]
 position = Vector2(12, 4)
 shape = SubResource("RectangleShape2D_g3oqy")
 
-[node name="Visual" type="Polygon2D" parent="Entities/04_Falling" unique_id=931334871]
+[node name="Visual" type="Polygon2D" parent="Entities/04_Falling" unique_id=1472374911]
 color = Color(0.91, 0.34, 0.34, 1)
 polygon = PackedVector2Array(0, 0, 24, 0, 24, 8, 0, 8)
 
-[node name="FallMotion" type="Node" parent="Entities/04_Falling" unique_id=2004695301]
+[node name="FallMotion" type="Node" parent="Entities/04_Falling" unique_id=1544192505]
 script = ExtResource("8_s0ts5")
 activation_delay = 0.2
 
-[node name="RiderTrigger" type="Area2D" parent="Entities/04_Falling" unique_id=515716353]
+[node name="RiderTrigger" type="Area2D" parent="Entities/04_Falling" unique_id=1571705846]
 collision_layer = 0
 collision_mask = 2
 monitorable = false
@@ -132,36 +132,36 @@ script = ExtResource("4_q73aw")
 target_paths = Array[NodePath]([NodePath("../FallMotion")])
 trigger_once = false
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Entities/04_Falling/RiderTrigger" unique_id=2086349208]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Entities/04_Falling/RiderTrigger" unique_id=1865176914]
 position = Vector2(12, 0)
 shape = SubResource("RectangleShape2D_b5hah")
 
-[node name="07_OneWayPlatform" type="StaticBody2D" parent="Entities" unique_id=1819889779]
+[node name="07_OneWayPlatform" type="StaticBody2D" parent="Entities" unique_id=1540564650]
 position = Vector2(96, 136)
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Entities/07_OneWayPlatform" unique_id=1690277175]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Entities/07_OneWayPlatform" unique_id=1469077720]
 position = Vector2(12, 4)
 shape = SubResource("RectangleShape2D_e2du3")
 one_way_collision = true
 
-[node name="Visual" type="Polygon2D" parent="Entities/07_OneWayPlatform" unique_id=139561335]
+[node name="Visual" type="Polygon2D" parent="Entities/07_OneWayPlatform" unique_id=1677793421]
 color = Color(0.45, 0.75, 0.45, 1)
 polygon = PackedVector2Array(0, 0, 24, 0, 24, 8, 0, 8)
 
-[node name="05_Door" type="Node2D" parent="Entities" unique_id=701558414 instance=ExtResource("9_jotl7")]
+[node name="05_Door" type="Node2D" parent="Entities" unique_id=757861285 instance=ExtResource("9_jotl7")]
 z_index = 2
 position = Vector2(384, 144)
 
-[node name="06_PhantomWall" type="TileMapLayer" parent="Entities" unique_id=1299928383 instance=ExtResource("10_1msqr")]
+[node name="06_PhantomWall" type="TileMapLayer" parent="Entities" unique_id=1738953267 instance=ExtResource("10_1msqr")]
 position = Vector2(480, 144)
 tile_map_data = PackedByteArray(0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0)
 tile_set = ExtResource("11_h1vss")
 collision_enabled = false
 script = ExtResource("12_f12vr")
 
-[node name="Signs" type="Node2D" parent="Entities" unique_id=2104329966]
+[node name="Signs" type="Node2D" parent="Entities" unique_id=1944079679]
 
-[node name="_Label_3" type="Label" parent="Entities/Signs" unique_id=353616698]
+[node name="_Label_3" type="Label" parent="Entities/Signs" unique_id=1773838156]
 modulate = Color(1, 1, 1, 0.75)
 offset_left = 16.0
 offset_top = 64.0
@@ -170,7 +170,7 @@ offset_bottom = 64.0
 theme_override_font_sizes/font_size = 8
 text = "Copy one station into your own room"
 
-[node name="_Label_4" type="Label" parent="Entities/Signs" unique_id=1434117951]
+[node name="_Label_4" type="Label" parent="Entities/Signs" unique_id=277254981]
 modulate = Color(1, 1, 1, 0.75)
 offset_left = 24.0
 offset_top = 88.0
@@ -179,7 +179,7 @@ offset_bottom = 88.0
 theme_override_font_sizes/font_size = 8
 text = "01 ELEVATOR"
 
-[node name="_Label_5" type="Label" parent="Entities/Signs" unique_id=535918181]
+[node name="_Label_5" type="Label" parent="Entities/Signs" unique_id=957157502]
 modulate = Color(1, 1, 1, 0.75)
 offset_left = 56.0
 offset_top = 88.0
@@ -188,7 +188,7 @@ offset_bottom = 88.0
 theme_override_font_sizes/font_size = 8
 text = "02 CONVEYOR"
 
-[node name="_Label_6" type="Label" parent="Entities/Signs" unique_id=120904110]
+[node name="_Label_6" type="Label" parent="Entities/Signs" unique_id=1985879737]
 modulate = Color(1, 1, 1, 0.75)
 offset_left = 128.0
 offset_top = 88.0
@@ -197,7 +197,7 @@ offset_bottom = 88.0
 theme_override_font_sizes/font_size = 8
 text = "03 WAYPOINT + FOG"
 
-[node name="_Label_7" type="Label" parent="Entities/Signs" unique_id=1093058700]
+[node name="_Label_7" type="Label" parent="Entities/Signs" unique_id=1118820168]
 modulate = Color(1, 1, 1, 0.75)
 offset_left = 96.0
 offset_top = 88.0
@@ -206,7 +206,7 @@ offset_bottom = 88.0
 theme_override_font_sizes/font_size = 8
 text = "07 ONE-WAY"
 
-[node name="_Label_8" type="Label" parent="Entities/Signs" unique_id=770152787]
+[node name="_Label_8" type="Label" parent="Entities/Signs" unique_id=2136634628]
 modulate = Color(1, 1, 1, 0.75)
 offset_left = 336.0
 offset_top = 88.0
@@ -215,7 +215,7 @@ offset_bottom = 88.0
 theme_override_font_sizes/font_size = 8
 text = "04 FALLING"
 
-[node name="_Label_9" type="Label" parent="Entities/Signs" unique_id=1477704900]
+[node name="_Label_9" type="Label" parent="Entities/Signs" unique_id=1567753558]
 modulate = Color(1, 1, 1, 0.75)
 offset_left = 384.0
 offset_top = 88.0
@@ -224,7 +224,7 @@ offset_bottom = 88.0
 theme_override_font_sizes/font_size = 8
 text = "05 DOOR [E]"
 
-[node name="_Label_10" type="Label" parent="Entities/Signs" unique_id=1803054307]
+[node name="_Label_10" type="Label" parent="Entities/Signs" unique_id=837057514]
 modulate = Color(1, 1, 1, 0.75)
 offset_left = 480.0
 offset_top = 88.0
@@ -233,4 +233,4 @@ offset_bottom = 88.0
 theme_override_font_sizes/font_size = 8
 text = "06 PHANTOM WALL"
 
-[node name="Foreground" type="Node2D" parent="." unique_id=1764996146]
+[node name="Foreground" type="Node2D" parent="." unique_id=1043190274]

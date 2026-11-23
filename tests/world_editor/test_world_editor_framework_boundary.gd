@@ -20,7 +20,7 @@ func run() -> Array[String]:
 	for path: String in _collect_source_files(EDITOR_ROOT):
 		var source := FileAccess.get_file_as_string(path)
 		for line: String in source.split("\n"):
-			for forbidden: String in ["res://scripts/", "res://game/"]:
+			for forbidden: String in ["res://game/", "res://game/"]:
 				if line.contains("preload(") and line.contains(forbidden):
 					failures.append("World Editor dependency escapes addon/framework boundary: %s -> %s" % [path, forbidden])
 			if line.contains("res://addons/platformer_kit/") and not line.contains("res://addons/platformer_kit/world/"):

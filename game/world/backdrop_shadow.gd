@@ -31,7 +31,7 @@ extends Node2D
 ## costs the silhouette compositing plus a few uniform writes.
 
 const GROUP := &"backdrop_shadow"
-const SHADOW_SHADER: Shader = preload("res://scripts/shaders/backdrop_shadow.gdshader")
+const SHADOW_SHADER: Shader = preload("res://game/shaders/backdrop_shadow.gdshader")
 const QUAD_NAME := "BackdropTileShadow"
 const CHUNK_PIXELS := Vector2i(320, 180)
 const TILE_PIXELS := 8

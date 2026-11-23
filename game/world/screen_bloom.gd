@@ -13,9 +13,9 @@ extends Node2D
 ## area keeps its black, and follows the camera so a room bigger than the screen
 ## still blooms over exactly the right pixels.
 
-const BRIGHT_SHADER: Shader = preload("res://scripts/shaders/bloom_bright.gdshader")
-const BLUR_SHADER: Shader = preload("res://scripts/shaders/bloom_blur.gdshader")
-const COMPOSITE_SHADER: Shader = preload("res://scripts/shaders/bloom_composite.gdshader")
+const BRIGHT_SHADER: Shader = preload("res://game/shaders/bloom_bright.gdshader")
+const BLUR_SHADER: Shader = preload("res://game/shaders/bloom_blur.gdshader")
+const COMPOSITE_SHADER: Shader = preload("res://game/shaders/bloom_composite.gdshader")
 
 ## Half resolution: the blur does not need the full grid.
 const DOWNSCALE := 2

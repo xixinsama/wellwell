@@ -18,7 +18,7 @@ class_name TerrainHighlight
 ## TerrainRoot, so rooms without solid tiles simply get nothing. Rebuilds on
 ## `world_ready`, so re-baking or reloading a room is picked up automatically.
 
-const HIGHLIGHT_SHADER: Shader = preload("res://scripts/shaders/terrain_highlight.gdshader")
+const HIGHLIGHT_SHADER: Shader = preload("res://game/shaders/terrain_highlight.gdshader")
 const LAYER_NAME := "TerrainHighlight"
 const ROOMS_PATH := NodePath("../TerrainRoot")
 const TILE_FALLBACK := 8.0

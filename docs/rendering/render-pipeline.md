@@ -181,20 +181,20 @@ FogOfWar mask(CPU) ──纹理──→ FogMask（片元生成边缘）──�
 
 | 效果 | 代码 | 可调参数 |
 | :--- | :--- | :--- |
-| 抖动背景板（只在有渐变处抖） | `scripts/shaders/backdrop_drift.gdshader` | `BackdropField.dither_strength / dither_levels` |
-| 背景瓦片投影（固定朝左下 10 px、纯黑） | `scripts/world/backdrop_shadow.gd` + `backdrop_shadow*.gdshader` | `offset_direction / offset_px / strength / blur_px / shadow_tint` |
+| 抖动背景板（只在有渐变处抖） | `game/shaders/backdrop_drift.gdshader` | `BackdropField.dither_strength / dither_levels` |
+| 背景瓦片投影（固定朝左下 10 px、纯黑） | `game/world/backdrop_shadow.gd` + `backdrop_shadow*.gdshader` | `offset_direction / offset_px / strength / blur_px / shadow_tint` |
 | 法线贴图（图集 + 烘焙工具） | `assets/images/primordial_tileset_normal.png`、`tools/bake_tileset_normals.gd` | 工具顶部常量；`LightField.relief_*` |
-| 光照浮雕 | `scripts/shaders/light_overlay.gdshader`、`light_glow.gdshader` | `relief_normal_mode / relief_strength / authored_relief_gain` |
+| 光照浮雕 | `game/shaders/light_overlay.gdshader`、`light_glow.gdshader` | `relief_normal_mode / relief_strength / authored_relief_gain` |
 | 迷雾渐隐（暗区进出） | `addons/metroidvania_kit/map/discovery/fog_of_war.gd` | `zone_reveal_seconds / zone_reveal_stagger / zone_restore_*` |
 | 迷雾聚光灯 | `fog_mask.gdshader` 的 `focus_at()` | `focus_radius_px / focus_falloff_px`、`FogZone.focus_*` |
-| 前景灰尘 | `scripts/world/dust_field.gd` | `count / drift / sway_* / alpha / unlit_alpha` |
+| 前景灰尘 | `game/world/dust_field.gd` | `count / drift / sway_* / alpha / unlit_alpha` |
 | 气体去雾（只留喷口） | `addons/fluid_kit/runtime/gas/atmosphere.gd` | `gas_ambient / gas_refill / gas_decay` |
 | 气体卷曲（涡量约束） | `gas_velocity.gdshader` 的 `curl_at()` / `GasSim.vorticity` | `Atmosphere.gas_vorticity` |
 | 气体细纹跟着流体走 | `gas_velocity.gdshader` 的蓝通道 tracer、`fog_layer.gdshader` 的 `detail_*` | `detail_amount / detail_contrast / detail_refresh / detail_hz` |
 | 气体体积自遮挡 | `fog_layer.gdshader` 的 `volume_*` | `volume_shadow / volume_weight / volume_step_px` |
 | 气体淡化用蓝噪声阈值 | `resources/textures/blue_noise_64.png`（`tools/bake_blue_noise.gd` 生成） | `stipple_mode / stipple_steps` |
 | 水体波纹覆盖整条水 | `water_grid.gd(shader)` / `water_field.gd(shader)` | 自动测量；`ripple_*` |
-| 屏幕泛光 | `scripts/world/screen_bloom.gd` + `bloom_*.gdshader` | `threshold / intensity / radius` |
+| 屏幕泛光 | `game/world/screen_bloom.gd` + `bloom_*.gdshader` | `threshold / intensity / radius` |
 | CRT | `scenes/ui/crt_overlay.tscn` + `crt_screen.gdshader` | `GlobalSettings.crt_enabled` |
 
 ## 8. 迷雾渐隐那次的 bug（留给以后）

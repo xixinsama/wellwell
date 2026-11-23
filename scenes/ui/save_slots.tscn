@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://bjkhq4tv4edmo"]
 
-[ext_resource type="Script" uid="uid://dot3qbro3wbgs" path="res://scripts/ui/save_slots.gd" id="1"]
+[ext_resource type="Script" uid="uid://dot3qbro3wbgs" path="res://game/ui/save_slots.gd" id="1"]
 [ext_resource type="Theme" uid="uid://dl2h74k2356hx" path="res://resources/ui/menu_theme.tres" id="2"]
 
 [node name="SaveSlots" type="Control" unique_id=2057955587]

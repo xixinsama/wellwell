@@ -1,7 +1,7 @@
 [gd_scene format=4 uid="uid://bxdeqoioy0p8n"]
 
 [ext_resource type="PackedScene" uid="uid://oa5ui3h6fkhd" path="res://scenes/rooms/template/level_template.tscn" id="1_template"]
-[ext_resource type="Script" uid="uid://dtxrrjgropat6" path="res://scripts/world/fog_zone.gd" id="2_rbufo"]
+[ext_resource type="Script" uid="uid://dtxrrjgropat6" path="res://game/world/fog_zone.gd" id="2_rbufo"]
 
 [node name="Room_layer1_01_00_3" unique_id=3484775 instance=ExtResource("1_template")]
 room_id = "layer1_01_00_3"

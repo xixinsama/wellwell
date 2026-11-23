@@ -40,7 +40,7 @@ Room source scenes live in `scenes/levels/<world_id>/`; baked runtime scenes in
 | `addons/pixelfx/` | Vendored pixel-effect library |
 | `addons/world_editor/` | Main-screen world/room editor and baker |
 | `scenes/`, `resources/` | Game scenes, worlds, rooms, tilesets, tuning |
-| `game/`, `scripts/` | Project composition and the systems the kit does not own |
+| `game/` | Project composition and every system the kit does not own |
 | `tests/` | One folder per owner; see `docs/testing.md` |
 | `tools/` | One-shot CLI maintenance scripts |
 | `examples/` | Kit labs: movement, ability, combat, metroidvania, TAS |
@@ -56,7 +56,7 @@ godot --headless --path . -s res://tests/run_runtime_suite.gd
 godot --headless --path . -s res://tests/run_runtime_suite.gd -- --group=world
 
 # Compile one script
-godot --headless --path . --check-only -s res://scripts/player/player_controller.gd
+godot --headless --path . --check-only -s res://game/player/player_controller.gd
 
 # Boot with no warnings or errors
 godot --headless --path . --quit-after 120

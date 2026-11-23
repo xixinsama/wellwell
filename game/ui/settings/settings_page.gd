@@ -4,7 +4,7 @@ extends ScrollContainer
 signal action_requested(key: StringName)
 
 const ROW_SCENE := preload("res://scenes/ui/settings/settings_row.tscn")
-const CATALOG := preload("res://scripts/save/settings_catalog.gd")
+const CATALOG := preload("res://game/save/settings_catalog.gd")
 
 @export var section: StringName = &""
 

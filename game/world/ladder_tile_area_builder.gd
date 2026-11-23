@@ -2,7 +2,7 @@ class_name LadderTileAreaBuilder
 extends Node2D
 
 const LADDER_ZONE := preload("res://addons/platformer_kit/world/entities/ladder_zone.tscn")
-const CELL_RECT_MERGER := preload("res://scripts/util/cell_rect_merger.gd")
+const CELL_RECT_MERGER := preload("res://game/util/cell_rect_merger.gd")
 
 @export var source_id := 0
 @export var atlas_coordinates := Vector2i(0, 7)

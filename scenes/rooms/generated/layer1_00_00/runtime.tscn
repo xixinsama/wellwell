@@ -8,16 +8,16 @@
 [ext_resource type="Script" path="res://addons/platformer_kit/world/entities/world_door.gd" id="6_8ar21"]
 [ext_resource type="Resource" path="res://resources/worlds/dash_world.tres" id="7_qxkvw"]
 
-[node name="RoomRuntimeContent" type="Node2D" unique_id=1622509980]
+[node name="RoomRuntimeContent" type="Node2D" unique_id=2048698354]
 
-[node name="Entities" type="Node2D" parent="." unique_id=2021411910]
+[node name="Entities" type="Node2D" parent="." unique_id=1603655256]
 
-[node name="StartSpawn" type="Marker2D" parent="Entities" unique_id=480765916]
+[node name="StartSpawn" type="Marker2D" parent="Entities" unique_id=186649550]
 position = Vector2(60, 80)
 script = ExtResource("1_ptft3")
 spawn_id = "start"
 
-[node name="PhantomWall" type="TileMapLayer" parent="Entities" unique_id=1260032535 instance=ExtResource("2_25b0c")]
+[node name="PhantomWall" type="TileMapLayer" parent="Entities" unique_id=749068198 instance=ExtResource("2_25b0c")]
 position = Vector2(56, 0)
 tile_map_data = PackedByteArray("AAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAACAAAAAAAAAAAAAAADAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAEAAEAAAAAAAAAAAADAAEAAAAAAAAAAAACAAEAAAAAAAAAAAABAAEAAAAAAAAAAAAAAAEAAAAAAAAAAAA=")
 tile_set = ExtResource("3_3sh5p")
@@ -38,4 +38,4 @@ persistent_id = &"layer1_door0"
 entity_type = "world_door"
 persistent = true
 
-[node name="Foreground" type="Node2D" parent="." unique_id=1858857986]
+[node name="Foreground" type="Node2D" parent="." unique_id=527816495]

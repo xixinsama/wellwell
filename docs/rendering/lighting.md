@@ -109,7 +109,7 @@ RGB vectors: `r = x`, `g = y`, `b = z`, flat = `(128, 128, 255)`. Turn the layer
 invisible (the eye icon) so the room does not draw the normals; `NormalField`
 warns if it is visible but never mutates the owner's node.
 
-`NormalField` (`scripts/world/normal_field.gd`) clones the layer into a
+`NormalField` (`game/world/normal_field.gd`) clones the layer into a
 room-sized `SubViewport` (`tile_set` + `tile_map_data` copied, the authored node
 is untouched), clears it to the flat normal and renders **once** per room, then
 switches itself to `UPDATE_DISABLED`: a static room pays nothing per frame for
@@ -206,7 +206,7 @@ budget. The one-shot authored buffer costs nothing after its first frame.
 
 ## Authored lights
 
-`RoomLight` (`scripts/world/room_light.gd`) is the light source to place:
+`RoomLight` (`game/world/room_light.gd`) is the light source to place:
 
 | Property | Meaning |
 | :--- | :--- |

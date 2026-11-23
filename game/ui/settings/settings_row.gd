@@ -4,7 +4,7 @@ extends VBoxContainer
 signal value_changed(key: StringName, value: Variant)
 signal action_pressed(key: StringName)
 
-const DEFINITION: Script = preload("res://scripts/save/settings_definition.gd")
+const DEFINITION: Script = preload("res://game/save/settings_definition.gd")
 const TOGGLE_ON := preload("res://resources/ui/toggle_on.png")
 const TOGGLE_OFF := preload("res://resources/ui/toggle_off.png")
 

@@ -252,10 +252,10 @@ class WorldSelectCase extends Node:
 
 ## tests/ui/test_settings_pages.gd
 class SettingsPagesCase extends Node:
-	const CATALOG := preload("res://scripts/save/settings_catalog.gd")
-	const DEFINITION := preload("res://scripts/save/settings_definition.gd")
-	const SETTINGS_MANAGER := preload("res://scripts/save/global_settings_manager.gd")
-	const SETTINGS_STORE := preload("res://scripts/save/global_settings_store.gd")
+	const CATALOG := preload("res://game/save/settings_catalog.gd")
+	const DEFINITION := preload("res://game/save/settings_definition.gd")
+	const SETTINGS_MANAGER := preload("res://game/save/global_settings_manager.gd")
+	const SETTINGS_STORE := preload("res://game/save/global_settings_store.gd")
 	const SETTINGS_SCENE := preload("res://scenes/ui/settings.tscn")
 	const PAGE_SCENE := preload("res://scenes/ui/settings/settings_page.tscn")
 	const MASTER_BUS := 0

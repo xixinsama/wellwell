@@ -9,10 +9,10 @@ class GamepadSelectionCase extends Node:
 	## Gamepad slider selection: action contract, auto-selection, cycling,
 	## rider shortcut, cancel, reset, and inactive-board scoping.
 
-	const PuzzleBoard := preload("res://scripts/puzzle/view/puzzle_board.gd")
-	const PuzzlePiece := preload("res://scripts/puzzle/view/puzzle_piece.gd")
-	const PieceDefinition := preload("res://scripts/puzzle/definition/piece_definition.gd")
-	const PuzzleSession := preload("res://scripts/puzzle/systems/puzzle_session.gd")
+	const PuzzleBoard := preload("res://game/puzzle/view/puzzle_board.gd")
+	const PuzzlePiece := preload("res://game/puzzle/view/puzzle_piece.gd")
+	const PieceDefinition := preload("res://game/puzzle/definition/piece_definition.gd")
+	const PuzzleSession := preload("res://game/puzzle/systems/puzzle_session.gd")
 
 
 	func run() -> Array[String]:
@@ -200,7 +200,7 @@ class GamepadSelectionCase extends Node:
 
 
 	func _assert_process_wiring(failures: Array[String]) -> void:
-		var source := FileAccess.get_file_as_string("res://scripts/puzzle/view/puzzle_board.gd")
+		var source := FileAccess.get_file_as_string("res://game/puzzle/view/puzzle_board.gd")
 		for action: StringName in [
 			&"prev_piece_action",
 			&"next_piece_action",
@@ -225,10 +225,10 @@ class GamepadSelectionCase extends Node:
 class GamepadStickAimCase extends Node:
 	## Right-stick aim target selection and release-to-switch behavior.
 
-	const PuzzleBoard := preload("res://scripts/puzzle/view/puzzle_board.gd")
-	const PuzzlePiece := preload("res://scripts/puzzle/view/puzzle_piece.gd")
-	const PieceDefinition := preload("res://scripts/puzzle/definition/piece_definition.gd")
-	const PuzzleSession := preload("res://scripts/puzzle/systems/puzzle_session.gd")
+	const PuzzleBoard := preload("res://game/puzzle/view/puzzle_board.gd")
+	const PuzzlePiece := preload("res://game/puzzle/view/puzzle_piece.gd")
+	const PieceDefinition := preload("res://game/puzzle/definition/piece_definition.gd")
+	const PuzzleSession := preload("res://game/puzzle/systems/puzzle_session.gd")
 
 
 	func run() -> Array[String]:
@@ -381,7 +381,7 @@ class GamepadStickAimCase extends Node:
 
 
 	func _assert_live_wiring(failures: Array[String]) -> void:
-		var source := FileAccess.get_file_as_string("res://scripts/puzzle/view/puzzle_board.gd")
+		var source := FileAccess.get_file_as_string("res://game/puzzle/view/puzzle_board.gd")
 		if not source.contains("_read_stick_aim()"):
 			failures.append("PuzzleBoard does not read the right-stick aim vector")
 		for action: StringName in [
@@ -402,8 +402,8 @@ class RiderJumpResetCase extends Node:
 	## after leaving drag mode. Merely selecting a piece, a failed move, or a board
 	## teardown must not grant it.
 
-	const PuzzleBoard := preload("res://scripts/puzzle/view/puzzle_board.gd")
-	const PuzzlePiece := preload("res://scripts/puzzle/view/puzzle_piece.gd")
+	const PuzzleBoard := preload("res://game/puzzle/view/puzzle_board.gd")
+	const PuzzlePiece := preload("res://game/puzzle/view/puzzle_piece.gd")
 	const PLAYER_FIXTURE := preload("res://tests/puzzle/rider_jump_player_fixture.gd")
 
 

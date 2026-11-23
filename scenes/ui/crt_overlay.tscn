@@ -1,7 +1,7 @@
 [gd_scene load_steps=4 format=3]
 
-[ext_resource type="Script" path="res://scripts/ui/crt_overlay.gd" id="1_crt_overlay"]
-[ext_resource type="Shader" path="res://scripts/shaders/crt_screen.gdshader" id="2_crt"]
+[ext_resource type="Script" path="res://game/ui/crt_overlay.gd" id="1_crt_overlay"]
+[ext_resource type="Shader" path="res://game/shaders/crt_screen.gdshader" id="2_crt"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_crt"]
 shader = ExtResource("2_crt")

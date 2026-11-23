@@ -3,9 +3,9 @@ extends Node
 
 signal settings_changed
 
-const SETTINGS_STORE: Script = preload("res://scripts/save/global_settings_store.gd")
-const SETTINGS_CATALOG: Script = preload("res://scripts/save/settings_catalog.gd")
-const SETTINGS_DEFINITION: Script = preload("res://scripts/save/settings_definition.gd")
+const SETTINGS_STORE: Script = preload("res://game/save/global_settings_store.gd")
+const SETTINGS_CATALOG: Script = preload("res://game/save/settings_catalog.gd")
+const SETTINGS_DEFINITION: Script = preload("res://game/save/settings_definition.gd")
 
 const WINDOWED := "windowed"
 const FULLSCREEN := "fullscreen"

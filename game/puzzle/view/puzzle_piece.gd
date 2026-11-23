@@ -18,7 +18,7 @@ extends Polygon2D
 ## non-empty polygon that still breaks the rules (e.g. a diagonal edge) prints a
 ## warning and yields no shape.
 
-const CELL_RECT_MERGER := preload("res://scripts/util/cell_rect_merger.gd")
+const CELL_RECT_MERGER := preload("res://game/util/cell_rect_merger.gd")
 const FOG_OCCLUDER_GROUP := &"fog_occluder"
 const FOG_GROUP := &"fog_of_war"
 const FOG_CELL_PIXELS := 8.0

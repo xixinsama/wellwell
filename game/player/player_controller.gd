@@ -3,7 +3,7 @@ class_name PlayerController
 
 signal climb_animation_requested(active: bool, direction: Vector2)
 
-const PLAYER_TUNING_SCRIPT: Script = preload("res://scripts/player/player_tuning.gd")
+const PLAYER_TUNING_SCRIPT: Script = preload("res://game/player/player_tuning.gd")
 const MOVEMENT_PROFILE := preload("res://addons/platformer_kit/character/resources/movement_profile.gd")
 const CHARACTER_MOTOR := preload("res://addons/platformer_kit/character/motor/character_motor_2d.gd")
 const MOVEMENT_CONTEXT := preload("res://addons/platformer_kit/character/motor/movement_context.gd")
@@ -11,8 +11,8 @@ const ENVIRONMENT_SNAPSHOT := preload("res://addons/platformer_kit/character/env
 const CHARACTER_SENSORS := preload("res://addons/platformer_kit/character/sensors/character_sensors.gd")
 const CHARACTER_INTENT := preload("res://addons/platformer_kit/character/input/character_intent.gd")
 const PLAYER_INPUT_SOURCE := preload("res://addons/platformer_kit/character/input/player_input_source.gd")
-const PLAYER_STAMINA := preload("res://scripts/player/player_stamina.gd")
-const MOTION_RULES := preload("res://scripts/player/player_motion_rules.gd")
+const PLAYER_STAMINA := preload("res://game/player/player_stamina.gd")
+const MOTION_RULES := preload("res://game/player/player_motion_rules.gd")
 
 ## Layer 4 ("void") blocks the player in jump mode only. Slider riding removes
 ## this bit so a rider can follow its piece through a void region.

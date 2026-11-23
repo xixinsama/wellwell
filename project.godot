@@ -22,10 +22,10 @@ config/icon="res://assets/icon.png"
 
 SaveManager="*res://addons/platformer_kit/save/save_manager.gd"
 Collectibles="*res://game/collectibles/collectibles.gd"
-MenuLocalization="*res://scripts/ui/menu_localization.gd"
-GlobalSettings="*res://scripts/save/global_settings_manager.gd"
+MenuLocalization="*res://game/ui/menu_localization.gd"
+GlobalSettings="*res://game/save/global_settings_manager.gd"
 InputMapping="*res://addons/input_mapping/runtime/input_mapping_service.gd"
-GameFreeze="*res://scripts/globals/game_freeze.gd"
+GameFreeze="*res://game/globals/game_freeze.gd"
 MCPGameBridge="*res://addons/godot_mcp/game_bridge/mcp_game_bridge.gd"
 
 [display]

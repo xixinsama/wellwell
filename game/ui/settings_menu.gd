@@ -3,7 +3,7 @@ extends Control
 
 signal back_requested
 
-const CATALOG := preload("res://scripts/save/settings_catalog.gd")
+const CATALOG := preload("res://game/save/settings_catalog.gd")
 
 @onready var panel: PanelContainer = $Panel
 @onready var tabs: HBoxContainer = %Tabs

@@ -16,7 +16,7 @@ modules.
 
 ## Recommended Boundaries
 
-- Keep reusable character motion in `addons/platformer_kit/character/`; concrete player composition may remain in `scripts/player/` or move under `game/player/`.
+- Keep reusable character motion in `addons/platformer_kit/character/`; concrete player composition may remain in `game/player/` or move under `game/player/`.
 - Keep generic room data, streaming, and entities in `addons/platformer_kit/world/`.
 - Keep map discovery and fog policy in `addons/metroidvania_kit/map/discovery/`.
 - Put authoring code in `addons/world_editor/authoring/room/` or `addons/world_editor/authoring/world/`.
@@ -468,9 +468,9 @@ and a status bar. Diagnostics are printed to the editor Output panel.
 
 The settings window is a full-screen scene (`scenes/ui/settings.tscn`) loaded
 next to the main menu in `scenes/app/main.tscn`. It is a small navigation shell
-(`scripts/ui/settings_menu.gd`) around four top tabs: Game, Audio, Video and
+(`game/ui/settings_menu.gd`) around four top tabs: Game, Audio, Video and
 Controls. Rows are built from definitions in
-`scripts/save/settings_catalog.gd` by `SettingsRow`; categories are
+`game/save/settings_catalog.gd` by `SettingsRow`; categories are
 `SettingsPage` instances in the settings scene with their `section` export set.
 There are no sub-headings inside a category: every setting is one row, and the
 page scrolls when the rows overflow.

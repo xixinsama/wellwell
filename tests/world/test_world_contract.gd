@@ -378,7 +378,7 @@ class RoomGridCase extends Node:
 
 ## tests/world/test_cell_rect_merger.gd
 class CellRectMergerCase extends Node:
-	const MERGER := preload("res://scripts/util/cell_rect_merger.gd")
+	const MERGER := preload("res://game/util/cell_rect_merger.gd")
 
 
 	func run() -> Array[String]:

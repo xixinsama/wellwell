@@ -8,13 +8,13 @@ extends Node
 class SlidingPuzzleCoreCase extends Node:
 	## Pure-logic coverage for the Klotski core: occupancy, rules, moves and session.
 
-	const BoardOccupancy := preload("res://scripts/puzzle/core/board_occupancy.gd")
-	const BoardState := preload("res://scripts/puzzle/core/board_state.gd")
-	const PuzzleMove := preload("res://scripts/puzzle/core/puzzle_move.gd")
-	const PieceDefinition := preload("res://scripts/puzzle/definition/piece_definition.gd")
-	const PuzzleDefinition := preload("res://scripts/puzzle/definition/puzzle_definition.gd")
-	const SlidingPuzzleRuleSet := preload("res://scripts/puzzle/rules/sliding_puzzle_rule_set.gd")
-	const PuzzleSession := preload("res://scripts/puzzle/systems/puzzle_session.gd")
+	const BoardOccupancy := preload("res://game/puzzle/core/board_occupancy.gd")
+	const BoardState := preload("res://game/puzzle/core/board_state.gd")
+	const PuzzleMove := preload("res://game/puzzle/core/puzzle_move.gd")
+	const PieceDefinition := preload("res://game/puzzle/definition/piece_definition.gd")
+	const PuzzleDefinition := preload("res://game/puzzle/definition/puzzle_definition.gd")
+	const SlidingPuzzleRuleSet := preload("res://game/puzzle/rules/sliding_puzzle_rule_set.gd")
+	const PuzzleSession := preload("res://game/puzzle/systems/puzzle_session.gd")
 
 
 	func run() -> Array[String]:
@@ -369,9 +369,9 @@ class SlidingPuzzleCoreCase extends Node:
 class PuzzleHistoryCase extends Node:
 	## Board-level coverage for scoped Z undo / R reset and multiple boards.
 
-	const PuzzleBoard := preload("res://scripts/puzzle/view/puzzle_board.gd")
-	const PuzzlePiece := preload("res://scripts/puzzle/view/puzzle_piece.gd")
-	const PuzzleMove := preload("res://scripts/puzzle/core/puzzle_move.gd")
+	const PuzzleBoard := preload("res://game/puzzle/view/puzzle_board.gd")
+	const PuzzlePiece := preload("res://game/puzzle/view/puzzle_piece.gd")
+	const PuzzleMove := preload("res://game/puzzle/core/puzzle_move.gd")
 
 
 	func run() -> Array[String]:
@@ -548,7 +548,7 @@ class PuzzleTilePieceCase extends Node:
 	## exclusion, board integration and the legacy polygon fallback.
 
 	const TILESET := preload("res://resources/tilesets/primordial_tileset.tres")
-	const TILE_PIECE_SCRIPT := preload("res://scripts/puzzle/view/puzzle_tile_piece.gd")
+	const TILE_PIECE_SCRIPT := preload("res://game/puzzle/view/puzzle_tile_piece.gd")
 
 
 	func run() -> Array[String]:
@@ -760,7 +760,7 @@ class PuzzleBoardAutoCase extends Node:
 	## Coverage for the auto-split board: chunking a painted TileMapLayer into
 	## equal-size PuzzleTilePieces, including void chunks and regeneration.
 
-	const AUTO_BOARD := preload("res://scripts/puzzle/view/puzzle_board_auto.gd")
+	const AUTO_BOARD := preload("res://game/puzzle/view/puzzle_board_auto.gd")
 	const TILESET := preload("res://resources/tilesets/primordial_tileset.tres")
 
 
@@ -916,11 +916,11 @@ class PuzzleBoardShufflerCase extends Node:
 	## Coverage for the scramble pipeline: the pure random walk, the PuzzleBoard
 	## adoption API and the PuzzleBoardShuffler node component.
 
-	const PuzzleScrambler := preload("res://scripts/puzzle/systems/puzzle_scrambler.gd")
-	const SlidingPuzzleRuleSet := preload("res://scripts/puzzle/rules/sliding_puzzle_rule_set.gd")
-	const PuzzleSession := preload("res://scripts/puzzle/systems/puzzle_session.gd")
-	const PUZZLE_BOARD := preload("res://scripts/puzzle/view/puzzle_board.gd")
-	const PUZZLE_SHUFFLER := preload("res://scripts/puzzle/view/puzzle_board_shuffler.gd")
+	const PuzzleScrambler := preload("res://game/puzzle/systems/puzzle_scrambler.gd")
+	const SlidingPuzzleRuleSet := preload("res://game/puzzle/rules/sliding_puzzle_rule_set.gd")
+	const PuzzleSession := preload("res://game/puzzle/systems/puzzle_session.gd")
+	const PUZZLE_BOARD := preload("res://game/puzzle/view/puzzle_board.gd")
+	const PUZZLE_SHUFFLER := preload("res://game/puzzle/view/puzzle_board_shuffler.gd")
 	const TILESET := preload("res://resources/tilesets/primordial_tileset.tres")
 
 
@@ -1223,7 +1223,7 @@ class PuzzleAutoRoomCase extends Node:
 	## diamond), the shuffler scrambled it on load, and the editor-only source
 	## layers stayed out of the runtime.
 
-	const AUTO_BOARD := preload("res://scripts/puzzle/view/puzzle_board_auto.gd")
+	const AUTO_BOARD := preload("res://game/puzzle/view/puzzle_board_auto.gd")
 	const RUNTIME := "res://scenes/rooms/generated/main_room_02_00/runtime.tscn"
 	const BOARD_SIZE := Vector2i(21, 21)
 	const VOID_CELLS := 25
@@ -1291,8 +1291,8 @@ class PuzzleRoomContractCase extends Node:
 
 	const WORLD_PATH := "res://resources/worlds/the_world.tres"
 	const RUNTIME_SCENE_PATH := "res://scenes/rooms/generated/room_04_00/runtime.tscn"
-	const PUZZLE_BOARD_SCRIPT := preload("res://scripts/puzzle/view/puzzle_board.gd")
-	const PUZZLE_MOVE := preload("res://scripts/puzzle/core/puzzle_move.gd")
+	const PUZZLE_BOARD_SCRIPT := preload("res://game/puzzle/view/puzzle_board.gd")
+	const PUZZLE_MOVE := preload("res://game/puzzle/core/puzzle_move.gd")
 
 
 	func run() -> Array[String]:

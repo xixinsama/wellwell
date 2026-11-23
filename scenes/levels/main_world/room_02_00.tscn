@@ -1,10 +1,10 @@
 [gd_scene format=4 uid="uid://cqayo1oic07hs"]
 
 [ext_resource type="PackedScene" uid="uid://oa5ui3h6fkhd" path="res://scenes/rooms/template/level_template.tscn" id="1_opgtt"]
-[ext_resource type="Script" uid="uid://b8b1cilmjmmes" path="res://scripts/puzzle/view/puzzle_tile_piece.gd" id="3_3rxhw"]
+[ext_resource type="Script" uid="uid://b8b1cilmjmmes" path="res://game/puzzle/view/puzzle_tile_piece.gd" id="3_3rxhw"]
 [ext_resource type="TileSet" uid="uid://ct7c6ejoixgkq" path="res://resources/tilesets/primordial_tileset.tres" id="4_d67vf"]
-[ext_resource type="Script" uid="uid://clq6ogk22jc64" path="res://scripts/puzzle/view/puzzle_board_auto.gd" id="5_auto"]
-[ext_resource type="Script" uid="uid://e2akm7fipfq0" path="res://scripts/puzzle/view/puzzle_board_shuffler.gd" id="6_shuf"]
+[ext_resource type="Script" uid="uid://clq6ogk22jc64" path="res://game/puzzle/view/puzzle_board_auto.gd" id="5_auto"]
+[ext_resource type="Script" uid="uid://e2akm7fipfq0" path="res://game/puzzle/view/puzzle_board_shuffler.gd" id="6_shuf"]
 
 [node name="Room_02_00" unique_id=1018949667 instance=ExtResource("1_opgtt")]
 room_id = "main_room_02_00"

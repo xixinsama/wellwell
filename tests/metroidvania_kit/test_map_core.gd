@@ -71,7 +71,7 @@ class MetroidvaniaContractCase extends Node:
 	const MAP_VIEW := "res://addons/metroidvania_kit/map/ui/map_view.tscn"
 	const MINIMAP := "res://addons/metroidvania_kit/map/ui/minimap.tscn"
 	const MAP_RENDERER := "res://addons/metroidvania_kit/map/ui/map_renderer.gd"
-	const MAIN_SCRIPT := "res://scripts/app/main.gd"
+	const MAIN_SCRIPT := "res://game/app/main.gd"
 
 
 	class FakeDiscovery extends RefCounted:

@@ -16,12 +16,12 @@
 
 1. 绑定房间时把 `Terrain/BackTiles` **克隆**一份（`tile_set` + `tile_map_data` 拷贝，
    原节点不动）塞进一个房间大小的 `SubViewport`，用
-   `scripts/shaders/backdrop_shadow_mask.gdshader` 把它画成**白色剪影**（只有 alpha 有意义）。
+   `game/shaders/backdrop_shadow_mask.gdshader` 把它画成**白色剪影**（只有 alpha 有意义）。
    渲染一次（`UPDATE_ONCE`），两帧后显式切到 `UPDATE_DISABLED`，所以静态房间每帧 0 开销。
 2. 在这层剪影上画一个整房间的 quad（`Sprite2D`，父节点是房间的 `Background` 容器），
    `z_index = 0`：它排在 plate（−1）之后、`BackTiles`（0）之前，
    所以阴影只落在背景板上、被瓦片自己盖住 —— 读起来就是瓦片投影到了背墙上。
-3. `scripts/shaders/backdrop_shadow.gdshader`（`render_mode blend_mul`）：
+3. `game/shaders/backdrop_shadow.gdshader`（`render_mode blend_mul`）：
    采样剪影时按 `offset_px` 偏移、用 16 个黄金角采样点做高斯模糊，然后
    `mix(1.0, shadow_tint, coverage * strength)` 乘到背景板上。乘算保证它只会压暗、永远不会提亮。
 

@@ -42,7 +42,7 @@ enum ControlMode { JUMP, DRAG }
 
 const DRAG_THRESHOLD_PX := 4.0
 const DRAG_ANIMATION_SECONDS := 0.08
-const AIM_ARROW_SCRIPT := preload("res://scripts/puzzle/view/puzzle_aim_arrow.gd")
+const AIM_ARROW_SCRIPT := preload("res://game/puzzle/view/puzzle_aim_arrow.gd")
 const AIM_DEADZONE := 0.3
 const AIM_MIN_DOT := 0.7071068
 

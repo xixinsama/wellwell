@@ -1,16 +1,16 @@
 # CRT 屏幕效果（CanvasLayer 128）
 
-这一层的全部内容：`scenes/ui/crt_overlay.tscn`（一个 `CanvasLayer` + 一张全屏 `ColorRect`）和 `scripts/shaders/crt_screen.gdshader`（一个 `canvas_item` 片元着色器）。开关只有一个：视频设置里的 `crt_enabled`。
+这一层的全部内容：`scenes/ui/crt_overlay.tscn`（一个 `CanvasLayer` + 一张全屏 `ColorRect`）和 `game/shaders/crt_screen.gdshader`（一个 `canvas_item` 片元着色器）。开关只有一个：视频设置里的 `crt_enabled`。
 
 ## 它在整个画面里的位置
 
 世界先在 `SubViewport` 里画完（主场景 322×182，`scenes/app/main.tscn:56-62`），再由 `SubViewportContainer` 按 `stretch_shrink = 4` 放大（`scenes/app/main.tscn:44-53`）；`CrtOverlay` 是 `CanvasLayer`、`layer=128`（`scenes/app/main.tscn:78`、`scenes/ui/crt_overlay.tscn:9`），排在放大之后的最上层。
 
-所以它工作在**最终画面像素**上：shader 用 `SCREEN_UV`（`scripts/shaders/crt_screen.gdshader:25`），画布固定 1280×720（`project.godot:30-33` 的 `stretch/mode="viewport"`，与实际窗口大小无关），一个设计像素 = 4 个画布像素。它不接收鼠标（`mouse_filter = 2`，`scenes/ui/crt_overlay.tscn:19`）。
+所以它工作在**最终画面像素**上：shader 用 `SCREEN_UV`（`game/shaders/crt_screen.gdshader:25`），画布固定 1280×720（`project.godot:30-33` 的 `stretch/mode="viewport"`，与实际窗口大小无关），一个设计像素 = 4 个画布像素。它不接收鼠标（`mouse_filter = 2`，`scenes/ui/crt_overlay.tscn:19`）。
 
 它不只在主场景里：关卡 runner 也自己挂一份，`scenes/levels/test_world/runners/light_lab_runner.tscn:44` 实例化 `scenes/ui/crt_overlay.tscn`（那个场景的子视口是 320×180，`runners/light_lab_runner.tscn:30-34`）。
 
-`source_size` 用来把扫描线/掩罩/色偏的周期折回设计像素。**它没有被覆盖**：两份 `ShaderMaterial` 都只写了 `shader`（`scenes/ui/crt_overlay.tscn:6-7`、`scenes/app/main.tscn:19-20`），一个 `shader_parameter/...` 都没有；`scripts/ui/crt_overlay.gd` 只改 `visible`（`:20-24`），全项目没有别处写这个 uniform。于是它一直是 shader 默认的 `vec2(322.0, 182.0)`（`crt_screen.gdshader:14`）——正好等于主场景子视口的尺寸（322×182），而窗口里**看得见的是 320×180**（容器偏移 −4 px，`scenes/app/main.tscn:48-51`）。后果见下面掩罩那一节。
+`source_size` 用来把扫描线/掩罩/色偏的周期折回设计像素。**它没有被覆盖**：两份 `ShaderMaterial` 都只写了 `shader`（`scenes/ui/crt_overlay.tscn:6-7`、`scenes/app/main.tscn:19-20`），一个 `shader_parameter/...` 都没有；`game/ui/crt_overlay.gd` 只改 `visible`（`:20-24`），全项目没有别处写这个 uniform。于是它一直是 shader 默认的 `vec2(322.0, 182.0)`（`crt_screen.gdshader:14`）——正好等于主场景子视口的尺寸（322×182），而窗口里**看得见的是 320×180**（容器偏移 −4 px，`scenes/app/main.tscn:48-51`）。后果见下面掩罩那一节。
 
 ## 它做了什么
 
@@ -56,7 +56,7 @@
 
 ## 参数
 
-场景里没有任何 `shader_parameter`，所以全部取 shader 默认值（`scripts/shaders/crt_screen.gdshader:14-22`）：
+场景里没有任何 `shader_parameter`，所以全部取 shader 默认值（`game/shaders/crt_screen.gdshader:14-22`）：
 
 | uniform | 场景实际用的值 | 作用 |
 | :--- | :--- | :--- |
@@ -84,7 +84,7 @@ godot --path . --resolution 1280x720 -s res://tools/gas_diagnostic.gd -- --scene
 
 - `render_inspector.gd` 的 `full.png` 来自 `_viewport.get_texture()`（`tools/render_inspector.gd:328`），是子视口，和屏幕上差着放大 + CRT 两步。
 - `gas_diagnostic.gd` 的 `window_*.png` 来自根窗口（`root.get_texture()`，`tools/gas_diagnostic.gd:471`），`window_nocrt_*.png` 是同一帧把 overlay 关掉再抓（`:473-483`）。两张相减就是这个层的贡献。
-- 界面开关：设置 → 视频设置 → `CRT 滤镜`（`scripts/save/settings_catalog.gd:221-228`，文案在 `localization/menu.csv:64-65`，默认开）。
+- 界面开关：设置 → 视频设置 → `CRT 滤镜`（`game/save/settings_catalog.gd:221-228`，文案在 `localization/menu.csv:64-65`，默认开）。
 
 ## 容易忘的点
 

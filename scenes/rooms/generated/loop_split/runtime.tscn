@@ -31,165 +31,165 @@ size = Vector2(32, 14)
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_p6qxv"]
 size = Vector2(32, 8)
 
-[node name="RoomRuntimeContent" type="Node2D" unique_id=1208377696]
+[node name="RoomRuntimeContent" type="Node2D" unique_id=13333810]
 
-[node name="Entities" type="Node2D" parent="." unique_id=234216916]
+[node name="Entities" type="Node2D" parent="." unique_id=1502010023]
 
-[node name="StartSpawn" type="Marker2D" parent="Entities" unique_id=1993543087]
+[node name="StartSpawn" type="Marker2D" parent="Entities" unique_id=622621259]
 script = ExtResource("1_2cnbu")
 spawn_id = "start"
 
-[node name="Basin_split_pool" type="Node2D" parent="Entities" unique_id=766844535]
+[node name="Basin_split_pool" type="Node2D" parent="Entities" unique_id=1407471975]
 position = Vector2(48, 128)
 script = ExtResource("2_3key5")
 size_cells = Vector2i(28, 5)
 basin_id = "split_pool"
 
-[node name="Falling0" type="AnimatableBody2D" parent="Entities" unique_id=479839388]
+[node name="Falling0" type="AnimatableBody2D" parent="Entities" unique_id=1596728048]
 position = Vector2(64, 96)
 script = ExtResource("3_olt15")
 
-[node name="FallMotion" type="Node" parent="Entities/Falling0" unique_id=2044759308]
+[node name="FallMotion" type="Node" parent="Entities/Falling0" unique_id=525479431]
 script = ExtResource("4_i2eaq")
 gravity = 760.0
 terminal_velocity = 520.0
 activation_delay = 0.18
 
-[node name="RiderTrigger" type="Area2D" parent="Entities/Falling0" unique_id=1905146442]
+[node name="RiderTrigger" type="Area2D" parent="Entities/Falling0" unique_id=924570410]
 collision_layer = 0
 collision_mask = 2
 monitorable = false
 script = ExtResource("5_2m2j4")
 target_paths = Array[NodePath]([NodePath("../FallMotion")])
 
-[node name="_CollisionShape2D_2" type="CollisionShape2D" parent="Entities/Falling0/RiderTrigger" unique_id=1948890742]
+[node name="_CollisionShape2D_2" type="CollisionShape2D" parent="Entities/Falling0/RiderTrigger" unique_id=319522707]
 position = Vector2(16, 1)
 shape = SubResource("RectangleShape2D_tmkmq")
 
-[node name="_CollisionShape2D_3" type="CollisionShape2D" parent="Entities/Falling0" unique_id=975262741]
+[node name="_CollisionShape2D_3" type="CollisionShape2D" parent="Entities/Falling0" unique_id=1707976408]
 position = Vector2(16, 4)
 shape = SubResource("RectangleShape2D_g7il2")
 
-[node name="Visual" type="Polygon2D" parent="Entities/Falling0" unique_id=841873859]
+[node name="Visual" type="Polygon2D" parent="Entities/Falling0" unique_id=101983780]
 color = Color(0.4, 0.3, 0.24, 1)
 polygon = PackedVector2Array(0, 0, 32, 0, 32, 8, 0, 8)
 
-[node name="Cap" type="Polygon2D" parent="Entities/Falling0" unique_id=1557352221]
+[node name="Cap" type="Polygon2D" parent="Entities/Falling0" unique_id=1626060122]
 color = Color(0.78, 0.46, 0.32, 1)
 polygon = PackedVector2Array(0, 0, 32, 0, 32, 2, 0, 2)
 
-[node name="Falling1" type="AnimatableBody2D" parent="Entities" unique_id=1643405921]
+[node name="Falling1" type="AnimatableBody2D" parent="Entities" unique_id=1016274883]
 position = Vector2(112, 96)
 script = ExtResource("3_olt15")
 
-[node name="FallMotion" type="Node" parent="Entities/Falling1" unique_id=1499958437]
+[node name="FallMotion" type="Node" parent="Entities/Falling1" unique_id=2014447391]
 script = ExtResource("4_i2eaq")
 gravity = 760.0
 terminal_velocity = 520.0
 activation_delay = 0.18
 
-[node name="RiderTrigger" type="Area2D" parent="Entities/Falling1" unique_id=315051921]
+[node name="RiderTrigger" type="Area2D" parent="Entities/Falling1" unique_id=2146749159]
 collision_layer = 0
 collision_mask = 2
 monitorable = false
 script = ExtResource("5_2m2j4")
 target_paths = Array[NodePath]([NodePath("../FallMotion")])
 
-[node name="_CollisionShape2D_4" type="CollisionShape2D" parent="Entities/Falling1/RiderTrigger" unique_id=1422816389]
+[node name="_CollisionShape2D_4" type="CollisionShape2D" parent="Entities/Falling1/RiderTrigger" unique_id=591156757]
 position = Vector2(16, 1)
 shape = SubResource("RectangleShape2D_n3yeo")
 
-[node name="_CollisionShape2D_5" type="CollisionShape2D" parent="Entities/Falling1" unique_id=774870136]
+[node name="_CollisionShape2D_5" type="CollisionShape2D" parent="Entities/Falling1" unique_id=1637617856]
 position = Vector2(16, 4)
 shape = SubResource("RectangleShape2D_u3i8v")
 
-[node name="Visual" type="Polygon2D" parent="Entities/Falling1" unique_id=748737985]
+[node name="Visual" type="Polygon2D" parent="Entities/Falling1" unique_id=1546628457]
 color = Color(0.4, 0.3, 0.24, 1)
 polygon = PackedVector2Array(0, 0, 32, 0, 32, 8, 0, 8)
 
-[node name="Cap" type="Polygon2D" parent="Entities/Falling1" unique_id=1465719941]
+[node name="Cap" type="Polygon2D" parent="Entities/Falling1" unique_id=1146450457]
 color = Color(0.78, 0.46, 0.32, 1)
 polygon = PackedVector2Array(0, 0, 32, 0, 32, 2, 0, 2)
 
-[node name="Falling2" type="AnimatableBody2D" parent="Entities" unique_id=610629144]
+[node name="Falling2" type="AnimatableBody2D" parent="Entities" unique_id=1077170200]
 position = Vector2(160, 96)
 script = ExtResource("3_olt15")
 
-[node name="FallMotion" type="Node" parent="Entities/Falling2" unique_id=195494651]
+[node name="FallMotion" type="Node" parent="Entities/Falling2" unique_id=1665440196]
 script = ExtResource("4_i2eaq")
 gravity = 760.0
 terminal_velocity = 520.0
 activation_delay = 0.18
 
-[node name="RiderTrigger" type="Area2D" parent="Entities/Falling2" unique_id=1147675381]
+[node name="RiderTrigger" type="Area2D" parent="Entities/Falling2" unique_id=1537054880]
 collision_layer = 0
 collision_mask = 2
 monitorable = false
 script = ExtResource("5_2m2j4")
 target_paths = Array[NodePath]([NodePath("../FallMotion")])
 
-[node name="_CollisionShape2D_6" type="CollisionShape2D" parent="Entities/Falling2/RiderTrigger" unique_id=1565800835]
+[node name="_CollisionShape2D_6" type="CollisionShape2D" parent="Entities/Falling2/RiderTrigger" unique_id=53952183]
 position = Vector2(16, 1)
 shape = SubResource("RectangleShape2D_21fbs")
 
-[node name="_CollisionShape2D_7" type="CollisionShape2D" parent="Entities/Falling2" unique_id=1335213460]
+[node name="_CollisionShape2D_7" type="CollisionShape2D" parent="Entities/Falling2" unique_id=1346910769]
 position = Vector2(16, 4)
 shape = SubResource("RectangleShape2D_3rqqn")
 
-[node name="Visual" type="Polygon2D" parent="Entities/Falling2" unique_id=152195279]
+[node name="Visual" type="Polygon2D" parent="Entities/Falling2" unique_id=1081709527]
 color = Color(0.4, 0.3, 0.24, 1)
 polygon = PackedVector2Array(0, 0, 32, 0, 32, 8, 0, 8)
 
-[node name="Cap" type="Polygon2D" parent="Entities/Falling2" unique_id=44165857]
+[node name="Cap" type="Polygon2D" parent="Entities/Falling2" unique_id=735246760]
 color = Color(0.78, 0.46, 0.32, 1)
 polygon = PackedVector2Array(0, 0, 32, 0, 32, 2, 0, 2)
 
-[node name="Falling3" type="AnimatableBody2D" parent="Entities" unique_id=411205149]
+[node name="Falling3" type="AnimatableBody2D" parent="Entities" unique_id=612419489]
 position = Vector2(208, 96)
 script = ExtResource("3_olt15")
 
-[node name="FallMotion" type="Node" parent="Entities/Falling3" unique_id=121405543]
+[node name="FallMotion" type="Node" parent="Entities/Falling3" unique_id=805132858]
 script = ExtResource("4_i2eaq")
 gravity = 760.0
 terminal_velocity = 520.0
 activation_delay = 0.18
 
-[node name="RiderTrigger" type="Area2D" parent="Entities/Falling3" unique_id=295384744]
+[node name="RiderTrigger" type="Area2D" parent="Entities/Falling3" unique_id=1082709429]
 collision_layer = 0
 collision_mask = 2
 monitorable = false
 script = ExtResource("5_2m2j4")
 target_paths = Array[NodePath]([NodePath("../FallMotion")])
 
-[node name="_CollisionShape2D_8" type="CollisionShape2D" parent="Entities/Falling3/RiderTrigger" unique_id=2027396299]
+[node name="_CollisionShape2D_8" type="CollisionShape2D" parent="Entities/Falling3/RiderTrigger" unique_id=1014931041]
 position = Vector2(16, 1)
 shape = SubResource("RectangleShape2D_whiuc")
 
-[node name="_CollisionShape2D_9" type="CollisionShape2D" parent="Entities/Falling3" unique_id=678394874]
+[node name="_CollisionShape2D_9" type="CollisionShape2D" parent="Entities/Falling3" unique_id=602204912]
 position = Vector2(16, 4)
 shape = SubResource("RectangleShape2D_p6qxv")
 
-[node name="Visual" type="Polygon2D" parent="Entities/Falling3" unique_id=987292395]
+[node name="Visual" type="Polygon2D" parent="Entities/Falling3" unique_id=129107790]
 color = Color(0.4, 0.3, 0.24, 1)
 polygon = PackedVector2Array(0, 0, 32, 0, 32, 8, 0, 8)
 
-[node name="Cap" type="Polygon2D" parent="Entities/Falling3" unique_id=1107387370]
+[node name="Cap" type="Polygon2D" parent="Entities/Falling3" unique_id=866855334]
 color = Color(0.78, 0.46, 0.32, 1)
 polygon = PackedVector2Array(0, 0, 32, 0, 32, 2, 0, 2)
 
-[node name="FromEntry" type="Marker2D" parent="Entities" unique_id=147986593]
+[node name="FromEntry" type="Marker2D" parent="Entities" unique_id=1480040218]
 position = Vector2(24, 120)
 script = ExtResource("1_2cnbu")
 spawn_id = "from_entry"
 
-[node name="WestExit" type="Node2D" parent="Entities" unique_id=215458059]
+[node name="WestExit" type="Node2D" parent="Entities" unique_id=1740394087]
 position = Vector2(8, 104)
 script = ExtResource("6_qilrl")
 entity_id = "west"
 
-[node name="NorthExit" type="Node2D" parent="Entities" unique_id=1581452543]
+[node name="NorthExit" type="Node2D" parent="Entities" unique_id=302275379]
 position = Vector2(288, 8)
 script = ExtResource("6_qilrl")
 entity_id = "north"
 
-[node name="Foreground" type="Node2D" parent="." unique_id=169885388]
+[node name="Foreground" type="Node2D" parent="." unique_id=1027233708]

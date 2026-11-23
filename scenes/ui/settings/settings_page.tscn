@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=3 uid="uid://bqts0wbyvwmb0"]
 
-[ext_resource type="Script" uid="uid://cge4empgdygjl" path="res://scripts/ui/settings/settings_page.gd" id="1_page"]
+[ext_resource type="Script" uid="uid://cge4empgdygjl" path="res://game/ui/settings/settings_page.gd" id="1_page"]
 
 [node name="SettingsPage" type="ScrollContainer"]
 horizontal_scroll_mode = 0

@@ -16,7 +16,7 @@
 
 **`BackTiles` 到底有没有碰撞？** 图块里有碰撞多边形（见"图集与碰撞"一节），但层上把碰撞关掉了：`collision_enabled = false`。同一份图集放进 `SolidTiles` 才会碰撞。
 
-**`DetailTiles` 和梯子。** 设计意图是梯子/藤蔓这类纯装饰放这一层，但代码和数据都不是这样：`LadderAreaBuilder` 不看层名，它遍历 `Terrain` 下**每一个** `TileMapLayer`，按 `source_id == 0` + 图集坐标 `(0, 7)` 认梯子（`scripts/world/ladder_tile_area_builder.gd:7-8`、`:19-32`），把相邻格子合并成 `LadderZone`（`Area2D`，`:33-45`）。`tests/world/test_ladder_tiles.gd:17-24` 甚至用一个**没名字**的层放 `(0,7)`，说明层名完全不参与判定。实际数据里梯子都在 `SolidTiles`（`loop_entry` 6 格、`room_01_00` 13 格、`s_one` 11 格、`test_fog_start` 6 格），而 `DetailTiles` 在所有烘焙房间中几乎为空，只有 `test_fog_start`（4 格 `(1,5)`）和 `test_fog_wide`（1 格）用过。
+**`DetailTiles` 和梯子。** 设计意图是梯子/藤蔓这类纯装饰放这一层，但代码和数据都不是这样：`LadderAreaBuilder` 不看层名，它遍历 `Terrain` 下**每一个** `TileMapLayer`，按 `source_id == 0` + 图集坐标 `(0, 7)` 认梯子（`game/world/ladder_tile_area_builder.gd:7-8`、`:19-32`），把相邻格子合并成 `LadderZone`（`Area2D`，`:33-45`）。`tests/world/test_ladder_tiles.gd:17-24` 甚至用一个**没名字**的层放 `(0,7)`，说明层名完全不参与判定。实际数据里梯子都在 `SolidTiles`（`loop_entry` 6 格、`room_01_00` 13 格、`s_one` 11 格、`test_fog_start` 6 格），而 `DetailTiles` 在所有烘焙房间中几乎为空，只有 `test_fog_start`（4 格 `(1,5)`）和 `test_fog_wide`（1 格）用过。
 
 梯子放在 `SolidTiles` 里不算墙，原因是光/描边/迷雾按**碰撞多边形**判实心，`(0,7)` 没有多边形所以被跳过（`light_field.gd:695-700`、`terrain_highlight.gd:234-241`、`fog_of_war.gd:792-804`）。但气体和水按**格子有没有瓦片**判实心（`atmosphere.gd:574-585`、`water_field.gd:623`、`water_grid.gd:502`），会把它当实心——见"容易忘的点"。
 
@@ -34,18 +34,18 @@
 
 | 系统 | 读哪一层 | 读来干什么 | 代码位置 |
 | :--- | :--- | :--- | :--- |
-| `NormalField` | `BackTiles` + `SolidTiles` | 用生成的 `normal_tileset` 克隆进房间大小的视口渲一次，得到法线缓冲（顺序见上节） | `scripts/world/normal_field.gd:65`、`:264-274`、`:290-360` |
-| `BackdropShadow` | `BackTiles` | 把瓦片合成一张房间剪影，做背景板上的投影 | `scripts/world/backdrop_shadow.gd:45`、`:244-248`、`:258-293` |
-| `LightField` | `SolidTiles`（碰撞多边形） | `_build_occluders()` 收格子 → `_emit_occluders()` 合并成长边 → `_push_occluder()` 建 `LightOccluder2D`；玻璃 `(0,3)` 跳过 | `scripts/world/light_field.gd:679-706`、`:712-742`、`:753-767` |
+| `NormalField` | `BackTiles` + `SolidTiles` | 用生成的 `normal_tileset` 克隆进房间大小的视口渲一次，得到法线缓冲（顺序见上节） | `game/world/normal_field.gd:65`、`:264-274`、`:290-360` |
+| `BackdropShadow` | `BackTiles` | 把瓦片合成一张房间剪影，做背景板上的投影 | `game/world/backdrop_shadow.gd:45`、`:244-248`、`:258-293` |
+| `LightField` | `SolidTiles`（碰撞多边形） | `_build_occluders()` 收格子 → `_emit_occluders()` 合并成长边 → `_push_occluder()` 建 `LightOccluder2D`；玻璃 `(0,3)` 跳过 | `game/world/light_field.gd:679-706`、`:712-742`、`:753-767` |
 | `Atmosphere` | `SolidTiles`（整格，不看多边形） | 8 px 一格的气体遮罩，气体进不去 | `addons/fluid_kit/runtime/gas/atmosphere.gd:179`、`:562-585` |
 | `FogOfWar` | `SolidTiles`（碰撞多边形，玻璃跳过，单向砖单列） | 视线阻挡表，决定格子是可见/已探索 | `addons/metroidvania_kit/map/discovery/fog_of_war.gd:348`、`:770-809` |
 | `WaterField` | `SolidTiles`（整格） | 逐列从下往上找第一格空位当地板高度 | `addons/fluid_kit/runtime/water/water_field.gd:128`、`:611-626` |
 | `WaterGrid` | `SolidTiles`（整格） | 单元水体的实心格，墙把水体积拿走 | `addons/fluid_kit/runtime/water/water_grid.gd:124`、`:492-504` |
-| `TerrainHighlight` | `SolidTiles`（碰撞多边形） | 沿轮廓画内侧高光，并按 hero 可达空气只亮一侧 | `scripts/world/terrain_highlight.gd:30`、`:214-243` |
-| `LadderAreaBuilder` | `Terrain` 下**所有**层，按 `source_id` + `(0,7)` 认梯子 | 合并成 `LadderZone`（`Area2D`） | `scripts/world/ladder_tile_area_builder.gd:7-8`、`:19-45` |
-| `SpikeHazardAreaBuilder` | `Terrain` 下**所有**层，按 `source_id` + `(0,8)` 认尖刺 | 按备选朝向生成半格 `Killzone`（`Area2D`） | `scripts/world/spike_hazard_area_builder.gd` |
-| `CrumbleRuntime` | `SolidTiles`，外加旧层 `CrumbleTiles`/`CrumbleOneWayTiles` | 找出 `(3,0)`/`(3,4)` 的可塌格子 | `scripts/world/crumble_runtime.gd:27-29`、`:73-79` |
-| `BackdropField` | **不读瓦片**，只把 `Terrain/BackTiles` 当 `CanvasItem` 调 `modulate` | 画背景板；和"读瓦片"是两回事 | `scripts/world/backdrop_field.gd:126-130` |
+| `TerrainHighlight` | `SolidTiles`（碰撞多边形） | 沿轮廓画内侧高光，并按 hero 可达空气只亮一侧 | `game/world/terrain_highlight.gd:30`、`:214-243` |
+| `LadderAreaBuilder` | `Terrain` 下**所有**层，按 `source_id` + `(0,7)` 认梯子 | 合并成 `LadderZone`（`Area2D`） | `game/world/ladder_tile_area_builder.gd:7-8`、`:19-45` |
+| `SpikeHazardAreaBuilder` | `Terrain` 下**所有**层，按 `source_id` + `(0,8)` 认尖刺 | 按备选朝向生成半格 `Killzone`（`Area2D`） | `game/world/spike_hazard_area_builder.gd` |
+| `CrumbleRuntime` | `SolidTiles`，外加旧层 `CrumbleTiles`/`CrumbleOneWayTiles` | 找出 `(3,0)`/`(3,4)` 的可塌格子 | `game/world/crumble_runtime.gd:27-29`、`:73-79` |
+| `BackdropField` | **不读瓦片**，只把 `Terrain/BackTiles` 当 `CanvasItem` 调 `modulate` | 画背景板；和"读瓦片"是两回事 | `game/world/backdrop_field.gd:126-130` |
 | `WorldTerrainRuntime` | `Terrain` 下三层是否齐全 | 不齐就不载入这间房 | `addons/platformer_kit/world/runtime/world_terrain_runtime.gd:84-93` |
 
 ## 图集与碰撞

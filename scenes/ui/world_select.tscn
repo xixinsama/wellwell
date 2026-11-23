@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://dgd45y0dr3dle"]
 
-[ext_resource type="Script" uid="uid://b6dvyc280fmqa" path="res://scripts/ui/world_select.gd" id="1_world_select"]
+[ext_resource type="Script" uid="uid://b6dvyc280fmqa" path="res://game/ui/world_select.gd" id="1_world_select"]
 [ext_resource type="Theme" uid="uid://dl2h74k2356hx" path="res://resources/ui/menu_theme.tres" id="2_theme"]
 [ext_resource type="Resource" uid="uid://brguunshrsh3i" path="res://resources/worlds/world_catalog.tres" id="3_catalog"]
 

@@ -13,7 +13,7 @@ class_name BackdropField
 ## background layer is a flat opaque fill that would hide the plate.
 
 const BACKDROP_TEXTURE: Texture2D = preload("res://assets/images/backdrop_well.png")
-const DRIFT_SHADER: Shader = preload("res://scripts/shaders/backdrop_drift.gdshader")
+const DRIFT_SHADER: Shader = preload("res://game/shaders/backdrop_drift.gdshader")
 const PLATE_NAME := "BackdropPlate"
 const ROOMS_PATH := NodePath("../TerrainRoot")
 

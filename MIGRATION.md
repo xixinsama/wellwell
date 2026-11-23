@@ -17,6 +17,8 @@ sources by world. Apply these path rewrites to forks of the project:
 | `scenes/levels/main/`, `scenes/levels/test/`, `scenes/levels/loop/`, `scenes/levels/room_*.tscn` | `scenes/levels/<world_id>/<room_id>.tscn` | Update `RoomData.source_scene_path`; bake fingerprints are content hashes and stay valid. |
 | `scenes/levels/generated/<world_id>/` | `scenes/levels/<world_id>/` | New, merged and split rooms are written next to the hand-authored ones. |
 | `scenes/levels/test/*_runner.tscn` | `scenes/levels/test_world/runners/` | Development launchers moved with the test world. |
+| `scripts/app/`, `scripts/player/`, `scripts/puzzle/`, `scripts/save/`, `scripts/ui/`, `scripts/world/`, `scripts/shaders/`, `scripts/util/` | `game/<same area>/` | Project code now lives only under `game/`; update preloads, scene script paths and autoload paths. |
+| `scripts/globals.gd` | `game/globals/viewport_reference.gd` | The `Globals` class name is unchanged; only the file path moved. |
 
 ## Directory Mappings
 
@@ -63,7 +65,7 @@ catalog fail to load. The editor now finds the stack next to the world as
 
 ## Fog Door Migration
 
-`scripts/world/fog_door.gd` is gone. `scenes/world/fog_door.tscn` keeps its path
+`game/world/fog_door.gd` is gone. `scenes/world/fog_door.tscn` keeps its path
 and its `Node2D` root but is now composed of `Body` (`StaticBody2D`),
 `DoorComponent2D` and `FogOccluderComponent2D`:
 

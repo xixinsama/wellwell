@@ -2,7 +2,7 @@ extends Node
 
 const FOG_VISIBILITY: Script = preload("res://addons/metroidvania_kit/map/discovery/fog_visibility.gd")
 const FOG_OF_WAR: Script = preload("res://addons/metroidvania_kit/map/discovery/fog_of_war.gd")
-const FOG_ZONE: Script = preload("res://scripts/world/fog_zone.gd")
+const FOG_ZONE: Script = preload("res://game/world/fog_zone.gd")
 const ROOM_DATA: Script = preload("res://addons/platformer_kit/world/data/room_data.gd")
 const FOG_OCCLUDER: Script = preload(
 	"res://addons/platformer_kit/platforms/components/fog_occluder_component_2d.gd"

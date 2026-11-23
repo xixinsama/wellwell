@@ -8,7 +8,7 @@ extends Node2D
 ## body only in jump mode (PlayerController removes the void layer while its
 ## control is locked for slider riding).
 
-const CELL_RECT_MERGER := preload("res://scripts/util/cell_rect_merger.gd")
+const CELL_RECT_MERGER := preload("res://game/util/cell_rect_merger.gd")
 
 @export var cell_size: int = 8
 ## Physics layer bit used by the generated body. Layer 4 in project.godot.

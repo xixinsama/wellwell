@@ -208,7 +208,7 @@ class TilesetNormalsCase extends Node:
 	## - a real baked room, bound through NormalField with `normal_tileset` assigned,
 	##   produces a map with the same cells as its solid layer and no missing tile.
 
-	const NORMAL_FIELD: Script = preload("res://scripts/world/normal_field.gd")
+	const NORMAL_FIELD: Script = preload("res://game/world/normal_field.gd")
 	const ROOM_DATA: Script = preload("res://addons/platformer_kit/world/data/room_data.gd")
 
 	const ALBEDO_PNG := "res://assets/images/primordial_tileset.png"

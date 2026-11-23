@@ -10,7 +10,7 @@ class BackdropFieldCase extends Node:
 	## inside the room's `Background` container (which precedes `Terrain`), with the
 	## background tilemap faded so the plate reads through it.
 
-	const BACKDROP_SCRIPT := preload("res://scripts/world/backdrop_field.gd")
+	const BACKDROP_SCRIPT := preload("res://game/world/backdrop_field.gd")
 
 	const ROOM_SIZE := Vector2(320, 180)
 
@@ -114,7 +114,7 @@ class BackdropShadowCase extends Node:
 	## received, and the one global offset direction. The blur and the actual darkening
 	## are covered by the windowed captures in the notes.
 
-	const BACKDROP_SHADOW: Script = preload("res://scripts/world/backdrop_shadow.gd")
+	const BACKDROP_SHADOW: Script = preload("res://game/world/backdrop_shadow.gd")
 	const ROOM_DATA: Script = preload("res://addons/platformer_kit/world/data/room_data.gd")
 
 	const TILE := 8
@@ -292,7 +292,7 @@ class DustFieldCase extends Node:
 	## seeded, the positions are integral, and the drift only ever wraps inside the
 	## room rectangle.
 
-	const DUST_FIELD: Script = preload("res://scripts/world/dust_field.gd")
+	const DUST_FIELD: Script = preload("res://game/world/dust_field.gd")
 	const ROOM_DATA: Script = preload("res://addons/platformer_kit/world/data/room_data.gd")
 
 

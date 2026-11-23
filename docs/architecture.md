@@ -10,16 +10,16 @@ the subsystem document you need from [docs/README.md](README.md).
 - **Platformer Kit** — `addons/platformer_kit/` owns character motion, sensors,
   platforms, interaction, camera, save data, room streaming, world data
   contracts, the ability runtime (`abilities/`) and the combat runtime
-  (`combat/`). It must not preload `game/`, `scripts/`, `examples/`, project
-  scenes, or any optional addon.
+  (`combat/`). It must not preload `game/`, `examples/`, project scenes, or any
+  optional addon.
 - **Optional addons** — `platformer_debug` (overlay, TAS, tuning hotkeys),
   `metroidvania_kit` (progression, map discovery, fog, fast travel),
   `fluid_kit` (water and gas fields), `input_mapping` (rebindable controls),
   `pixelfx` (vendored pixel effect library), `world_editor` (main-screen
   authoring workbench), `godot_mcp` (development-only editor/game bridge).
-- **Game composition** — `game/`, `scripts/player/`, and `scenes/` assemble the
-  kit, the addons, and the current worlds. Game code may depend on the kit; the
-  kit never depends on game code.
+- **Game composition** — `game/` and `scenes/` assemble the kit, the addons,
+  and the current worlds. Game code may depend on the kit; the kit never depends
+  on game code. `game/` is the only home for project-specific code.
 - **Worlds** — `resources/worlds/*.tres` hold `WorldData` only: room
   placements, connections, stacks. The menu reads
   `resources/worlds/world_catalog.tres`.
@@ -41,8 +41,8 @@ the subsystem document you need from [docs/README.md](README.md).
 | `resources/rooms/generated/` | Baked `RoomData` resources | Never by hand — bake it |
 | `resources/player/`, `resources/tilesets/`, `resources/ui/` | Tuning, tilesets, theme | Art and feel tuning |
 | `addons/` | Reusable engine-side code (see Layers) | Framework work |
-| `game/` | Project-specific composition: collectibles, entities, interaction, map host, water motion | Gameplay assembly |
-| `scripts/player/`, `scripts/puzzle/`, `scripts/save/`, `scripts/ui/`, `scripts/world/` | Project gameplay systems not owned by an addon | Gameplay work |
+| `game/` | Project-specific code: app entry, player composition, puzzle, save/settings, UI, world fields, collectibles, entities, interaction, map host, water | Gameplay assembly |
+| `game/{app,player,puzzle,save,ui,world,shaders}` | Everything the kit does not own, grouped by subsystem | Any game-only change |
 | `tests/<owner>/` | One folder per module owner; every `test_*.gd` is listed in `tests/runtime_suite.gd` | Writing tests |
 | `tools/` | One-shot CLI maintenance scripts run with `-s` | Repo maintenance |
 | `examples/` | Movement, ability, combat, metroidvania and TAS fixture scenes | Trying the kit standalone |

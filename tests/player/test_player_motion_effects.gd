@@ -301,7 +301,7 @@ func _assert_real_landing_and_lock(failures: Array[String]) -> void:
 
 
 func _assert_controller_event_order(failures: Array[String]) -> void:
-	var source := FileAccess.get_file_as_string("res://scripts/player/player_controller.gd")
+	var source := FileAccess.get_file_as_string("res://game/player/player_controller.gd")
 	var jump_hook := source.find("_movement_context.just_jumped")
 	var slide := source.find("move_and_slide()")
 	var land_hook := source.find("not was_on_floor and is_on_floor()")

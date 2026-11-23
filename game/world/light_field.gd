@@ -24,8 +24,8 @@ extends Node2D
 ## per straight edge instead of one per tile.
 
 const LIGHT_GROUP := &"fog_light"
-const FOG_SHADER: Shader = preload("res://scripts/shaders/light_overlay.gdshader")
-const GLOW_SHADER: Shader = preload("res://scripts/shaders/light_glow.gdshader")
+const FOG_SHADER: Shader = preload("res://game/shaders/light_overlay.gdshader")
+const GLOW_SHADER: Shader = preload("res://game/shaders/light_glow.gdshader")
 ## Relief normal sources, mirrored by the shader's `normal_mode` uniform.
 const RELIEF_FLAT := 0
 const RELIEF_DERIVED := 1

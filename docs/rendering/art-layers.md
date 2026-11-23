@@ -36,22 +36,22 @@ z 由小到大，就是绘制顺序。`z_index` 对整个画布**全局排序**�
 
 | # | 层 | z | 谁负责（脚本） | 画的是什么 | 关键参数 | 分文档 |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| 1 | **背景板** `BackdropPlate` | −1 | `scripts/world/backdrop_field.gd` | 每个房间一张纯色/渐变底板，逐行轻微漂移 + 有序抖动量化，让"空"的背景有空气感 | `shimmer`、`dither_strength`、`dither_levels` | [backdrop-and-dust.md](backdrop-and-dust.md) |
+| 1 | **背景板** `BackdropPlate` | −1 | `game/world/backdrop_field.gd` | 每个房间一张纯色/渐变底板，逐行轻微漂移 + 有序抖动量化，让"空"的背景有空气感 | `shimmer`、`dither_strength`、`dither_levels` | [backdrop-and-dust.md](backdrop-and-dust.md) |
 | 2 | **地形瓦片** `BackTiles` / `SolidTiles` / `DetailTiles` | 0 | `world_terrain_runtime.gd` + 房间烘焙产物 | 背景瓦片（不碰撞、Layer 上 `collision_enabled = false`）、实心瓦片（碰撞 + 挡光 + 挡气 + 挡视线）、细节瓦片（纯装饰，`SolidTiles` 之后画；没有任何系统按名字读它）。注意**梯子放在 `SolidTiles`**，靠图集坐标 `(0,7)` 认，不靠层名 | 图集 `primordial_tileset.tres` | [layers/terrain-tiles.md](layers/terrain-tiles.md) |
 | 3 | **房间实体** `Entities` | 0 | 房间烘焙产物 | 灯、喷口、水盆、迷雾区、传送点 —— 都是"标记 + 少量自绘"（`_draw` 的编辑器图形运行时关闭） | 每个节点的导出参数 | 各自分文档 |
 | 4 | **水** `WaterField` / `WaterGrid` + `WaterGridSurface` | 0 / 1 | `addons/fluid_kit` | 水面 quad + 细胞流体表面（波纹、泡沫、深浅） | `water_*`、`ripple_*` | [water-and-mist.md](../systems/water-and-mist.md) |
-| 5 | **地形描边** `TerrainHighlight` | 1 | `scripts/world/terrain_highlight.gd` | 瓦片边缘 1px 的勾边，被光照图门控（暗处不亮） | `edge_alpha`、`lit_gain` | [terrain-highlight.md](../systems/terrain-highlight.md) |
+| 5 | **地形描边** `TerrainHighlight` | 1 | `game/world/terrain_highlight.gd` | 瓦片边缘 1px 的勾边，被光照图门控（暗处不亮） | `edge_alpha`、`lit_gain` | [terrain-highlight.md](../systems/terrain-highlight.md) |
 | 6 | **气体** `Atmosphere/GasLayer` | **5** | `addons/fluid_kit` 的 `atmosphere.gd` + `fog_layer.gdshader` | 一张覆盖整房间的 quad：三层气体密度 → 不透明度/颜色，加细节 tracer、体积自遮挡，最后用蓝噪声阈值量化成 32 级 | `gas_cell_pixels`、`gas_alpha`、`stipple_mode`、`volume_weight` | [layers/gas-layer.md](layers/gas-layer.md) |
-| 7 | **暗部** `LightShade` | **8** | `scripts/world/light_field.gd` + `light_overlay.gdshader` | 把整帧乘暗到 `ambient + 光图`，带法线浮雕（斜面的受光差） | `ambient`、`relief_strength`、`dither_strength` | [lighting.md](lighting.md) |
+| 7 | **暗部** `LightShade` | **8** | `game/world/light_field.gd` + `light_overlay.gdshader` | 把整帧乘暗到 `ambient + 光图`，带法线浮雕（斜面的受光差） | `ambient`、`relief_strength`、`dither_strength` | [lighting.md](lighting.md) |
 | 8 | **高光** `LightGlow` | **9** | `light_glow.gdshader` | 光图亮的地方**加色**，边缘向内收 1–2px，做出灯芯的溢出光 | `glow_gain`、`rim_shrink` | [lighting.md](lighting.md) |
-| 9 | **泛光** `ScreenBloom/BloomComposite` | **9** | `scripts/world/screen_bloom.gd` | 半分辨率阈值 + 水平/垂直模糊，再抖动加色合成（160×90 缓冲） | `threshold`、`intensity`、`radius` | [lighting.md](lighting.md) |
-| 10 | **灰尘** `DustField` | **9** | `scripts/world/dust_field.gd` | 56 个 1×1 白点，亮度按最近光源算，在光柱里才亮 | `count`、`drift`、`sway_*`、`lit_gain` | [backdrop-and-dust.md](backdrop-and-dust.md) |
-| 11 | **水花 / 坍塌碎片** | **9** | `scripts/world/crumble_runtime.gd`、`game/water/effects/water_splash_pixels.tscn` | 坍塌平台碎成的小贴图块（每块 `z_index = 9`）；水花的像素粒子由水的代码在撞击点实例化，z 跟随父节点 | 粒子数量、`debris_life` | [fog-zones-and-crumble.md](../systems/fog-zones-and-crumble.md) |
-| 12 | **背景瓦片投影** `BackdropTileShadow` | **10** | `scripts/world/backdrop_shadow.gd` | `BackTiles` 的剪影按主光源方向偏移、模糊，画成"瓦片投在背景板上的影子"；shader 自己把被瓦片盖住的区域挖掉 | `offset_px`、`key_extent`、`fill_erase`、`max_darkness` | [backdrop-and-dust.md](backdrop-and-dust.md) |
+| 9 | **泛光** `ScreenBloom/BloomComposite` | **9** | `game/world/screen_bloom.gd` | 半分辨率阈值 + 水平/垂直模糊，再抖动加色合成（160×90 缓冲） | `threshold`、`intensity`、`radius` | [lighting.md](lighting.md) |
+| 10 | **灰尘** `DustField` | **9** | `game/world/dust_field.gd` | 56 个 1×1 白点，亮度按最近光源算，在光柱里才亮 | `count`、`drift`、`sway_*`、`lit_gain` | [backdrop-and-dust.md](backdrop-and-dust.md) |
+| 11 | **水花 / 坍塌碎片** | **9** | `game/world/crumble_runtime.gd`、`game/water/effects/water_splash_pixels.tscn` | 坍塌平台碎成的小贴图块（每块 `z_index = 9`）；水花的像素粒子由水的代码在撞击点实例化，z 跟随父节点 | 粒子数量、`debris_life` | [fog-zones-and-crumble.md](../systems/fog-zones-and-crumble.md) |
+| 12 | **背景瓦片投影** `BackdropTileShadow` | **10** | `game/world/backdrop_shadow.gd` | `BackTiles` 的剪影按主光源方向偏移、模糊，画成"瓦片投在背景板上的影子"；shader 自己把被瓦片盖住的区域挖掉 | `offset_px`、`key_extent`、`fill_erase`、`max_darkness` | [backdrop-and-dust.md](backdrop-and-dust.md) |
 | 13 | **玩家** `Player` | **10** | `scenes/player/` | 角色本体 + 动作特效 | — | `docs/systems/player-effects.md` |
 | 14 | **迷雾** `FogOfWar/FogMask` | **10** | `addons/metroidvania_kit` + `fog_mask.gdshader` | 未探索格子上的雾，边缘长触须、被灯光推开、带聚光灯 | `zone_reveal_*`、`focus_*` | [fog-zones-and-crumble.md](../systems/fog-zones-and-crumble.md) |
 | 15 | **调试** `DebugOverlay/Visualizer` | 120 | `addons/platformer_debug` | 碰撞框、区域、法线调试视图（默认关） | `set_enabled` | [render-pipeline.md](render-pipeline.md) |
-| 16 | **CRT** `CrtOverlay` | CanvasLayer 128 | `scripts/ui/crt_overlay.gd` + `crt_screen.gdshader` | 在**窗口像素**上做扫描线、荫罩竖条、色散、暗角、磷光泛光 | `GlobalSettings.crt_enabled` | [layers/crt.md](layers/crt.md) |
+| 16 | **CRT** `CrtOverlay` | CanvasLayer 128 | `game/ui/crt_overlay.gd` + `crt_screen.gdshader` | 在**窗口像素**上做扫描线、荫罩竖条、色散、暗角、磷光泛光 | `GlobalSettings.crt_enabled` | [layers/crt.md](layers/crt.md) |
 
 第 15、16 层已经不在世界 SubViewport 里了：120 在世界画布里，CRT 在世界**放大之后**的窗口上。
 

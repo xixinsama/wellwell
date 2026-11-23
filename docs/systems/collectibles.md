@@ -41,7 +41,7 @@
 | `game/entities/number_pickup.gd` | 收集物实体：编号、浮动、光晕、接触收集、存档状态 |
 | `scenes/world/number_pickup.tscn` | 预制体（数字标签 + 两层加色光晕 + 检测区域） |
 | `game/collectibles/collectibles.gd` | 自动加载 `Collectibles`：全集扫描、按世界记录已收集、写读存档模块 `collectibles` |
-| `scripts/ui/collection_screen.gd` + `scenes/ui/collection_screen.tscn` | HUD 角标 + 全屏图鉴（SubViewport 之外，窗口分辨率） |
+| `game/ui/collection_screen.gd` + `scenes/ui/collection_screen.tscn` | HUD 角标 + 全屏图鉴（SubViewport 之外，窗口分辨率） |
 | `project.godot` | 自动加载 `Collectibles`、动作 `collection_toggle`（J） |
 
 存档格式（模块 `collectibles`）：

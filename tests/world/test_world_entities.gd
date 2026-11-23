@@ -577,7 +577,7 @@ class SpikeHazardCase extends Node:
 	## Atlas (0,8) is the spike. Its alternatives rotate it, every spike cell gets a
 	## half-tile Killzone, and touching one returns the player to `spawn_position`.
 
-	const BUILDER_PATH := "res://scripts/world/spike_hazard_area_builder.gd"
+	const BUILDER_PATH := "res://game/world/spike_hazard_area_builder.gd"
 	const TILESET_PATH := "res://resources/tilesets/primordial_tileset.tres"
 	const TEMPLATE_PATH := "res://scenes/rooms/template/level_template.tscn"
 	const ROOM_PATH := "res://scenes/levels/the_world/room_01_00.tscn"
@@ -752,7 +752,7 @@ class SpikeHazardCase extends Node:
 
 ## tests/world/test_ladder_tiles.gd
 class LadderTilesCase extends Node:
-	const BUILDER_PATH := "res://scripts/world/ladder_tile_area_builder.gd"
+	const BUILDER_PATH := "res://game/world/ladder_tile_area_builder.gd"
 	const TILESET_PATH := "res://resources/tilesets/primordial_tileset.tres"
 	const ROOM_BAKER := preload("res://addons/world_editor/authoring/room/room_baker.gd")
 
@@ -920,7 +920,7 @@ class FogDoorCase extends Node:
 	## sight blocker; closing it must restore both.
 
 	const DOOR_SCENE: PackedScene = preload("res://scenes/world/fog_door.tscn")
-	const RETIRED_SCRIPT := "res://scripts/world/fog_door.gd"
+	const RETIRED_SCRIPT := "res://game/world/fog_door.gd"
 	const DOOR_SIZE := Vector2(8.0, 16.0)
 
 
@@ -980,7 +980,7 @@ class FogDoorCase extends Node:
 
 ## tests/world/test_crumble_runtime.gd
 class CrumbleRuntimeCase extends Node:
-	const CRUMBLE_RUNTIME: Script = preload("res://scripts/world/crumble_runtime.gd")
+	const CRUMBLE_RUNTIME: Script = preload("res://game/world/crumble_runtime.gd")
 	const ROOM_DATA: Script = preload("res://addons/platformer_kit/world/data/room_data.gd")
 
 	const CELL := Vector2i(3, 2)

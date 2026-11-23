@@ -146,7 +146,7 @@ All notable Platformer Kit changes are recorded here. The project follows Semant
 
 ### Removed
 
-- Removed `scripts/world/fog_door.gd` and its unused `door_id` export; migrate
+- Removed `game/world/fog_door.gd` and its unused `door_id` export; migrate
   room overrides to the component prefab (`MIGRATION.md`).
 - Removed `PingPongMotionComponent2D`; migrate authored platforms to `WaypointMotionComponent2D`.
 

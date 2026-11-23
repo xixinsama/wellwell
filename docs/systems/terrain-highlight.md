@@ -72,4 +72,4 @@ var reach: PackedByteArray = highlight.compute_reach(entry, Vector2i(20, 10))  #
 ## 相关
 
 - 气体裁剪墙体的剪影：`Atmosphere._build_solid_mask()`（按瓦片格，比这里的像素级遮罩粗）。
-- 背面/背景的整屏底板：`scripts/world/backdrop_field.gd`。
+- 背面/背景的整屏底板：`game/world/backdrop_field.gd`。

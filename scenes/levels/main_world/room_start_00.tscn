@@ -1,8 +1,8 @@
 [gd_scene format=4 uid="uid://btjwepptogbsp"]
 
 [ext_resource type="PackedScene" uid="uid://oa5ui3h6fkhd" path="res://scenes/rooms/template/level_template.tscn" id="1_ysuyh"]
-[ext_resource type="Script" uid="uid://c7r1ne51tw1m8" path="res://scripts/puzzle/view/puzzle_board.gd" id="2_go6f7"]
-[ext_resource type="Script" uid="uid://b8b1cilmjmmes" path="res://scripts/puzzle/view/puzzle_tile_piece.gd" id="3_hgfgl"]
+[ext_resource type="Script" uid="uid://c7r1ne51tw1m8" path="res://game/puzzle/view/puzzle_board.gd" id="2_go6f7"]
+[ext_resource type="Script" uid="uid://b8b1cilmjmmes" path="res://game/puzzle/view/puzzle_tile_piece.gd" id="3_hgfgl"]
 [ext_resource type="TileSet" uid="uid://ct7c6ejoixgkq" path="res://resources/tilesets/primordial_tileset.tres" id="4_neljd"]
 
 [node name="RoomStart00" unique_id=1018949667 instance=ExtResource("1_ysuyh")]

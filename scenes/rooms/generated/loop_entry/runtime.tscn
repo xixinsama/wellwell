@@ -6,16 +6,16 @@
 [ext_resource type="Script" path="res://addons/platformer_kit/world/entities/save_point.gd" id="4_js24a"]
 [ext_resource type="Script" path="res://addons/platformer_kit/world/entities/room_entrance.gd" id="5_vp4ky"]
 
-[node name="RoomRuntimeContent" type="Node2D" unique_id=939800958]
+[node name="RoomRuntimeContent" type="Node2D" unique_id=51064424]
 
-[node name="Entities" type="Node2D" parent="." unique_id=1558394547]
+[node name="Entities" type="Node2D" parent="." unique_id=2064086199]
 
-[node name="StartSpawn" type="Marker2D" parent="Entities" unique_id=795886148]
+[node name="StartSpawn" type="Marker2D" parent="Entities" unique_id=693087344]
 position = Vector2(40, 32)
 script = ExtResource("1_glt1f")
 spawn_id = "start"
 
-[node name="Basin_entry_pool" type="Node2D" parent="Entities" unique_id=1811765475]
+[node name="Basin_entry_pool" type="Node2D" parent="Entities" unique_id=1116185146]
 position = Vector2(144, 144)
 script = ExtResource("2_awqqu")
 size_cells = Vector2i(20, 4)
@@ -26,9 +26,9 @@ position = Vector2(32, 168)
 script = ExtResource("4_js24a")
 entity_id = "save_cp_a"
 
-[node name="EastExit" type="Node2D" parent="Entities" unique_id=386181804]
+[node name="EastExit" type="Node2D" parent="Entities" unique_id=1520278797]
 position = Vector2(304, 104)
 script = ExtResource("5_vp4ky")
 entity_id = "east"
 
-[node name="Foreground" type="Node2D" parent="." unique_id=872932582]
+[node name="Foreground" type="Node2D" parent="." unique_id=1627113142]

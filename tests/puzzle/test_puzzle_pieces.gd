@@ -9,13 +9,13 @@ class PieceEnableCase extends Node:
 	## Piece enable flag coverage: disabled pieces cannot be controlled, but a
 	## disabled void slider can still be moved by an A+ induced turn.
 
-	const PieceDefinition := preload("res://scripts/puzzle/definition/piece_definition.gd")
-	const PuzzleDefinition := preload("res://scripts/puzzle/definition/puzzle_definition.gd")
-	const PuzzleMove := preload("res://scripts/puzzle/core/puzzle_move.gd")
-	const PuzzleSession := preload("res://scripts/puzzle/systems/puzzle_session.gd")
-	const SlidingPuzzleRuleSet := preload("res://scripts/puzzle/rules/sliding_puzzle_rule_set.gd")
-	const PuzzleBoard := preload("res://scripts/puzzle/view/puzzle_board.gd")
-	const PuzzlePiece := preload("res://scripts/puzzle/view/puzzle_piece.gd")
+	const PieceDefinition := preload("res://game/puzzle/definition/piece_definition.gd")
+	const PuzzleDefinition := preload("res://game/puzzle/definition/puzzle_definition.gd")
+	const PuzzleMove := preload("res://game/puzzle/core/puzzle_move.gd")
+	const PuzzleSession := preload("res://game/puzzle/systems/puzzle_session.gd")
+	const SlidingPuzzleRuleSet := preload("res://game/puzzle/rules/sliding_puzzle_rule_set.gd")
+	const PuzzleBoard := preload("res://game/puzzle/view/puzzle_board.gd")
+	const PuzzlePiece := preload("res://game/puzzle/view/puzzle_piece.gd")
 
 
 	func run() -> Array[String]:
@@ -135,7 +135,7 @@ class PieceEnableCase extends Node:
 
 ## tests/puzzle/test_piece_fog_occlusion.gd
 class PieceFogOcclusionCase extends Node:
-	const PUZZLE_PIECE: Script = preload("res://scripts/puzzle/view/puzzle_piece.gd")
+	const PUZZLE_PIECE: Script = preload("res://game/puzzle/view/puzzle_piece.gd")
 
 
 	func run() -> Array[String]:
@@ -177,12 +177,12 @@ class OneWayOccupancyCase extends Node:
 	## from below, left, and right. Wall cells block every direction. The player
 	## rider is an extra wall cell.
 
-	const BoardOccupancy := preload("res://scripts/puzzle/core/board_occupancy.gd")
-	const PieceDefinition := preload("res://scripts/puzzle/definition/piece_definition.gd")
-	const PuzzleDefinition := preload("res://scripts/puzzle/definition/puzzle_definition.gd")
-	const PuzzleMove := preload("res://scripts/puzzle/core/puzzle_move.gd")
-	const PuzzleSession := preload("res://scripts/puzzle/systems/puzzle_session.gd")
-	const SlidingPuzzleRuleSet := preload("res://scripts/puzzle/rules/sliding_puzzle_rule_set.gd")
+	const BoardOccupancy := preload("res://game/puzzle/core/board_occupancy.gd")
+	const PieceDefinition := preload("res://game/puzzle/definition/piece_definition.gd")
+	const PuzzleDefinition := preload("res://game/puzzle/definition/puzzle_definition.gd")
+	const PuzzleMove := preload("res://game/puzzle/core/puzzle_move.gd")
+	const PuzzleSession := preload("res://game/puzzle/systems/puzzle_session.gd")
+	const SlidingPuzzleRuleSet := preload("res://game/puzzle/rules/sliding_puzzle_rule_set.gd")
 
 
 	func run() -> Array[String]:
@@ -325,8 +325,8 @@ class PuzzleVoidZoneCase extends Node:
 	## Coverage for player-only void regions: painted cells, collision body,
 	## player collision-mask toggling, and the slider-mode exit guard.
 
-	const VOID_ZONE_SCRIPT := preload("res://scripts/puzzle/view/puzzle_void_zone.gd")
-	const PUZZLE_BOARD_SCRIPT := preload("res://scripts/puzzle/view/puzzle_board.gd")
+	const VOID_ZONE_SCRIPT := preload("res://game/puzzle/view/puzzle_void_zone.gd")
+	const PUZZLE_BOARD_SCRIPT := preload("res://game/puzzle/view/puzzle_board.gd")
 	const PLAYER_SCENE := preload("res://scenes/player/player.tscn")
 	const TILESET := preload("res://resources/tilesets/primordial_tileset.tres")
 
@@ -414,11 +414,11 @@ class PuzzleVoidZoneCase extends Node:
 class VoidSliderCase extends Node:
 	## Void slider coverage: A+ induced moves, atomic rejection, and undo/reset.
 
-	const PieceDefinition := preload("res://scripts/puzzle/definition/piece_definition.gd")
-	const PuzzleDefinition := preload("res://scripts/puzzle/definition/puzzle_definition.gd")
-	const PuzzleMove := preload("res://scripts/puzzle/core/puzzle_move.gd")
-	const PuzzleSession := preload("res://scripts/puzzle/systems/puzzle_session.gd")
-	const SlidingPuzzleRuleSet := preload("res://scripts/puzzle/rules/sliding_puzzle_rule_set.gd")
+	const PieceDefinition := preload("res://game/puzzle/definition/piece_definition.gd")
+	const PuzzleDefinition := preload("res://game/puzzle/definition/puzzle_definition.gd")
+	const PuzzleMove := preload("res://game/puzzle/core/puzzle_move.gd")
+	const PuzzleSession := preload("res://game/puzzle/systems/puzzle_session.gd")
+	const SlidingPuzzleRuleSet := preload("res://game/puzzle/rules/sliding_puzzle_rule_set.gd")
 
 
 	func run() -> Array[String]:

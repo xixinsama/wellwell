@@ -330,7 +330,7 @@ class SaveSlotsCase extends Node:
 
 ## tests/save/test_realtime_save.gd
 class RealtimeSaveCase extends Node:
-	const SERVICE_PATH := "res://scripts/save/realtime_save_service.gd"
+	const SERVICE_PATH := "res://game/save/realtime_save_service.gd"
 	const SAVE_SNAPSHOT := preload("res://addons/platformer_kit/save/save_snapshot.gd")
 
 

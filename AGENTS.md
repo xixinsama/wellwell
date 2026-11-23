@@ -15,11 +15,12 @@ optimise and extend the systems. Optimise every choice for those two readers.
 
 - Reusable runtime goes in `addons/platformer_kit/` (core, character, platforms,
   interaction, camera, save, world, `abilities/`, `combat/`). It must never
-  preload `res://game/`, `scripts/`, `examples/`, project scenes, or an optional
-  addon — `tests/tools/test_framework_boundaries.gd` fails the suite if it does.
+  preload `res://game/`, `examples/`, project scenes, or an optional addon —
+  `tests/tools/test_framework_boundaries.gd` fails the suite if it does.
 - Optional engine-side modules go in their own addon: `platformer_debug`,
   `metroidvania_kit`, `fluid_kit`, `input_mapping`, `world_editor`, `pixelfx`.
-- Project-specific composition goes in `game/` or `scripts/<area>/`. If the code
+- Project-specific code goes in `game/<area>/` (app, player, puzzle, save, ui,
+  world, shaders, collectibles, entities, interaction, map, water). If the code
   is only useful to this game, it does not belong in an addon.
 - Room source scenes go in `scenes/levels/<world_id>/`. Baked outputs in
   `scenes/rooms/generated/<room_id>/` and `resources/rooms/generated/` are
