@@ -16,8 +16,9 @@ const DESIGN_SIZE := Vector2(320.0, 180.0)
 ## Dot lattice tuning. Exposed here so the look can be changed in the inspector;
 ## the shader's dot_average is recomputed automatically.
 @export_range(0.0, 0.9, 0.01) var dot_strength := 0.75
-@export_range(0.3, 1.2, 0.01) var dot_size := 0.82
+@export_range(0.3, 1.2, 0.01) var dot_size := 0.95
 @export_range(0.6, 1.4, 0.01) var dot_aspect := 0.9
+@export_range(0.1, 0.9, 0.01) var dot_softness := 0.45
 
 @onready var screen_rect: ColorRect = get_node_or_null("Screen") as ColorRect
 
@@ -26,7 +27,7 @@ var _material: ShaderMaterial
 var _last_window := Vector2.ZERO
 var _last_origin := Vector2.ZERO
 var _last_scale := 0.0
-var _last_dot := Vector3.ZERO
+var _last_dot := Vector4.ZERO
 
 
 func _ready() -> void:
@@ -45,7 +46,7 @@ func _ready() -> void:
 
 func _process(_delta: float) -> void:
 	# Lets the inspector tune the lattice while the game runs.
-	if Vector3(dot_strength, dot_size, dot_aspect) != _last_dot:
+	if Vector4(dot_strength, dot_size, dot_aspect, dot_softness) != _last_dot:
 		_push_dot_parameters()
 
 
@@ -90,10 +91,11 @@ func _update_layout() -> void:
 func _push_dot_parameters() -> void:
 	if _material == null:
 		return
-	_last_dot = Vector3(dot_strength, dot_size, dot_aspect)
+	_last_dot = Vector4(dot_strength, dot_size, dot_aspect, dot_softness)
 	_material.set_shader_parameter("dot_strength", dot_strength)
 	_material.set_shader_parameter("dot_size", dot_size)
 	_material.set_shader_parameter("dot_aspect", dot_aspect)
+	_material.set_shader_parameter("dot_softness", dot_softness)
 	_material.set_shader_parameter("dot_average", _dot_average(_last_scale))
 
 
@@ -106,12 +108,12 @@ func _dot_average(pixel_scale: float) -> float:
 	for y: int in samples:
 		for x: int in samples:
 			var point := Vector2(
-				(float(x) + 0.5) / float(samples) * 2.0 - 1.0,
-				(float(y) + 0.5) / float(samples) * 2.0 - 1.0
+				(float(x) + 0.5) / float(samples) - 0.5,
+				(float(y) + 0.5) / float(samples) - 0.5
 			)
 			point.y *= dot_aspect
-			var radius2 := point.length_squared() / maxf(dot_size * dot_size, 0.0001)
-			total += pow(maxf(0.0, 1.0 - radius2), 2.0)
+			var distance := point.length() / maxf(0.5 * dot_size, 0.001)
+			total += 1.0 - smoothstep(1.0 - dot_softness, 1.0, distance)
 	return total / float(samples * samples)
 
 

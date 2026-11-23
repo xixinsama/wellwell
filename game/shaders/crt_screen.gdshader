@@ -3,16 +3,17 @@ shader_type canvas_item;
 // Screen-space CRT finish. Drawn on a full-screen ColorRect in the topmost
 // canvas layer, so it covers the world, the HUD and the menus alike.
 //
-// This is the "little bulbs" look: every game pixel becomes one elliptical
-// phosphor dot, with a dark grid between the dots (the beam profile falls off in
-// both axes), and no screen curvature.
+// The look is a soft phosphor dot per game pixel: a radial beam profile that
+// falls off smoothly inside the cell, surrounded by a dark gap. That is the
+// `1 - smoothstep(0.3, 0.5, dot_dist)` mask used by the Detour/Popochiu CRT
+// shader, expressed in game-pixel space instead of screen space. No curvature.
 //
 // Brightness contract: the dot mask is normalised by its own average
-// transmission, computed by CrtOverlay for the current upscale and passed in as
-// `dot_average`. That is the energy normalisation CRT shader packs use; the mean
-// brightness of the frame stays the same instead of gaining an additive bloom.
-// Near-white pixels widen their dot (like a bright CRT beam) so highlights and UI
-// text keep their brightness instead of turning into a sparse dot grid.
+// transmission, computed by CrtOverlay on the same window-pixel samples and
+// passed as `dot_average`. Changing strength/size/aspect therefore does not
+// change the mean brightness. Near-white pixels widen their dot (a bright CRT
+// beam does the same) so highlights and UI text stay solid instead of turning
+// into a sparse dot grid.
 //
 // Pixel alignment contract:
 //   - every texture tap is snapped to the window pixel grid
@@ -30,13 +31,12 @@ uniform vec2 screen_pixels = vec2(1280.0, 720.0);
 uniform vec2 grid_origin = vec2(0.0, 0.0);
 uniform float pixel_scale = 4.0;
 
-// Dot lattice. `dot_average` is kept in sync by CrtOverlay
-// (`1/n^2 * sum(profile)` over the same n x n window-pixel samples the shader
-// evaluates), so changing size/aspect in the inspector stays brightness-neutral.
+// Dot lattice. `dot_average` is kept in sync by CrtOverlay.
 uniform float dot_strength : hint_range(0.0, 0.9) = 0.75;
-uniform float dot_size : hint_range(0.3, 1.2) = 0.82;
+uniform float dot_size : hint_range(0.3, 1.2) = 0.95;
 uniform float dot_aspect : hint_range(0.6, 1.4) = 0.9;
-uniform float dot_average : hint_range(0.0, 1.0) = 0.24;
+uniform float dot_softness : hint_range(0.1, 0.9) = 0.45;
+uniform float dot_average : hint_range(0.0, 1.0) = 0.46;
 
 uniform float aberration : hint_range(0.0, 2.0) = 0.35;
 uniform float vignette : hint_range(0.0, 1.0) = 0.0;
@@ -56,21 +56,22 @@ void fragment() {
 	col.g = texture(screen_texture, uv).g;
 	col.b = texture(screen_texture, uv - shift).b;
 
-	// One ellipse per game pixel. `cell` is -1..1 inside the current pixel, so the
-	// profile is independent of the window size; only the integer upscale decides
-	// how many window pixels sample it.
-	vec2 cell = fract((p - grid_origin) / scale) * 2.0 - 1.0;
+	// Soft radial dot: distance from the centre of the game pixel, normalised so
+	// 1.0 is the cell edge. The smoothstep band is the phosphor beam falloff; the
+	// corners fall outside it, which is what makes the dots read as ellipses
+	// instead of squares.
+	vec2 cell = fract((p - grid_origin) / scale) - vec2(0.5);
 	cell.y *= dot_aspect;
-	float radius2 = dot(cell, cell) / max(dot_size * dot_size, 0.0001);
-	float profile = pow(max(0.0, 1.0 - radius2), 2.0);
+	float distance_from_centre = length(cell) / max(0.5 * dot_size, 0.001);
+	float core = 1.0 - smoothstep(1.0 - dot_softness, 1.0, distance_from_centre);
 
 	// A bright pixel widens its dot until it nearly fills the cell, which keeps
 	// highlights and UI text bright and legible. Mid-tones keep the full lattice.
 	float peak = max(col.r, max(col.g, col.b));
 	float widen = smoothstep(0.78, 1.0, peak) * 0.85;
-	float shape = mix(profile, 1.0, widen);
+	float shape = mix(core, 1.0, widen);
 
-	// Energy normalisation. `dot_average` is the mean of `profile` over the cell at
+	// Energy normalisation. `dot_average` is the mean of `core` over the cell at
 	// this upscale; the widened average is a linear mix of that and 1.
 	float average_shape = mix(dot_average, 1.0, widen);
 	float transmission = max(1.0 - dot_strength * (1.0 - average_shape), 0.001);
