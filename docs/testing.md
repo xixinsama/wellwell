@@ -111,6 +111,7 @@ does not leak RIDs at exit.
 | `tests/tools/test_framework_documentation_contract.gd` | `addons/platformer_kit/README.md`, `CHANGELOG.md` or `MIGRATION.md` lost a required section, version or path mapping. |
 | `tests/tools/test_project_validation.gd` | The shipped world/terrain contract is broken (empty room paths, stale fingerprints, missing placements). |
 | `tests/tools/test_suite_registration.gd` | A test file is not registered, or the suite points at a missing file. |
+| `tests/tools/test_project_layout.gd` | A script appears outside `game/`, `addons/`, `tests/` or `tools/`, or the retired `scripts/` root is referenced again. |
 
 ## Deterministic Gameplay Verification
 

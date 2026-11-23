@@ -63,6 +63,7 @@ const TESTS: Array[Script] = [
 	preload("res://tests/tools/test_project_validation.gd"),
 	preload("res://tests/tools/test_script_hygiene.gd"),
 	preload("res://tests/tools/test_suite_registration.gd"),
+	preload("res://tests/tools/test_project_layout.gd"),
 	preload("res://tests/ui/test_menu_features.gd"),
 	preload("res://tests/ui/test_ui_screens.gd"),
 	preload("res://tests/world/test_fog_visibility.gd"),

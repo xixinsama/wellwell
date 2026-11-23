@@ -89,6 +89,17 @@ All notable Platformer Kit changes are recorded here. The project follows Semant
 
 ### Changed
 
+- Tests are consolidated: 153 files became 70 per-feature suites, each original
+  test kept as an isolated inner class with its own fixtures. The suite reports
+  registered files; registration and directory guards keep the list honest.
+- Project code now lives only under `game/`: `scripts/` is gone, its app, player,
+  puzzle, save, ui, world, shaders, util and globals folders moved under `game/`.
+  Scenes, resources, autoloads and tests were rewritten; the menu-less dev
+  runner script moved to `game/dev/`.
+- `Main` and the dev runner use typed collaborators instead of `call("method")`
+  duck typing, so a renamed signal or method fails at compile time.
+- `tests/tools/test_project_layout.gd` rejects scripts outside
+  `game/`, `addons/`, `tests/`, `tools/` and any return of the `scripts/` root.
 - Repository cleanup: the ability and combat runtimes moved from the separate
   `platformer_abilities` / `platformer_combat` plugins into
   `addons/platformer_kit/abilities/` and `addons/platformer_kit/combat/`, so the

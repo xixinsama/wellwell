@@ -32,7 +32,7 @@ the subsystem document you need from [docs/README.md](README.md).
 | `scenes/runtime/world_root.tscn` | Streamed world, player instance, room camera, room extensions, HUD bindings | Adding a room-wide system |
 | `scenes/player/player.tscn` | The shipped player composition | Adding a player component |
 | `scenes/levels/<world_id>/` | Editable room source scenes, one folder per world | Authoring room content |
-| `scenes/levels/test_world/runners/` | Development launchers that skip the menu | Testing a room in isolation |
+| `scenes/levels/test_world/runners/` | Development launcher scenes that skip the menu (script: `game/dev/`) | Testing a room in isolation |
 | `scenes/rooms/template/level_template.tscn` | Empty room authoring template | Changing the room contract |
 | `scenes/rooms/generated/<room_id>/` | Baked `runtime.tscn` + `terrain.tscn` | Never by hand — bake it |
 | `scenes/worlds/<world_id>/terrain.tscn` | The world's single authored terrain scene | Painting terrain |
@@ -42,7 +42,7 @@ the subsystem document you need from [docs/README.md](README.md).
 | `resources/player/`, `resources/tilesets/`, `resources/ui/` | Tuning, tilesets, theme | Art and feel tuning |
 | `addons/` | Reusable engine-side code (see Layers) | Framework work |
 | `game/` | Project-specific code: app entry, player composition, puzzle, save/settings, UI, world fields, collectibles, entities, interaction, map host, water | Gameplay assembly |
-| `game/{app,player,puzzle,save,ui,world,shaders}` | Everything the kit does not own, grouped by subsystem | Any game-only change |
+| `game/{app,dev,player,puzzle,save,ui,world,shaders}` | Everything the kit does not own, grouped by subsystem (`dev/` holds the menu-less runner) | Any game-only change |
 | `tests/<owner>/` | One folder per module owner; every `test_*.gd` is listed in `tests/runtime_suite.gd` | Writing tests |
 | `tools/` | One-shot CLI maintenance scripts run with `-s` | Repo maintenance |
 | `examples/` | Movement, ability, combat, metroidvania and TAS fixture scenes | Trying the kit standalone |

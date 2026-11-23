@@ -100,7 +100,7 @@ class MetroidvaniaContractCase extends Node:
 		if movement_source.contains("metroidvania_kit"):
 			failures.append("base movement lab depends on metroidvania_kit")
 		var main_source := FileAccess.get_file_as_string(MAIN_SCRIPT)
-		if not main_source.contains("MAP_DEFINITION_BUILDER.from_world"):
+		if not main_source.contains("MapDefinitionBuilder.from_world"):
 			failures.append("reference game does not build its map from the running world")
 		var renderer_script := load(MAP_RENDERER) as Script
 		if renderer_script != null:
