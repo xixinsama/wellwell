@@ -136,6 +136,14 @@ func is_crt_enabled() -> bool:
     return bool(get_value(&"crt_enabled"))
 
 
+func get_crt_mode() -> String:
+    return String(get_value(&"crt_mode"))
+
+
+func set_crt_mode(mode: String) -> void:
+    set_value(&"crt_mode", mode)
+
+
 func set_crt_enabled(enabled: bool) -> void:
     set_value(&"crt_enabled", enabled)
 

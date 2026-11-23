@@ -66,7 +66,7 @@ SETTINGS_FPS_120,120 FPS,120 FPS
 SETTINGS_FPS_144,144 FPS,144 FPS
 SETTINGS_DESC_FPS,Render and physics share the same rate,绘制帧与物理帧使用同一数值
 SETTINGS_CRT,CRT Filter,CRT 滤镜
-SETTINGS_DESC_CRT,Scanlines and phosphor glow over the whole screen,全屏扫描线与荧光光晕，亮部保持明亮
+SETTINGS_DESC_CRT,CRT finish over the whole screen,全屏 CRT 滤镜
 SETTINGS_INPUT_MAPPING,Input Mapping,按键设置
 SETTINGS_INPUT_MAPPING_OPEN,Configure,配置
 SETTINGS_DESC_INPUT_MAPPING,Open the key mapping page,打开按键映射页面
@@ -109,3 +109,7 @@ MAP_LEGEND_PRECISE,Solid / One-way / Glass / Ladder / Crumble - only explored ce
 MAP_LEGEND_GRID,Brightness = how much of the room has been explored,亮度 = 该房间的已探索比例
 SETTINGS_ROOM_TRANSITION,Smooth Room Transition,房间转场滑动
 SETTINGS_DESC_ROOM_TRANSITION,Off cuts straight to the next room; on glides the camera and hides the rebuild behind a short fade,房间切换是否用相机滑动过渡；关闭则瞬移切到下一个房间，所有图层当帧就绪
+SETTINGS_CRT_MODE,CRT Grain,CRT 颗粒
+SETTINGS_CRT_MODE_SCANLINE,Scanlines,扫描线
+SETTINGS_CRT_MODE_DOT,Phosphor Dots,荧光点阵
+SETTINGS_DESC_CRT_MODE,Scanlines or elliptical phosphor dots,扫描线或椭圆荧光点阵

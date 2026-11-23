@@ -15,9 +15,11 @@ const DESIGN_SIZE := Vector2(320.0, 180.0)
 
 ## Dot lattice tuning. Exposed here so the look can be changed in the inspector;
 ## the shader's dot_average is recomputed automatically.
-@export_range(0.0, 0.9, 0.01) var dot_strength := 0.75
-@export_range(0.3, 1.2, 0.01) var dot_size := 0.95
-@export_range(0.6, 1.4, 0.01) var dot_aspect := 0.9
+@export_range(0.0, 0.9, 0.01) var dot_strength := 0.70
+@export_range(0.3, 1.2, 0.01) var dot_size := 1.0
+@export_enum("Scanline", "Phosphor Dots") var crt_mode := 1
+
+@export_range(0.6, 2.0, 0.01) var dot_aspect := 1.15
 @export_range(0.1, 0.9, 0.01) var dot_softness := 0.45
 
 @onready var screen_rect: ColorRect = get_node_or_null("Screen") as ColorRect
@@ -119,6 +121,10 @@ func _dot_average(pixel_scale: float) -> float:
 
 func _refresh() -> void:
 	var settings := get_node_or_null(SETTINGS_PATH)
-	if settings == null or not settings.has_method("get_value"):
-		return
-	visible = bool(settings.call("get_value", &"crt_enabled"))
+	if settings != null and settings.has_method("get_value"):
+		visible = bool(settings.call("get_value", &"crt_enabled"))
+		var mode := String(settings.call("get_value", &"crt_mode"))
+		if not mode.is_empty():
+			crt_mode = 0 if mode == "scanline" else 1
+	if _material != null:
+		_material.set_shader_parameter("crt_mode", crt_mode)

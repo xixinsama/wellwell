@@ -51,7 +51,7 @@ z 由小到大，就是绘制顺序。`z_index` 对整个画布**全局排序**�
 | 13 | **玩家** `Player` | **10** | `scenes/player/` | 角色本体 + 动作特效 | — | `docs/systems/player-effects.md` |
 | 14 | **迷雾** `FogOfWar/FogMask` | **10** | `addons/metroidvania_kit` + `fog_mask.gdshader` | 未探索格子上的雾，边缘长触须、被灯光推开、带聚光灯 | `zone_reveal_*`、`focus_*` | [fog-zones-and-crumble.md](../systems/fog-zones-and-crumble.md) |
 | 15 | **调试** `DebugOverlay/Visualizer` | 120 | `addons/platformer_debug` | 碰撞框、区域、法线调试视图（默认关） | `set_enabled` | [render-pipeline.md](render-pipeline.md) |
-| 16 | **CRT** `CrtOverlay` | CanvasLayer 128 | `game/ui/crt_overlay.gd` + `crt_screen.gdshader` | 每个游戏像素一颗椭圆磷光点 + 暗格，轻微色散（能量归一化，不改变平均亮度） | `GlobalSettings.crt_enabled` | [layers/crt.md](layers/crt.md) |
+| 16 | **CRT** `CrtOverlay` | CanvasLayer 128 | `game/ui/crt_overlay.gd` + `crt_screen.gdshader` | 扫描线 / 横向椭圆磷光点两种颗粒（视频设置切换），轻微色散（能量归一化，不改变平均亮度） | `GlobalSettings.crt_enabled` | [layers/crt.md](layers/crt.md) |
 
 第 15、16 层已经不在世界 SubViewport 里了：120 在世界画布里，CRT 在世界**放大之后**的窗口上。
 

@@ -242,6 +242,18 @@ static func _build_definitions() -> void:
 			"CrtToggle",
 			"SETTINGS_DESC_CRT"
 		),
+		SettingsDefinition.option(
+			&"crt_mode",
+			VIDEO,
+			"SETTINGS_CRT_MODE",
+			"dot",
+			"CrtModeOption",
+			[
+				{"value": "scanline", "label_key": "SETTINGS_CRT_MODE_SCANLINE"},
+				{"value": "dot", "label_key": "SETTINGS_CRT_MODE_DOT"},
+			],
+			"SETTINGS_DESC_CRT_MODE"
+		),
 		SettingsDefinition.action(
 			&"input_mapping",
 			CONTROLS,
