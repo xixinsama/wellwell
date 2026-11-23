@@ -39,7 +39,7 @@ const ATMOSPHERE_GROUP := &"atmosphere"
 const MAX_LIGHTS := 4
 const MAX_STATIC_LIGHTS := 3
 const MAX_VENTS := 4
-## 64x64 tiling blue-noise threshold, baked by scripts/tools/bake_blue_noise.gd.
+## 64x64 tiling blue-noise threshold, baked by tools/bake_blue_noise.gd.
 const STIPPLE_TEXTURE := "res://resources/textures/blue_noise_64.png"
 
 ## Which gas implementation this node binds for the next room. AUTO keeps the

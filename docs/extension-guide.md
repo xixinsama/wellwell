@@ -71,7 +71,7 @@ is the shipped recipe. Both components live in the kit and reach the fog through
 group names only, so a project without `metroidvania_kit` can still use them.
 
 A step-by-step authoring walkthrough (Chinese) with the scene trees, export
-tables and a symptom table lives in `docs/components-tutorial.md`.
+tables and a symptom table lives in `docs/authoring/components-tutorial.md`.
 
 ## Dash and One-Way Platforms
 
@@ -166,7 +166,7 @@ one world; `SHUTTLE` doors pair a door in this world with a door in another
 pair is bidirectional by construction. Contact activates the door, the state is
 saved like a checkpoint, and the nested `ArrivalSpawn` is where the player lands
 — keep it clear of the activation sensor. Bake the source room after adding one.
-Full contract: `docs/doors.md`.
+Full contract: `docs/systems/doors.md`.
 
 ## Numbered Collectibles
 
@@ -178,7 +178,7 @@ with the room. `Collectibles` (autoload) scans the world's baked rooms at
 authoring: the HUD badge shows `collected / total`, and `collection_toggle`
 (default `J`) opens a full-screen grid where collected numbers are bright and
 missing ones stay dim. Numbers are per world; a shuttle trip switches the shown
-set. Full guide: `docs/collectibles.md`.
+set. Full guide: `docs/systems/collectibles.md`.
 
 ## Interaction and Prompts
 
@@ -316,7 +316,7 @@ does not create one collision shape per cell.
 
 ## Exploration: Fog Zones, Crumble Tiles, Doors
 
-See `docs/fog-zones-and-crumble.md` for the full rules and the test world.
+See `docs/systems/fog-zones-and-crumble.md` for the full rules and the test world.
 
 - The room template has three tile layers: `BackTiles` (background),
   `SolidTiles` (playfield) and `DetailTiles` (front). Glass, one-way platforms,
@@ -360,7 +360,7 @@ See `docs/fog-zones-and-crumble.md` for the full rules and the test world.
 
 The fluid systems live in the **Fluid Kit** addon (`addons/fluid_kit/`); see
 `addons/fluid_kit/README.md` for the node reference, every tunable parameter, the
-interactor recipes and the demos, and `docs/water-and-mist.md` for the project
+interactor recipes and the demos, and `docs/systems/water-and-mist.md` for the project
 guide. In short:
 
 - Water is a room extension (`WaterField`, group `water_field`) fed by `WaterBasin`
@@ -386,7 +386,7 @@ guide. In short:
 
 ## Map and Minimap
 
-See `docs/map.md`. The map is generated, never authored:
+See `docs/systems/map.md`. The map is generated, never authored:
 
 - `MapDefinitionBuilder.from_world(world)` builds rooms and links from the
   `WorldData` the game is running, so the map follows room placement and size.
@@ -405,7 +405,7 @@ See `docs/map.md`. The map is generated, never authored:
 
 ## The Loop Cistern World
 
-See `docs/loop-world.md`. A four-room ring built from the template: a crumbling
+See `docs/systems/loop-world.md`. A four-room ring built from the template: a crumbling
 bridge over a pool, falling platforms with a swimmable low road, a
 rider-triggered elevator, two conveyors, a dash pickup and a dash gap that drops
 back into the starting room.

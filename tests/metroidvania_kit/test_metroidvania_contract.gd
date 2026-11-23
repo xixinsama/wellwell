@@ -8,7 +8,6 @@ const FOG_VISIBILITY := "res://addons/metroidvania_kit/map/discovery/fog_visibil
 const MAP_VIEW := "res://addons/metroidvania_kit/map/ui/map_view.tscn"
 const MINIMAP := "res://addons/metroidvania_kit/map/ui/minimap.tscn"
 const MAP_RENDERER := "res://addons/metroidvania_kit/map/ui/map_renderer.gd"
-const MAIN_MAP := "res://game/data/maps/main_map.tres"
 const MAIN_SCRIPT := "res://scripts/app/main.gd"
 
 
@@ -37,11 +36,9 @@ func run() -> Array[String]:
 	var movement_source := FileAccess.get_file_as_string(MOVEMENT_LAB)
 	if movement_source.contains("metroidvania_kit"):
 		failures.append("base movement lab depends on metroidvania_kit")
-	if load(MAIN_MAP) as Resource == null:
-		failures.append("reference game has no authored Metroidvania map definition")
 	var main_source := FileAccess.get_file_as_string(MAIN_SCRIPT)
-	if main_source.contains("configure(null, null, null, null, null, fog)"):
-		failures.append("reference game persistence bridge only composes fog state")
+	if not main_source.contains("MAP_DEFINITION_BUILDER.from_world"):
+		failures.append("reference game does not build its map from the running world")
 	var renderer_script := load(MAP_RENDERER) as Script
 	if renderer_script != null:
 		var renderer: Control = renderer_script.new()

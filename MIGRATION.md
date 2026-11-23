@@ -2,6 +2,22 @@
 
 This guide describes the repository migration to Platformer Kit `0.1.0`. Commit or back up game-specific work before moving files, then update resource paths and run the complete runtime suite.
 
+## Cleanup Branch Mappings
+
+The cleanup branch removed the separate ability/combat addons and grouped room
+sources by world. Apply these path rewrites to forks of the project:
+
+| Previous location | Current location | Action |
+| --- | --- | --- |
+| `addons/platformer_abilities/abilities/` | `addons/platformer_kit/abilities/` | Update preloads and scene script paths. |
+| `addons/platformer_abilities/entities/` | `addons/platformer_kit/abilities/entities/` | Ability pickup scenes moved with the runtime. |
+| `addons/platformer_abilities/runtime/` | `addons/platformer_kit/abilities/runtime/` | `AbilityController` and definitions now ship with the kit. |
+| `addons/platformer_combat/runtime/` | `addons/platformer_kit/combat/` | Combat is a kit module, not a plugin. |
+| `addons/platformer_abilities/plugin.cfg`, `addons/platformer_combat/plugin.cfg` | — | Remove them from `editor_plugins/enabled`; keep `platformer_kit/plugin.cfg`. |
+| `scenes/levels/main/`, `scenes/levels/test/`, `scenes/levels/loop/`, `scenes/levels/room_*.tscn` | `scenes/levels/<world_id>/<room_id>.tscn` | Update `RoomData.source_scene_path`; bake fingerprints are content hashes and stay valid. |
+| `scenes/levels/generated/<world_id>/` | `scenes/levels/<world_id>/` | New, merged and split rooms are written next to the hand-authored ones. |
+| `scenes/levels/test/*_runner.tscn` | `scenes/levels/test_world/runners/` | Development launchers moved with the test world. |
+
 ## Directory Mappings
 
 | Previous location | Current location | Action |

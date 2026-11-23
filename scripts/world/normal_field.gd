@@ -53,7 +53,7 @@ const CHUNK_PIXELS := Vector2i(320, 180)
 ## alternative per albedo alternative). Assigning it is what lights existing rooms
 ## with authored normals without adding a `NormalTiles` layer to any of them.
 ## `assets/images/primordial_tileset_normal.png` is generated with
-## `scripts/tools/bake_tileset_normals.gd`; this is its TileSet.
+## `tools/bake_tileset_normals.gd`; this is its TileSet.
 @export var normal_tileset: TileSet
 ## Terrain layers cloned with `normal_tileset` when the room has no authored
 ## `NormalTiles` layer, in the order they are drawn.

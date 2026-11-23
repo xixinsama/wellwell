@@ -34,6 +34,6 @@ Gameplay captures:
 - `minimap-grid.png` / `minimap-precise.png` — the corner minimap in both
   styles.
 
-See `docs/fog-zones-and-crumble.md` for the exploration rules, `docs/map.md` for
-the map and `docs/loop-world.md` for the loop world. The fluid showcase lives in
-`addons/fluid_kit/demos/` (runnable scenes, no images kept).
+See `docs/systems/fog-zones-and-crumble.md` for the exploration rules, `docs/systems/map.md` for
+the map and `docs/systems/loop-world.md` for the loop world. The fluid showcase lives in
+`examples/fluid_demos/` (runnable scenes, no images kept).

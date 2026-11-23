@@ -7,7 +7,7 @@ extends Node
 ## so no shader ever executes), so what is checked here is the parts that are check
 ## able without pixels: the shaders' data layout, the uniforms the solver hands them,
 ## the resolution policy, and the wiring the render layer depends on. The numbers
-## behind each rule were measured with `scripts/tools/gas_diagnostic.gd`, which is
+## behind each rule were measured with `tools/gas_diagnostic.gd`, which is
 ## the tool to re-measure them (it captures the density, the velocity/tracer field
 ## and the mist's opacity for the same gas state under several kernels).
 ##

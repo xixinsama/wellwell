@@ -13,7 +13,7 @@ light both.
   buoyancy forces, Jacobi pressure projection), three gas channels (heavy,
   neutral, light), viscosity, decay, vents, trail emitters, one-shot blasts,
   moving interactors, lighting and a CPU fallback.
-- **Demos** in `demos/` — runnable scenes, no images required.
+- **Demos** in `examples/fluid_demos/` — runnable scenes, no images required.
 
 Everything is plain nodes and resources; the addon has no dependency on the
 template's player, tiles or UI. It integrates through the room-extension surface
@@ -47,8 +47,18 @@ that anything can implement, or you can drive the fields manually.
 
 ## Trying it in a room bigger than the screen
 
-`scenes/levels/test_world/gas_field_lab_runner.tscn` is a 2x2 chunk room (640x360) crossed
-by corridors, with one `GasBrush` and no other gas source. Run it and paint:
+Any two-chunk room in the project scrolls the camera; `test_fog_wide` (2x1) is
+the closest one. The point of a bigger room is that a field anchored to the room
+and a field anchored to the view stop looking identical:
+
+* paint a puff, then walk to the other half of the room - the puff is still there,
+  in the same world position;
+* the gas keeps being simulated while it is off screen;
+* the solver step costs 0.094 ms at 160x90 against 0.063 ms at the 80x45 of a
+  one-screen room, i.e. four times the cells for 1.5x the submit cost, and a
+  two-chunk room still renders in 1.29 ms/frame uncapped.
+
+To paint gas live, add a `GasBrush` node to any room and run it:
 
 | Input | Effect |
 | :--- | :--- |
@@ -56,24 +66,6 @@ by corridors, with one `GasBrush` and no other gas source. Run it and paint:
 | right button | a one-shot blow at the cursor: moves gas without adding any |
 | 1 / 2 / 3 | heavy (sinks) / neutral (drifts) / light (rises) |
 | mouse wheel | cycles the channel |
-
-The room exists because every other room is exactly one screen: there the camera
-never moves, so a field anchored to the room and a field anchored to the view look
-identical. Here the camera scrolls over a 160x90 cell field, which is where "the gas
-belongs to the world" becomes visible:
-
-* paint a puff, then walk to the other half of the room - the puff is still there,
-  in the same world position;
-* the gas keeps being simulated while it is off screen (measured: a puff painted
-  entirely off screen reads 0.0% of the opacity layer in the first frame and 6.4%
-  after the camera scrolls onto it);
-* the solver step costs 0.094 ms at 160x90 against 0.063 ms at the 80x45 of a
-  one-screen room, i.e. four times the cells for 1.5x the submit cost, and the whole
-  2x2 room still renders in 1.29 ms/frame uncapped.
-
-`scripts/tools/build_gas_field_lab.gd` regenerates the room and its world resource
-(it refuses to overwrite the source scene without `--force`). There is no vent and no
-ambient gas in it on purpose: everything you see there is gas you put there.
 
 ## Integration
 
@@ -110,7 +102,7 @@ stage.
 
 ## Water
 
-See `docs/water-authoring.md` for a step-by-step guide to drawing a water room
+See `docs/systems/water-authoring.md` for a step-by-step guide to drawing a water room
 (terrain rules, `WaterBasin` markers, initial water, and how the falling columns
 hug the lower pool and widen with the flow).
 
@@ -213,8 +205,8 @@ The ripple is anchored to the surface it was made on (it fades with the vertical
 distance to that surface), so jumping in a pool at the bottom of a room never
 wobbles a pool higher up; pass the impact *point* (`request_splash_at`) rather
 than only its x, because a column can hold more than one body of water.
-`demos/grid_water_demo.tscn` is the runnable demo and starts the hero inside the
-left pool; `docs/water-authoring.md` has the authoring rules.
+`examples/fluid_demos/grid_water_demo.tscn` is the runnable demo and starts the hero inside the
+left pool; `docs/systems/water-authoring.md` has the authoring rules.
 
 ### Why the grid water is CPU-only
 
@@ -296,7 +288,7 @@ The mist is drawn by one quad with two extra pieces of work per pixel:
   quantised into steps, and which step a pixel lands on is decided by a per-pixel
   threshold. The shipped kernel is a 64×64 tiling blue-noise tile
   (`resources/textures/blue_noise_64.png`, baked by
-  `scripts/tools/bake_blue_noise.gd`), because an ordered Bayer tile is a *lattice*:
+  `tools/bake_blue_noise.gd`), because an ordered Bayer tile is a *lattice*:
   at the opacity a fading mist passes through, the tile becomes a 2×2 checkerboard
   and every column of the 4× screen turns into a dashed line. Measured on one
   frozen gas state per kernel (`gas_diagnostic.gd --stipple=0,1`): lattice energy
@@ -309,7 +301,7 @@ The mist is drawn by one quad with two extra pieces of work per pixel:
 ### Recorded, not implemented
 
 Two gas *lighting* features are deliberately left out; the plan, the hook points and the
-cost arithmetic live in `docs/todo.md` under "渲染：已记录、暂不实现".
+cost arithmetic live in `docs/roadmap.md` under "渲染：已记录、暂不实现".
 
 * **The gas does not cast a shadow on the world.** The light map is lights plus tile
   occluders, and the gas only ever *reads* it (`set_light_field`). Casting would be one
@@ -448,11 +440,11 @@ the Atmosphere API directly (`set_gas_mover`, `set_gas_emitter`,
 
 | Scene | Shows |
 | :--- | :--- |
-| `demos/water_demo.tscn` | Pools, gate, waterfall, splashes, floating, lit gas. |
-| `demos/grid_water_demo.tscn` | 2D grid fluid: a filled region, a dam, a waterfall, a drain hole. |
-| `demos/gas_plumes_demo.tscn` | Three vents, three densities, platform rows. |
-| `demos/gas_effects_demo.tscn` | Jets, explosion, moving pillar (cycles). |
-| `demos/gas_trail_demo.tscn` | Empty room, square walker, dissolving trail. |
+| `examples/fluid_demos/water_demo.tscn` | Pools, gate, waterfall, splashes, floating, lit gas. |
+| `examples/fluid_demos/grid_water_demo.tscn` | 2D grid fluid: a filled region, a dam, a waterfall, a drain hole. |
+| `examples/fluid_demos/gas_plumes_demo.tscn` | Three vents, three densities, platform rows. |
+| `examples/fluid_demos/gas_effects_demo.tscn` | Jets, explosion, moving pillar (cycles). |
+| `examples/fluid_demos/gas_trail_demo.tscn` | Empty room, square walker, dissolving trail. |
 
 The demo scenes instance the template's test world runners (they need the
 template's tiles and player); the runtime itself does not.
@@ -477,11 +469,11 @@ uniform plumbing, resolution policy) rather than by running the shaders.
 
 ### Measuring the gas
 
-`scripts/tools/gas_diagnostic.gd` captures the inputs and the output of the mist for
+`tools/gas_diagnostic.gd` captures the inputs and the output of the mist for
 the same gas state, which is how every number above was obtained:
 
 ```powershell
-godot --path . --resolution 1280x720 -s res://scripts/tools/gas_diagnostic.gd -- \
+godot --path . --resolution 1280x720 -s res://tools/gas_diagnostic.gd -- \
   --scene res://scenes/levels/test_world/runners/gas_lab_runner.tscn --out C:/tmp/gas \
   --settle 4 --frames 3 --interval 0.4 --stipple=0,1,2 --uniform=vorticity=10
 ```

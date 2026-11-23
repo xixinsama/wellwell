@@ -37,7 +37,7 @@ signal world_picked(world_id: String)
 
 const CAMERA_SCRIPT := preload("res://addons/world_editor/authoring/world/world_stack_camera.gd")
 
-# Palette, straight from docs/artifacts/world_stack_mock.html.
+# Palette for the 3D stack view.
 const BACKGROUND_CENTER := Color(0.051, 0.071, 0.094)  # #0d1218
 const BACKGROUND_EDGE := Color(0.020, 0.027, 0.039)  # #05070a
 const GRID_COLOR := Color(0.494, 0.612, 0.745, 0.07)  # #7e9cbe

@@ -3,7 +3,7 @@ extends Node
 ## The authored normal atlas of `primordial_tileset.png`, and the way NormalField
 ## installs it into rooms that never authored normals themselves.
 ##
-## The PNG and its TileSet are generated (`scripts/tools/bake_tileset_normals.gd`),
+## The PNG and its TileSet are generated (`tools/bake_tileset_normals.gd`),
 ## so this file is the contract the generator has to keep:
 ##
 ## - the normal PNG has the albedo's size and the albedo's alpha, every opaque
@@ -55,7 +55,7 @@ func _assert_png_matches_the_albedo(failures: Array[String]) -> void:
 		# The whole feature is a generated asset: without it there is nothing to
 		# check, and a silent pass would hide exactly the failure that matters.
 		failures.append(
-			"%s is missing or unreadable; run `godot --headless --path . -s res://scripts/tools/bake_tileset_normals.gd`"
+			"%s is missing or unreadable; run `godot --headless --path . -s res://tools/bake_tileset_normals.gd`"
 			% NORMAL_PNG
 		)
 		return

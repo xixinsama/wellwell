@@ -12,6 +12,13 @@ const LAB_SCENES: Array[String] = [
 	"res://examples/combat_lab/combat_lab.tscn",
 	"res://examples/metroidvania_demo/metroidvania_demo.tscn",
 ]
+const DOC_INDEX: Array[String] = [
+	"res://AGENTS.md",
+	"res://docs/README.md",
+	"res://docs/architecture.md",
+	"res://docs/testing.md",
+	"res://docs/extension-guide.md",
+]
 
 
 func run() -> Array[String]:
@@ -56,9 +63,15 @@ func run() -> Array[String]:
 			"addons/metroidvania_kit/map/discovery/",
 			"addons/wellwell_world_editor/",
 			"addons/world_editor/",
+			"addons/platformer_kit/abilities/",
+			"addons/platformer_kit/combat/",
+			"scenes/levels/",
 		]:
 			if not migration.contains(required_text):
 				failures.append("migration guide is missing path mapping: %s" % required_text)
+	for required_doc: String in DOC_INDEX:
+		if not FileAccess.file_exists(required_doc):
+			failures.append("documentation entry point is missing: %s" % required_doc)
 	return failures
 
 

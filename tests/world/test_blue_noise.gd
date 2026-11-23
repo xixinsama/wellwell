@@ -7,7 +7,7 @@ extends Node
 ## repeats a tiny lattice: at low coverage the lit texels fall on a regular 4 px grid
 ## and the faint mist reads as a "screen door" of dots. resources/textures/
 ## blue_noise_64.png replaces that lattice with a void-and-cluster blue-noise
-## threshold map (baked by scripts/tools/bake_blue_noise.gd, which prints the full
+## threshold map (baked by tools/bake_blue_noise.gd, which prints the full
 ## quality report). A printed report does not fail a build, so this test is what stops
 ## a re-baked, edited or re-exported tile from silently bringing the lattice back.
 ##
@@ -101,7 +101,7 @@ func run() -> Array[String]:
 ## importer's channel packing.
 func _load_bytes(failures: Array[String]) -> bool:
 	if not ResourceLoader.exists(TEXTURE_PATH):
-		failures.append("blue noise tile is missing: %s (bake it with scripts/tools/bake_blue_noise.gd)" % TEXTURE_PATH)
+		failures.append("blue noise tile is missing: %s (bake it with tools/bake_blue_noise.gd)" % TEXTURE_PATH)
 		return false
 	var texture := load(TEXTURE_PATH) as Texture2D
 	if texture == null:
