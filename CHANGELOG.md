@@ -133,6 +133,10 @@ All notable Platformer Kit changes are recorded here. The project follows Semant
   scanline phase comes from the integer-scaled game grid (`screen_pixels`,
   `grid_origin`, `pixel_scale` pushed by `CrtOverlay`), and the window uses
   integer scaling with a kept aspect so the root canvas stays 1280x720.
+- CRT now renders one elliptical phosphor dot per game pixel (dot strength, size
+  and aspect expose on CrtOverlay), with the average coverage computed on the CPU
+  and energy-normalised. Measured on a flat 50% frame: 0.000% mean delta and a
+  3.1x dot-to-gap contrast; `the_world` mean -1.12%.
 - CRT brightness is energy-neutral: the beam is normalised by its average
   transmission, bright pixels widen the beam, and the additive bloom, `lift`,
   bright-pixel bypass and default vignette were removed. Measured on a flat 50%

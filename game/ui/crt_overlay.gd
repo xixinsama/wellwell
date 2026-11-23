@@ -4,12 +4,20 @@ class_name CrtOverlay
 ## Full-screen CRT finish over every other canvas layer.
 ##
 ## Lives at the top of `main.tscn` and is switched by the `crt_enabled` video
-## setting. The shader needs to know where the integer-scaled game pixel grid
-## starts in window space, so this script pushes `screen_pixels`, `grid_origin`
-## and `pixel_scale` whenever the viewport or the game container changes size.
+## setting. The shader renders one elliptical phosphor dot per game pixel, so the
+## script has to know where the integer-scaled game grid starts and how many window
+## pixels one game pixel covers. It also precomputes the mean dot coverage at that
+## upscale and hands it to the shader, which keeps the dot lattice
+## brightness-neutral.
 
 const SETTINGS_PATH := NodePath("/root/GlobalSettings")
 const DESIGN_SIZE := Vector2(320.0, 180.0)
+
+## Dot lattice tuning. Exposed here so the look can be changed in the inspector;
+## the shader's dot_average is recomputed automatically.
+@export_range(0.0, 0.9, 0.01) var dot_strength := 0.75
+@export_range(0.3, 1.2, 0.01) var dot_size := 0.82
+@export_range(0.6, 1.4, 0.01) var dot_aspect := 0.9
 
 @onready var screen_rect: ColorRect = get_node_or_null("Screen") as ColorRect
 
@@ -18,6 +26,7 @@ var _material: ShaderMaterial
 var _last_window := Vector2.ZERO
 var _last_origin := Vector2.ZERO
 var _last_scale := 0.0
+var _last_dot := Vector3.ZERO
 
 
 func _ready() -> void:
@@ -32,6 +41,12 @@ func _ready() -> void:
 		_container.resized.connect(_queue_layout)
 	_refresh()
 	_queue_layout()
+
+
+func _process(_delta: float) -> void:
+	# Lets the inspector tune the lattice while the game runs.
+	if Vector3(dot_strength, dot_size, dot_aspect) != _last_dot:
+		_push_dot_parameters()
 
 
 func _queue_layout() -> void:
@@ -51,10 +66,12 @@ func _update_layout() -> void:
 		var viewport: SubViewport = null
 		if _container.get_child_count() > 0:
 			viewport = _container.get_child(0) as SubViewport
-		# The safe 320x180 frame is inset by one viewport pixel (the 322x182
-		# SubViewport border), so game pixel (0, 0) sits one upscale step inside
-		# the container.
-		var inset := Vector2.ONE * pixel_scale if viewport != null else Vector2.ZERO
+		# The safe 320x180 frame is centred inside the SubViewport (1 px border in
+		# the main scene, none in the smaller runner scenes). Convert that border
+		# into window pixels so the dot lattice starts on game pixel (0, 0).
+		var inset := Vector2.ZERO
+		if viewport != null:
+			inset = ((Vector2(viewport.size) - DESIGN_SIZE) * 0.5).floor() * pixel_scale
 		origin = _container.global_position + inset
 	else:
 		pixel_scale = maxf(1.0, floorf(minf(window.x / DESIGN_SIZE.x, window.y / DESIGN_SIZE.y)))
@@ -67,6 +84,35 @@ func _update_layout() -> void:
 	_material.set_shader_parameter("screen_pixels", window)
 	_material.set_shader_parameter("grid_origin", origin)
 	_material.set_shader_parameter("pixel_scale", pixel_scale)
+	_push_dot_parameters()
+
+
+func _push_dot_parameters() -> void:
+	if _material == null:
+		return
+	_last_dot = Vector3(dot_strength, dot_size, dot_aspect)
+	_material.set_shader_parameter("dot_strength", dot_strength)
+	_material.set_shader_parameter("dot_size", dot_size)
+	_material.set_shader_parameter("dot_aspect", dot_aspect)
+	_material.set_shader_parameter("dot_average", _dot_average(_last_scale))
+
+
+## Mean coverage of the dot profile over one game pixel, sampled on the same
+## n x n window-pixel grid the fragment shader evaluates. This is what keeps the
+## average brightness identical when strength/size/aspect change.
+func _dot_average(pixel_scale: float) -> float:
+	var samples := int(clampf(pixel_scale, 1.0, 16.0))
+	var total := 0.0
+	for y: int in samples:
+		for x: int in samples:
+			var point := Vector2(
+				(float(x) + 0.5) / float(samples) * 2.0 - 1.0,
+				(float(y) + 0.5) / float(samples) * 2.0 - 1.0
+			)
+			point.y *= dot_aspect
+			var radius2 := point.length_squared() / maxf(dot_size * dot_size, 0.0001)
+			total += pow(maxf(0.0, 1.0 - radius2), 2.0)
+	return total / float(samples * samples)
 
 
 func _refresh() -> void:
