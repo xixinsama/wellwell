@@ -1,0 +1,11 @@
+[gd_scene format=4 uid="uid://cekp7ldswnhba"]
+
+[ext_resource type="TileSet" uid="uid://ct7c6ejoixgkq" path="res://resources/tilesets/primordial_tileset.tres" id="1_tiles"]
+[ext_resource type="Script" path="res://tools/_one_way_probe.gd" id="2_probe"]
+
+[node name="OneWayProbe" type="Node" unique_id=1494840363]
+script = ExtResource("2_probe")
+
+[node name="TileMapLayer" type="TileMapLayer" parent="." unique_id=1923028913]
+tile_map_data = PackedByteArray("AAAAAAAAAAAAAAQAAAAEAAAAAAAAAAQAAQAIAAAAAAAAAAQAAgAMAAAAAAAAAAQAAwAQAAAAAAABAAQAAAAUAAAAAAABAAQAAgAYAAAAAAADAAQAAAAcAAAAAAACAAQAAQA=")
+tile_set = ExtResource("1_tiles")

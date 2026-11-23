@@ -1,0 +1,51 @@
+[gd_resource type="Resource" script_class="MapDefinition" format=3 uid="uid://d3ojdflsdh11y"]
+
+[ext_resource type="Script" uid="uid://b3ajayia7vvp" path="res://addons/metroidvania_kit/map/data/map_definition.gd" id="1_definition"]
+[ext_resource type="Script" uid="uid://hfig1nxlqq7h" path="res://addons/metroidvania_kit/map/data/map_region.gd" id="2_region"]
+[ext_resource type="Script" uid="uid://ber1bxm2jku7h" path="res://addons/metroidvania_kit/map/data/map_room.gd" id="3_room"]
+[ext_resource type="Script" uid="uid://bimhtiwhfjbvi" path="res://addons/metroidvania_kit/map/data/map_connection.gd" id="4_connection"]
+
+[sub_resource type="Resource" id="Connection_00_01"]
+script = ExtResource("4_connection")
+connection_id = &"room_00_00:room_01_00"
+from_room_id = &"room_00_00"
+to_room_id = &"room_01_00"
+
+[sub_resource type="Resource" id="Connection_01_02"]
+script = ExtResource("4_connection")
+connection_id = &"room_01_00:room_02_00"
+from_room_id = &"room_01_00"
+to_room_id = &"room_02_00"
+
+[sub_resource type="Resource" id="Region_showcase"]
+script = ExtResource("2_region")
+region_id = &"showcase"
+display_name = "Showcase"
+room_ids = Array[StringName]([&"room_00_00", &"room_01_00", &"room_02_00"])
+
+[sub_resource type="Resource" id="Room_00_00"]
+script = ExtResource("3_room")
+room_id = &"room_00_00"
+world_room_id = &"room_00_00"
+region_id = &"showcase"
+
+[sub_resource type="Resource" id="Room_01_00"]
+script = ExtResource("3_room")
+room_id = &"room_01_00"
+world_room_id = &"room_01_00"
+region_id = &"showcase"
+map_position = Vector2i(1, 0)
+
+[sub_resource type="Resource" id="Room_02_00"]
+script = ExtResource("3_room")
+room_id = &"room_02_00"
+world_room_id = &"room_02_00"
+region_id = &"showcase"
+map_position = Vector2i(2, 0)
+
+[resource]
+script = ExtResource("1_definition")
+map_id = &"main"
+regions = Array[Resource]([SubResource("Region_showcase")])
+rooms = Array[Resource]([SubResource("Room_00_00"), SubResource("Room_01_00"), SubResource("Room_02_00")])
+connections = Array[Resource]([SubResource("Connection_00_01"), SubResource("Connection_01_02")])

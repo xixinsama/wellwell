@@ -1,0 +1,21 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://examples/movement_lab/debug_overlay.gd" id="1_overlay"]
+[ext_resource type="PackedScene" path="res://addons/platformer_debug/runtime/debug_hud.tscn" id="2_hud"]
+[ext_resource type="Script" path="res://addons/platformer_debug/runtime/debug_visualizer_2d.gd" id="3_visualizer"]
+[ext_resource type="PackedScene" path="res://addons/platformer_debug/runtime/tas_tool.tscn" id="4_tas"]
+
+[node name="DebugOverlay" type="Node"]
+script = ExtResource("1_overlay")
+
+[node name="Visualizer" type="Node2D" parent="."]
+z_index = 120
+script = ExtResource("3_visualizer")
+
+[node name="HudLayer" type="CanvasLayer" parent="."]
+layer = 120
+
+[node name="DebugHud" parent="HudLayer" instance=ExtResource("2_hud")]
+
+[node name="TasTool" parent="." instance=ExtResource("4_tas")]
+player_path = NodePath("../../Lab/Player")

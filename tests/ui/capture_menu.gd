@@ -8,7 +8,7 @@ func _init() -> void:
 func _capture_screens() -> void:
 	var original_locale := TranslationServer.get_locale()
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(OUTPUT_DIR))
-	change_scene_to_file("res://scenes/main.tscn")
+	change_scene_to_file("res://scenes/app/main.tscn")
 	await process_frame
 	await process_frame
 	await process_frame
@@ -30,6 +30,12 @@ func _capture_screens() -> void:
 
 	var settings := root.get_node_or_null("Main/HUD/Settings")
 	if settings != null:
+		settings.call("_open_input_mapping")
+	await process_frame
+	await process_frame
+	_save_capture("input_mapping.png")
+	if settings != null:
+		settings.call("_close_input_mapping")
 		settings.call("_request_back")
 	TranslationServer.set_locale("en")
 	if menu != null:
@@ -49,6 +55,12 @@ func _capture_screens() -> void:
 	await process_frame
 	await process_frame
 	_save_capture("settings_en.png")
+	settings = root.get_node_or_null("Main/HUD/Settings")
+	if settings != null:
+		settings.call("_open_input_mapping")
+	await process_frame
+	await process_frame
+	_save_capture("input_mapping_en.png")
 	TranslationServer.set_locale(original_locale)
 	quit()
 

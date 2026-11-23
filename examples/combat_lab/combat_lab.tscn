@@ -1,0 +1,56 @@
+[gd_scene load_steps=9 format=3]
+
+[ext_resource type="Script" path="res://examples/combat_lab/combat_lab.gd" id="1_lab"]
+[ext_resource type="Script" path="res://addons/platformer_combat/runtime/health_component.gd" id="2_health"]
+[ext_resource type="Script" path="res://addons/platformer_combat/runtime/hitbox.gd" id="3_hitbox"]
+[ext_resource type="Script" path="res://addons/platformer_combat/runtime/hurtbox.gd" id="4_hurtbox"]
+[ext_resource type="Script" path="res://addons/platformer_combat/runtime/invulnerability.gd" id="5_invulnerability"]
+[ext_resource type="Script" path="res://addons/platformer_combat/runtime/knockback.gd" id="6_knockback"]
+[ext_resource type="Script" path="res://addons/platformer_combat/runtime/damage_data.gd" id="7_damage"]
+
+[sub_resource type="Resource" id="DamageData_lab"]
+script = ExtResource("7_damage")
+amount = 2.0
+impulse = Vector2(40, -20)
+
+[node name="CombatLab" type="Node2D"]
+script = ExtResource("1_lab")
+
+[node name="Backdrop" type="ColorRect" parent="."]
+offset_right = 320.0
+offset_bottom = 180.0
+color = Color(0.075, 0.059, 0.063, 1)
+
+[node name="HealthComponent" type="Node" parent="."]
+script = ExtResource("2_health")
+max_health = 10.0
+
+[node name="Invulnerability" type="Node" parent="."]
+script = ExtResource("5_invulnerability")
+duration = 0.25
+
+[node name="Knockback" type="Node" parent="."]
+script = ExtResource("6_knockback")
+
+[node name="Hitbox" type="Area2D" parent="."]
+script = ExtResource("3_hitbox")
+damage_data = SubResource("DamageData_lab")
+team = &"player"
+
+[node name="Hurtbox" type="Area2D" parent="."]
+script = ExtResource("4_hurtbox")
+team = &"enemy"
+
+[node name="Title" type="Label" parent="."]
+offset_left = 16.0
+offset_top = 16.0
+offset_right = 180.0
+offset_bottom = 40.0
+text = "COMBAT LAB"
+
+[node name="Status" type="Label" parent="."]
+offset_left = 16.0
+offset_top = 48.0
+offset_right = 280.0
+offset_bottom = 112.0
+text = "Combat runtime pending"

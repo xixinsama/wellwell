@@ -1,11 +1,63 @@
-[gd_scene format=3 uid="uid://dcpnuqlqrftuv"]
+[gd_scene load_steps=9 format=3 uid="uid://dcpnuqlqrftuv"]
 
 [ext_resource type="Script" uid="uid://ddbxuwkgutjhe" path="res://scripts/ui/settings_menu.gd" id="1"]
 [ext_resource type="Theme" uid="uid://dl2h74k2356hx" path="res://resources/ui/menu_theme.tres" id="2"]
+[ext_resource type="PackedScene" path="res://addons/input_mapping/ui/input_mapping_menu.tscn" id="3_input_mapping"]
+[ext_resource type="PackedScene" uid="uid://bqts0wbyvwmb0" path="res://scenes/ui/settings/settings_page.tscn" id="4_page"]
 
-[node name="Settings" type="Control" unique_id=469392416]
+[sub_resource type="StyleBoxFlat" id="TabNormal"]
+content_margin_left = 18.0
+content_margin_top = 8.0
+content_margin_right = 18.0
+content_margin_bottom = 8.0
+bg_color = Color(0, 0, 0, 0)
+border_width_left = 4
+border_color = Color(0.42, 0.9, 0.9, 0)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxFlat" id="TabHover"]
+content_margin_left = 18.0
+content_margin_top = 8.0
+content_margin_right = 18.0
+content_margin_bottom = 8.0
+bg_color = Color(0.09, 0.17, 0.19, 0.85)
+border_width_left = 4
+border_color = Color(0.42, 0.9, 0.9, 0.35)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxFlat" id="TabActive"]
+content_margin_left = 18.0
+content_margin_top = 8.0
+content_margin_right = 18.0
+content_margin_bottom = 8.0
+bg_color = Color(0.1, 0.3, 0.32, 1)
+border_width_left = 4
+border_color = Color(0.42, 0.9, 0.9, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxFlat" id="TabFocus"]
+bg_color = Color(0, 0, 0, 0)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 0.84, 0.42, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[node name="Settings" type="Control"]
 process_mode = 3
-visible = false
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -15,7 +67,7 @@ grow_vertical = 2
 theme = ExtResource("2")
 script = ExtResource("1")
 
-[node name="Background" type="ColorRect" parent="." unique_id=889668617]
+[node name="Background" type="ColorRect" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -23,162 +75,182 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-color = Color(0.025, 0.03, 0.038, 1)
+color = Color(0.02, 0.025, 0.03, 1)
 
-[node name="Panel" type="PanelContainer" parent="." unique_id=1191607944]
+[node name="Panel" type="PanelContainer" parent="."]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -330.0
-offset_top = -300.0
-offset_right = 330.0
-offset_bottom = 300.0
+offset_left = -560.0
+offset_top = -320.0
+offset_right = 560.0
+offset_bottom = 320.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="Content" type="VBoxContainer" parent="Panel" unique_id=2094899814]
+[node name="Layout" type="VBoxContainer" parent="Panel"]
 layout_mode = 2
-theme_override_constants/separation = 14
+theme_override_constants/separation = 16
 
-[node name="Title" type="Label" parent="Panel/Content" unique_id=1676365610]
+[node name="Header" type="HBoxContainer" parent="Panel/Layout"]
+custom_minimum_size = Vector2(0, 46)
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Title" type="Label" parent="Panel/Layout/Header"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.92, 0.98, 0.98, 1)
-theme_override_font_sizes/font_size = 30
+theme_override_font_sizes/font_size = 34
 text = "SETTINGS_TITLE"
-horizontal_alignment = 1
 
-[node name="Divider" type="HSeparator" parent="Panel/Content" unique_id=1086284087]
+[node name="HeaderSpacer" type="Control" parent="Panel/Layout/Header"]
 layout_mode = 2
+size_flags_horizontal = 3
 
-[node name="Options" type="GridContainer" parent="Panel/Content" unique_id=617129882]
+[node name="NavHint" type="Label" parent="Panel/Layout/Header"]
 layout_mode = 2
-theme_override_constants/h_separation = 18
-theme_override_constants/v_separation = 12
-columns = 3
+theme_override_colors/font_color = Color(0.4, 0.5, 0.54, 1)
+theme_override_font_sizes/font_size = 14
+text = "SETTINGS_NAV_HINT"
+vertical_alignment = 2
 
-[node name="LanguageLabel" type="Label" parent="Panel/Content/Options" unique_id=41921429]
-layout_mode = 2
-text = "SETTINGS_LANGUAGE"
-
-[node name="LanguageOption" type="OptionButton" parent="Panel/Content/Options" unique_id=703587672]
+[node name="Tabs" type="HBoxContainer" parent="Panel/Layout"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(240, 40)
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="GameTab" type="Button" parent="Panel/Layout/Tabs"]
+custom_minimum_size = Vector2(196, 48)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.64, 0.74, 0.78, 1)
+theme_override_colors/font_hover_color = Color(0.92, 0.98, 0.98, 1)
+theme_override_colors/font_pressed_color = Color(0.92, 0.98, 0.98, 1)
+theme_override_colors/font_hover_pressed_color = Color(1, 1, 1, 1)
+theme_override_styles/normal = SubResource("TabNormal")
+theme_override_styles/hover = SubResource("TabHover")
+theme_override_styles/pressed = SubResource("TabActive")
+theme_override_styles/hover_pressed = SubResource("TabActive")
+theme_override_styles/focus = SubResource("TabFocus")
+toggle_mode = true
+text = "SETTINGS_SECTION_GAME"
+alignment = 0
+metadata/section = "game"
+
+[node name="AudioTab" type="Button" parent="Panel/Layout/Tabs"]
+custom_minimum_size = Vector2(196, 48)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.64, 0.74, 0.78, 1)
+theme_override_colors/font_hover_color = Color(0.92, 0.98, 0.98, 1)
+theme_override_colors/font_pressed_color = Color(0.92, 0.98, 0.98, 1)
+theme_override_colors/font_hover_pressed_color = Color(1, 1, 1, 1)
+theme_override_styles/normal = SubResource("TabNormal")
+theme_override_styles/hover = SubResource("TabHover")
+theme_override_styles/pressed = SubResource("TabActive")
+theme_override_styles/hover_pressed = SubResource("TabActive")
+theme_override_styles/focus = SubResource("TabFocus")
+toggle_mode = true
+text = "SETTINGS_SECTION_AUDIO"
+alignment = 0
+metadata/section = "audio"
+
+[node name="VideoTab" type="Button" parent="Panel/Layout/Tabs"]
+custom_minimum_size = Vector2(196, 48)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.64, 0.74, 0.78, 1)
+theme_override_colors/font_hover_color = Color(0.92, 0.98, 0.98, 1)
+theme_override_colors/font_pressed_color = Color(0.92, 0.98, 0.98, 1)
+theme_override_colors/font_hover_pressed_color = Color(1, 1, 1, 1)
+theme_override_styles/normal = SubResource("TabNormal")
+theme_override_styles/hover = SubResource("TabHover")
+theme_override_styles/pressed = SubResource("TabActive")
+theme_override_styles/hover_pressed = SubResource("TabActive")
+theme_override_styles/focus = SubResource("TabFocus")
+toggle_mode = true
+text = "SETTINGS_SECTION_VIDEO"
+alignment = 0
+metadata/section = "video"
+
+[node name="ControlsTab" type="Button" parent="Panel/Layout/Tabs"]
+custom_minimum_size = Vector2(196, 48)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.64, 0.74, 0.78, 1)
+theme_override_colors/font_hover_color = Color(0.92, 0.98, 0.98, 1)
+theme_override_colors/font_pressed_color = Color(0.92, 0.98, 0.98, 1)
+theme_override_colors/font_hover_pressed_color = Color(1, 1, 1, 1)
+theme_override_styles/normal = SubResource("TabNormal")
+theme_override_styles/hover = SubResource("TabHover")
+theme_override_styles/pressed = SubResource("TabActive")
+theme_override_styles/hover_pressed = SubResource("TabActive")
+theme_override_styles/focus = SubResource("TabFocus")
+toggle_mode = true
+text = "SETTINGS_SECTION_CONTROLS"
+alignment = 0
+metadata/section = "controls"
+
+[node name="TabsSpacer" type="Control" parent="Panel/Layout/Tabs"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="HeaderDivider" type="HSeparator" parent="Panel/Layout"]
 layout_mode = 2
 
-[node name="LanguageSpacer" type="Control" parent="Panel/Content/Options" unique_id=61961543]
-custom_minimum_size = Vector2(64, 0)
-layout_mode = 2
-
-[node name="DisplayLabel" type="Label" parent="Panel/Content/Options" unique_id=1340227215]
-layout_mode = 2
-text = "SETTINGS_DISPLAY_MODE"
-
-[node name="DisplayModeOption" type="OptionButton" parent="Panel/Content/Options" unique_id=1588903110]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(240, 40)
-layout_mode = 2
-
-[node name="DisplaySpacer" type="Control" parent="Panel/Content/Options" unique_id=1235328549]
-layout_mode = 2
-
-[node name="MasterLabel" type="Label" parent="Panel/Content/Options" unique_id=2117056477]
-layout_mode = 2
-text = "SETTINGS_MASTER_VOLUME"
-
-[node name="MasterSlider" type="HSlider" parent="Panel/Content/Options" unique_id=1545671551]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(240, 36)
-layout_mode = 2
-max_value = 1.0
-step = 0.05
-
-[node name="MasterValue" type="Label" parent="Panel/Content/Options" unique_id=1132560278]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(64, 0)
-layout_mode = 2
-horizontal_alignment = 2
-
-[node name="MusicLabel" type="Label" parent="Panel/Content/Options" unique_id=649684465]
-layout_mode = 2
-text = "SETTINGS_MUSIC_VOLUME"
-
-[node name="MusicSlider" type="HSlider" parent="Panel/Content/Options" unique_id=624627621]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(240, 36)
-layout_mode = 2
-max_value = 1.0
-step = 0.05
-
-[node name="MusicValue" type="Label" parent="Panel/Content/Options" unique_id=322569519]
-unique_name_in_owner = true
-layout_mode = 2
-horizontal_alignment = 2
-
-[node name="SfxLabel" type="Label" parent="Panel/Content/Options" unique_id=765980759]
-layout_mode = 2
-text = "SETTINGS_SFX_VOLUME"
-
-[node name="SfxSlider" type="HSlider" parent="Panel/Content/Options" unique_id=272907021]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(240, 36)
-layout_mode = 2
-max_value = 1.0
-step = 0.05
-
-[node name="SfxValue" type="Label" parent="Panel/Content/Options" unique_id=139593920]
-unique_name_in_owner = true
-layout_mode = 2
-horizontal_alignment = 2
-
-[node name="FogLabel" type="Label" parent="Panel/Content/Options" unique_id=109575042]
-layout_mode = 2
-text = "SETTINGS_FOG"
-
-[node name="FogToggle" type="CheckButton" parent="Panel/Content/Options" unique_id=959995268]
-unique_name_in_owner = true
-layout_mode = 2
-
-[node name="FogSpacer" type="Control" parent="Panel/Content/Options" unique_id=853619814]
-layout_mode = 2
-
-[node name="ShakeLabel" type="Label" parent="Panel/Content/Options" unique_id=1626525469]
-layout_mode = 2
-text = "SETTINGS_CAMERA_SHAKE"
-
-[node name="CameraShakeToggle" type="CheckButton" parent="Panel/Content/Options" unique_id=1445272850]
+[node name="PageHost" type="MarginContainer" parent="Panel/Layout"]
 unique_name_in_owner = true
 layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/margin_left = 8
+theme_override_constants/margin_top = 4
+theme_override_constants/margin_right = 8
+theme_override_constants/margin_bottom = 4
 
-[node name="ShakeSpacer" type="Control" parent="Panel/Content/Options" unique_id=573747240]
+[node name="GamePage" parent="Panel/Layout/PageHost" instance=ExtResource("4_page")]
+layout_mode = 2
+section = &"game"
+
+[node name="AudioPage" parent="Panel/Layout/PageHost" instance=ExtResource("4_page")]
+visible = false
+layout_mode = 2
+section = &"audio"
+
+[node name="VideoPage" parent="Panel/Layout/PageHost" instance=ExtResource("4_page")]
+visible = false
+layout_mode = 2
+section = &"video"
+
+[node name="ControlsPage" parent="Panel/Layout/PageHost" instance=ExtResource("4_page")]
+visible = false
+layout_mode = 2
+section = &"controls"
+
+[node name="FooterDivider" type="HSeparator" parent="Panel/Layout"]
 layout_mode = 2
 
-[node name="DropLabel" type="Label" parent="Panel/Content/Options" unique_id=304618191]
+[node name="Footer" type="HBoxContainer" parent="Panel/Layout"]
+custom_minimum_size = Vector2(0, 44)
 layout_mode = 2
-text = "SETTINGS_ONE_WAY_DROP"
+theme_override_constants/separation = 12
 
-[node name="OneWayDropToggle" type="CheckButton" parent="Panel/Content/Options" unique_id=1876275046]
-unique_name_in_owner = true
-layout_mode = 2
-
-[node name="DropSpacer" type="Control" parent="Panel/Content/Options" unique_id=986316546]
-layout_mode = 2
-
-[node name="Actions" type="HBoxContainer" parent="Panel/Content" unique_id=733032895]
-layout_mode = 2
-theme_override_constants/separation = 14
-alignment = 1
-
-[node name="ResetButton" type="Button" parent="Panel/Content/Actions" unique_id=2041564106]
+[node name="ResetButton" type="Button" parent="Panel/Layout/Footer"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(180, 44)
 layout_mode = 2
 text = "SETTINGS_RESET"
 
-[node name="BackButton" type="Button" parent="Panel/Content/Actions" unique_id=2126091094]
+[node name="FooterSpacer" type="Control" parent="Panel/Layout/Footer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="BackButton" type="Button" parent="Panel/Layout/Footer"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(180, 44)
 layout_mode = 2
 text = "COMMON_BACK"
+
+[node name="InputMappingMenu" parent="." instance=ExtResource("3_input_mapping")]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1

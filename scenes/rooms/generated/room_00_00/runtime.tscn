@@ -1,0 +1,14 @@
+[gd_scene format=3 uid="uid://clnd5qb2slkrv"]
+
+[ext_resource type="Script" path="res://addons/platformer_kit/world/entities/spawn_point.gd" id="1_co87t"]
+
+[node name="RoomRuntimeContent" type="Node2D" unique_id=315657839]
+
+[node name="Entities" type="Node2D" parent="." unique_id=873798919]
+
+[node name="StartSpawn" type="Marker2D" parent="Entities" unique_id=755923562]
+position = Vector2(68, 140)
+script = ExtResource("1_co87t")
+spawn_id = "start"
+
+[node name="Foreground" type="Node2D" parent="." unique_id=1444189002]

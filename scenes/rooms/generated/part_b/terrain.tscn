@@ -1,0 +1,28 @@
+[gd_scene format=3 uid="uid://dqgmhroh56y5u"]
+
+[ext_resource type="TileSet" path="res://resources/tilesets/primordial_tileset.tres" id="1_4wc86"]
+[ext_resource type="Script" path="res://scripts/world/ladder_tile_area_builder.gd" id="2_bo7sx"]
+[ext_resource type="Script" path="res://scripts/world/spike_hazard_area_builder.gd" id="3_ihlhb"]
+
+[node name="RoomTerrain" type="Node2D" unique_id=1532702946]
+
+[node name="Background" type="Node2D" parent="." unique_id=325842319]
+
+[node name="Terrain" type="Node2D" parent="." unique_id=630396273]
+
+[node name="BackTiles" type="TileMapLayer" parent="Terrain" unique_id=1975689941]
+tile_set = ExtResource("1_4wc86")
+collision_enabled = false
+
+[node name="SolidTiles" type="TileMapLayer" parent="Terrain" unique_id=474411294]
+tile_set = ExtResource("1_4wc86")
+
+[node name="DetailTiles" type="TileMapLayer" parent="Terrain" unique_id=976958830]
+tile_set = ExtResource("1_4wc86")
+collision_enabled = false
+
+[node name="LadderAreaBuilder" type="Node2D" parent="Terrain" unique_id=171454519]
+script = ExtResource("2_bo7sx")
+
+[node name="SpikeHazardAreaBuilder" type="Node2D" parent="Terrain" unique_id=360386175]
+script = ExtResource("3_ihlhb")

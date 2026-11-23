@@ -1,0 +1,19 @@
+[remap]
+
+importer="csv_translation"
+type="Translation"
+uid="uid://dp7hcwnqcaah4"
+
+[deps]
+
+files=["res://addons/input_mapping/translations/input_mapping.en.translation", "res://addons/input_mapping/translations/input_mapping.zh_CN.translation"]
+
+source_file="res://addons/input_mapping/translations/input_mapping.csv"
+dest_files=["res://addons/input_mapping/translations/input_mapping.en.translation", "res://addons/input_mapping/translations/input_mapping.zh_CN.translation"]
+
+[params]
+
+compress=1
+delimiter=0
+unescape_keys=false
+unescape_translations=true

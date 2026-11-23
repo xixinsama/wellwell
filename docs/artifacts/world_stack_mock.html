@@ -1,0 +1,873 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>世界切片 · World Stack 原型</title>
+<style>
+  :root {
+    --ink: #e8eef6;
+    --dim: #90a1b6;
+    --line: rgba(126, 156, 190, 0.16);
+    --panel: rgba(10, 14, 19, 0.82);
+    --teal: #79f2d0;
+    --violet: #a99bff;
+    --amber: #f2c879;
+    --red: #f2685f;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; height: 100%; overflow: hidden;
+    background: #05070a; color: var(--ink);
+    font: 13px/1.5 "Inter", "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  #stage { position: fixed; inset: 0; display: block; cursor: grab; }
+  #stage.dragging { cursor: grabbing; }
+  #stage.over-slice { cursor: pointer; }
+  .hud { position: fixed; pointer-events: none; z-index: 5; }
+  #title { top: 18px; left: 22px; }
+  #title h1 { margin: 0; font-size: 15px; font-weight: 600; letter-spacing: .04em; }
+  #title p { margin: 3px 0 0; color: var(--dim); font-size: 12px; letter-spacing: .02em; }
+  #hint { bottom: 16px; left: 50%; transform: translateX(-50%); color: var(--dim); font-size: 12px; }
+  #hint b { color: var(--ink); font-weight: 600; }
+  #legend {
+    bottom: 16px; left: 22px; padding: 9px 12px; border-radius: 8px;
+    background: var(--panel); border: 1px solid var(--line);
+    display: flex; gap: 14px; align-items: center; font-size: 11.5px; color: var(--dim);
+  }
+  .key { display: inline-flex; align-items: center; gap: 6px; }
+  .dot { width: 22px; height: 2px; border-radius: 2px; display: inline-block; }
+  #back {
+    position: fixed; top: 18px; left: 22px; z-index: 6;
+    display: none; align-items: center; gap: 8px;
+    padding: 7px 13px 7px 10px; border-radius: 8px;
+    background: var(--panel); border: 1px solid var(--line);
+    color: var(--ink); font: inherit; font-size: 12.5px; cursor: pointer;
+  }
+  #back:hover { border-color: rgba(150, 200, 230, .45); background: rgba(18, 26, 34, .9); }
+  #back span { color: var(--dim); }
+  body.detail #back { display: inline-flex; }
+  body.detail #legend { opacity: .35; }
+  #badge {
+    top: 20px; right: 22px; text-align: right; font-size: 11px; color: var(--dim);
+    letter-spacing: .18em; text-transform: uppercase;
+  }
+</style>
+</head>
+<body>
+<canvas id="stage"></canvas>
+<button id="back" type="button">← 返回叠层 <span>ESC</span></button>
+<div class="hud" id="title">
+  <h1 id="title-main">世界切片 · World Stack</h1>
+  <p id="title-sub">三个世界平行叠放，穿梭门在层间连线，传送门在层内连线</p>
+</div>
+<div class="hud" id="badge">prototype · not shipped</div>
+<div class="hud" id="legend">
+  <span class="key"><i class="dot" style="background: var(--teal)"></i>传送门（同层）</span>
+  <span class="key"><i class="dot" style="background: var(--violet)"></i>穿梭门（跨层）</span>
+  <span class="key"><i class="dot" style="background: var(--red)"></i>未配对</span>
+</div>
+<div class="hud" id="hint"><b>拖拽</b> 旋转 · <b>滚轮</b> 缩放 · <b>点击切片</b> 进入该世界的 2D 详情</div>
+
+<script>
+(function () {
+  'use strict';
+
+  // ---------------------------------------------------------------- data ----
+  const WORLDS = [
+    {
+      id: 'loop', name: '回环水窖', sub: 'THE LOOP CISTERN', accent: '#79f2d0',
+      rooms: [
+        { id: 'loop_relay', x: -1, y: 0, w: 1, h: 1, note: '传送带 · 冲刺缺口' },
+        { id: 'loop_entry', x: 0, y: 0, w: 1, h: 1, note: '起始平台 · 崩溃桥' },
+        { id: 'loop_gallery', x: 0, y: -1, w: 2, h: 1, note: '电梯 · 冲刺拾取' },
+        { id: 'loop_split', x: 1, y: 0, w: 1, h: 1, note: '掉落平台 · 水池' },
+      ],
+      doors: [
+        { id: 'entry↑', room: 'loop_entry', u: 0.5, v: 0.18, kind: 'portal', target: 'gallery↓' },
+        { id: 'gallery↓', room: 'loop_gallery', u: 0.5, v: 0.86, kind: 'portal', target: 'entry↑' },
+        { id: 'relay→', room: 'loop_relay', u: 0.86, v: 0.5, kind: 'shuttle', targetWorld: 'tide', target: 'hall←' },
+        { id: 'split⊙', room: 'loop_split', u: 0.5, v: 0.5, kind: 'portal', target: 'ghost⊙' },
+      ],
+    },
+    {
+      id: 'tide', name: '潮汐下层', sub: 'TIDAL UNDERCROFT', accent: '#a99bff',
+      rooms: [
+        { id: 'tide_hall', x: 0, y: 0, w: 2, h: 1, note: '双池 · 潮汐闸门' },
+        { id: 'tide_gallery', x: 2, y: 0, w: 1, h: 1, note: '水位走廊' },
+        { id: 'tide_well', x: 0, y: -1, w: 1, h: 1, note: '竖井 · 气压泵' },
+      ],
+      doors: [
+        { id: 'hall←', room: 'tide_hall', u: 0.12, v: 0.5, kind: 'shuttle', targetWorld: 'loop', target: 'relay→' },
+        { id: 'well↑', room: 'tide_well', u: 0.5, v: 0.2, kind: 'shuttle', targetWorld: 'lantern', target: 'lamp↓' },
+        { id: 'hall◎', room: 'tide_hall', u: 0.62, v: 0.72, kind: 'portal', target: 'gallery◎' },
+        { id: 'gallery◎', room: 'tide_gallery', u: 0.5, v: 0.62, kind: 'portal', target: 'hall◎' },
+      ],
+    },
+    {
+      id: 'lantern', name: '灯影实验场', sub: 'LANTERN WORKS', accent: '#f2c879',
+      rooms: [
+        { id: 'lamp_atrium', x: 0, y: 0, w: 1, h: 2, note: '中庭 · 反射镜' },
+        { id: 'lamp_lab', x: 1, y: 0, w: 1, h: 1, note: '光束实验台' },
+        { id: 'lamp_vault', x: 1, y: 1, w: 1, h: 1, note: '暗库' },
+      ],
+      doors: [
+        { id: 'lamp↓', room: 'lamp_atrium', u: 0.5, v: 0.08, kind: 'shuttle', targetWorld: 'tide', target: 'well↑' },
+        { id: 'lab◇', room: 'lamp_lab', u: 0.2, v: 0.5, kind: 'portal', target: 'vault◇' },
+        { id: 'vault◇', room: 'lamp_vault', u: 0.8, v: 0.5, kind: 'portal', target: 'lab◇' },
+        { id: 'orphan', room: 'lamp_vault', u: 0.25, v: 0.2, kind: 'shuttle', targetWorld: 'loop', target: 'missing-door' },
+      ],
+    },
+  ];
+
+  // ------------------------------------------------------------- helpers ----
+  const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const ease = (t) => 1 - Math.pow(1 - clamp(t, 0, 1), 3);
+  const rgba = (hex, a) => {
+    const n = parseInt(hex.slice(1), 16);
+    return 'rgba(' + ((n >> 16) & 255) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + a + ')';
+  };
+
+  const byId = new Map(WORLDS.map((w) => [w.id, w]));
+  const layerOf = (worldId) => WORLDS.findIndex((w) => w.id === worldId);
+
+  function doorPos(world, door) {
+    const room = world.rooms.find((r) => r.id === door.room);
+    if (!room) return { x: 0, y: 0 };
+    return { x: room.x + door.u * room.w, y: room.y + door.v * room.h };
+  }
+
+  function boundsOf(world, pad) {
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (const r of world.rooms) {
+      minX = Math.min(minX, r.x); minY = Math.min(minY, r.y);
+      maxX = Math.max(maxX, r.x + r.w); maxY = Math.max(maxY, r.y + r.h);
+    }
+    if (!isFinite(minX)) return { minX: -0.5, minY: -0.5, maxX: 0.5, maxY: 0.5 };
+    return { minX: minX - pad, minY: minY - pad, maxX: maxX + pad, maxY: maxY + pad };
+  }
+
+  /** Every drawable link, deduped, with both endpoints in 3D room units. */
+  function links() {
+    const out = [];
+    const seen = new Set();
+    for (const world of WORLDS) {
+      for (const door of world.doors) {
+        const fromLayer = layerOf(world.id);
+        const from = doorPos(world, door);
+        const targetWorld = door.targetWorld || world.id;
+        const targetWorldData = byId.get(targetWorld);
+        const targetDoor = targetWorldData
+          ? targetWorldData.doors.find((d) => d.id === door.target)
+          : null;
+        const to = targetDoor ? doorPos(targetWorldData, targetDoor) : null;
+        const toLayer = targetDoor ? layerOf(targetWorld) : fromLayer;
+        const paired = Boolean(targetDoor) &&
+          targetDoor.target === door.id &&
+          (targetDoor.targetWorld || targetWorld) === world.id;
+        const cross = targetWorld !== world.id;
+        const key = [world.id + door.id, targetWorld + (door.target || '')].sort().join('|');
+        if (seen.has(key)) continue;
+        seen.add(key);
+        out.push({
+          fromWorld: world.id, fromDoor: door.id, kind: cross ? 'shuttle' : 'portal',
+          fromLayer, toLayer, from, to, paired,
+          toWorld: targetWorld, toDoor: door.target,
+        });
+      }
+    }
+    return out;
+  }
+
+  const LINKS = links();
+
+  // --------------------------------------------------------------- camera ----
+  const cam = { yaw: -0.46, pitch: 1.02, zoom: 0.92, ox: 0, oy: 34 };
+  const LAYER_H = 1.02;         // vertical distance between slices, room units
+  const SLAB_T = 0.12;          // slab thickness
+  let W = 0, H = 0, DPR = 1;
+  let hoverWorld = null;
+  let mode = '3d';
+  let activeWorld = null;
+  let detailT = 0;
+  let needsDraw = true;
+
+  function scale() { return Math.min(W, H) * 0.40 * cam.zoom; }
+
+  function project(x, y, z) {
+    const cy = Math.cos(cam.yaw), sy = Math.sin(cam.yaw);
+    const x1 = x * cy - y * sy;
+    const y1 = x * sy + y * cy;
+    const cp = Math.cos(cam.pitch), sp = Math.sin(cam.pitch);
+    const up = y1 * cp + z * sp;
+    const depth = y1 * sp - z * cp;
+    const f = 8.5;
+    const k = f / Math.max(1.2, f + depth);
+    const s = scale() * k;
+    return {
+      x: W * 0.5 + x1 * s + cam.ox,
+      y: H * 0.5 - up * s + cam.oy,
+      k,
+      depth,
+    };
+  }
+
+  const zOf = (worldId) => layerOf(worldId) * LAYER_H;
+
+  // --------------------------------------------------------------- canvas ----
+  const canvas = document.getElementById('stage');
+  const ctx = canvas.getContext('2d');
+
+  function resize() {
+    DPR = Math.min(2, window.devicePixelRatio || 1);
+    W = window.innerWidth; H = window.innerHeight;
+    canvas.width = Math.round(W * DPR);
+    canvas.height = Math.round(H * DPR);
+    canvas.style.width = W + 'px';
+    canvas.style.height = H + 'px';
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    fitView();
+    needsDraw = true;
+  }
+
+  /** Frame the whole stack: zoom and offset so the slices always fit. */
+  function fitView() {
+    const savedZoom = cam.zoom;
+    cam.zoom = 1; cam.ox = 0; cam.oy = 0;
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (const world of WORLDS) {
+      const b = boundsOf(world, 0.2);
+      const z = zOf(world.id);
+      const corners = [
+        [b.minX, b.minY, z], [b.maxX, b.minY, z], [b.maxX, b.maxY, z], [b.minX, b.maxY, z],
+        [b.minX, b.minY, z - SLAB_T], [b.maxX, b.maxY, z + 0.12],
+      ];
+      for (const c of corners) {
+        const p = project(c[0], c[1], c[2]);
+        minX = Math.min(minX, p.x); maxX = Math.max(maxX, p.x);
+        minY = Math.min(minY, p.y); maxY = Math.max(maxY, p.y);
+      }
+    }
+    if (!isFinite(minX) || W === 0) { cam.zoom = savedZoom; return; }
+    const bw = Math.max(1, maxX - minX);
+    const bh = Math.max(1, maxY - minY);
+    const zoom = clamp(Math.min(W * 0.94 / bw, H * 0.90 / bh), 0.22, 2.4);
+    const cx = (minX + maxX) / 2;
+    const cy = (minY + maxY) / 2;
+    cam.zoom = zoom;
+    cam.ox = -(cx - W / 2) * zoom + 8;
+    cam.oy = -(cy - H / 2) * zoom + 16;
+  }
+
+  function poly(points, fill, stroke, width) {
+    if (!points.length) return;
+    ctx.beginPath();
+    ctx.moveTo(points[0].x, points[0].y);
+    for (let i = 1; i < points.length; i++) ctx.lineTo(points[i].x, points[i].y);
+    ctx.closePath();
+    if (fill) { ctx.fillStyle = fill; ctx.fill(); }
+    if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = width || 1; ctx.stroke(); }
+  }
+
+  function projectRect(b, z) {
+    return [
+      project(b.minX, b.minY, z),
+      project(b.maxX, b.minY, z),
+      project(b.maxX, b.maxY, z),
+      project(b.minX, b.maxY, z),
+    ];
+  }
+
+  function drawArrowHead(a, b, color, size) {
+    const dx = b.x - a.x, dy = b.y - a.y;
+    const len = Math.hypot(dx, dy);
+    if (len < 0.001) return;
+    const ux = dx / len, uy = dy / len;
+    const px = -uy, py = ux;
+    const s = size;
+    const tip = { x: b.x, y: b.y };
+    const left = { x: b.x - ux * s + px * s * 0.62, y: b.y - uy * s + py * s * 0.62 };
+    const right = { x: b.x - ux * s - px * s * 0.62, y: b.y - uy * s - py * s * 0.62 };
+    ctx.beginPath();
+    ctx.moveTo(tip.x, tip.y);
+    ctx.lineTo(left.x, left.y);
+    ctx.lineTo(right.x, right.y);
+    ctx.closePath();
+    ctx.fillStyle = color;
+    ctx.fill();
+  }
+
+  /** Quadratic arc in 3D, sampled and projected. */
+  function drawArc(a, b, lift, color, dashed, width) {
+    const ctrl = {
+      x: (a.x + b.x) * 0.5,
+      y: (a.y + b.y) * 0.5,
+      z: (a.z + b.z) * 0.5 + lift,
+    };
+    const steps = 26;
+    const pts = [];
+    for (let i = 0; i <= steps; i++) {
+      const t = i / steps;
+      const it = 1 - t;
+      pts.push(project(
+        it * it * a.x + 2 * it * t * ctrl.x + t * t * b.x,
+        it * it * a.y + 2 * it * t * ctrl.y + t * t * b.y,
+        it * it * a.z + 2 * it * t * ctrl.z + t * t * b.z
+      ));
+    }
+    ctx.save();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = width || 1.5;
+    ctx.lineCap = 'round';
+    if (dashed) ctx.setLineDash([5, 5]);
+    ctx.beginPath();
+    ctx.moveTo(pts[0].x, pts[0].y);
+    for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+    ctx.stroke();
+    ctx.restore();
+    drawArrowHead(pts[pts.length - 3], pts[pts.length - 1], color, 6 + (width || 1.5) * 1.6);
+  }
+
+  // ------------------------------------------------------------ 3D scene ----
+  function slabFor(world) {
+    const z = zOf(world.id);
+    const b = boundsOf(world, 0.16);
+    return { world, z, b, depth: ((b.minY + b.maxY) / 2) * Math.sin(cam.pitch) - z * Math.cos(cam.pitch) };
+  }
+
+  function drawSlab(slab) {
+    const { world, z, b } = slab;
+    const accent = world.accent;
+    const hovered = hoverWorld === world.id;
+    const top = projectRect(b, z);
+    const bottom = projectRect(b, z - SLAB_T);
+    const lift = hovered ? 0.05 : 0;
+    for (let i = 0; i < 4; i++) {
+      const j = (i + 1) % 4;
+      const a1 = top[i], b1 = top[j], a2 = bottom[j], b2 = bottom[i];
+      const side = [a1, b1, a2, b2];
+      // Only the sides facing the viewer read as thickness; the rest stay faint.
+      const isFront = (b1.y + a2.y) * 0.5 > (a1.y + b1.y) * 0.5;
+      ctx.globalAlpha = isFront ? 0.5 : 0.22;
+      poly(side, rgba(accent, isFront ? 0.30 : 0.12), rgba(accent, isFront ? 0.55 : 0.22), 1);
+      ctx.globalAlpha = 1;
+    }
+    ctx.globalAlpha = hovered ? 1 : 0.92;
+    poly(top, rgba(accent, hovered ? 0.16 : 0.09), rgba(accent, hovered ? 0.95 : 0.5), hovered ? 2 : 1.2);
+    ctx.globalAlpha = 1;
+
+    // rooms
+    for (const room of world.rooms) {
+      const rb = { minX: room.x, minY: room.y, maxX: room.x + room.w, maxY: room.y + room.h };
+      const quad = projectRect(rb, z + lift);
+      poly(quad, rgba(accent, 0.13), rgba(accent, 0.7), 1);
+      const center = project(room.x + room.w / 2, room.y + room.h / 2, z + lift);
+      if (center.k * scale() > 46) {
+        ctx.fillStyle = 'rgba(232,238,246,0.86)';
+        ctx.font = '500 ' + (9 + center.k * 3.2).toFixed(1) + 'px "Segoe UI", "Microsoft YaHei", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(room.id, center.x, center.y);
+      }
+    }
+
+    // depth badge + name plate on the near-left corner
+    const corner = project(b.minX, b.minY, z + lift);
+    const plateY = corner.y + 16;
+    ctx.font = '600 12px "Segoe UI", "Microsoft YaHei", sans-serif';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    const label = world.name;
+    const labelW = ctx.measureText(label).width;
+    ctx.fillStyle = rgba(accent, 0.9);
+    ctx.beginPath();
+    ctx.arc(corner.x + 9, plateY, 8, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#0a0d11';
+    ctx.font = '700 10px "Segoe UI", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(String(layerOf(world.id) + 1), corner.x + 9, plateY + 0.5);
+    ctx.fillStyle = 'rgba(10,14,19,0.72)';
+    ctx.fillRect(corner.x + 22, plateY - 9, labelW + 14, 18);
+    ctx.strokeStyle = rgba(accent, 0.35);
+    ctx.lineWidth = 1;
+    ctx.strokeRect(corner.x + 22.5, plateY - 8.5, labelW + 13, 17);
+    ctx.fillStyle = 'rgba(232,238,246,0.95)';
+    ctx.font = '600 12px "Segoe UI", "Microsoft YaHei", sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText(label, corner.x + 29, plateY + 0.5);
+  }
+
+  function drawDoorsOnSlab(slab) {
+    const { world, z } = slab;
+    for (const door of world.doors) {
+      const p = doorPos(world, door);
+      const s = project(p.x, p.y, z + 0.02);
+      const r = clamp(3.2 * s.k * (scale() / 300), 2.4, 6);
+      ctx.beginPath();
+      if (door.kind === 'shuttle') {
+        ctx.moveTo(s.x, s.y - r);
+        ctx.lineTo(s.x + r, s.y);
+        ctx.lineTo(s.x, s.y + r);
+        ctx.lineTo(s.x - r, s.y);
+      } else {
+        const q = r * 0.86;
+        ctx.moveTo(s.x - q, s.y - q);
+        ctx.lineTo(s.x + q, s.y - q);
+        ctx.lineTo(s.x + q, s.y + q);
+        ctx.lineTo(s.x - q, s.y + q);
+      }
+      ctx.closePath();
+      ctx.fillStyle = door.kind === 'shuttle' ? 'rgba(10,14,19,0.95)' : 'rgba(10,14,19,0.95)';
+      ctx.fill();
+      ctx.strokeStyle = door.kind === 'shuttle' ? '#a99bff' : '#79f2d0';
+      ctx.lineWidth = 1.4;
+      ctx.stroke();
+    }
+  }
+
+  function drawLinks3D() {
+    for (const link of LINKS) {
+      const from = project(link.from.x, link.from.y, zOf(link.fromWorld) + 0.02);
+      const to = link.to
+        ? project(link.to.x, link.to.y, zOf(link.toWorld) + 0.02)
+        : project(link.from.x + 0.35, link.from.y - 0.3, zOf(link.fromWorld) + 0.5);
+      const color = link.paired ? (link.kind === 'shuttle' ? '#a99bff' : '#79f2d0') : '#f2685f';
+      drawArc(
+        { x: link.from.x, y: link.from.y, z: zOf(link.fromWorld) + 0.02 },
+        link.to
+          ? { x: link.to.x, y: link.to.y, z: zOf(link.toWorld) + 0.02 }
+          : { x: link.from.x + 0.35, y: link.from.y - 0.3, z: zOf(link.fromWorld) + 0.5 },
+        link.kind === 'shuttle' ? 1.15 : 0.5,
+        color,
+        !link.paired,
+        link.kind === 'shuttle' ? 1.8 : 1.4
+      );
+      if (!link.paired) {
+        ctx.fillStyle = 'rgba(242,104,95,0.9)';
+        ctx.font = '600 9px "Segoe UI", sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillText('未配对', to.x + 6, to.y - 6);
+      }
+    }
+  }
+
+  function slabPolygons() {
+    return WORLDS.map((world) => {
+      const z = zOf(world.id);
+      return { world, poly: projectRect(boundsOf(world, 0.16), z) };
+    }).sort((a, b) => {
+      const da = ((a.poly[0].depth + a.poly[2].depth) / 2);
+      const db = ((b.poly[0].depth + b.poly[2].depth) / 2);
+      return db - da;
+    });
+  }
+
+  function pointInPoly(px, py, pts) {
+    let inside = false;
+    for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) {
+      const xi = pts[i].x, yi = pts[i].y, xj = pts[j].x, yj = pts[j].y;
+      const hit = (yi > py) !== (yj > py) && px < ((xj - xi) * (py - yi)) / (yj - yi + 1e-9) + xi;
+      if (hit) inside = !inside;
+    }
+    return inside;
+  }
+
+  function pickWorld(px, py) {
+    const order = slabPolygons(); // far → near
+    for (let i = order.length - 1; i >= 0; i--) {
+      if (pointInPoly(px, py, order[i].poly)) return order[i].world.id;
+    }
+    return null;
+  }
+
+  function drawGrid3D() {
+    // a faint reference grid on the base plane
+    const z = -SLAB_T;
+    const span = 3.2;
+    ctx.save();
+    ctx.strokeStyle = 'rgba(126,156,190,0.07)';
+    ctx.lineWidth = 1;
+    for (let i = -span; i <= span; i += 0.5) {
+      const a = project(i, -span, z), b = project(i, span, z);
+      const c = project(-span, i, z), d = project(span, i, z);
+      ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(c.x, c.y); ctx.lineTo(d.x, d.y); ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function draw3D() {
+    const bg = ctx.createRadialGradient(W * 0.5, H * 0.42, 40, W * 0.5, H * 0.5, Math.max(W, H) * 0.8);
+    bg.addColorStop(0, '#0d1218');
+    bg.addColorStop(1, '#05070a');
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, W, H);
+
+    drawGrid3D();
+
+    const slabs = WORLDS.map(slabFor).sort((a, b) => b.depth - a.depth);
+    for (const slab of slabs) drawSlab(slab);
+    for (const slab of slabs) drawDoorsOnSlab(slab);
+    drawLinks3D();
+  }
+
+  // ----------------------------------------------------------- 2D detail ----
+  const detailCam = { scale: 118, ox: 0, oy: 0 };
+
+  function detailBounds(world) {
+    const b = boundsOf(world, 0.22);
+    return b;
+  }
+
+  function detailProject(world, x, y) {
+    const b = detailBounds(world);
+    const cx = (b.minX + b.maxX) / 2;
+    const cy = (b.minY + b.maxY) / 2;
+    const base = Math.min(W * 0.62 / (b.maxX - b.minX), H * 0.62 / (b.maxY - b.minY));
+    const s = base * detailCam.scale / 118;
+    return {
+      x: W * 0.5 - 60 + (x - cx) * s + detailCam.ox,
+      y: H * 0.5 - 10 + (y - cy) * s + detailCam.oy,
+      s,
+    };
+  }
+
+  function railRect(index) {
+    const w = 168, h = 48, x = W - w - 20, y = 96 + index * (h + 10);
+    return { x, y, w, h };
+  }
+
+  function drawDetail() {
+    const world = byId.get(activeWorld);
+    if (!world) return;
+    const accent = world.accent;
+
+    const bg = ctx.createRadialGradient(W * 0.5, H * 0.45, 60, W * 0.5, H * 0.5, Math.max(W, H) * 0.85);
+    bg.addColorStop(0, '#0c1117');
+    bg.addColorStop(1, '#05070a');
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, W, H);
+
+    const b = detailBounds(world);
+    const cell = detailProject(world, 0, 0);
+
+    // grid
+    ctx.save();
+    ctx.strokeStyle = 'rgba(126,156,190,0.08)';
+    ctx.lineWidth = 1;
+    for (let x = Math.floor(b.minX); x <= Math.ceil(b.maxX); x++) {
+      const p0 = detailProject(world, x, b.minY), p1 = detailProject(world, x, b.maxY);
+      ctx.beginPath(); ctx.moveTo(p0.x, p0.y); ctx.lineTo(p1.x, p1.y); ctx.stroke();
+    }
+    for (let y = Math.floor(b.minY); y <= Math.ceil(b.maxY); y++) {
+      const p0 = detailProject(world, b.minX, y), p1 = detailProject(world, b.maxX, y);
+      ctx.beginPath(); ctx.moveTo(p0.x, p0.y); ctx.lineTo(p1.x, p1.y); ctx.stroke();
+    }
+    ctx.restore();
+
+    // rooms
+    for (const room of world.rooms) {
+      const a = detailProject(world, room.x, room.y);
+      const c = detailProject(world, room.x + room.w, room.y + room.h);
+      const rect = { x: a.x, y: a.y, w: c.x - a.x, h: c.y - a.y };
+      ctx.fillStyle = rgba(accent, 0.12);
+      ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
+      ctx.strokeStyle = rgba(accent, 0.75);
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(rect.x + 0.5, rect.y + 0.5, rect.w - 1, rect.h - 1);
+
+      ctx.fillStyle = 'rgba(232,238,246,0.95)';
+      ctx.font = '600 13px "Segoe UI", "Microsoft YaHei", sans-serif';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'top';
+      ctx.fillText(room.id, rect.x + 10, rect.y + 9);
+      ctx.fillStyle = 'rgba(144,161,182,0.9)';
+      ctx.font = '11px "Segoe UI", "Microsoft YaHei", sans-serif';
+      ctx.fillText('320×180 · chunk ' + room.x + ',' + room.y, rect.x + 10, rect.y + 26);
+      if (room.note) {
+        ctx.fillStyle = rgba(accent, 0.75);
+        ctx.fillText(room.note, rect.x + 10, rect.y + 42);
+      }
+    }
+
+    // doors + portal arrows inside this world
+    const worldLinks = LINKS.filter((l) => l.fromWorld === world.id);
+    for (const link of worldLinks) {
+      if (link.kind !== 'portal' || !link.to) continue;
+      const a = detailProject(world, link.from.x, link.from.y);
+      const c = detailProject(world, link.to.x, link.to.y);
+      const mx = (a.x + c.x) / 2, my = (a.y + c.y) / 2 - 34;
+      ctx.save();
+      ctx.strokeStyle = link.paired ? '#79f2d0' : '#f2685f';
+      ctx.lineWidth = 1.6;
+      if (!link.paired) ctx.setLineDash([5, 5]);
+      ctx.beginPath();
+      ctx.moveTo(a.x, a.y);
+      ctx.quadraticCurveTo(mx, my, c.x, c.y);
+      ctx.stroke();
+      ctx.restore();
+      drawArrowHead({ x: mx, y: my }, { x: c.x, y: c.y }, link.paired ? '#79f2d0' : '#f2685f', 8);
+    }
+
+    for (const door of world.doors) {
+      const p = detailProject(world, doorPos(world, door).x, doorPos(world, door).y);
+      const shuttle = door.kind === 'shuttle';
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 5.5, 0, Math.PI * 2);
+      ctx.fillStyle = '#0a0d11';
+      ctx.fill();
+      ctx.strokeStyle = shuttle ? '#a99bff' : '#79f2d0';
+      ctx.lineWidth = 1.6;
+      ctx.stroke();
+      ctx.fillStyle = shuttle ? 'rgba(169,155,255,0.9)' : 'rgba(121,242,208,0.9)';
+      ctx.font = '600 10px "Segoe UI", "Microsoft YaHei", sans-serif';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(door.id, p.x + 9, p.y);
+    }
+
+    // shuttle stubs aiming at the target slice in the rail
+    for (const link of worldLinks) {
+      if (link.kind !== 'shuttle') continue;
+      const from = detailProject(world, link.from.x, link.from.y);
+      const targetIndex = layerOf(link.toWorld);
+      const rail = railRect(targetIndex);
+      const to = { x: rail.x - 6, y: rail.y + rail.h / 2 };
+      const mid = { x: (from.x + to.x) / 2, y: Math.min(from.y, to.y) - 40 };
+      ctx.save();
+      ctx.strokeStyle = link.paired ? '#a99bff' : '#f2685f';
+      ctx.lineWidth = 1.6;
+      if (!link.paired) ctx.setLineDash([5, 5]);
+      ctx.beginPath();
+      ctx.moveTo(from.x, from.y);
+      ctx.quadraticCurveTo(mid.x, mid.y, to.x, to.y);
+      ctx.stroke();
+      ctx.restore();
+      drawArrowHead({ x: mid.x, y: mid.y }, to, link.paired ? '#a99bff' : '#f2685f', 8);
+    }
+
+    // rail: the stack as cards
+    ctx.textAlign = 'left';
+    ctx.fillStyle = 'rgba(144,161,182,0.85)';
+    ctx.font = '600 10px "Segoe UI", sans-serif';
+    ctx.fillText('叠层', W - 188, 78);
+    for (let i = 0; i < WORLDS.length; i++) {
+      const w = WORLDS[i];
+      const r = railRect(i);
+      const current = w.id === world.id;
+      ctx.fillStyle = current ? rgba(w.accent, 0.14) : 'rgba(12,17,23,0.85)';
+      ctx.fillRect(r.x, r.y, r.w, r.h);
+      ctx.strokeStyle = current ? rgba(w.accent, 0.9) : 'rgba(126,156,190,0.22)';
+      ctx.lineWidth = current ? 1.6 : 1;
+      ctx.strokeRect(r.x + 0.5, r.y + 0.5, r.w - 1, r.h - 1);
+      ctx.fillStyle = rgba(w.accent, 0.95);
+      ctx.beginPath();
+      ctx.arc(r.x + 16, r.y + r.h / 2, 6, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#0a0d11';
+      ctx.font = '700 9px "Segoe UI", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(String(i + 1), r.x + 16, r.y + r.h / 2 + 0.5);
+      ctx.textAlign = 'left';
+      ctx.fillStyle = current ? 'rgba(232,238,246,0.98)' : 'rgba(232,238,246,0.8)';
+      ctx.font = '600 12px "Segoe UI", "Microsoft YaHei", sans-serif';
+      ctx.fillText(w.name, r.x + 30, r.y + r.h / 2 - 5);
+      ctx.fillStyle = 'rgba(144,161,182,0.85)';
+      ctx.font = '10px "Segoe UI", sans-serif';
+      ctx.fillText(w.rooms.length + ' rooms · ' + (current ? '正在查看' : '点击切换'), r.x + 30, r.y + r.h / 2 + 10);
+    }
+  }
+
+  // -------------------------------------------------------------- render -----
+  function render() {
+    ctx.clearRect(0, 0, W, H);
+    if (mode === '3d') {
+      draw3D();
+      if (detailT > 0) {
+        ctx.save();
+        ctx.globalAlpha = detailT * 0.55;
+        ctx.fillStyle = '#05070a';
+        ctx.fillRect(0, 0, W, H);
+        ctx.restore();
+      }
+    } else {
+      detailT = Math.min(1, detailT + 0.08);
+      // The stack stays visible underneath while the chosen slice opens up.
+      if (detailT < 1) draw3D();
+      const e = ease(detailT);
+      ctx.save();
+      ctx.globalAlpha = e;
+      const s = 0.94 + 0.06 * e;
+      ctx.translate(W / 2, H / 2);
+      ctx.scale(s, s);
+      ctx.translate(-W / 2, -H / 2);
+      drawDetail();
+      ctx.restore();
+    }
+  }
+
+  function frame() {
+    if (needsDraw) {
+      needsDraw = false;
+      render();
+    }
+    requestAnimationFrame(frame);
+  }
+
+  function markDirty() { needsDraw = true; }
+
+  // ---------------------------------------------------------- interaction ----
+  let dragging = false;
+  let dragStart = null;
+  let camStart = null;
+
+  canvas.addEventListener('pointerdown', (e) => {
+    dragging = true;
+    canvas.classList.add('dragging');
+    dragStart = { x: e.clientX, y: e.clientY };
+    camStart = { yaw: cam.yaw, pitch: cam.pitch, ox: cam.ox, oy: cam.oy };
+    canvas.setPointerCapture(e.pointerId);
+  });
+
+  canvas.addEventListener('pointermove', (e) => {
+    if (dragging && dragStart) {
+      const dx = e.clientX - dragStart.x;
+      const dy = e.clientY - dragStart.y;
+      if (mode === '3d') {
+        cam.yaw = camStart.yaw + dx * 0.006;
+        cam.pitch = clamp(camStart.pitch + dy * 0.004, 0.42, 1.42);
+        cam.ox = camStart.ox;
+        cam.oy = camStart.oy;
+      } else {
+        detailCam.ox = camStart.ox + dx;
+        detailCam.oy = camStart.oy + dy;
+      }
+      markDirty();
+      return;
+    }
+    if (mode === '3d') {
+      const picked = pickWorld(e.offsetX, e.offsetY);
+      if (picked !== hoverWorld) {
+        hoverWorld = picked;
+        canvas.classList.toggle('over-slice', Boolean(picked));
+        markDirty();
+      }
+    } else {
+      canvas.classList.remove('over-slice');
+    }
+  });
+
+  function endDrag(e) {
+    if (!dragging) return;
+    const moved = dragStart ? Math.hypot(e.clientX - dragStart.x, e.clientY - dragStart.y) : 99;
+    dragging = false;
+    canvas.classList.remove('dragging');
+    if (moved < 4) handleClick(e.offsetX, e.offsetY);
+    dragStart = null;
+  }
+
+  canvas.addEventListener('pointerup', endDrag);
+  canvas.addEventListener('pointercancel', () => {
+    dragging = false;
+    dragStart = null;
+    canvas.classList.remove('dragging');
+  });
+
+  canvas.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    if (mode === '3d') {
+      cam.zoom = clamp(cam.zoom * (e.deltaY > 0 ? 0.92 : 1.08), 0.45, 2.6);
+    } else {
+      detailCam.scale = clamp(detailCam.scale * (e.deltaY > 0 ? 0.92 : 1.08), 55, 320);
+    }
+    markDirty();
+  }, { passive: false });
+
+  function handleClick(x, y) {
+    if (mode === '3d') {
+      const picked = pickWorld(x, y);
+      if (picked) enterWorld(picked);
+      return;
+    }
+    for (let i = 0; i < WORLDS.length; i++) {
+      const r = railRect(i);
+      if (x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h) {
+        if (WORLDS[i].id !== activeWorld) {
+          activeWorld = WORLDS[i].id;
+          detailT = 0.7;
+          detailCam.ox = 0;
+          detailCam.oy = 0;
+          syncChrome();
+          markDirty();
+        }
+        return;
+      }
+    }
+  }
+
+  function enterWorld(worldId) {
+    activeWorld = worldId;
+    detailT = 0;
+    detailCam.ox = 0;
+    detailCam.oy = 0;
+    mode = '2d';
+    document.body.classList.add('detail');
+    syncChrome();
+    markDirty();
+    animateDetail();
+  }
+
+  function animateDetail() {
+    const step = () => {
+      if (mode !== '2d') return;
+      if (detailT < 1) {
+        detailT = Math.min(1, detailT + 0.1);
+        markDirty();
+        requestAnimationFrame(step);
+      }
+    };
+    requestAnimationFrame(step);
+  }
+
+  function exitWorld() {
+    mode = '3d';
+    activeWorld = null;
+    detailT = 0;
+    document.body.classList.remove('detail');
+    syncChrome();
+    markDirty();
+  }
+
+  document.getElementById('back').addEventListener('click', exitWorld);
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && mode === '2d') exitWorld();
+  });
+
+  function syncChrome() {
+    const main = document.getElementById('title-main');
+    const sub = document.getElementById('title-sub');
+    const hint = document.getElementById('hint');
+    if (mode === '2d') {
+      const w = byId.get(activeWorld);
+      main.textContent = w.name + ' · ' + w.sub;
+      sub.textContent = w.rooms.length + ' 个房间 · ' + w.doors.length + ' 扇门 · 拖拽平移 · 滚轮缩放';
+      if (hint) hint.innerHTML = '<b>拖拽</b> 平移 · <b>滚轮</b> 缩放 · 右侧点卡片切世界 · <b>ESC</b> 返回叠层';
+    } else {
+      main.textContent = '世界切片 · World Stack';
+      sub.textContent = '三个世界平行叠放，穿梭门在层间连线，传送门在层内连线';
+      if (hint) hint.innerHTML = '<b>拖拽</b> 旋转 · <b>滚轮</b> 缩放 · <b>点击切片</b> 进入该世界的 2D 详情';
+    }
+  }
+
+  // ---------------------------------------------------------------- boot -----
+  window.addEventListener('resize', () => { resize(); markDirty(); });
+  resize();
+  syncChrome();
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

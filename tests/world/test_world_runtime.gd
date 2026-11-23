@@ -1,115 +1,241 @@
 extends Node
 
-const ROOM_DATA: Script = preload("res://scripts/world/room_data.gd")
-const ROOM_CONNECTION_DATA: Script = preload("res://scripts/world/room_connection_data.gd")
-const WORLD_DATA: Script = preload("res://scripts/world/world_data.gd")
-const WORLD_RUNTIME: Script = preload("res://scripts/world/world_runtime.gd")
+const ROOM_DATA: Script = preload("res://addons/platformer_kit/world/data/room_data.gd")
+const ROOM_CONNECTION_DATA: Script = preload("res://addons/platformer_kit/world/data/room_connection_data.gd")
+const WORLD_DATA: Script = preload("res://addons/platformer_kit/world/data/world_data.gd")
+const WORLD_RUNTIME: Script = preload("res://addons/platformer_kit/world/runtime/world_runtime.gd")
+const SAVE_SNAPSHOT: Script = preload("res://addons/platformer_kit/save/save_snapshot.gd")
+const SPAWN_POINT: Script = preload("res://addons/platformer_kit/world/entities/spawn_point.gd")
+const PICKUP_ENTITY: Script = preload("res://addons/platformer_kit/world/entities/pickup_entity.gd")
+const ROOM_ENTRANCE: Script = preload("res://addons/platformer_kit/world/entities/room_entrance.gd")
 
 const FIXTURE_PATH := "user://world_runtime_room_fixture.tscn"
-const MISSING_FIXTURE_PATH := "user://missing_world_runtime_room_fixture.tscn"
+const MISSING_PATH := "user://missing_world_runtime_room_fixture.tscn"
+
+
+class TestPlayer extends Node2D:
+	var respawn_count := 0
+	var velocity := Vector2.ZERO
+	var spawn_position := Vector2.ZERO
+	func respawn_at(target: Vector2) -> void:
+		global_position = target
+		spawn_position = target
+		respawn_count += 1
+	func resume_at(target: Vector2, restored_velocity: Vector2, checkpoint_position: Vector2) -> void:
+		global_position = target
+		velocity = restored_velocity
+		spawn_position = checkpoint_position
+		respawn_count += 1
+
+
+class RecordingPersistence extends Node:
+	var current_snapshot: RefCounted
+	var committed_snapshots: Array[RefCounted] = []
+	var queued_count := 0
+
+	func commit(snapshot: RefCounted = null) -> bool:
+		committed_snapshots.append(snapshot)
+		return true
+
+	func queue_commit(_delay_seconds: float = 0.35) -> void:
+		queued_count += 1
 
 
 func run() -> Array[String]:
 	var failures: Array[String] = []
-	var save_error := _save_room_fixture()
-	if save_error != OK:
-		failures.append("world runtime fixture save failed: %d" % save_error)
-		return failures
-	_assert_world_runtime_loads_current_and_adjacent_rooms(failures)
-	_assert_world_runtime_rejects_unknown_room(failures)
-	_assert_world_runtime_rejects_unloadable_current_room(failures)
-	_assert_world_runtime_rejects_wrong_resource_type(failures)
+	if _save_room_fixture() != OK:
+		return ["world runtime fixture save failed"]
+	_assert_explicit_placements_drive_residency(failures)
+	_assert_failed_stage_preserves_active_world(failures)
+	_assert_session_restores_persistent_entities(failures)
+	_assert_session_restores_resume_transform(failures)
+	_assert_invalid_resume_falls_back_to_spawn(failures)
+	_assert_world_change_clears_stale_resume(failures)
+	_assert_entity_save_request_reaches_persistence(failures)
+	_assert_connection_transition_uses_target_spawn(failures)
+	_remove_fixture()
 	return failures
 
 
-func _assert_world_runtime_loads_current_and_adjacent_rooms(failures: Array[String]) -> void:
-	var room_a: Resource = _make_room("room_a", Vector2i(0, 0))
-	room_a.adjacent_room_ids = PackedStringArray(["room_b"])
-	var room_b: Resource = _make_room("room_b", Vector2i(1, 0))
-	room_b.adjacent_room_ids = PackedStringArray(["room_a"])
-	var room_c: Resource = _make_room("room_c", Vector2i(2, 0))
-	var connection: Resource = ROOM_CONNECTION_DATA.new()
-	connection.from_room_id = "room_a"
-	connection.from_entrance_id = "exit_right"
-	connection.to_room_id = "room_c"
-	connection.to_spawn_id = "spawn_left"
-	var world: Resource = WORLD_DATA.new()
-	world.world_id = "world_01"
-	world.start_room_id = "room_a"
-	world.rooms.assign([room_a, room_b, room_c])
-	world.connections.assign([connection])
-	var runtime: Node2D = WORLD_RUNTIME.new() as Node2D
+func _assert_entity_save_request_reaches_persistence(failures: Array[String]) -> void:
+	var world := _make_world([["room_a", Vector2i.ZERO, FIXTURE_PATH]])
+	var snapshot: RefCounted = SAVE_SNAPSHOT.new()
+	var persistence := RecordingPersistence.new()
+	persistence.current_snapshot = snapshot
+	var runtime := WORLD_RUNTIME.new() as Node2D
+	runtime.bind_persistence_source(persistence)
+	if not runtime.setup_session(world, snapshot):
+		failures.append("world runtime could not load save-request fixture")
+	else:
+		persistence.queued_count = 0
+		var pickup: Node = runtime.get_room_runtime("room_a").get_entity("pickup_01")
+		if pickup == null or not pickup.has_method("request_save"):
+			failures.append("world runtime save-request fixture has no requesting entity")
+		else:
+			pickup.call("request_save", true)
+			if persistence.committed_snapshots != [snapshot]:
+				failures.append("immediate entity save request did not commit the active snapshot")
+			pickup.call("request_save", false)
+			if persistence.queued_count != 1:
+				failures.append("deferred entity save request did not queue the active snapshot")
+	runtime.free()
+	persistence.free()
 
+
+func _assert_explicit_placements_drive_residency(failures: Array[String]) -> void:
+	var world := _make_world([
+		["room_a", Vector2i.ZERO, FIXTURE_PATH],
+		["room_b", Vector2i.RIGHT, FIXTURE_PATH],
+		["room_c", Vector2i(3, 0), FIXTURE_PATH],
+	])
+	world.connections.assign([_make_connection("room_a", "exit_right", "room_c", "entry")])
+	var runtime := WORLD_RUNTIME.new() as Node2D
 	if not runtime.setup_world(world):
-		failures.append("world runtime did not accept a valid world")
-	if runtime.get_current_room_id() != "room_a":
-		failures.append("world runtime did not enter the start room")
-	if runtime.get_loaded_room_ids() != ["room_a", "room_b", "room_c"]:
-		failures.append("world runtime did not load current plus adjacent rooms")
-	if runtime.get_room_runtime("room_b") == null:
-		failures.append("world runtime did not expose a loaded adjacent room")
-	if runtime.get_child_count() != 3:
-		failures.append("world runtime child count did not match loaded rooms")
-	if not runtime.set_current_room("room_b"):
-		failures.append("world runtime did not change to a valid room")
-	if runtime.get_loaded_room_ids() != ["room_a", "room_b"]:
-		failures.append("world runtime did not unload rooms outside the adjacency set")
-	if runtime.get_child_count() != 2:
-		failures.append("world runtime child count did not match loaded rooms after unload")
+		failures.append("world runtime rejected a placed room world")
+	elif runtime.get_loaded_room_ids() != ["room_a", "room_b", "room_c"]:
+		failures.append("world runtime did not combine spatial and connection residency")
+	elif not runtime.set_current_room("room_b"):
+		failures.append("world runtime rejected a valid placed target room")
 	runtime.free()
 
 
-func _assert_world_runtime_rejects_unknown_room(failures: Array[String]) -> void:
-	var room_a: Resource = _make_room("room_a", Vector2i.ZERO)
+func _assert_failed_stage_preserves_active_world(failures: Array[String]) -> void:
+	var good := _make_world([["room_a", Vector2i.ZERO, FIXTURE_PATH]])
+	var bad := _make_world([
+		["room_b", Vector2i.ZERO, FIXTURE_PATH],
+		["room_c", Vector2i.RIGHT, MISSING_PATH],
+	])
+	bad.start_room_id = "room_b"
+	bad.connections.assign([_make_connection("room_b", "exit_right", "room_c", "entry")])
+	var runtime := WORLD_RUNTIME.new() as Node2D
+	if not runtime.setup_world(good):
+		failures.append("world runtime could not establish the active world fixture")
+	elif runtime.setup_world(bad):
+		failures.append("world runtime accepted a world with an unloadable resident room")
+	elif runtime.get_current_room_id() != "room_a" or runtime.get_loaded_room_ids() != ["room_a"]:
+		failures.append("failed staging replaced the active world")
+	runtime.free()
+
+
+func _assert_session_restores_persistent_entities(failures: Array[String]) -> void:
+	var world := _make_world([["room_a", Vector2i.ZERO, FIXTURE_PATH]])
+	var snapshot: RefCounted = SAVE_SNAPSHOT.new()
+	snapshot.world_id = world.world_id
+	snapshot.set_entity_state("world_runtime:room_a:pickup_01", {"collected": true})
+	var player := TestPlayer.new()
+	var runtime := WORLD_RUNTIME.new() as Node2D
+	if not runtime.setup_session(world, snapshot, player):
+		failures.append("world runtime rejected a valid entity snapshot")
+	else:
+		var pickup: Node = runtime.get_room_runtime("room_a").get_entity("pickup_01")
+		if pickup == null or not bool(pickup.get("collected")):
+			failures.append("world runtime did not restore persistent entity state")
+	runtime.free()
+	player.free()
+
+
+func _assert_session_restores_resume_transform(failures: Array[String]) -> void:
+	var world := _make_world([["room_a", Vector2i.ZERO, FIXTURE_PATH]])
+	var snapshot: RefCounted = SAVE_SNAPSHOT.new()
+	snapshot.world_id = world.world_id
+	snapshot.current_room_id = "room_a"
+	snapshot.respawn_room_id = "room_a"
+	snapshot.respawn_spawn_id = "entry"
+	snapshot.respawn_position = Vector2(8, 12)
+	if not snapshot.set_resume_state(Vector2(100, 50), Vector2(30, -40)):
+		failures.append("snapshot rejected the resume fixture")
+		return
+	var player := TestPlayer.new()
+	var runtime := WORLD_RUNTIME.new() as Node2D
+	if not runtime.setup_session(world, snapshot, player):
+		failures.append("world runtime rejected the resume fixture")
+	else:
+		if player.global_position != Vector2(100, 50):
+			failures.append("world runtime did not resume the exact player position")
+		if player.velocity != Vector2(30, -40):
+			failures.append("world runtime did not resume the saved velocity")
+		if player.spawn_position != Vector2(8, 12):
+			failures.append("resume path replaced the checkpoint respawn")
+		if runtime.get_current_room_id() != "room_a":
+			failures.append("resume path lost the saved room")
+	runtime.free()
+	player.free()
+
+
+func _assert_invalid_resume_falls_back_to_spawn(failures: Array[String]) -> void:
+	var world := _make_world([["room_a", Vector2i.ZERO, FIXTURE_PATH]])
+	var snapshot: RefCounted = SAVE_SNAPSHOT.new()
+	snapshot.world_id = world.world_id
+	snapshot.current_room_id = "room_a"
+	snapshot.respawn_room_id = "room_a"
+	snapshot.respawn_spawn_id = "entry"
+	snapshot.respawn_position = Vector2(8, 12)
+	snapshot.set_resume_state(Vector2(9999, 9999), Vector2.ZERO)
+	var player := TestPlayer.new()
+	var runtime := WORLD_RUNTIME.new() as Node2D
+	if not runtime.setup_session(world, snapshot, player):
+		failures.append("world runtime rejected the fallback fixture")
+	elif player.global_position != Vector2(8, 12):
+		failures.append("out-of-world resume data did not fall back to the spawn")
+	runtime.free()
+	player.free()
+
+
+func _assert_world_change_clears_stale_resume(failures: Array[String]) -> void:
+	var world := _make_world([["room_a", Vector2i.ZERO, FIXTURE_PATH]])
+	var snapshot: RefCounted = SAVE_SNAPSHOT.new()
+	snapshot.world_id = "previous_world"
+	snapshot.set_resume_state(Vector2(100, 50), Vector2.ZERO)
+	var runtime := WORLD_RUNTIME.new() as Node2D
+	if not runtime.setup_session(world, snapshot):
+		failures.append("world runtime rejected a cross-world save")
+	elif snapshot.has_resume:
+		failures.append("cross-world start kept stale resume data")
+	runtime.free()
+
+
+func _assert_connection_transition_uses_target_spawn(failures: Array[String]) -> void:
+	var world := _make_world([
+		["room_a", Vector2i.ZERO, FIXTURE_PATH],
+		["room_b", Vector2i.RIGHT, FIXTURE_PATH],
+	])
+	world.start_spawn_id = "entry"
+	world.connections.assign([_make_connection("room_a", "exit_right", "room_b", "entry")])
+	var player := TestPlayer.new()
+	var runtime := WORLD_RUNTIME.new() as Node2D
+	if not runtime.setup_session(world, SAVE_SNAPSHOT.new(), player):
+		failures.append("world runtime rejected a transition fixture")
+	else:
+		var entrance: Node = runtime.get_room_runtime("room_a").get_entity("exit_right")
+		entrance.request_transition()
+		if runtime.get_current_room_id() != "room_b" or player.global_position != Vector2(328, 12):
+			failures.append("world runtime did not transition to the connected target spawn")
+	runtime.free()
+	player.free()
+
+
+func _make_world(entries: Array) -> Resource:
 	var world: Resource = WORLD_DATA.new()
+	world.world_id = "world_runtime"
 	world.start_room_id = "room_a"
-	world.rooms.assign([room_a])
-	var runtime: Node2D = WORLD_RUNTIME.new() as Node2D
-	runtime.setup_world(world)
-
-	if runtime.set_current_room("missing"):
-		failures.append("world runtime accepted an unknown room")
-	if runtime.get_current_room_id() != "room_a":
-		failures.append("world runtime changed current room after rejecting unknown room")
-	runtime.free()
-
-
-func _assert_world_runtime_rejects_unloadable_current_room(failures: Array[String]) -> void:
-	_remove_user_file(MISSING_FIXTURE_PATH)
-	var room_a: Resource = _make_room("room_a", Vector2i.ZERO)
-	var room_b: Resource = _make_room("room_b", Vector2i(1, 0))
-	room_b.scene_path = MISSING_FIXTURE_PATH
-	var world: Resource = WORLD_DATA.new()
-	world.start_room_id = "room_a"
-	world.rooms.assign([room_a, room_b])
-	var runtime: Node2D = WORLD_RUNTIME.new() as Node2D
-	runtime.setup_world(world)
-
-	if runtime.set_current_room("room_b"):
-		failures.append("world runtime accepted an unloadable current room")
-	if runtime.get_current_room_id() != "room_a":
-		failures.append("world runtime changed current room after unloadable room rejection")
-	if runtime.get_loaded_room_ids() != ["room_a"]:
-		failures.append("world runtime changed loaded rooms after unloadable room rejection")
-	runtime.free()
+	world.start_spawn_id = "entry"
+	for entry: Array in entries:
+		var room: Resource = ROOM_DATA.new()
+		room.room_id = entry[0]
+		room.scene_path = entry[2]
+		room.room_size_chunks = Vector2i.ONE
+		world.rooms.append(room)
+		world.set_room_origin_chunk(room.room_id, entry[1])
+	return world
 
 
-func _assert_world_runtime_rejects_wrong_resource_type(failures: Array[String]) -> void:
-	var runtime: Node2D = WORLD_RUNTIME.new() as Node2D
-	if runtime.setup_world(Resource.new()):
-		failures.append("world runtime accepted a non-WorldData resource")
-	if runtime.get_current_room_id() != "":
-		failures.append("world runtime exposed current room for wrong resource data")
-	runtime.free()
-
-
-func _make_room(room_id: String, room_origin_chunk: Vector2i) -> Resource:
-	var room: Resource = ROOM_DATA.new()
-	room.room_id = room_id
-	room.scene_path = FIXTURE_PATH
-	room.room_origin_chunk = room_origin_chunk
-	room.room_size_chunks = Vector2i.ONE
-	return room
+func _make_connection(from_room_id: String, entrance: String, to_room_id: String, spawn: String) -> Resource:
+	var connection: Resource = ROOM_CONNECTION_DATA.new()
+	connection.from_room_id = from_room_id
+	connection.from_entrance_id = entrance
+	connection.to_room_id = to_room_id
+	connection.to_spawn_id = spawn
+	return connection
 
 
 func _save_room_fixture() -> Error:
@@ -119,14 +245,30 @@ func _save_room_fixture() -> Error:
 	entities.name = "Entities"
 	root.add_child(entities)
 	entities.owner = root
+	for spawn_data: Array in [["EntrySpawn", "entry", Vector2(8, 12)], ["FarEntrySpawn", "far_entry", Vector2(328, 12)]]:
+		var spawn := SPAWN_POINT.new() as Marker2D
+		spawn.name = spawn_data[0]
+		spawn.spawn_id = spawn_data[1]
+		spawn.position = spawn_data[2]
+		entities.add_child(spawn)
+		spawn.owner = root
+	var pickup := PICKUP_ENTITY.new() as Node2D
+	pickup.name = "Pickup"
+	pickup.entity_id = "pickup_01"
+	pickup.persistent = true
+	entities.add_child(pickup)
+	pickup.owner = root
+	var entrance := ROOM_ENTRANCE.new() as Node2D
+	entrance.name = "ExitRight"
+	entrance.entity_id = "exit_right"
+	entities.add_child(entrance)
+	entrance.owner = root
 	var packed := PackedScene.new()
-	packed.pack(root)
-	var error := ResourceSaver.save(packed, FIXTURE_PATH)
+	var pack_error := packed.pack(root)
 	root.free()
-	return error
+	return pack_error if pack_error != OK else ResourceSaver.save(packed, FIXTURE_PATH)
 
 
-func _remove_user_file(path: String) -> void:
-	var absolute_path := ProjectSettings.globalize_path(path)
-	if FileAccess.file_exists(path):
-		DirAccess.remove_absolute(absolute_path)
+func _remove_fixture() -> void:
+	if FileAccess.file_exists(FIXTURE_PATH):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(FIXTURE_PATH))

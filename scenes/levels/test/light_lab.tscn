@@ -1,0 +1,273 @@
+[gd_scene format=4]
+
+[ext_resource type="Script" path="res://addons/world_editor/authoring/room/room_authoring_root.gd" id="1_trluc"]
+[ext_resource type="Script" path="res://addons/world_editor/authoring/room/room_preview_controller.gd" id="2_x6wn2"]
+[ext_resource type="TileSet" path="res://resources/tilesets/primordial_tileset.tres" id="3_gpjuq"]
+[ext_resource type="Script" path="res://scripts/world/ladder_tile_area_builder.gd" id="4_wql6v"]
+[ext_resource type="Script" path="res://addons/platformer_kit/world/entities/spawn_point.gd" id="5_2wjdi"]
+[ext_resource type="Script" path="res://scripts/world/room_light.gd" id="6_jr1mh"]
+[ext_resource type="Script" path="res://addons/fluid_kit/runtime/water/fluid_region.gd" id="7_7pbym"]
+[ext_resource type="Script" path="res://scripts/world/fog_zone.gd" id="8_7au1x"]
+[ext_resource type="PackedScene" path="res://scenes/player/player.tscn" id="9_lr4xt"]
+[ext_resource type="Script" path="res://scripts/player/player_controller.gd" id="11_x6wn2"]
+[ext_resource type="Resource" path="res://resources/player/default_player_tuning.tres" id="12_gpjuq"]
+[ext_resource type="Script" path="res://addons/platformer_kit/camera/pixel_camera_2d.gd" id="12_wthpu"]
+[ext_resource type="Script" path="res://addons/fluid_kit/runtime/water/water_field.gd" id="13_xfqtc"]
+[ext_resource type="Script" path="res://addons/fluid_kit/runtime/gas/atmosphere.gd" id="14_y1als"]
+[ext_resource type="Script" path="res://addons/metroidvania_kit/map/discovery/fog_of_war.gd" id="15_ocfce"]
+[ext_resource type="PackedScene" path="res://addons/platformer_debug/runtime/grid_overlay.tscn" id="16_y6bsg"]
+[ext_resource type="Script" path="res://scripts/world/crumble_runtime.gd" id="18_6wlbf"]
+[ext_resource type="Script" path="res://addons/platformer_debug/runtime/grid_overlay.gd" id="18_wql6v"]
+[ext_resource type="PackedScene" path="res://addons/platformer_debug/runtime/debug_overlay_2d.tscn" id="19_rcn60"]
+[ext_resource type="Script" path="res://addons/platformer_debug/runtime/debug_overlay_2d.gd" id="21_2wjdi"]
+[ext_resource type="Script" path="res://scripts/world/light_field.gd" id="21_xlekx"]
+[ext_resource type="Script" path="res://addons/fluid_kit/runtime/water/water_grid.gd" id="22_udu1v"]
+[ext_resource type="PackedScene" path="res://addons/platformer_debug/runtime/debug_hud.tscn" id="23_vpsj4"]
+[ext_resource type="Script" path="res://addons/fluid_kit/runtime/gas/gas_vent.gd" id="25_gasvent"]
+[ext_resource type="Script" path="res://addons/platformer_debug/runtime/debug_hud.gd" id="25_jr1mh"]
+
+[node name="RoomAuthoringRoot" type="Node2D" unique_id=1018949667]
+script = ExtResource("1_trluc")
+room_id = "light_lab"
+display_name = "光照实验"
+preview_spawn_id = "start"
+map_color = Color(0.95, 0.82, 0.42, 1)
+tags = PackedStringArray()
+metadata/_custom_type_script = "uid://chnjcov24wxi"
+
+[node name="RoomPreviewController" type="Node" parent="." unique_id=2046976399]
+script = ExtResource("2_x6wn2")
+debug_hud_path = NodePath("../UI/DebugHud")
+metadata/_custom_type_script = "uid://clswk5xafmopi"
+
+[node name="RoomContent" type="Node2D" parent="." unique_id=837203790]
+
+[node name="Background" type="Node2D" parent="RoomContent" unique_id=879078070]
+
+[node name="Terrain" type="Node2D" parent="RoomContent" unique_id=708873726]
+
+[node name="BackTiles" type="TileMapLayer" parent="RoomContent/Terrain" unique_id=1219311249]
+tile_map_data = PackedByteArray("AAAHABEA//////////8IABEA//////////8JABEA//////////8KABEA//////////8HAAwA//////////8HAA0A//////////8HAA4A//////////8HAA8A//////////8HABAA//////////8IAAwA//////////8IAA0A//////////8IAA4A//////////8IAA8A//////////8IABAA//////////8JAAwA//////////8JAA0A//////////8JAA4A//////////8JAA8A//////////8JABAA//////////8KAAwA//////////8KAA0A//////////8KAA4A//////////8KAA8A//////////8KABAA//////////8cABEA//////////8cABIA//////////8bABEA//////////8bABIA//////////8aABEA//////////8aABIA//////////8ZABMA//////////8bABAA//////////8MAAcA//////////8MAAgA//////////8MAAkA//////////8MAAoA//////////8NAAcA//////////8NAAgA//////////8NAAkA//////////8NAAoA//////////8OAAcA//////////8OAAgA//////////8OAAkA//////////8OAAoA//////////8PAAcA//////////8PAAgA//////////8PAAkA//////////8PAAoA//////////8QAAcA//////////8QAAgA//////////8QAAkA//////////8QAAoA//////////8RAAcA//////////8RAAgA//////////8RAAkA//////////8RAAoA//////////8SAAcA//////////8SAAgA//////////8SAAkA//////////8SAAoA//////////8TAAcA//////////8TAAgA//////////8TAAkA//////////8TAAoA//////////8UAAcA//////////8UAAgA//////////8UAAkA//////////8UAAoA//////////8VAAcA//////////8VAAgA//////////8VAAkA//////////8VAAoA//////////8WAAcA//////////8WAAgA//////////8WAAkA//////////8WAAoA//////////8XAAcA//////////8XAAgA//////////8XAAkA//////////8XAAoA//////////8YAAcA//////////8YAAgA//////////8YAAkA//////////8YAAoA//////////8aAA0A//////////8aAA4A//////////8aAA8A//////////8aABAA//////////8bAA0A//////////8bAA4A//////////8bAA8A//////////8cAA0A//////////8cAA4A//////////8cAA8A//////////8cABAA//////////8dAA0A//////////8dAA4A//////////8dAA8A//////////8dABAA//////////8eAA0A//////////8eAA4A//////////8eAA8A//////////8eABAA//////////8fAA0A//////////8fAA4A//////////8fAA8A//////////8fABAA//////////8gAA0A//////////8gAA4A//////////8gAA8A//////////8gABAA//////////8dABEA//////////8dABIA//////////8eABEA//////////8eABIA//////////8fABEA//////////8fABIA//////////8gABEA//////////8gABIA//////////8aABMA//////////8bABMA//////////8cABMA//////////8dABMA//////////8eABMA//////////8fABMA//////////8gABMA//////////8YABQA//////////8ZABIA//////////8aABQA//////////8=")
+tile_set = ExtResource("3_gpjuq")
+collision_enabled = false
+
+[node name="SolidTiles" type="TileMapLayer" parent="RoomContent/Terrain" unique_id=256295016]
+tile_map_data = PackedByteArray("AAAAAAAA//////////8nAAAA//////////8AAAEA//////////8nAAEA//////////8AAAIA//////////8nAAIA//////////8AAAMA//////////8nAAMA//////////8AAAQA//////////8nAAQA//////////8AAAUA//////////8nAAUA//////////8AAAYA//////////8nAAYA//////////8AAAcA//////////8nAAcA//////////8AAAgA//////////8nAAgA//////////8AAAkA//////////8nAAkA//////////8AAAoA//////////8nAAoA//////////8AAAsA//////////8nAAsA//////////8AAAwA//////////8nAAwA//////////8AAA0A//////////8nAA0A//////////8AAA4A//////////8nAA4A//////////8AAA8A//////////8nAA8A//////////8AABAA//////////8nABAA//////////8AABEA//////////8nABEA//////////8AABIA//////////8nABIA//////////8AABMA//////////8nABMA//////////8AABQA//////////8nABQA//////////8AABUA//////////8nABUA//////////8AABYA//////////8nABYA//////////8BAAAA//////////8BABYA//////////8CAAAA//////////8CABYA//////////8DAAAA//////////8DABYA//////////8EAAAA//////////8EABYA//////////8FAAAA//////////8FABYA//////////8GAAAA//////////8GABYA//////////8HAAAA//////////8HABYA//////////8IAAAA//////////8IABYA//////////8JAAAA//////////8JABYA//////////8KAAAA//////////8KABYA//////////8LAAAA//////////8LABYA//////////8MAAAA//////////8MABYA//////////8NAAAA//////////8NABYA//////////8OAAAA//////////8OABYA//////////8PAAAA//////////8PABYA//////////8QAAAA//////////8QABYA//////////8RAAAA//////////8RABYA//////////8SAAAA//////////8SABYA//////////8TAAAA//////////8TABYA//////////8UAAAA//////////8UABYA//////////8VAAAA//////////8VABYA//////////8WAAAA//////////8WABYA//////////8XAAAA//////////8XABYA//////////8YAAAA//////////8YABYA//////////8ZAAAA//////////8ZABYA//////////8aAAAA//////////8aABYA//////////8bAAAA//////////8bABYA//////////8cAAAA//////////8cABYA//////////8dAAAA//////////8dABYA//////////8eAAAA//////////8eABYA//////////8fAAAA//////////8fABYA//////////8gAAAA//////////8gABYA//////////8hAAAA//////////8hABYA//////////8iAAAA//////////8iABYA//////////8jAAAA//////////8jABYA//////////8kAAAA//////////8kABYA//////////8lAAAA//////////8lABYA//////////8mAAAA//////////8mABYA//////////8NAAgA//////////8OAAgA//////////8PAAgA//////////8QAAgA//////////8RAAgA//////////8SAAgA//////////8TAAgA//////////8UAAgA//////////8VAAgA//////////8WAAgA//////////8XAAgA//////////8NAAkA//////////8OAAkA//////////8PAAkA//////////8QAAkA//////////8RAAkA//////////8SAAkA//////////8TAAkA//////////8UAAkA//////////8VAAkA//////////8WAAkA//////////8XAAkA//////////8IAA0A//////////8JAA0A//////////8IAA4A//////////8JAA4A//////////8IAA8A//////////8JAA8A//////////8IABAA//////////8JABAA//////////8bAAoA//////////8bAAsA//////////8bAAwA//////////8bAA0A//////////8bAA4A//////////8eABMA//////////8fABMA//////////8gABMA//////////8hABMA//////////8iABMA//////////8jABMA//////////8kABMA//////////8lABMA//////////8mABMA//////////8eABQA//////////8fABQA//////////8gABQA//////////8hABQA//////////8iABQA//////////8jABQA//////////8kABQA//////////8lABQA//////////8mABQA//////////8eABUA//////////8fABUA//////////8gABUA//////////8hABUA//////////8iABUA//////////8jABUA//////////8kABUA//////////8lABUA//////////8mABUA//////////8dAA8A//////////8dABAA//////////8dABEA//////////8dABIA//////////8mAA8A//////////8mABAA//////////8mABEA//////////8mABIA//////////8=")
+tile_set = ExtResource("3_gpjuq")
+
+[node name="DetailTiles" type="TileMapLayer" parent="RoomContent/Terrain" unique_id=1044817251]
+tile_set = ExtResource("3_gpjuq")
+collision_enabled = false
+
+[node name="LadderAreaBuilder" type="Node2D" parent="RoomContent/Terrain" unique_id=7824782]
+script = ExtResource("4_wql6v")
+
+[node name="Entities" type="Node2D" parent="RoomContent" unique_id=190854283]
+
+[node name="StartSpawn" type="Marker2D" parent="RoomContent/Entities" unique_id=1039911569]
+position = Vector2(24, 144)
+script = ExtResource("5_2wjdi")
+spawn_id = "start"
+
+[node name="SwingingLamp" type="Node2D" parent="RoomContent/Entities" unique_id=1981031514]
+position = Vector2(144, 40)
+script = ExtResource("6_jr1mh")
+light_id = "swing"
+radius = 96.0
+energy = 1.15
+color = Color(1, 0.86, 0.6, 1)
+swing_pixels = 26.0
+swing_speed = 0.22
+flicker = 0.12
+flicker_speed = 5.0
+
+[node name="PoolLamp" type="Node2D" parent="RoomContent/Entities" unique_id=1632350867]
+position = Vector2(256, 96)
+script = ExtResource("6_jr1mh")
+light_id = "pool"
+energy = 1.2
+color = Color(1.3945211, 0.52165645, 0.6186414, 1)
+swing_pixels = 6.0
+wander_pixels = 6.0
+flicker = 0.2
+lens_radius = 48.0
+lens_strength = 0.48
+
+[node name="UnoccludedGlow" type="Node2D" parent="RoomContent/Entities" unique_id=1962231160]
+position = Vector2(48, 96)
+script = ExtResource("6_jr1mh")
+light_id = "glow"
+radius = 34.0
+energy = 0.9
+color = Color(1, 0.66, 0.5, 1)
+flicker = 0.25
+flicker_speed = 7.0
+casts_shadows = false
+
+[node name="Firefly0" type="Node2D" parent="RoomContent/Entities" unique_id=506167637]
+position = Vector2(40, 32)
+script = ExtResource("6_jr1mh")
+light_id = "firefly0"
+radius = 3.0
+energy = 2.6
+color = Color(1, 0.95, 0.55, 1)
+wander_pixels = 22.0
+wander_speed = 0.12
+flicker = 0.45
+flicker_speed = 3.0
+casts_shadows = false
+
+[node name="Firefly1" type="Node2D" parent="RoomContent/Entities" unique_id=1563001385]
+position = Vector2(88, 72)
+script = ExtResource("6_jr1mh")
+light_id = "firefly1"
+radius = 3.0
+energy = 2.6
+color = Color(1, 0.95, 0.55, 1)
+wander_pixels = 22.0
+wander_speed = 0.15
+flicker = 0.45
+flicker_speed = 4.0
+casts_shadows = false
+
+[node name="Firefly2" type="Node2D" parent="RoomContent/Entities" unique_id=868449956]
+position = Vector2(136, 112)
+script = ExtResource("6_jr1mh")
+light_id = "firefly2"
+radius = 3.0
+energy = 2.6
+color = Color(1, 0.95, 0.55, 1)
+wander_pixels = 22.0
+wander_speed = 0.18
+flicker = 0.45
+flicker_speed = 5.0
+casts_shadows = false
+
+[node name="Firefly3" type="Node2D" parent="RoomContent/Entities" unique_id=898556343]
+position = Vector2(184, 56)
+script = ExtResource("6_jr1mh")
+light_id = "firefly3"
+radius = 3.0
+energy = 2.6
+color = Color(1, 0.95, 0.55, 1)
+wander_pixels = 22.0
+wander_speed = 0.21
+flicker = 0.45
+casts_shadows = false
+
+[node name="Firefly4" type="Node2D" parent="RoomContent/Entities" unique_id=1954509732]
+position = Vector2(232, 96)
+script = ExtResource("6_jr1mh")
+light_id = "firefly4"
+radius = 3.0
+energy = 2.6
+color = Color(1, 0.95, 0.55, 1)
+wander_pixels = 22.0
+wander_speed = 0.24
+flicker = 0.45
+flicker_speed = 7.0
+casts_shadows = false
+
+[node name="Firefly5" type="Node2D" parent="RoomContent/Entities" unique_id=197175863]
+position = Vector2(40, 40)
+script = ExtResource("6_jr1mh")
+light_id = "firefly5"
+radius = 3.0
+energy = 2.6
+color = Color(1, 0.95, 0.55, 1)
+wander_pixels = 22.0
+wander_speed = 0.27
+flicker = 0.45
+flicker_speed = 8.0
+casts_shadows = false
+
+[node name="PoolFluid" type="Node2D" parent="RoomContent/Entities" unique_id=1802503604]
+position = Vector2(240, 48)
+script = ExtResource("7_7pbym")
+size_cells = Vector2i(9, 13)
+region_id = "pool"
+
+[node name="RightVent" type="Node2D" parent="RoomContent/Entities" unique_id=1275274015]
+position = Vector2(40, 112)
+script = ExtResource("25_gasvent")
+channel = 0
+direction = Vector2(0.968333, -0.2496623)
+radius = 60.0
+jet_speed = 1200.0
+vent_id = "lab_right"
+
+[node name="DarkPocket" type="Node2D" parent="RoomContent/Entities" unique_id=1275274016]
+position = Vector2(168, 128)
+script = ExtResource("8_7au1x")
+size_cells = Vector2i(9, 7)
+zone_id = "lab_dark_pocket"
+restore_on_exit = true
+focus_room = true
+
+[node name="Foreground" type="Node2D" parent="RoomContent" unique_id=577070235]
+
+[node name="PreviewOnly" type="Node2D" parent="." unique_id=900509778]
+
+[node name="Player" type="CharacterBody2D" parent="PreviewOnly" unique_id=43758805 instance=ExtResource("9_lr4xt")]
+z_index = 10
+collision_layer = 2
+collision_mask = 9
+script = ExtResource("11_x6wn2")
+tuning = ExtResource("12_gpjuq")
+
+[node name="PixelCamera2D" type="Camera2D" parent="PreviewOnly" unique_id=420423]
+zoom = Vector2(4, 4)
+process_callback = 0
+position_smoothing_enabled = true
+script = ExtResource("12_wthpu")
+target_path = NodePath("../Player")
+metadata/_custom_type_script = "uid://cfv5j6giqea6p"
+
+[node name="WaterField" type="Node2D" parent="PreviewOnly" unique_id=1252435579]
+script = ExtResource("13_xfqtc")
+
+[node name="Atmosphere" type="Node2D" parent="PreviewOnly" unique_id=1277597002]
+script = ExtResource("14_y1als")
+pressure_iterations = 32
+gas_cell_pixels = 1.0
+gas_diffusion = 1.0
+
+[node name="FogOfWar" type="Node2D" parent="PreviewOnly" unique_id=1324736546]
+z_index = 10
+z_as_relative = false
+script = ExtResource("15_ocfce")
+player_path = NodePath("../Player")
+terrain_path = NodePath("../../RoomContent/Terrain")
+
+[node name="GridOverlay" type="Node2D" parent="PreviewOnly" unique_id=778597302 instance=ExtResource("16_y6bsg")]
+z_index = 100
+script = ExtResource("18_wql6v")
+
+[node name="CrumbleRuntime" type="Node2D" parent="PreviewOnly" unique_id=737954380]
+script = ExtResource("18_6wlbf")
+player_path = NodePath("../Player")
+terrain_path = NodePath("../../RoomContent/Terrain")
+
+[node name="DebugOverlay" type="Node2D" parent="PreviewOnly" unique_id=801280615 instance=ExtResource("19_rcn60")]
+script = ExtResource("21_2wjdi")
+hud_path = NodePath("../../UI/DebugHud")
+
+[node name="LightField" type="Node2D" parent="PreviewOnly" unique_id=1450194543]
+script = ExtResource("21_xlekx")
+player_path = NodePath("../Player")
+
+[node name="WaterGrid" type="Node2D" parent="PreviewOnly" unique_id=1169448592]
+script = ExtResource("22_udu1v")
+
+[node name="UI" type="CanvasLayer" parent="." unique_id=1435291588]
+
+[node name="DebugHud" type="Control" parent="UI" unique_id=586873470 instance=ExtResource("23_vpsj4")]
+visible = false
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("25_jr1mh")

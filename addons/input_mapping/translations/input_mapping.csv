@@ -1,0 +1,44 @@
+keys,en,zh_CN
+INPUT_MAPPING_TITLE,Input Mapping,按键设置
+INPUT_MAPPING_INSTRUCTION,Select a binding then press a new input. Escape cancels; Delete clears.,选择一个绑定后按下新输入。Esc 取消，Delete 清空。
+INPUT_MAPPING_ACTION,Action,动作名称
+INPUT_MAPPING_PRIMARY,Primary,主按键
+INPUT_MAPPING_SECONDARY,Secondary,副按键
+INPUT_MAPPING_GAMEPAD,Gamepad,手柄
+INPUT_MAPPING_PRESS_INPUT,< Press an input >,< 请按下新的输入 >
+INPUT_MAPPING_UNBOUND,Unbound,未绑定
+INPUT_MAPPING_NO_ACTIONS,No configurable actions,没有可配置的动作
+INPUT_MAPPING_RESET,Restore Input Defaults,恢复默认按键
+INPUT_MAPPING_BACK,Back,返回
+INPUT_MAPPING_SAVE_FAILED,Could not save input mapping,无法保存按键设置
+INPUT_MAPPING_MOUSE_LEFT,Mouse Left,鼠标左键
+INPUT_MAPPING_MOUSE_RIGHT,Mouse Right,鼠标右键
+INPUT_MAPPING_MOUSE_MIDDLE,Mouse Middle,鼠标中键
+INPUT_MAPPING_MOUSE_BACK,Mouse Back,鼠标后退键
+INPUT_MAPPING_MOUSE_FORWARD,Mouse Forward,鼠标前进键
+INPUT_MAPPING_MOUSE_WHEEL_UP,Wheel Up,滚轮向上
+INPUT_MAPPING_MOUSE_WHEEL_DOWN,Wheel Down,滚轮向下
+INPUT_MAPPING_PAD_A,A / Cross,A / 叉键
+INPUT_MAPPING_PAD_B,B / Circle,B / 圆键
+INPUT_MAPPING_PAD_X,X / Square,X / 方块键
+INPUT_MAPPING_PAD_Y,Y / Triangle,Y / 三角键
+INPUT_MAPPING_PAD_BACK,Back / Select,返回 / 选择键
+INPUT_MAPPING_PAD_START,Start / Menu,开始 / 菜单键
+INPUT_MAPPING_PAD_LEFT_SHOULDER,Left Shoulder,左肩键
+INPUT_MAPPING_PAD_RIGHT_SHOULDER,Right Shoulder,右肩键
+INPUT_MAPPING_PAD_LEFT_STICK,Left Stick Press,按下左摇杆
+INPUT_MAPPING_PAD_RIGHT_STICK,Right Stick Press,按下右摇杆
+INPUT_MAPPING_DPAD_UP,D-pad Up,十字键上
+INPUT_MAPPING_DPAD_DOWN,D-pad Down,十字键下
+INPUT_MAPPING_DPAD_LEFT,D-pad Left,十字键左
+INPUT_MAPPING_DPAD_RIGHT,D-pad Right,十字键右
+INPUT_MAPPING_LEFT_STICK_LEFT,Left Stick Left,左摇杆向左
+INPUT_MAPPING_LEFT_STICK_RIGHT,Left Stick Right,左摇杆向右
+INPUT_MAPPING_LEFT_STICK_UP,Left Stick Up,左摇杆向上
+INPUT_MAPPING_LEFT_STICK_DOWN,Left Stick Down,左摇杆向下
+INPUT_MAPPING_RIGHT_STICK_LEFT,Right Stick Left,右摇杆向左
+INPUT_MAPPING_RIGHT_STICK_RIGHT,Right Stick Right,右摇杆向右
+INPUT_MAPPING_RIGHT_STICK_UP,Right Stick Up,右摇杆向上
+INPUT_MAPPING_RIGHT_STICK_DOWN,Right Stick Down,右摇杆向下
+INPUT_MAPPING_LEFT_TRIGGER,Left Trigger,左扳机
+INPUT_MAPPING_RIGHT_TRIGGER,Right Trigger,右扳机

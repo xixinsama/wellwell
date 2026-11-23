@@ -1,9 +1,13 @@
 extends Node
 
-const ROOM_DATA: Script = preload("res://scripts/world/room_data.gd")
-const ROOM_RUNTIME: Script = preload("res://scripts/world/room_runtime.gd")
+const ROOM_DATA: Script = preload("res://addons/platformer_kit/world/data/room_data.gd")
+const ROOM_RUNTIME: Script = preload("res://addons/platformer_kit/world/runtime/room_runtime.gd")
+const ROOM_ENTRANCE: Script = preload("res://addons/platformer_kit/world/entities/room_entrance.gd")
+const SPAWN_POINT: Script = preload("res://addons/platformer_kit/world/entities/spawn_point.gd")
+const DERIVED_SPAWN_POINT: Script = preload("res://tests/world/derived_spawn_point_fixture.gd")
 
 const FIXTURE_PATH := "user://runtime_room_fixture.tscn"
+const RUNTIME_ONLY_FIXTURE_PATH := "user://runtime_room_only_fixture.tscn"
 const MISSING_FIXTURE_PATH := "user://missing_room_runtime_fixture.tscn"
 
 
@@ -13,26 +17,61 @@ func run() -> Array[String]:
 	if save_error != OK:
 		failures.append("room runtime fixture save failed: %d" % save_error)
 		return failures
+	var runtime_only_save_error := _save_runtime_only_fixture()
+	if runtime_only_save_error != OK:
+		failures.append("runtime-only fixture save failed: %d" % runtime_only_save_error)
+		_remove_user_file(FIXTURE_PATH)
+		return failures
 	_assert_room_runtime_instances_scene_and_applies_position(failures)
+	_assert_room_runtime_requires_explicit_world_placement(failures)
+	_assert_room_runtime_exposes_spawns_and_transition_requests(failures)
+	_assert_room_runtime_relays_entity_save_requests(failures)
+	_assert_room_runtime_ignores_missing_terrain_scene(failures)
 	_assert_room_runtime_rejects_missing_scene(failures)
 	_assert_room_runtime_rejects_wrong_resource_type(failures)
+	_remove_user_file(FIXTURE_PATH)
+	_remove_user_file(RUNTIME_ONLY_FIXTURE_PATH)
 	return failures
+
+
+func _assert_room_runtime_relays_entity_save_requests(failures: Array[String]) -> void:
+	var data: Resource = ROOM_DATA.new()
+	data.room_id = "room_a"
+	data.scene_path = FIXTURE_PATH
+	var runtime: Node2D = ROOM_RUNTIME.new() as Node2D
+	if not runtime.setup_room(data, "world_a", null, Vector2i.ZERO):
+		failures.append("room runtime could not load save-request fixture")
+		runtime.free()
+		return
+	if not runtime.has_signal("save_requested"):
+		failures.append("room runtime does not expose entity save requests")
+		runtime.free()
+		return
+	var requests: Array[bool] = []
+	runtime.connect("save_requested", func(immediate: bool) -> void: requests.append(immediate))
+	var entrance: Node = runtime.get_entity("exit_right")
+	if entrance == null or not entrance.has_method("request_save"):
+		failures.append("room save-request fixture has no requesting entity")
+	else:
+		entrance.call("request_save", true)
+		if requests != [true]:
+			failures.append("room runtime did not relay an entity save request")
+	runtime.free()
 
 
 func _assert_room_runtime_instances_scene_and_applies_position(failures: Array[String]) -> void:
 	var data: Resource = ROOM_DATA.new()
 	data.room_id = "room_a"
 	data.scene_path = FIXTURE_PATH
-	data.room_origin_chunk = Vector2i(2, 1)
 	data.room_size_chunks = Vector2i(3, 2)
 	var runtime: Node2D = ROOM_RUNTIME.new() as Node2D
 
-	if not runtime.setup_room(data):
+	if not runtime.setup_room(data, "world_a", null, Vector2i(2, 1)):
 		failures.append("room runtime did not load a valid room")
 	if runtime.get_room_id() != "room_a":
 		failures.append("room runtime returned the wrong room id")
-	if runtime.position != Vector2(640, 180):
-		failures.append("room runtime did not apply chunk-derived world position")
+	if runtime.position != Vector2(640, 184):
+		failures.append("room runtime did not apply cell-aligned world position")
 	if runtime.get_room_instance() == null:
 		failures.append("room runtime did not keep the room instance")
 	if runtime.get_layer_node("SolidTiles") == null:
@@ -41,8 +80,84 @@ func _assert_room_runtime_instances_scene_and_applies_position(failures: Array[S
 		failures.append("room runtime did not expose Entities")
 	if runtime.get_room_chunk_rect() != Rect2i(2, 1, 3, 2):
 		failures.append("room runtime returned the wrong chunk rect")
-	if runtime.get_room_cell_rect() != Rect2i(80, 23, 120, 46):
+	if runtime.get_room_cell_rect() != Rect2i(80, 23, 120, 45):
 		failures.append("room runtime returned the wrong cell rect")
+	runtime.free()
+
+
+func _assert_room_runtime_requires_explicit_world_placement(failures: Array[String]) -> void:
+	var data: Resource = ROOM_DATA.new()
+	data.room_id = "room_a"
+	data.scene_path = FIXTURE_PATH
+	data.room_size_chunks = Vector2i(2, 1)
+	var runtime: Node2D = ROOM_RUNTIME.new() as Node2D
+	if runtime.setup_room(data):
+		failures.append("room runtime accepted an implicit room placement")
+	if not runtime.call("setup_room", data, "world_a", null, Vector2i(-1, 2)):
+		failures.append("room runtime rejected an explicit world placement")
+	else:
+		if runtime.position != Vector2(-320, 360):
+			failures.append("room runtime did not use explicit world placement")
+		if runtime.call("get_room_chunk_rect") != Rect2i(-1, 2, 2, 1):
+			failures.append("room runtime chunk rect ignored explicit world placement")
+	runtime.free()
+
+
+func _assert_room_runtime_exposes_spawns_and_transition_requests(failures: Array[String]) -> void:
+	var data: Resource = ROOM_DATA.new()
+	data.room_id = "room_a"
+	data.scene_path = FIXTURE_PATH
+	var runtime: Node2D = ROOM_RUNTIME.new() as Node2D
+	if not runtime.setup_room(data, "world_a", null, Vector2i(2, 1)):
+		failures.append("room runtime could not load spawn fixture")
+		runtime.free()
+		return
+	if not runtime.has_method("get_spawn_point"):
+		failures.append("room runtime did not expose spawn lookup")
+	else:
+		var spawn: Node2D = runtime.call("get_spawn_point", "entry") as Node2D
+		if spawn == null or spawn.global_position != Vector2(648.0, 196.0):
+			failures.append("room runtime did not resolve the room-local spawn position")
+		if runtime.call("get_spawn_point", "missing") != null:
+			failures.append("room runtime resolved an unknown spawn")
+		if runtime.call("get_spawn_point", "derived") == null:
+			failures.append("room runtime did not resolve a derived SpawnPoint")
+
+	if not runtime.has_signal("transition_requested"):
+		failures.append("room runtime did not expose transition requests")
+	else:
+		var requests: Array[Node] = []
+		runtime.connect("transition_requested", func(entrance: Node) -> void: requests.append(entrance))
+		var entrance: Node = runtime.get_entity("exit_right")
+		if entrance == null:
+			failures.append("room runtime did not expose the entrance fixture")
+		else:
+			entrance.call("request_transition")
+			if requests != [entrance]:
+				failures.append("room runtime did not relay an entrance transition request")
+	runtime.free()
+
+
+func _assert_room_runtime_ignores_missing_terrain_scene(failures: Array[String]) -> void:
+	_remove_user_file(MISSING_FIXTURE_PATH)
+	var data: Resource = ROOM_DATA.new()
+	data.room_id = "runtime_only"
+	data.scene_path = RUNTIME_ONLY_FIXTURE_PATH
+	data.terrain_scene_path = MISSING_FIXTURE_PATH
+	var runtime: Node2D = ROOM_RUNTIME.new() as Node2D
+	if not runtime.setup_room(data, "world_a", null, Vector2i.ZERO):
+		failures.append("room runtime let missing terrain_scene_path affect runtime setup")
+	else:
+		var instance: Node = runtime.get_room_instance()
+		if instance == null:
+			failures.append("room runtime lost its runtime scene while ignoring terrain")
+		else:
+			for terrain_node_name: String in [
+				"Background", "Terrain", "BackTiles", "SolidTiles", "GlassTiles",
+				"VisionBlockTiles", "DetailTiles", "MarkerTiles",
+			]:
+				if instance.get_node_or_null(terrain_node_name) != null:
+					failures.append("room runtime instance unexpectedly contained terrain node: %s" % terrain_node_name)
 	runtime.free()
 
 
@@ -81,11 +196,44 @@ func _save_room_fixture() -> Error:
 		child.name = child_name
 		root.add_child(child)
 		child.owner = root
+	var entities: Node = root.get_node("Entities")
+	var spawn: Marker2D = SPAWN_POINT.new() as Marker2D
+	spawn.name = "EntrySpawn"
+	spawn.position = Vector2(8.0, 12.0)
+	spawn.set("spawn_id", "entry")
+	entities.add_child(spawn)
+	spawn.owner = root
+	var derived_spawn: Marker2D = DERIVED_SPAWN_POINT.new() as Marker2D
+	derived_spawn.name = "DerivedSpawn"
+	derived_spawn.set("spawn_id", "derived")
+	entities.add_child(derived_spawn)
+	derived_spawn.owner = root
+	var entrance: Node = ROOM_ENTRANCE.new()
+	entrance.name = "ExitRight"
+	entrance.set("entity_id", "exit_right")
+	entities.add_child(entrance)
+	entrance.owner = root
 	var packed := PackedScene.new()
 	packed.pack(root)
 	var error := ResourceSaver.save(packed, FIXTURE_PATH)
 	root.free()
 	return error
+
+
+func _save_runtime_only_fixture() -> Error:
+	var root := Node2D.new()
+	root.name = "RuntimeOnlyRoom"
+	for child_name: String in ["Entities", "Foreground"]:
+		var child := Node2D.new()
+		child.name = child_name
+		root.add_child(child)
+		child.owner = root
+	var packed := PackedScene.new()
+	var pack_error := packed.pack(root)
+	root.free()
+	if pack_error != OK:
+		return pack_error
+	return ResourceSaver.save(packed, RUNTIME_ONLY_FIXTURE_PATH)
 
 
 func _remove_user_file(path: String) -> void:

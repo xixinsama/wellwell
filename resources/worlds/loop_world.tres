@@ -1,0 +1,81 @@
+[gd_resource type="Resource" script_class="WorldData" format=3 uid="uid://cmopt5fxxk0g6"]
+
+[ext_resource type="Script" uid="uid://e2qiwoakwcux" path="res://addons/platformer_kit/world/data/room_connection_data.gd" id="1_76bpj"]
+[ext_resource type="Script" uid="uid://b1ws1oeewd0ks" path="res://addons/platformer_kit/world/data/world_room_placement_data.gd" id="2_vixc6"]
+[ext_resource type="Script" uid="uid://c521t73sjen5" path="res://addons/platformer_kit/world/region/region_data.gd" id="3_pefn6"]
+[ext_resource type="Resource" uid="uid://umaka2tjqhup" path="res://resources/rooms/generated/loop_entry.tres" id="4_lg8sf"]
+[ext_resource type="Resource" uid="uid://c4spgaim00q17" path="res://resources/rooms/generated/loop_gallery.tres" id="5_8v0nw"]
+[ext_resource type="Resource" uid="uid://dnk618heg82er" path="res://resources/rooms/generated/loop_relay.tres" id="6_iehdf"]
+[ext_resource type="Resource" uid="uid://bsnruwphxlxpv" path="res://resources/rooms/generated/loop_split.tres" id="7_11l2t"]
+[ext_resource type="Script" uid="uid://dkcwb87qn5n2c" path="res://addons/platformer_kit/world/data/world_data.gd" id="8_wwg43"]
+
+[sub_resource type="Resource" id="Resource_aej6c"]
+script = ExtResource("1_76bpj")
+from_room_id = "loop_entry"
+from_entrance_id = "east"
+to_room_id = "loop_split"
+to_spawn_id = "from_entry"
+direction = 4
+
+[sub_resource type="Resource" id="Resource_w6jbe"]
+script = ExtResource("1_76bpj")
+from_room_id = "loop_gallery"
+from_entrance_id = "west"
+to_room_id = "loop_relay"
+to_spawn_id = "from_gallery"
+direction = 3
+
+[sub_resource type="Resource" id="Resource_s5k55"]
+script = ExtResource("1_76bpj")
+from_room_id = "loop_relay"
+from_entrance_id = "south"
+to_room_id = "loop_entry"
+to_spawn_id = "start"
+direction = 2
+
+[sub_resource type="Resource" id="Resource_nahyr"]
+script = ExtResource("1_76bpj")
+from_room_id = "loop_split"
+from_entrance_id = "north"
+to_room_id = "loop_gallery"
+to_spawn_id = "from_split"
+direction = 1
+
+[sub_resource type="Resource" id="Resource_pqvqw"]
+script = ExtResource("2_vixc6")
+room_id = "loop_entry"
+origin_chunk = Vector2i(0, 1)
+
+[sub_resource type="Resource" id="Resource_2rs8s"]
+script = ExtResource("2_vixc6")
+room_id = "loop_gallery"
+origin_chunk = Vector2i(1, 0)
+
+[sub_resource type="Resource" id="Resource_jn8c6"]
+script = ExtResource("2_vixc6")
+room_id = "loop_relay"
+
+[sub_resource type="Resource" id="Resource_4dq44"]
+script = ExtResource("2_vixc6")
+room_id = "loop_split"
+origin_chunk = Vector2i(1, 1)
+
+[sub_resource type="Resource" id="Resource_m4w4c"]
+script = ExtResource("3_pefn6")
+region_id = &"cistern"
+display_name = "水窖"
+room_ids = PackedStringArray("loop_entry", "loop_split", "loop_gallery", "loop_relay")
+tags = PackedStringArray()
+
+[resource]
+script = ExtResource("8_wwg43")
+world_id = "loop_world"
+display_name = "回环水窖 · The Loop Cistern"
+description = "下沉、涉水、崩塌、骑行与冲刺：一条绕回起点的环线。没有滑块。"
+start_room_id = "loop_entry"
+start_spawn_id = "start"
+rooms = Array[Resource]([ExtResource("4_lg8sf"), ExtResource("5_8v0nw"), ExtResource("6_iehdf"), ExtResource("7_11l2t")])
+placements = Array[Resource]([SubResource("Resource_pqvqw"), SubResource("Resource_2rs8s"), SubResource("Resource_jn8c6"), SubResource("Resource_4dq44")])
+connections = Array[Resource]([SubResource("Resource_aej6c"), SubResource("Resource_w6jbe"), SubResource("Resource_s5k55"), SubResource("Resource_nahyr")])
+regions = Array[Resource]([SubResource("Resource_m4w4c")])
+tags = PackedStringArray()

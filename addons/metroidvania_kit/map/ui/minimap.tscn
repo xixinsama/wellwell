@@ -1,0 +1,23 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://addons/metroidvania_kit/map/ui/minimap.gd" id="1_minimap"]
+[ext_resource type="Script" path="res://addons/metroidvania_kit/map/ui/map_renderer.gd" id="2_renderer"]
+
+[node name="Minimap" type="Control"]
+custom_minimum_size = Vector2(128, 72)
+layout_mode = 3
+anchors_preset = 0
+offset_right = 128.0
+offset_bottom = 72.0
+clip_contents = true
+script = ExtResource("1_minimap")
+
+[node name="Renderer" type="Control" parent="."]
+layout_mode = 0
+offset_left = 8.0
+offset_top = 8.0
+offset_right = 120.0
+offset_bottom = 64.0
+mouse_filter = 2
+script = ExtResource("2_renderer")
+room_scale = Vector2(8, 6)

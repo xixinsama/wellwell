@@ -1,0 +1,20 @@
+[gd_scene format=3 uid="uid://dvs6n5lvq6sr0"]
+
+[ext_resource type="Script" path="res://addons/platformer_kit/world/entities/room_entrance.gd" id="1_7hfms"]
+[ext_resource type="Script" path="res://addons/platformer_kit/world/entities/spawn_point.gd" id="2_jhi71"]
+
+[node name="RoomRuntimeContent" type="Node2D" unique_id=2139493988]
+
+[node name="Entities" type="Node2D" parent="." unique_id=411023939]
+
+[node name="door_wide_right" type="Node2D" parent="Entities" unique_id=2105565568]
+position = Vector2(240, 16)
+script = ExtResource("1_7hfms")
+entity_id = "door_wide_right"
+
+[node name="StartSpawn" type="Marker2D" parent="Entities" unique_id=2146166412]
+position = Vector2(160, 88)
+script = ExtResource("2_jhi71")
+spawn_id = "start"
+
+[node name="Foreground" type="Node2D" parent="." unique_id=179070470]

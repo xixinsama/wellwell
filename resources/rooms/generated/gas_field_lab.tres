@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="RoomData" format=3 uid="uid://b8kdctcv2kom5"]
+
+[ext_resource type="Script" path="res://addons/platformer_kit/world/data/room_data.gd" id="1_rrxm6"]
+
+[resource]
+script = ExtResource("1_rrxm6")
+room_id = "gas_field_lab"
+display_name = "气体场实验室"
+scene_path = "res://scenes/rooms/generated/gas_field_lab/runtime.tscn"
+source_scene_path = "res://scenes/levels/test/gas_field_lab.tscn"
+source_fingerprint = "1a943dacec6738e36e69cd24959913280c216bff55fddd523b63c55c5799fa22"
+terrain_scene_path = "res://scenes/rooms/generated/gas_field_lab/terrain.tscn"
+entrance_ids = PackedStringArray()
+spawn_ids = PackedStringArray("start")
+entity_ids = PackedStringArray()
+tags = PackedStringArray()
+room_size_chunks = Vector2i(2, 2)
+map_color = Color(0.45, 0.85, 0.95, 1)

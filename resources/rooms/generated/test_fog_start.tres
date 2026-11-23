@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="RoomData" format=3 uid="uid://c03c6ki5n8h15"]
+
+[ext_resource type="Script" path="res://addons/platformer_kit/world/data/room_data.gd" id="1_xrjvb"]
+
+[resource]
+script = ExtResource("1_xrjvb")
+room_id = "test_fog_start"
+display_name = "Test Room: fog and zones"
+scene_path = "res://scenes/rooms/generated/test_fog_start/runtime.tscn"
+source_scene_path = "res://scenes/levels/test/test_fog_start.tscn"
+source_fingerprint = "edafde8c1790d23df8f39b2a773271688fc7dc45be244e9400013fc5767f15c7"
+terrain_scene_path = "res://scenes/rooms/generated/test_fog_start/terrain.tscn"
+entrance_ids = PackedStringArray("to_east")
+spawn_ids = PackedStringArray("start")
+entity_ids = PackedStringArray()
+tags = PackedStringArray()

@@ -1,0 +1,19 @@
+class_name MapRoom
+extends Resource
+
+@export var room_id: StringName
+@export var world_room_id: StringName
+@export var region_id: StringName
+@export var map_position := Vector2i.ZERO
+@export var map_size := Vector2i.ONE
+## Canonical world cell rectangle (see RoomGrid). [member map_position] and
+## [member map_size] stay the chunk-based schematic lattice; any renderer that
+## works in world cells reads these so fog cells and terrain agree on odd rows.
+@export var cell_origin := Vector2i.ZERO
+@export var cell_size := Vector2i.ZERO
+@export var hidden_on_map := false
+@export var metadata: Dictionary = {}
+
+
+func get_world_room_id() -> StringName:
+	return room_id if world_room_id.is_empty() else world_room_id

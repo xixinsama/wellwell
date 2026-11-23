@@ -1,0 +1,891 @@
+@tool
+class_name RoomBaker
+extends RefCounted
+
+const ROOM_AUTHORING_CONTRACT: Script = preload("res://addons/world_editor/authoring/room/room_authoring_contract.gd")
+const ROOM_BAKE_MANIFEST: Script = preload("res://addons/world_editor/authoring/room/room_bake_manifest.gd")
+const ROOM_BAKE_PATHS: Script = preload("res://addons/world_editor/authoring/room/room_bake_paths.gd")
+const ROOM_DATA: Script = preload("res://addons/platformer_kit/world/data/room_data.gd")
+const ROOM_GRID: Script = preload("res://addons/platformer_kit/world/data/room_grid.gd")
+
+const DUPLICATE_FLAGS := Node.DUPLICATE_SIGNALS | Node.DUPLICATE_GROUPS | Node.DUPLICATE_SCRIPTS | Node.DUPLICATE_USE_INSTANTIATION
+const TERRAIN_CHILD_NAMES: Array[String] = ["Background", "Terrain"]
+const RUNTIME_EXCLUDED_CHILD_NAMES: Array[String] = ["Background", "Terrain"]
+const REQUIRED_RUNTIME_CHILD_NAMES: Array[String] = ["Entities", "Foreground"]
+const REQUIRED_TERRAIN_LAYER_NAMES: Array[String] = ["BackTiles", "SolidTiles", "DetailTiles"]
+const RESOURCE_PRESENTATION_PROPERTIES: Array[String] = ["resource_path", "resource_scene_unique_id"]
+
+var _world_terrain_cache: Dictionary = {}
+
+
+func validate(source_root: Node) -> Dictionary:
+	var contract: Dictionary = ROOM_AUTHORING_CONTRACT.validate(source_root)
+	var errors: Array[String] = []
+	var warnings: Array[String] = []
+	for error: String in contract.get("errors", []):
+		errors.append(error)
+	for warning: String in contract.get("warnings", []):
+		warnings.append(warning)
+	return _result(errors.is_empty(), errors, warnings)
+
+
+## [param origin_chunk] is the room's world placement. [param world_terrain_path]
+## is the world's single authored terrain scene; when given, the room terrain is
+## sliced from it instead of packing the room source's own Terrain node.
+func stage(
+	source_root: Node,
+	source_path: String,
+	origin_chunk: Variant = null,
+	world_terrain_path: String = ""
+) -> Dictionary:
+	var validation := validate(source_root)
+	if not validation["ok"]:
+		return validation
+	var warnings := _copy_strings(validation["warnings"])
+	var manifest: Dictionary = ROOM_BAKE_MANIFEST.from_authoring_root(source_root, source_path)
+	if manifest.is_empty():
+		return _failure("could not build a normalized room bake manifest", warnings)
+	var room_content: Node = source_root.get_node_or_null("RoomContent")
+	if room_content == null:
+		return _failure("missing direct RoomContent node during staging", warnings)
+	var crop_origin := _resolve_crop_origin(source_root, origin_chunk)
+	var size_chunks := _room_size_chunks(source_root)
+	var terrain_scene_result := _pack_terrain_scene(
+		room_content, crop_origin, size_chunks, world_terrain_path
+	)
+	if not terrain_scene_result["ok"]:
+		return _with_warnings(terrain_scene_result, warnings)
+	if world_terrain_path.is_empty():
+		var cropped := int(terrain_scene_result.get("cropped_cells", 0))
+		if cropped > 0:
+			warnings.append("cropped %d terrain cell(s) outside the room's cell frame" % cropped)
+	else:
+		warnings.append_array(_source_terrain_ignored_warning(room_content))
+	if crop_origin != null:
+		warnings.append_array(_entity_frame_warnings(source_root, crop_origin, size_chunks))
+	var runtime_scene_result := _pack_runtime_scene(room_content)
+	if not runtime_scene_result["ok"]:
+		return _with_warnings(runtime_scene_result, warnings)
+	var room_data: Resource = ROOM_DATA.new()
+	if not ROOM_BAKE_MANIFEST.apply_to_room_data(manifest, room_data):
+		return _failure("could not apply room bake manifest to RoomData", warnings)
+	room_data.source_fingerprint = get_source_fingerprint(source_path)
+	return {
+		"ok": true,
+		"errors": [],
+		"warnings": warnings,
+		"manifest": manifest,
+		"outputs": _output_paths(manifest),
+		"runtime_scene": runtime_scene_result["scene"],
+		"terrain_scene": terrain_scene_result["scene"],
+		"runtime_signature": _scene_signature(runtime_scene_result["scene"]),
+		"terrain_signature": _scene_signature(terrain_scene_result["scene"]),
+		"room_data": room_data,
+	}
+
+
+func save_staged(staged: Dictionary) -> Dictionary:
+	var staged_validation := _validate_staged(staged)
+	if not staged_validation["ok"]:
+		return staged_validation
+	var outputs: Dictionary = staged["outputs"]
+	var errors: Array[String] = []
+	var warnings := _copy_strings(staged["warnings"])
+	if not _ensure_output_directories(outputs, errors):
+		return _result(false, errors, warnings)
+	var staged_paths := _staged_paths(outputs)
+	if not _remove_paths(staged_paths, errors, "stale staged output"):
+		return _result(false, errors, warnings)
+	var resources := {
+		staged_paths["runtime_scene_path"]: staged["runtime_scene"],
+		staged_paths["terrain_scene_path"]: staged["terrain_scene"],
+		staged_paths["room_resource_path"]: staged["room_data"],
+	}
+	for staged_path: String in resources:
+		var save_error := ResourceSaver.save(resources[staged_path], staged_path)
+		if save_error != OK:
+			errors.append("could not save staged resource: %s" % staged_path)
+			_remove_paths(staged_paths, errors, "staged resource")
+			return _result(false, errors, warnings)
+	var post_save_result := _after_staged_resources_saved(staged_paths, staged)
+	if not post_save_result.get("ok", false):
+		for error: String in post_save_result.get("errors", []):
+			errors.append(error)
+		for warning: String in post_save_result.get("warnings", []):
+			warnings.append(warning)
+		_remove_paths(staged_paths, errors, "staged resource")
+		return _result(false, errors, warnings)
+	for warning: String in post_save_result.get("warnings", []):
+		warnings.append(warning)
+	if not _validate_saved_resources(staged_paths, staged, errors):
+		_remove_paths(staged_paths, errors, "staged resource")
+		return _result(false, errors, warnings)
+	return _replace_transactionally(outputs, staged_paths, warnings)
+
+
+func bake(
+	source_root: Node,
+	source_path: String,
+	origin_chunk: Variant = null,
+	world_terrain_path: String = ""
+) -> Dictionary:
+	var staged := stage(source_root, source_path, origin_chunk, world_terrain_path)
+	if not staged["ok"]:
+		return staged
+	return save_staged(staged)
+
+
+func get_source_fingerprint(source_path: String) -> String:
+	if source_path.is_empty() or not FileAccess.file_exists(source_path):
+		return ""
+	return FileAccess.get_sha256(source_path)
+
+
+## Terrain for a room comes from the world's single terrain scene: the room's
+## cell rectangle is sliced out and shifted to room-local cells. Without a world
+## terrain scene the legacy path packs the room source's own Terrain node.
+func _pack_terrain_scene(
+	room_content: Node,
+	crop_origin: Variant = null,
+	crop_size_chunks: Vector2i = Vector2i.ZERO,
+	world_terrain_path: String = ""
+) -> Dictionary:
+	if world_terrain_path.is_empty():
+		return _pack_scene(
+			room_content, "RoomTerrain", TERRAIN_CHILD_NAMES, crop_origin, crop_size_chunks
+		)
+	return _pack_sliced_terrain(room_content, crop_origin, crop_size_chunks, world_terrain_path)
+
+
+func _pack_runtime_scene(room_content: Node) -> Dictionary:
+	var child_names: Array[String] = []
+	for child: Node in room_content.get_children():
+		var child_name := str(child.name)
+		if not RUNTIME_EXCLUDED_CHILD_NAMES.has(child_name):
+			child_names.append(child_name)
+	return _pack_scene(room_content, "RoomRuntimeContent", child_names)
+
+
+func _pack_scene(
+	room_content: Node,
+	root_name: String,
+	child_names: Array[String],
+	crop_origin: Variant = null,
+	crop_size_chunks: Vector2i = Vector2i.ZERO
+) -> Dictionary:
+	var root := Node2D.new()
+	root.name = root_name
+	var cropped := 0
+	for child_name: String in child_names:
+		var source_child: Node = room_content.get_node_or_null(child_name)
+		if source_child == null:
+			root.free()
+			return _failure("missing RoomContent child during staging: %s" % child_name)
+		var duplicate: Node = source_child.duplicate(DUPLICATE_FLAGS)
+		if duplicate == null:
+			root.free()
+			return _failure("could not duplicate RoomContent child: %s" % child_name)
+		if crop_origin != null:
+			cropped += _crop_tile_layers(duplicate, Vector2i(crop_origin), crop_size_chunks)
+		root.add_child(duplicate)
+		_assign_owner_recursive(duplicate, root)
+	var scene := PackedScene.new()
+	var pack_error := scene.pack(root)
+	root.free()
+	if pack_error != OK:
+		return _failure("could not pack staged scene: %s" % root_name)
+	return {
+		"ok": true,
+		"errors": [],
+		"warnings": [],
+		"scene": scene,
+		"cropped_cells": cropped,
+	}
+
+
+## Builds the room's terrain scene by slicing the world terrain at the room's
+## cell rectangle. The room source contributes its Background and its non-tile
+## Terrain children (ladder builders, etc.); the tile cells come from the world.
+func _pack_sliced_terrain(
+	room_content: Node,
+	origin_chunk: Variant,
+	size_chunks: Vector2i,
+	world_terrain_path: String
+) -> Dictionary:
+	if origin_chunk == null:
+		return _failure("world terrain slicing needs the room's world origin")
+	var world_layers := _world_terrain_layers(world_terrain_path)
+	if world_layers.is_empty():
+		return _failure("world terrain scene has no tile layers: %s" % world_terrain_path)
+	var root := Node2D.new()
+	root.name = "RoomTerrain"
+	var background := room_content.get_node_or_null("Background")
+	if background != null:
+		root.add_child(background.duplicate(DUPLICATE_FLAGS))
+	var source_terrain := room_content.get_node_or_null("Terrain")
+	var terrain: Node2D
+	if source_terrain != null:
+		terrain = source_terrain.duplicate(DUPLICATE_FLAGS) as Node2D
+	else:
+		terrain = Node2D.new()
+	terrain.name = "Terrain"
+	root.add_child(terrain)
+	var cell_rect: Rect2i = ROOM_GRID.get_room_cell_rect(Vector2i(origin_chunk), size_chunks)
+	for layer_name: String in world_layers:
+		var info: Dictionary = world_layers[layer_name]
+		var layer := _find_tile_layer(terrain, layer_name)
+		if layer == null:
+			layer = TileMapLayer.new()
+			layer.name = layer_name
+			terrain.add_child(layer)
+		layer.tile_set = info["tile_set"]
+		layer.clear()
+		var cells: Dictionary = info["cells"]
+		for world_cell: Vector2i in cells:
+			if not cell_rect.has_point(world_cell):
+				continue
+			var tile: Array = cells[world_cell]
+			layer.set_cell(
+				world_cell - cell_rect.position,
+				int(tile[0]),
+				Vector2i(tile[1]),
+				int(tile[2])
+			)
+	for child: Node in root.get_children():
+		_assign_owner_recursive(child, root)
+	var scene := PackedScene.new()
+	var pack_error := scene.pack(root)
+	root.free()
+	if pack_error != OK:
+		return _failure("could not pack sliced room terrain")
+	return {"ok": true, "errors": [], "warnings": [], "scene": scene, "cropped_cells": 0}
+
+
+## Loads the world terrain once per file hash and flattens every tile layer into
+## `{layer name: {world cell: [source_id, atlas, alternative]}}`.
+func _world_terrain_layers(world_terrain_path: String) -> Dictionary:
+	var hash := ""
+	if FileAccess.file_exists(world_terrain_path):
+		hash = FileAccess.get_sha256(world_terrain_path)
+	if _world_terrain_cache.has(world_terrain_path):
+		var cached: Dictionary = _world_terrain_cache[world_terrain_path]
+		if String(cached.get("hash", "")) == hash:
+			return cached["layers"]
+	var layers: Dictionary = {}
+	if ResourceLoader.exists(world_terrain_path, "PackedScene"):
+		var packed := ResourceLoader.load(
+			world_terrain_path, "PackedScene", ResourceLoader.CACHE_MODE_IGNORE
+		) as PackedScene
+		if packed != null:
+			var instance := packed.instantiate()
+			var tile_layers: Array[TileMapLayer] = []
+			_collect_tile_layers(instance, tile_layers)
+			for layer: TileMapLayer in tile_layers:
+				var cells: Dictionary = {}
+				for cell: Vector2i in layer.get_used_cells():
+					cells[cell] = [
+						layer.get_cell_source_id(cell),
+						layer.get_cell_atlas_coords(cell),
+						layer.get_cell_alternative_tile(cell),
+					]
+				layers[String(layer.name)] = {"tile_set": layer.tile_set, "cells": cells}
+			instance.free()
+	_world_terrain_cache[world_terrain_path] = {"hash": hash, "layers": layers}
+	return layers
+
+
+func _source_terrain_ignored_warning(room_content: Node) -> Array[String]:
+	var warnings: Array[String] = []
+	var source_terrain := room_content.get_node_or_null("Terrain")
+	if source_terrain == null:
+		return warnings
+	var layers: Array[TileMapLayer] = []
+	_collect_tile_layers(source_terrain, layers)
+	for layer: TileMapLayer in layers:
+		if not layer.get_used_cells().is_empty():
+			warnings.append(
+				"room source terrain is ignored; the world terrain scene is the source of truth"
+			)
+			break
+	return warnings
+
+
+func _find_tile_layer(node: Node, layer_name: String) -> TileMapLayer:
+	if node is TileMapLayer and String(node.name) == layer_name:
+		return node as TileMapLayer
+	for child: Node in node.get_children():
+		var found := _find_tile_layer(child, layer_name)
+		if found != null:
+			return found
+	return null
+
+
+## Removes cells that fall outside the room's per-block cell frames. Frames come
+## from the room's world placement, so an odd chunk row bakes 22 rows and an even
+## one 23 — the extra cells the author painted simply do not exist in the game.
+func _crop_tile_layers(node: Node, origin_chunk: Vector2i, size_chunks: Vector2i) -> int:
+	if size_chunks.x <= 0 or size_chunks.y <= 0:
+		return 0
+	var block_rects: Array[Rect2i] = ROOM_GRID.get_room_block_cell_rects(origin_chunk, size_chunks)
+	var layers: Array[TileMapLayer] = []
+	_collect_tile_layers(node, layers)
+	var dropped := 0
+	for layer: TileMapLayer in layers:
+		for cell: Vector2i in layer.get_used_cells():
+			if not ROOM_GRID.is_local_cell_inside(cell, block_rects):
+				layer.erase_cell(cell)
+				dropped += 1
+	return dropped
+
+
+func _collect_tile_layers(node: Node, layers: Array[TileMapLayer]) -> void:
+	if node is TileMapLayer:
+		layers.append(node as TileMapLayer)
+	for child: Node in node.get_children():
+		_collect_tile_layers(child, layers)
+
+
+## Entities are not cropped; sitting outside the frame is a warning so the author
+## can move them instead of losing them silently.
+func _entity_frame_warnings(
+	source_root: Node,
+	origin_chunk: Vector2i,
+	size_chunks: Vector2i
+) -> Array[String]:
+	var warnings: Array[String] = []
+	var entities := source_root.get_node_or_null("RoomContent/Entities")
+	if entities == null:
+		return warnings
+	var block_rects: Array[Rect2i] = ROOM_GRID.get_room_block_cell_rects(origin_chunk, size_chunks)
+	var cell_size := float(ROOM_GRID.DEFAULT_CELL_SIZE.x)
+	for child: Node in entities.get_children():
+		var entity := child as Node2D
+		if entity == null:
+			continue
+		var cell := Vector2i(
+			floori(entity.position.x / cell_size),
+			floori(entity.position.y / cell_size)
+		)
+		if not ROOM_GRID.is_local_cell_inside(cell, block_rects):
+			warnings.append("entity '%s' sits outside the room's cell frame" % entity.name)
+	return warnings
+
+
+func _resolve_crop_origin(source_root: Node, origin_chunk: Variant) -> Variant:
+	if origin_chunk != null:
+		return Vector2i(origin_chunk)
+	var known: Variant = source_root.get("world_origin_known")
+	if known is bool and bool(known):
+		return Vector2i(source_root.get("world_origin_chunk"))
+	return null
+
+
+func _room_size_chunks(source_root: Node) -> Vector2i:
+	var size: Variant = source_root.get("room_size_chunks")
+	if size is Vector2i:
+		return Vector2i(maxi(1, (size as Vector2i).x), maxi(1, (size as Vector2i).y))
+	return Vector2i.ONE
+
+
+## Claims the duplicated room tree for the packed scene.
+##
+## `duplicate()` drops owners that point outside the copied branch and keeps the
+## ones that belong inside it, so a node that still has an owner is an internal of
+## an instanced sub-scene (a checkpoint, a door, a platform: its owner is that
+## instance). Re-owning those makes `pack()` write a second copy of the subtree
+## next to the instance, and `instantiate()` then has to reconcile both
+## descriptions — the recovery pass drops the instance's own nodes without freeing
+## them, which leaks one subtree per entity and shows as orphaned nodes in the
+## debugger at exit. Only the unowned nodes are claimed, which keeps the instance
+## root and any authored editable-children overrides intact.
+func _assign_owner_recursive(node: Node, scene_root: Node) -> void:
+	if node.owner == null:
+		node.owner = scene_root
+	for group_name: StringName in node.get_groups():
+		node.add_to_group(group_name, true)
+	for child: Node in node.get_children():
+		_assign_owner_recursive(child, scene_root)
+
+
+func _validate_staged(staged: Dictionary) -> Dictionary:
+	for key: String in ["manifest", "outputs", "runtime_scene", "terrain_scene", "runtime_signature", "terrain_signature", "room_data", "warnings"]:
+		if not staged.has(key):
+			return _failure("staged bake is missing: %s" % key)
+	if not staged["runtime_scene"] is PackedScene or not staged["terrain_scene"] is PackedScene or not staged["room_data"] is Resource:
+		return _failure("staged bake resources have invalid types")
+	if not staged["runtime_signature"] is Dictionary or not staged["terrain_signature"] is Dictionary or not staged["warnings"] is Array:
+		return _failure("staged bake validation data has invalid types")
+	var manifest: Dictionary = staged["manifest"]
+	var outputs: Dictionary = staged["outputs"]
+	var errors: Array[String] = []
+	var warnings := _copy_strings(staged["warnings"])
+	var expected_outputs := _output_paths(manifest)
+	if expected_outputs.is_empty() or outputs != expected_outputs:
+		errors.append("staged bake outputs do not match deterministic room paths")
+	if not _validate_runtime_scene(staged["runtime_scene"], staged["runtime_signature"], errors):
+		pass
+	if not _validate_terrain_scene(staged["terrain_scene"], staged["terrain_signature"], errors):
+		pass
+	_validate_room_data_against_manifest(staged["room_data"], manifest, outputs, errors)
+	return _result(errors.is_empty(), errors, warnings)
+
+
+func _ensure_output_directories(outputs: Dictionary, errors: Array[String]) -> bool:
+	var directories: Dictionary = {}
+	for output_path: String in outputs.values():
+		directories[output_path.get_base_dir()] = true
+	for directory: String in directories:
+		if DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(directory)) != OK:
+			errors.append("could not create generated output directory: %s" % directory)
+	return errors.is_empty()
+
+
+func _validate_saved_resources(staged_paths: Dictionary, staged: Dictionary, errors: Array[String]) -> bool:
+	var runtime_scene := ResourceLoader.load(staged_paths["runtime_scene_path"], "PackedScene", ResourceLoader.CACHE_MODE_IGNORE) as PackedScene
+	var terrain_scene := ResourceLoader.load(staged_paths["terrain_scene_path"], "PackedScene", ResourceLoader.CACHE_MODE_IGNORE) as PackedScene
+	var room_data := ResourceLoader.load(staged_paths["room_resource_path"], "RoomData", ResourceLoader.CACHE_MODE_IGNORE) as Resource
+	if runtime_scene == null or terrain_scene == null or room_data == null:
+		errors.append("could not reload every staged resource")
+		return false
+	var valid := true
+	if not _validate_runtime_scene(runtime_scene, staged["runtime_signature"], errors):
+		valid = false
+	if not _validate_terrain_scene(terrain_scene, staged["terrain_signature"], errors):
+		valid = false
+	var staged_room_data: Resource = staged["room_data"]
+	if not _room_data_matches(room_data, staged_room_data, errors):
+		valid = false
+	if not _validate_room_data_against_manifest(room_data, staged["manifest"], staged["outputs"], errors):
+		valid = false
+	return valid
+
+
+func _validate_runtime_scene(scene: PackedScene, expected_signature: Dictionary, errors: Array[String]) -> bool:
+	var root: Node = scene.instantiate()
+	var valid := root.name == "RoomRuntimeContent"
+	if not valid:
+		errors.append("staged runtime scene root mismatch")
+	for child_name: String in REQUIRED_RUNTIME_CHILD_NAMES:
+		if root.get_node_or_null(child_name) == null:
+			valid = false
+			errors.append("staged runtime scene missing required child: %s" % child_name)
+	for excluded_name: String in ["Background", "Terrain", "PreviewOnly"]:
+		if _contains_named_node(root, excluded_name):
+			valid = false
+			errors.append("staged runtime scene contains excluded child: %s" % excluded_name)
+	root.free()
+	if _scene_signature(scene) != expected_signature:
+		valid = false
+		errors.append("staged runtime scene signature differs from the in-memory staged scene")
+	return valid
+
+
+func _validate_terrain_scene(scene: PackedScene, expected_signature: Dictionary, errors: Array[String]) -> bool:
+	var root: Node = scene.instantiate()
+	var valid := root.name == "RoomTerrain"
+	if not valid:
+		errors.append("staged terrain scene root mismatch")
+	for child_name: String in TERRAIN_CHILD_NAMES:
+		if root.get_node_or_null(child_name) == null:
+			valid = false
+			errors.append("staged terrain scene missing required child: %s" % child_name)
+	if _contains_named_node(root, "PreviewOnly"):
+		valid = false
+		errors.append("staged terrain scene contains PreviewOnly")
+	for layer_name: String in REQUIRED_TERRAIN_LAYER_NAMES:
+		if not root.get_node_or_null("Terrain/%s" % layer_name) is TileMapLayer:
+			valid = false
+			errors.append("staged terrain scene missing TileMapLayer: %s" % layer_name)
+	root.free()
+	if _scene_signature(scene) != expected_signature:
+		valid = false
+		errors.append("staged terrain scene signature differs from the in-memory staged scene")
+	return valid
+
+
+func _validate_room_data_against_manifest(room_data: Resource, manifest: Dictionary, outputs: Dictionary, errors: Array[String]) -> bool:
+	var expected_values := {
+		"room_id": manifest.get("room_id", ""),
+		"display_name": manifest.get("display_name", ""),
+		"scene_path": outputs.get("runtime_scene_path", ""),
+		"source_scene_path": manifest.get("source_scene_path", ""),
+		"source_fingerprint": get_source_fingerprint(str(manifest.get("source_scene_path", ""))),
+		"terrain_scene_path": outputs.get("terrain_scene_path", ""),
+		"room_size_chunks": manifest.get("room_size_chunks", Vector2i.ONE),
+		"entrance_ids": PackedStringArray(manifest.get("entrance_ids", [])),
+		"spawn_ids": PackedStringArray(manifest.get("spawn_ids", [])),
+		"entity_ids": PackedStringArray(manifest.get("entity_ids", [])),
+		"tags": PackedStringArray(manifest.get("tags", [])),
+		"map_color": manifest.get("map_color", Color.WHITE),
+	}
+	var valid := true
+	for property_name: String in expected_values:
+		if room_data.get(property_name) != expected_values[property_name]:
+			valid = false
+			errors.append("staged RoomData metadata mismatch: %s" % property_name)
+	return valid
+
+
+func _room_data_matches(actual: Resource, expected: Resource, errors: Array[String]) -> bool:
+	var valid := true
+	for property_name: String in ["room_id", "display_name", "scene_path", "source_scene_path", "source_fingerprint", "terrain_scene_path", "entrance_ids", "spawn_ids", "entity_ids", "tags", "room_size_chunks", "map_color"]:
+		if actual.get(property_name) != expected.get(property_name):
+			valid = false
+			errors.append("reloaded RoomData differs from staged RoomData: %s" % property_name)
+	return valid
+
+
+func _contains_named_node(root: Node, node_name: String) -> bool:
+	for child: Node in root.get_children():
+		if str(child.name) == node_name or _contains_named_node(child, node_name):
+			return true
+	return false
+
+
+func _scene_signature(scene: PackedScene) -> Dictionary:
+	var state := scene.get_state()
+	var root: Node = scene.instantiate()
+	var nodes: Array[Dictionary] = []
+	for node_index: int in state.get_node_count():
+		var node_path := state.get_node_path(node_index)
+		var path_text := str(node_path)
+		var node: Node = root if path_text.is_empty() or path_text == "." else root.get_node_or_null(node_path)
+		var properties: Array[Dictionary] = []
+		for property_index: int in state.get_node_property_count(node_index):
+			properties.append({
+				"name": str(state.get_node_property_name(node_index, property_index)),
+				"value": _canonicalize_value(state.get_node_property_value(node_index, property_index)),
+			})
+		var groups: Array[String] = []
+		for group_name: StringName in state.get_node_groups(node_index):
+			groups.append(str(group_name))
+		groups.sort()
+		var script_path := ""
+		if node != null:
+			var script: Script = node.get_script()
+			if script != null:
+				script_path = script.resource_path
+		nodes.append({
+			"path": path_text,
+			"type": state.get_node_type(node_index),
+			"script_path": script_path,
+			"owner_path": str(state.get_node_owner_path(node_index)),
+			"groups": groups,
+			"properties": properties,
+		})
+	root.free()
+	return {"nodes": nodes}
+
+
+func _canonicalize_value(value: Variant) -> Variant:
+	return _canonicalize_value_with_resources(value, {})
+
+
+func _canonicalize_value_with_resources(value: Variant, active_resources: Dictionary) -> Variant:
+	match typeof(value):
+		TYPE_ARRAY:
+			var values: Array = []
+			for item: Variant in value:
+				values.append(_canonicalize_value_with_resources(item, active_resources))
+			return values
+		TYPE_DICTIONARY:
+			var entries: Array[Dictionary] = []
+			for key: Variant in value.keys():
+				entries.append({
+					"key": _canonicalize_value_with_resources(key, active_resources),
+					"value": _canonicalize_value_with_resources(value[key], active_resources),
+				})
+			entries.sort_custom(func(left: Dictionary, right: Dictionary) -> bool:
+				return _stable_canonical_key(left["key"]) < _stable_canonical_key(right["key"])
+			)
+			return entries
+		TYPE_OBJECT:
+			return _canonicalize_object(value, active_resources)
+		TYPE_STRING_NAME:
+			return {"variant_type": "StringName", "value": str(value)}
+		TYPE_NODE_PATH:
+			return {"variant_type": "NodePath", "value": str(value)}
+		_:
+			return value
+
+
+func _canonicalize_object(value: Variant, active_resources: Dictionary) -> Variant:
+	if value == null:
+		return null
+	if value is Resource:
+		var resource := value as Resource
+		if not resource.resource_path.is_empty() and not resource.is_built_in():
+			return {"external_resource_path": resource.resource_path}
+		var resource_id := resource.get_instance_id()
+		if active_resources.has(resource_id):
+			return {"embedded_resource_cycle": active_resources[resource_id]}
+		var resource_marker := "embedded_%d" % active_resources.size()
+		active_resources[resource_id] = resource_marker
+		var properties: Array[Dictionary] = []
+		for property_info: Dictionary in resource.get_property_list():
+			if (int(property_info.get("usage", 0)) & PROPERTY_USAGE_STORAGE) != 0:
+				var property_name := str(property_info.get("name", ""))
+				if RESOURCE_PRESENTATION_PROPERTIES.has(property_name):
+					continue
+				properties.append({"name": property_name, "value": _canonicalize_value_with_resources(resource.get(property_name), active_resources)})
+		properties.sort_custom(func(left: Dictionary, right: Dictionary) -> bool:
+			return left["name"] < right["name"]
+		)
+		active_resources.erase(resource_id)
+		return {"embedded_resource_class": resource.get_class(), "properties": properties}
+	if value is Node:
+		return {"node_class": value.get_class(), "node_name": str(value.name)}
+	return {"object_class": value.get_class()}
+
+
+func _stable_canonical_key(value: Variant) -> String:
+	return "%d:%s" % [typeof(value), var_to_str(value)]
+
+
+func _after_staged_resources_saved(staged_paths: Dictionary, staged: Dictionary) -> Dictionary:
+	var outputs: Dictionary = staged.get("outputs", {})
+	for output_key: String in staged_paths:
+		var staged_path := String(staged_paths[output_key])
+		var final_path := String(outputs.get(output_key, ""))
+		if final_path.is_empty():
+			return _failure("could not preserve resource UID without a final output path")
+		var uid := _read_text_resource_uid(final_path)
+		if uid == ResourceUID.INVALID_ID:
+			uid = _registered_uid_for_path(final_path)
+		if uid == ResourceUID.INVALID_ID:
+			uid = ResourceLoader.get_resource_uid(final_path)
+		if uid == ResourceUID.INVALID_ID:
+			uid = ResourceUID.create_id()
+		if ResourceUID.has_id(uid):
+			var registered_path := ResourceUID.get_id_path(uid)
+			if registered_path != final_path and registered_path != staged_path:
+				return _failure("resource UID is registered to an unrelated path: %s" % registered_path)
+		if ResourceSaver.set_uid(staged_path, uid) != OK:
+			return _failure("could not preserve resource UID for staged output: %s" % staged_path)
+	return _result(true, [], [])
+
+
+func _replace_transactionally(outputs: Dictionary, staged_paths: Dictionary, warnings: Array[String]) -> Dictionary:
+	var backup_paths := _backup_paths(outputs)
+	var output_uids := _capture_output_uids(outputs)
+	var errors: Array[String] = []
+	for backup_path: String in backup_paths.values():
+		if FileAccess.file_exists(backup_path):
+			errors.append("refusing to remove existing generated output backup: %s" % backup_path)
+	if not errors.is_empty():
+		_remove_paths(staged_paths, errors, "staged resource")
+		return _result(false, errors, warnings)
+	var backed_up: Array[Dictionary] = []
+	for final_path: String in outputs.values():
+		if FileAccess.file_exists(final_path):
+			var backup_path: String = backup_paths[_output_key_for_path(outputs, final_path)]
+			if _move_file(final_path, backup_path) != OK:
+				errors.append("could not back up generated output: %s" % final_path)
+				_restore_backups(backed_up, errors)
+				_remove_paths(staged_paths, errors, "staged resource")
+				return _result(false, errors, warnings)
+			backed_up.append({"final_path": final_path, "backup_path": backup_path})
+	var installed_paths: Array[String] = []
+	for output_key: String in ["runtime_scene_path", "terrain_scene_path", "room_resource_path"]:
+		var promote_error := _promote_staged_file(staged_paths[output_key], outputs[output_key])
+		if promote_error != OK:
+			errors.append("could not install generated output: %s" % outputs[output_key])
+			_rollback_replacement(installed_paths, backed_up, staged_paths, errors, output_uids, outputs)
+			return _result(false, errors, warnings)
+		installed_paths.append(outputs[output_key])
+	var committed_warnings := _copy_strings(warnings)
+	for backup_path: String in backup_paths.values():
+		if _remove_file(backup_path) != OK:
+			committed_warnings.append("retained generated output backup: %s" % backup_path)
+	for staged_path: String in staged_paths.values():
+		if _remove_file(staged_path) != OK:
+			committed_warnings.append("retained staged resource after committed transaction: %s" % staged_path)
+	return {
+		"ok": true,
+		"errors": [],
+		"warnings": committed_warnings,
+		"outputs": outputs.duplicate(),
+	}
+
+
+func _capture_output_uids(outputs: Dictionary) -> Dictionary:
+	var result := {}
+	for output_key: String in outputs:
+		var path := String(outputs[output_key])
+		var uid := _read_text_resource_uid(path)
+		if uid == ResourceUID.INVALID_ID:
+			uid = _registered_uid_for_path(path)
+		result[output_key] = uid
+	return result
+
+
+func _restore_output_uids(output_uids: Dictionary, outputs: Dictionary) -> void:
+	for output_key: String in output_uids:
+		var uid := int(output_uids[output_key])
+		if uid == ResourceUID.INVALID_ID:
+			continue
+		var final_path := String(outputs[output_key])
+		if ResourceUID.has_id(uid):
+			ResourceUID.set_id(uid, final_path)
+		else:
+			ResourceUID.add_id(uid, final_path)
+
+
+func _rollback_replacement(installed_paths: Array[String], backed_up: Array[Dictionary], staged_paths: Dictionary, errors: Array[String], output_uids: Dictionary, outputs: Dictionary) -> void:
+	var installed_outputs_removed := true
+	for installed_path: String in installed_paths:
+		var removal_error := _remove_file(installed_path)
+		if removal_error != OK:
+			installed_outputs_removed = false
+			errors.append("could not remove newly installed output: %s" % installed_path)
+		elif FileAccess.file_exists(installed_path):
+			installed_outputs_removed = false
+			errors.append("newly installed output still exists after removal: %s" % installed_path)
+	if installed_outputs_removed:
+		_restore_backups(backed_up, errors)
+		_restore_output_uids(output_uids, outputs)
+	else:
+		errors.append("generated output backups were retained because installed outputs remain")
+	_remove_paths(staged_paths, errors, "staged resource")
+
+
+func _restore_backups(backed_up: Array[Dictionary], errors: Array[String]) -> void:
+	for entry: Dictionary in backed_up:
+		if not FileAccess.file_exists(entry["backup_path"]):
+			errors.append("generated output backup is missing: %s" % entry["backup_path"])
+		elif FileAccess.file_exists(entry["final_path"]):
+			errors.append("could not restore generated output backup while final exists: %s" % entry["final_path"])
+		elif _move_file(entry["backup_path"], entry["final_path"]) != OK:
+			errors.append("could not restore generated output backup: %s" % entry["final_path"])
+		elif FileAccess.file_exists(entry["backup_path"]) or not FileAccess.file_exists(entry["final_path"]):
+			errors.append("generated output backup restoration could not be verified: %s" % entry["final_path"])
+
+
+func _move_file(from_path: String, to_path: String) -> Error:
+	return DirAccess.rename_absolute(ProjectSettings.globalize_path(from_path), ProjectSettings.globalize_path(to_path))
+
+
+func _promote_staged_file(staged_path: String, final_path: String) -> Error:
+	var uid := _read_text_resource_uid(staged_path)
+	if uid == ResourceUID.INVALID_ID:
+		uid = ResourceLoader.get_resource_uid(staged_path)
+	var move_error := _move_file(staged_path, final_path)
+	if move_error == OK and uid != ResourceUID.INVALID_ID:
+		if ResourceUID.has_id(uid):
+			ResourceUID.set_id(uid, final_path)
+		else:
+			ResourceUID.add_id(uid, final_path)
+	return move_error
+
+
+func _remove_paths(paths: Variant, errors: Array[String], label: String) -> bool:
+	var valid := true
+	if paths is Dictionary:
+		for path: String in (paths as Dictionary).values():
+			if _remove_file(path) != OK:
+				valid = false
+				errors.append("could not remove %s: %s" % [label, path])
+	elif paths is Array:
+		for path: String in paths:
+			if _remove_file(path) != OK:
+				valid = false
+				errors.append("could not remove %s: %s" % [label, path])
+	return valid
+
+
+func _remove_file(path: String) -> Error:
+	var uid := _registered_uid_for_path(path)
+	if not FileAccess.file_exists(path):
+		_forget_uid_path(uid, path)
+		return OK
+	var remove_error := DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
+	if remove_error == OK:
+		_forget_uid_path(uid, path)
+	return remove_error
+
+
+func _forget_uid_path(uid: int, path: String) -> void:
+	if uid != ResourceUID.INVALID_ID and ResourceUID.has_id(uid) and ResourceUID.get_id_path(uid) == path:
+		ResourceUID.remove_id(uid)
+
+
+func _read_text_resource_uid(path: String) -> int:
+	if not FileAccess.file_exists(path):
+		return ResourceUID.INVALID_ID
+	var first_line := FileAccess.get_file_as_string(path).get_slice("\n", 0)
+	const MARKER := "uid=\""
+	var start := first_line.find(MARKER)
+	if start < 0:
+		return ResourceUID.INVALID_ID
+	start += MARKER.length()
+	var end := first_line.find("\"", start)
+	if end < 0:
+		return ResourceUID.INVALID_ID
+	return ResourceUID.text_to_id(first_line.substr(start, end - start))
+
+
+func _registered_uid_for_path(path: String) -> int:
+	var uid_text := ResourceUID.path_to_uid(path)
+	if not uid_text.begins_with("uid://"):
+		return ResourceUID.INVALID_ID
+	return ResourceUID.text_to_id(uid_text)
+
+
+func _output_paths(manifest: Dictionary) -> Dictionary:
+	var paths: Dictionary = ROOM_BAKE_PATHS.for_room_id(str(manifest.get("room_id", "")))
+	if paths.is_empty():
+		return {}
+	return {
+		"runtime_scene_path": paths["runtime_scene_path"],
+		"terrain_scene_path": paths["terrain_scene_path"],
+		"room_resource_path": paths["room_resource_path"],
+	}
+
+
+func _staged_paths(outputs: Dictionary) -> Dictionary:
+	return _marked_paths(outputs, ".stage")
+
+
+func _backup_paths(outputs: Dictionary) -> Dictionary:
+	return _marked_paths(outputs, ".backup")
+
+
+func _marked_paths(outputs: Dictionary, marker: String) -> Dictionary:
+	var result: Dictionary = {}
+	for output_key: String in outputs:
+		result[output_key] = _marked_path(outputs[output_key], marker)
+	return result
+
+
+func _marked_path(path: String, marker: String) -> String:
+	var extension_start := path.rfind(".")
+	return "%s%s%s" % [path.left(extension_start), marker, path.substr(extension_start)]
+
+
+func _output_key_for_path(outputs: Dictionary, output_path: String) -> String:
+	for output_key: String in outputs:
+		if outputs[output_key] == output_path:
+			return output_key
+	return ""
+
+
+func _result(ok: bool, errors: Array[String], warnings: Array[String]) -> Dictionary:
+	return {"ok": ok, "errors": errors, "warnings": warnings}
+
+
+func _failure(error: String, warnings: Array[String] = []) -> Dictionary:
+	return _result(false, [error], warnings)
+
+
+func _with_warnings(result: Dictionary, warnings: Array[String]) -> Dictionary:
+	var combined_warnings := _copy_strings(result.get("warnings", []))
+	combined_warnings.append_array(warnings)
+	result["warnings"] = combined_warnings
+	return result
+
+
+func _copy_strings(values: Variant) -> Array[String]:
+	var result: Array[String] = []
+	for value: Variant in values:
+		result.append(str(value))
+	return result

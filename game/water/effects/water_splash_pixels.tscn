@@ -1,0 +1,8 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://game/water/effects/water_splash_pixels.gd" id="1_splash"]
+
+[node name="WaterSplashPixels" type="Node2D"]
+script = ExtResource("1_splash")
+autoplay = false
+free_when_done = true

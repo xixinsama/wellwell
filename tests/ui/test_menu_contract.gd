@@ -5,6 +5,7 @@ func run() -> Array[String]:
 	for path: String in [
 		"res://scenes/ui/main_menu.tscn",
 		"res://scenes/ui/save_slots.tscn",
+		"res://scenes/ui/world_select.tscn",
 		"res://scenes/ui/settings.tscn",
 	]:
 		if not ResourceLoader.exists(path, "PackedScene"):

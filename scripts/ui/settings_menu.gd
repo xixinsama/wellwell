@@ -3,122 +3,223 @@ extends Control
 
 signal back_requested
 
-@onready var language_option: OptionButton = %LanguageOption
-@onready var display_mode_option: OptionButton = %DisplayModeOption
-@onready var master_slider: HSlider = %MasterSlider
-@onready var music_slider: HSlider = %MusicSlider
-@onready var sfx_slider: HSlider = %SfxSlider
-@onready var master_value: Label = %MasterValue
-@onready var music_value: Label = %MusicValue
-@onready var sfx_value: Label = %SfxValue
-@onready var fog_toggle: CheckButton = %FogToggle
-@onready var camera_shake_toggle: CheckButton = %CameraShakeToggle
-@onready var one_way_drop_toggle: CheckButton = %OneWayDropToggle
+const CATALOG := preload("res://scripts/save/settings_catalog.gd")
+
+@onready var panel: PanelContainer = $Panel
+@onready var tabs: HBoxContainer = %Tabs
+@onready var page_host: MarginContainer = %PageHost
 @onready var reset_button: Button = %ResetButton
 @onready var back_button: Button = %BackButton
+@onready var input_mapping_menu: Control = %InputMappingMenu
 
 var _settings: Node
-var _syncing := false
+var _input_mapping: Node
+var _pages: Dictionary = {}
+var _tabs: Dictionary = {}
+var _active_section: StringName = CATALOG.GAME
+var _syncing_tabs := false
+
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_settings = get_node_or_null("/root/GlobalSettings")
-	language_option.item_selected.connect(_on_language_selected)
-	display_mode_option.item_selected.connect(_on_display_mode_selected)
-	master_slider.value_changed.connect(_on_audio_changed)
-	music_slider.value_changed.connect(_on_audio_changed)
-	sfx_slider.value_changed.connect(_on_audio_changed)
-	fog_toggle.toggled.connect(_on_fog_toggled)
-	camera_shake_toggle.toggled.connect(_on_camera_shake_toggled)
-	one_way_drop_toggle.toggled.connect(_on_one_way_drop_toggled)
+	_input_mapping = get_node_or_null("/root/InputMapping")
 	reset_button.pressed.connect(_reset_defaults)
 	back_button.pressed.connect(_request_back)
-	for control: Control in [language_option, display_mode_option, master_slider, music_slider, sfx_slider, fog_toggle, camera_shake_toggle, one_way_drop_toggle, reset_button, back_button]:
+	input_mapping_menu.connect("back_requested", _close_input_mapping)
+	input_mapping_menu.call("bind_service", _input_mapping)
+	for control: Control in [reset_button, back_button]:
 		control.mouse_entered.connect(control.grab_focus)
+	_collect_tabs()
+	_collect_pages()
+	_select_section(_active_section)
 	hide()
+
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_TRANSLATION_CHANGED and is_node_ready():
-		_refresh_options()
+		_refresh_tab_text()
+
 
 func _unhandled_input(event: InputEvent) -> void:
-	if visible and event.is_action_pressed("ui_cancel"):
+	if input_mapping_menu.visible or not visible:
+		return
+	if event.is_action_pressed("ui_cancel"):
 		_request_back()
 		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("ui_page_up"):
+		_cycle_section(-1)
+		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("ui_page_down"):
+		_cycle_section(1)
+		get_viewport().set_input_as_handled()
+	elif event is InputEventJoypadButton and event.pressed:
+		var button := (event as InputEventJoypadButton).button_index
+		if button == JOY_BUTTON_LEFT_SHOULDER:
+			_cycle_section(-1)
+			get_viewport().set_input_as_handled()
+		elif button == JOY_BUTTON_RIGHT_SHOULDER:
+			_cycle_section(1)
+			get_viewport().set_input_as_handled()
+
 
 func open_menu() -> void:
-	show()
-	_sync_from_settings()
-	language_option.grab_focus.call_deferred()
-
-func _sync_from_settings() -> void:
 	if _settings == null:
+		_settings = get_node_or_null("/root/GlobalSettings")
+		for page: SettingsPage in _pages.values():
+			page.bind_service(_settings)
+	input_mapping_menu.hide()
+	panel.show()
+	show()
+	_select_section(_active_section)
+	_pages[_active_section].refresh()
+	var first: Control = _pages[_active_section].focus_control()
+	if first != null:
+		first.grab_focus.call_deferred()
+
+
+func bind_settings_dependencies(settings: Node, input_mapping: Node) -> void:
+	_settings = settings
+	_input_mapping = input_mapping
+	for page: SettingsPage in _pages.values():
+		page.bind_service(settings)
+	input_mapping_menu.call("bind_service", _input_mapping)
+	if visible:
+		_pages[_active_section].refresh()
+
+
+func _collect_tabs() -> void:
+	for child: Node in tabs.get_children():
+		if not child is Button:
+			continue
+		var button := child as Button
+		var section := StringName(button.get_meta("section", ""))
+		if section == &"":
+			continue
+		_tabs[section] = button
+		button.toggled.connect(_on_tab_toggled.bind(section))
+		button.gui_input.connect(_on_tab_gui_input.bind(section))
+	_refresh_tab_text()
+
+
+func _collect_pages() -> void:
+	for child: Node in page_host.get_children():
+		if not child is SettingsPage:
+			continue
+		var page := child as SettingsPage
+		_pages[page.section] = page
+		page.bind_service(_settings)
+		page.action_requested.connect(_on_page_action)
+
+
+func _refresh_tab_text() -> void:
+	for section: StringName in _tabs:
+		var metadata: Dictionary = CATALOG.section_metadata(section)
+		if not metadata.is_empty():
+			(_tabs[section] as Button).text = tr(String(metadata["label_key"]))
+
+
+func _select_section(section: StringName, focus_content := false) -> void:
+	if not _pages.has(section) or not _tabs.has(section):
 		return
-	_syncing = true
-	_refresh_options()
-	language_option.select(0 if _settings.get_locale() == "en" else 1)
-	display_mode_option.select(1 if _settings.get_display_mode() == "fullscreen" else 0)
-	master_slider.value = _settings.get_master_volume()
-	music_slider.value = _settings.get_music_volume()
-	sfx_slider.value = _settings.get_sfx_volume()
-	fog_toggle.button_pressed = _settings.is_fog_enabled()
-	camera_shake_toggle.button_pressed = _settings.is_camera_shake_enabled()
-	one_way_drop_toggle.button_pressed = _settings.is_one_way_drop_enabled()
-	_update_volume_labels()
-	_syncing = false
+	_active_section = section
+	_syncing_tabs = true
+	for id: StringName in _tabs:
+		(_tabs[id] as Button).set_pressed_no_signal(id == section)
+	_syncing_tabs = false
+	for id: StringName in _pages:
+		(_pages[id] as Control).visible = id == section
+	if visible:
+		_pages[section].refresh()
+	_wire_focus(section)
+	if focus_content:
+		_focus_page(section)
 
-func _refresh_options() -> void:
-	var language_index := language_option.selected
-	var display_index := display_mode_option.selected
-	language_option.clear()
-	language_option.add_item(tr("SETTINGS_LANGUAGE_ENGLISH"), 0)
-	language_option.add_item(tr("SETTINGS_LANGUAGE_CHINESE"), 1)
-	display_mode_option.clear()
-	display_mode_option.add_item(tr("SETTINGS_WINDOWED"), 0)
-	display_mode_option.add_item(tr("SETTINGS_FULLSCREEN"), 1)
-	if language_index >= 0:
-		language_option.select(language_index)
-	if display_index >= 0:
-		display_mode_option.select(display_index)
 
-func _on_language_selected(index: int) -> void:
-	if _syncing or _settings == null:
+func _wire_focus(section: StringName) -> void:
+	var page: SettingsPage = _pages[section]
+	var tab: Button = _tabs[section]
+	var first := page.focus_control()
+	if first == null:
 		return
-	_settings.set_locale("en" if index == 0 else "zh_CN")
+	first.focus_neighbor_top = first.get_path_to(tab)
+	tab.focus_neighbor_bottom = tab.get_path_to(first)
 
-func _on_display_mode_selected(index: int) -> void:
-	if _syncing or _settings == null:
+
+func _focus_page(section: StringName) -> void:
+	var first := (_pages[section] as SettingsPage).focus_control()
+	if first != null:
+		first.grab_focus.call_deferred()
+
+
+func _cycle_section(delta: int, focus_content := true) -> void:
+	var ids: Array[StringName] = []
+	for metadata: Dictionary in CATALOG.sections():
+		ids.append(metadata["id"])
+	var index := ids.find(_active_section)
+	if index < 0:
+		index = 0
+	else:
+		index = wrapi(index + delta, 0, ids.size())
+	_select_section(ids[index], focus_content)
+	if not focus_content:
+		(_tabs[ids[index]] as Button).grab_focus.call_deferred()
+
+
+func _on_tab_toggled(enabled: bool, section: StringName) -> void:
+	if _syncing_tabs:
 		return
-	_settings.set_display_mode("fullscreen" if index == 1 else "windowed")
+	if enabled:
+		_select_section(section)
+	elif section == _active_section:
+		(_tabs[section] as Button).set_pressed_no_signal(true)
 
-func _on_audio_changed(_value: float) -> void:
-	_update_volume_labels()
-	if _syncing or _settings == null:
-		return
-	_settings.set_audio_volumes(master_slider.value, music_slider.value, sfx_slider.value)
 
-func _on_fog_toggled(enabled: bool) -> void:
-	if not _syncing and _settings != null:
-		_settings.set_fog_enabled(enabled)
+func _on_tab_gui_input(event: InputEvent, _section: StringName) -> void:
+	if event.is_action_pressed("ui_left"):
+		_cycle_section(-1, false)
+		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("ui_right"):
+		_cycle_section(1, false)
+		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("ui_down"):
+		_focus_page(_active_section)
+		get_viewport().set_input_as_handled()
 
-func _on_camera_shake_toggled(enabled: bool) -> void:
-	if not _syncing and _settings != null:
-		_settings.set_camera_shake_enabled(enabled)
 
-func _on_one_way_drop_toggled(enabled: bool) -> void:
-	if not _syncing and _settings != null:
-		_settings.set_one_way_drop_enabled(enabled)
+func _on_page_action(key: StringName) -> void:
+	if key == &"input_mapping":
+		_open_input_mapping()
+
+
+func _open_input_mapping() -> void:
+	panel.hide()
+	input_mapping_menu.call("open_menu")
+
+
+func _close_input_mapping() -> void:
+	input_mapping_menu.hide()
+	panel.show()
+	_select_section(_active_section)
+	var page: SettingsPage = _pages[_active_section]
+	var control: Control = page.focus_control_for(&"input_mapping")
+	if control == null:
+		control = page.focus_control()
+	if control != null:
+		control.grab_focus.call_deferred()
+
 
 func _reset_defaults() -> void:
-	if _settings != null:
-		_settings.reset_defaults()
-	_sync_from_settings()
+	if _settings != null and _settings.has_method("reset_defaults"):
+		_settings.call("reset_defaults")
+	if _input_mapping != null and _input_mapping.has_method("restore_defaults"):
+		_input_mapping.call("restore_defaults")
+	for page: SettingsPage in _pages.values():
+		page.refresh()
 
-func _update_volume_labels() -> void:
-	master_value.text = "%d%%" % roundi(master_slider.value * 100.0)
-	music_value.text = "%d%%" % roundi(music_slider.value * 100.0)
-	sfx_value.text = "%d%%" % roundi(sfx_slider.value * 100.0)
 
 func _request_back() -> void:
+	if input_mapping_menu.visible:
+		return
 	hide()
 	back_requested.emit()

@@ -1,16 +1,18 @@
 extends Node
 
-const SAVE_SNAPSHOT := preload("res://scripts/save/save_snapshot.gd")
-const SAVE_MANAGER := preload("res://scripts/save/save_manager.gd")
+const SAVE_SNAPSHOT := preload("res://addons/platformer_kit/save/save_snapshot.gd")
+const SAVE_MANAGER := preload("res://addons/platformer_kit/save/save_manager.gd")
 
 class EmptyStorage extends RefCounted:
 	var write_count := 0
+	var last_written: RefCounted
 
 	func read_slot(_slot: int) -> RefCounted:
 		return null
 
-	func write_slot(_snapshot: RefCounted) -> bool:
+	func write_slot(snapshot: RefCounted) -> bool:
 		write_count += 1
+		last_written = snapshot
 		return true
 
 	func delete_slot(_slot: int) -> bool:
@@ -19,11 +21,13 @@ class EmptyStorage extends RefCounted:
 func run() -> Array[String]:
 	var failures: Array[String] = []
 	_assert_manager_does_not_create_slot_on_ready(failures)
+	_assert_prepare_slot_does_not_persist_or_select(failures)
+	_assert_resume_api_uses_the_active_snapshot(failures)
 	var source: RefCounted = SAVE_SNAPSHOT.new()
 	source.slot = 1
 	source.world_id = "world_01"
 	source.current_room_id = "room_a"
-	source.add_explored_chunk("world_01:chunk:0,0")
+	source.set_module_state(&"test_module", {"chunk": "world_01:chunk:0,0"})
 	source.set_entity_state("world_01:room_a:switch", {"activated": true})
 	var restored: RefCounted = SAVE_SNAPSHOT.from_dictionary(source.to_dictionary())
 	if restored == null:
@@ -31,11 +35,31 @@ func run() -> Array[String]:
 		return failures
 	if restored.world_id != "world_01" or restored.current_room_id != "room_a":
 		failures.append("room progress did not round trip")
-	if not restored.has_explored_chunk("world_01:chunk:0,0"):
-		failures.append("explored chunk did not round trip")
+	if restored.get_module_state(&"test_module").get("chunk", "") != "world_01:chunk:0,0":
+		failures.append("module state did not round trip")
 	if not bool(restored.get_entity_state("world_01:room_a:switch").get("activated", false)):
 		failures.append("entity state did not round trip")
 	return failures
+
+
+func _assert_prepare_slot_does_not_persist_or_select(failures: Array[String]) -> void:
+	var storage := EmptyStorage.new()
+	var manager: Node = SAVE_MANAGER.new()
+	manager.setup_storage(storage)
+	if not manager.has_method("prepare_slot") or not manager.has_method("activate_snapshot"):
+		failures.append("save manager is missing transactional slot startup APIs")
+		manager.free()
+		return
+	var snapshot: RefCounted = manager.call("prepare_slot", 2)
+	if snapshot == null or snapshot.slot != 2:
+		failures.append("prepare_slot did not create an in-memory snapshot")
+	if storage.write_count != 0 or manager.selected_slot != 0 or manager.current_snapshot != null:
+		failures.append("prepare_slot persisted or selected a slot before world readiness")
+	if not manager.call("activate_snapshot", snapshot):
+		failures.append("activate_snapshot rejected the prepared snapshot")
+	if storage.write_count != 1 or manager.selected_slot != 2 or manager.current_snapshot != snapshot:
+		failures.append("activate_snapshot did not persist and select the ready slot")
+	manager.free()
 
 func _assert_manager_does_not_create_slot_on_ready(failures: Array[String]) -> void:
 	var storage := EmptyStorage.new()
@@ -44,4 +68,26 @@ func _assert_manager_does_not_create_slot_on_ready(failures: Array[String]) -> v
 	manager.call("_ready")
 	if storage.write_count != 0:
 		failures.append("save manager created a slot before the player selected one")
+	manager.free()
+
+
+func _assert_resume_api_uses_the_active_snapshot(failures: Array[String]) -> void:
+	var storage := EmptyStorage.new()
+	var manager: Node = SAVE_MANAGER.new()
+	manager.setup_storage(storage)
+	if manager.call("set_resume_state", Vector2(1, 2), Vector2(3, 4), true):
+		failures.append("save manager accepted resume data without an active snapshot")
+	var snapshot: RefCounted = SAVE_SNAPSHOT.new()
+	snapshot.slot = 1
+	manager.current_snapshot = snapshot
+	if not manager.call("set_resume_state", Vector2(4, 8), Vector2(1, 0), true):
+		failures.append("save manager rejected valid resume data")
+	if snapshot.has_resume != true or snapshot.resume_position != Vector2(4, 8) or snapshot.resume_velocity != Vector2(1, 0):
+		failures.append("save manager did not write resume data to the active snapshot")
+	if storage.write_count != 1 or storage.last_written != snapshot:
+		failures.append("immediate resume write did not commit the active snapshot")
+	if not manager.call("clear_resume_state", true):
+		failures.append("save manager rejected clearing resume data")
+	if snapshot.has_resume or storage.write_count != 2:
+		failures.append("clearing resume data did not persist the change")
 	manager.free()

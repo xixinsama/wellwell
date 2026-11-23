@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="RoomData" format=3 uid="uid://dnk618heg82er"]
+
+[ext_resource type="Script" path="res://addons/platformer_kit/world/data/room_data.gd" id="1_fqh74"]
+
+[resource]
+script = ExtResource("1_fqh74")
+room_id = "loop_relay"
+display_name = "终点滑轨 · Relay Shaft"
+scene_path = "res://scenes/rooms/generated/loop_relay/runtime.tscn"
+source_scene_path = "res://scenes/levels/loop/loop_relay.tscn"
+source_fingerprint = "8273e03a03bf958229a4c86fcd268ca7a1fa032408927bc045c3373097e26d68"
+terrain_scene_path = "res://scenes/rooms/generated/loop_relay/terrain.tscn"
+entrance_ids = PackedStringArray("east", "south")
+spawn_ids = PackedStringArray("checkpoint", "from_gallery", "start")
+entity_ids = PackedStringArray()
+tags = PackedStringArray()

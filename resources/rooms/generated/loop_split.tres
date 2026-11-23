@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="RoomData" format=3 uid="uid://bsnruwphxlxpv"]
+
+[ext_resource type="Script" path="res://addons/platformer_kit/world/data/room_data.gd" id="1_74n78"]
+
+[resource]
+script = ExtResource("1_74n78")
+room_id = "loop_split"
+display_name = "断桥水道 · Broken Crossing"
+scene_path = "res://scenes/rooms/generated/loop_split/runtime.tscn"
+source_scene_path = "res://scenes/levels/loop/loop_split.tscn"
+source_fingerprint = "6163f0c00810a863e847acb0556f9606a6ea84458546f91ec8ba1f7313978145"
+terrain_scene_path = "res://scenes/rooms/generated/loop_split/terrain.tscn"
+entrance_ids = PackedStringArray("north", "west")
+spawn_ids = PackedStringArray("from_entry", "start")
+entity_ids = PackedStringArray()
+tags = PackedStringArray()

@@ -1,0 +1,45 @@
+[gd_scene format=3 uid="uid://skcmdtswunsw"]
+
+[ext_resource type="Script" path="res://addons/platformer_kit/world/entities/spawn_point.gd" id="1_jkc1o"]
+[ext_resource type="Script" path="res://addons/fluid_kit/runtime/water/fluid_region.gd" id="2_nl6j1"]
+[ext_resource type="Script" path="res://addons/fluid_kit/runtime/gas/fog_light.gd" id="3_kubw5"]
+[ext_resource type="Script" path="res://scripts/world/fog_zone.gd" id="4_0htw2"]
+
+[node name="RoomRuntimeContent" type="Node2D" unique_id=572160897]
+
+[node name="Entities" type="Node2D" parent="." unique_id=1643432196]
+
+[node name="StartSpawn" type="Marker2D" parent="Entities" unique_id=680032690]
+position = Vector2(44, 96)
+script = ExtResource("1_jkc1o")
+spawn_id = "start"
+
+[node name="FluidRegionBasin" type="Node2D" parent="Entities" unique_id=1336776128]
+position = Vector2(16, 40)
+script = ExtResource("2_nl6j1")
+size_cells = Vector2i(17, 9)
+region_id = "basin"
+
+[node name="CascadeLightTop" type="Node2D" parent="Entities" unique_id=1550991653]
+position = Vector2(152, 48)
+script = ExtResource("3_kubw5")
+light_id = "grid_top"
+radius = 110.0
+energy = 0.9
+color = Color(1, 0.9, 0.72, 1)
+
+[node name="CascadeLightBottom" type="Node2D" parent="Entities" unique_id=922282436]
+position = Vector2(240, 120)
+script = ExtResource("3_kubw5")
+light_id = "grid_bottom"
+radius = 120.0
+energy = 0.8
+color = Color(0.6, 0.82, 1, 1)
+
+[node name="GridRoomLight" type="Node2D" parent="Entities" unique_id=2132983118]
+script = ExtResource("4_0htw2")
+mode = 1
+size_cells = Vector2i(40, 23)
+zone_id = "water_grid_lit"
+
+[node name="Foreground" type="Node2D" parent="." unique_id=1374582569]

@@ -22,21 +22,90 @@ SLOT_DELETE_MESSAGE,Delete Slot {slot}? This cannot be undone.,确定删除栏�
 SLOT_COPY_FAILED,Could not copy this save.,无法复制该存档。
 SLOT_DELETE_FAILED,Could not delete this save.,无法删除该存档。
 SETTINGS_TITLE,Settings,设置
+SETTINGS_NAV_HINT,LB / RB switch category,LB / RB 切换分类
+SETTINGS_SECTION_GAME,Game,游戏设置
+SETTINGS_SECTION_AUDIO,Audio,音频设置
+SETTINGS_SECTION_VIDEO,Video,视频设置
+SETTINGS_SECTION_CONTROLS,Controls,操作设置
 SETTINGS_LANGUAGE,Language,语言
 SETTINGS_LANGUAGE_ENGLISH,English,English
 SETTINGS_LANGUAGE_CHINESE,Chinese,中文
-SETTINGS_DISPLAY_MODE,Display Mode,显示模式
-SETTINGS_WINDOWED,Windowed,窗口
-SETTINGS_FULLSCREEN,Fullscreen,全屏
+SETTINGS_DESC_LANGUAGE,"Changes apply immediately to menus and prompts",切换后立即生效，菜单与提示同步更新
+SETTINGS_FOG,Fog of War,战争迷雾
+SETTINGS_DESC_FOG,Hide rooms you have not explored,隐藏尚未探索的房间区域
+SETTINGS_CAMERA_SHAKE,Camera Shake,镜头抖动
+SETTINGS_DESC_CAMERA_SHAKE,Feedback for hits and landings,受击、落地与冲刺反馈
+SETTINGS_ONE_WAY_DROP,Drop Through Platforms,下穿单向平台
+SETTINGS_DESC_ONE_WAY_DROP,Press down to fall through one-way platforms,按下方向键穿过单向平台
+SETTINGS_ONE_WAY_SIGHT,One-way Platforms Block Sight,单向平台遮挡视线
+SETTINGS_DESC_ONE_WAY_SIGHT,"A one-way platform hides the space below it when you stand on top",站在单向平台上方时，下方空间视为封闭并变黑
+SETTINGS_CELESTE_MOMENTUM,Celeste Momentum,蔚蓝动量
+SETTINGS_DESC_CELESTE_MOMENTUM,"Keep pre-dash speed and apply the 1.2x ultra on down-diagonal ground hits",保留冲刺前的更高水平速度；下斜冲刺撞地时额外 ×1.2
+SETTINGS_REALTIME_SAVE,Realtime Save,实时存档
+SETTINGS_DESC_REALTIME_SAVE,"Resume at the exact spot where you left, even after quitting; death still returns to the last checkpoint.",退出后从离开时的精确位置继续；死亡仍回到最近的检查点。
 SETTINGS_MASTER_VOLUME,Master Volume,主音量
 SETTINGS_MUSIC_VOLUME,Music Volume,音乐音量
 SETTINGS_SFX_VOLUME,Sound Volume,音效音量
-SETTINGS_FOG,Fog of War,战争迷雾
-SETTINGS_CAMERA_SHAKE,Camera Shake,镜头抖动
-SETTINGS_ONE_WAY_DROP,Drop Through Platforms,下穿单向平台
+SETTINGS_MUTE_ON_FOCUS,Mute When Unfocused,离开窗口时静音
+SETTINGS_DESC_MUTE_ON_FOCUS,"Mute in other apps and restore on return",切换到其他应用时自动静音，返回后恢复
+SETTINGS_DISPLAY_MODE,Display Mode,显示模式
+SETTINGS_WINDOWED,Windowed,窗口
+SETTINGS_FULLSCREEN,Fullscreen,全屏
+SETTINGS_BORDERLESS,Borderless Fullscreen,无边框全屏
+SETTINGS_RESOLUTION,Resolution,分辨率
+SETTINGS_RESOLUTION_2X,2X · 640×360,2X · 640×360
+SETTINGS_RESOLUTION_4X,4X · 1280×720,4X · 1280×720
+SETTINGS_RESOLUTION_8X,8X · 2560×1440,8X · 2560×1440
+SETTINGS_RESOLUTION_16X,16X · 5120×2880,16X · 5120×2880
+SETTINGS_DESC_RESOLUTION,Integer scale of the 320 × 180 frame,按 320 × 180 基础画面的整数倍缩放
+SETTINGS_VSYNC,V-Sync,垂直同步
+SETTINGS_FPS_LIMIT,Frame Rate Limit,帧率上限
+SETTINGS_FPS_30,30 FPS,30 FPS
+SETTINGS_FPS_60,60 FPS,60 FPS
+SETTINGS_FPS_120,120 FPS,120 FPS
+SETTINGS_FPS_144,144 FPS,144 FPS
+SETTINGS_DESC_FPS,Render and physics share the same rate,绘制帧与物理帧使用同一数值
+SETTINGS_CRT,CRT Filter,CRT 滤镜
+SETTINGS_DESC_CRT,Scanlines and phosphor glow over the whole screen,全屏扫描线与荧光光晕，亮部保持明亮
+SETTINGS_INPUT_MAPPING,Input Mapping,按键设置
+SETTINGS_INPUT_MAPPING_OPEN,Configure,配置
+SETTINGS_DESC_INPUT_MAPPING,Open the key mapping page,打开按键映射页面
 SETTINGS_RESET,Restore Defaults,恢复默认
+INPUT_ACTION_MOVE_LEFT,Move Left,向左移动
+INPUT_ACTION_MOVE_RIGHT,Move Right,向右移动
+INPUT_ACTION_MOVE_UP,Move Up,向上移动
+INPUT_ACTION_MOVE_DOWN,Move Down,向下移动
+INPUT_ACTION_JUMP,Jump,跳跃
+INPUT_ACTION_DASH,Dash,冲刺
+INPUT_ACTION_INTERACT,Interact,互动
+INPUT_ACTION_SWITCH_MODE,Switch Mode,切换滑块模式
+INPUT_ACTION_UNDO,Undo,撤销
+INPUT_ACTION_RESET,Reset,重置
+INPUT_ACTION_SLIDER_PREV,Previous Slider,上一个滑块
+INPUT_ACTION_SLIDER_NEXT,Next Slider,下一个滑块
+INPUT_ACTION_SLIDER_SELECT_RIDER,Select Ridden Slider,选中骑乘滑块
+INPUT_ACTION_SLIDER_CANCEL,Cancel Selection,取消选中
+INPUT_ACTION_AIM_LEFT,Aim Left,右摇杆向左
+INPUT_ACTION_AIM_RIGHT,Aim Right,右摇杆向右
+INPUT_ACTION_AIM_UP,Aim Up,右摇杆向上
+INPUT_ACTION_AIM_DOWN,Aim Down,右摇杆向下
 COMMON_BACK,Back,返回
 COMMON_CONFIRM,Confirm,确认
 COMMON_CANCEL,Cancel,取消
 COMMON_ON,On,开
 COMMON_OFF,Off,关
+SLOT_START_FAILED,Could not start this save.,无法启动此存档。
+WORLD_SELECT_TITLE,Select Map,选择地图
+WORLD_SELECT_SUBTITLE,Choose a world to enter,选择要进入的世界
+WORLD_SELECT_ENTER,Enter,进入
+WORLD_SELECT_EMPTY,No worlds configured,没有配置世界
+SETTINGS_ATMOSPHERE,Gas Simulation,气体模拟
+SETTINGS_DESC_ATMOSPHERE,Toggle the three drifting gas layers in the air,开关空气中三层不同密度的流动气体
+MAP_TITLE,World Map,世界地图
+MAP_STYLE_PRECISE,Precise,精准
+MAP_STYLE_GRID,Grid,网格
+MAP_HINT,Tab switch style / M or Esc close / Wheel zoom,按 Tab 切换样式 / M 或 Esc 关闭 / 滚轮缩放
+MAP_LEGEND_PRECISE,Solid / One-way / Glass / Ladder / Crumble - only explored cells are drawn,实心 / 单向 / 玻璃 / 梯子 / 崩塌 - 只画已探索的格子
+MAP_LEGEND_GRID,Brightness = how much of the room has been explored,亮度 = 该房间的已探索比例
+SETTINGS_ROOM_TRANSITION,Smooth Room Transition,房间转场滑动
+SETTINGS_DESC_ROOM_TRANSITION,Off cuts straight to the next room; on glides the camera and hides the rebuild behind a short fade,房间切换是否用相机滑动过渡；关闭则瞬移切到下一个房间，所有图层当帧就绪
