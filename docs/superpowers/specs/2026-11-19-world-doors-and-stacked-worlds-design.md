@@ -152,7 +152,7 @@ plus arrows for both door kinds, so the view was rebuilt:
   return trip, cross-world swap and rollback), `test_world_stack_model`,
   `test_world_layout_model` (free-chunk search).
 - The full runtime suite passes headless.
-- Gameplay was verified in `test_world_runner.tscn` with scripted input: walking
+- Gameplay was verified in `runners/test_world_runner.tscn` with scripted input: walking
   into a portal switched rooms and landed the player on the partner arrival
   without bouncing; touching a shuttle door swapped `test_world` → `the_world`
   (rooms `room_00_00`/`room_01_00` loaded) and an injected return door brought the

@@ -243,7 +243,7 @@ slider-mode Z is unambiguous.
 
 ## Room Start 00
 
-The authored `scenes/levels/main/room_start_00.tscn` gets a ninth bottom-left
+The authored `scenes/levels/main_world/room_start_00.tscn` gets a ninth bottom-left
 void slider:
 
 - class: `PuzzleTilePiece`
@@ -324,7 +324,7 @@ Implemented files:
 - `scripts/puzzle/systems/puzzle_session.gd`
 - `scripts/puzzle/view/puzzle_board.gd`
 - `project.godot`
-- `scenes/levels/main/room_start_00.tscn`
+- `scenes/levels/main_world/room_start_00.tscn`
 
 Tests:
 

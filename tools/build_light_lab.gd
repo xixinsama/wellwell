@@ -13,7 +13,7 @@ const ROOM_BAKER := preload("res://addons/world_editor/authoring/room/room_baker
 const WATER_GRID_SCRIPT: Script = preload("res://addons/fluid_kit/runtime/water/water_grid.gd")
 const LIGHT_FIELD_SCRIPT: Script = preload("res://scripts/world/light_field.gd")
 
-const SOURCE_PATH := "res://scenes/levels/test/light_lab.tscn"
+const SOURCE_PATH := "res://scenes/levels/test_world/light_lab.tscn"
 const ROOM_ID := "light_lab"
 const ROOM_RESOURCE_PATH := "res://resources/rooms/generated/light_lab.tres"
 const WORLD_PATH := "res://resources/worlds/test_world.tres"

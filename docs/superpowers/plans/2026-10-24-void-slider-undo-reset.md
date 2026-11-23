@@ -36,7 +36,7 @@
 - Modify: `scripts/puzzle/view/puzzle_board.gd` — turn sync, V selection/guard, Z/R.
 - Modify: `scripts/player/player_controller.gd` / `scenes/player/player.tscn` — already have void mask; verify.
 - Modify: `project.godot` — `undo` Z, `reset` R.
-- Modify: `scenes/levels/main/room_start_00.tscn` — bottom-left void piece; remove empty static VoidZone.
+- Modify: `scenes/levels/main_world/room_start_00.tscn` — bottom-left void piece; remove empty static VoidZone.
 - Modify: `tests/puzzle/test_puzzle_tile_piece.gd` — void tile piece coverage.
 - Modify: `tests/puzzle/test_puzzle_room_contract.gd` — room start? New source contract.
 - Modify: `tests/runtime_suite.gd` — register new tests.
@@ -881,7 +881,7 @@ git commit -m "feat: add slider-mode undo and reset"
 ### Task 6: Author the bottom-left void piece in `room_start_00`
 
 **Files:**
-- Modify: `scenes/levels/main/room_start_00.tscn`
+- Modify: `scenes/levels/main_world/room_start_00.tscn`
 - Test: `tests/puzzle/test_puzzle_room_contract.gd` or new `test_start_room_void.gd`
 
 - [ ] **Step 1: Add a failing source-room contract test**
@@ -890,7 +890,7 @@ Create `tests/puzzle/test_start_room_void.gd`:
 
 ```gdscript
 extends Node
-const SOURCE := "res://scenes/levels/main/room_start_00.tscn"
+const SOURCE := "res://scenes/levels/main_world/room_start_00.tscn"
 
 func run() -> Array[String]:
     var failures: Array[String] = []
@@ -965,7 +965,7 @@ Expected: exit code 0.
 - [ ] **Step 6: Commit (do not commit user-owned generated/world files)**
 
 ```bash
-git add scenes/levels/main/room_start_00.tscn tests/puzzle/test_start_room_void.gd tests/runtime_suite.gd
+git add scenes/levels/main_world/room_start_00.tscn tests/puzzle/test_start_room_void.gd tests/runtime_suite.gd
 git commit -m "feat: add the room_start_00 void slider"
 ```
 

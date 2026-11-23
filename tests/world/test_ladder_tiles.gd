@@ -51,7 +51,7 @@ func _assert_template_and_room_bake(script: Script, failures: Array[String]) -> 
 	if template_root.get_node_or_null("RoomContent/Terrain/LadderAreaBuilder") == null:
 		failures.append("level template has no LadderAreaBuilder")
 	template_root.free()
-	var room_path := "res://scenes/levels/room_01_00.tscn"
+	var room_path := "res://scenes/levels/the_world/room_01_00.tscn"
 	var packed := load(room_path) as PackedScene
 	if packed == null:
 		failures.append("room_01_00 is missing")

@@ -353,8 +353,8 @@ See `docs/fog-zones-and-crumble.md` for the full rules and the test world.
   ability or a switch instead.
 - `CrumbleRuntime` shakes a crumble cell for 0.25 s, erases it, and writes it
   back after 1.5 s; leaving the room restores everything.
-- `scenes/levels/test/test_world_runner.tscn` starts the test world directly;
-  edit `scenes/levels/test/*.tscn`, bake, then run the runner.
+- `scenes/levels/test_world/runners/test_world_runner.tscn` starts the test world directly;
+  edit `scenes/levels/test_world/*.tscn`, bake, then run the runner.
 
 ## Water and Gas
 
@@ -379,7 +379,7 @@ guide. In short:
   live. Add `GasInteractor` nodes to entities that should push, emit or blast gas.
   Add a `LIGHT` `FogZone` covering any room with water, otherwise the exploration
   fog clips the pools and the gas into a black band.
-- Regenerate `scenes/levels/test/water_hall.tscn` with
+- Regenerate `scenes/levels/test_world/water_hall.tscn` with
   `godot --headless --path . -s res://tools/build_water_room.gd`. The room is
   generated rather than inherited from the template, so change the generator for
   layout edits.
@@ -410,9 +410,9 @@ bridge over a pool, falling platforms with a swimmable low road, a
 rider-triggered elevator, two conveyors, a dash pickup and a dash gap that drops
 back into the starting room.
 
-- `scenes/levels/loop/*.tscn` are the editable source rooms; bake them before
+- `scenes/levels/loop_world/*.tscn` are the editable source rooms; bake them before
   running the world.
-- `scenes/levels/loop/loop_runner.tscn` starts the world directly with the debug
+- `scenes/levels/loop_world/loop_runner.tscn` starts the world directly with the debug
   HUD and overlay enabled.
 - The elevator is `ElevatorMotionComponent2D` (rider-triggered, returns by
   itself); pair it with a rider trigger whose `trigger_once` is false.

@@ -2,7 +2,7 @@ extends Node
 
 ## Source-scene contract for the bottom-left void slider in room_start_00.
 
-const SOURCE := "res://scenes/levels/main/room_start_00.tscn"
+const SOURCE := "res://scenes/levels/main_world/room_start_00.tscn"
 
 
 func run() -> Array[String]:

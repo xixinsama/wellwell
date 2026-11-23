@@ -6,7 +6,7 @@ extends Node
 const BUILDER_PATH := "res://scripts/world/spike_hazard_area_builder.gd"
 const TILESET_PATH := "res://resources/tilesets/primordial_tileset.tres"
 const TEMPLATE_PATH := "res://scenes/rooms/template/level_template.tscn"
-const ROOM_PATH := "res://scenes/levels/room_01_00.tscn"
+const ROOM_PATH := "res://scenes/levels/the_world/room_01_00.tscn"
 const ROOM_BAKER := preload("res://addons/world_editor/authoring/room/room_baker.gd")
 const SPIKE := Vector2i(0, 8)
 

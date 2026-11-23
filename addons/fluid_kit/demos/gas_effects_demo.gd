@@ -8,7 +8,7 @@ extends Node
 ##
 ## Run this scene windowed (F6) and watch; it never stops.
 
-const RUNNER := preload("res://scenes/levels/test/gas_lab_runner.tscn")
+const RUNNER := preload("res://scenes/levels/test_world/runners/gas_lab_runner.tscn")
 const PILLAR_SIZE := Vector2(8.0, 32.0)
 const ROOM_EXPLOSION := Vector2(176.0, 92.0)
 const ROOM_SWEEP_CENTER := Vector2(128.0, 96.0)

@@ -128,7 +128,7 @@ FogDoor (Node2D, z_index 2)
 
 - Delete `scripts/world/fog_door.gd` and its `.uid`.
 - Remove the `script` and `door_id` overrides from
-  `scenes/levels/test/test_fog_start.tscn` and the matching lines in
+  `scenes/levels/test_world/test_fog_start.tscn` and the matching lines in
   `scenes/rooms/generated/test_fog_start/runtime.tscn`, so the deleted script is
   not referenced. A later bake produces the same scene.
 - Rebuild `tests/world/test_fog_door.gd` around the components, and assert the

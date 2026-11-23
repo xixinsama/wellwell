@@ -134,7 +134,7 @@ $godot = "D:\Godot4\Godot_v4.7.2-stable_win64.exe\Godot_v4.7.2-stable_win64.exe"
 # 整帧 + 每个顶层节点 solo + z 阶梯 + 各系统遮罩 + 层清单
 & $godot --path . --resolution 1280x720 `
     -s res://scripts/tools/render_inspector.gd -- `
-    --scene res://scenes/levels/test/light_lab_runner.tscn --out C:/tmp/layers
+    --scene res://scenes/levels/test_world/runners/light_lab_runner.tscn --out C:/tmp/layers
 ```
 
 - `solo_*.png`：每个**顶层世界节点**单独一张（`render_inspector.gd:265-284`）。三层瓦片不是顶层节点，所以没有 `solo_backtiles.png`；要看的是 `solo_terrainroot.png`（`render_inspector.gd:32-36` 的图例顺序）。

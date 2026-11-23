@@ -1,12 +1,12 @@
 # 组件样板间
 
-`scenes/levels/test/components_gallery.tscn` 是一个两屏宽（2×1 区块）的房间，把平台、
+`scenes/levels/test_world/components_gallery.tscn` 是一个两屏宽（2×1 区块）的房间，把平台、
 视野和实体组件各摆了一份，**每个站点都是一个可以整段复制的节点**。
 
 - 直接预览：在编辑器里打开这个场景按 **F6**。场景自带玩家、相机和迷雾
   （`PreviewOnly`），门、幻影墙、遮挡都能正常工作，不需要先烘焙。
 - 在世界里跑：它已经烘焙并注册进测试世界（区块 `(3, 1)`），从世界编辑器打开
-  测试世界、或跑 `scenes/levels/test/test_world_runner.tscn` 都能进去。
+  测试世界、或跑 `scenes/levels/test_world/runners/test_world_runner.tscn` 都能进去。
 
 ## 怎么复制
 

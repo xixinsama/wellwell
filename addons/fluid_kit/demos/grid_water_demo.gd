@@ -7,7 +7,7 @@ extends Node
 ## through the hole. The rock column inside the region shows the other rule: a
 ## wall inside the region takes its own volume away.
 
-const RUNNER := preload("res://scenes/levels/test/water_grid_runner.tscn")
+const RUNNER := preload("res://scenes/levels/test_world/runners/water_grid_runner.tscn")
 
 
 func _ready() -> void:

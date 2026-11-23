@@ -71,7 +71,7 @@ World 编辑器顶部 **Draw Room** 进入拖框模式：在画布上按区块�
 释放后自动：
 
 1. 用 `scenes/rooms/template/level_template.tscn` 生成实体-only 源场景
-   `scenes/levels/generated/<world_id>/<room_id>.tscn`，`room_size_chunks` / `world_origin_chunk`
+   `scenes/levels/<world_id>/<room_id>.tscn`，`room_size_chunks` / `world_origin_chunk`
    按画出的矩形写入，`StartSpawn` 放到房间中心；
 2. 若世界还没有地形场景，先按模板创建一个；
 3. 走现有导入流程（placement + 切片烘焙 + 世界保存）；
@@ -88,7 +88,7 @@ World 编辑器顶部 **Draw Room** 进入拖框模式：在画布上按区块�
 
 - 选中房间的并集必须**刚好是一个矩形**，否则拒绝并提示；
 - 新房间 id 默认 `merged_<x>_<y>`，源场景写到
-  `scenes/levels/generated/<world_id>/<id>.tscn`；
+  `scenes/levels/<world_id>/<id>.tscn`；
 - 各成员的 `Entities` / `Foreground` 节点按世界坐标重定基后合并进新源场景（实例化预制体保留，
   重复的出生点/入口/持久实体 id 会报错并要求先改名）；
 - 连接两端指向被合并房间的，改指向新房间；起始房间在其中时改到新房间的对应 spawn；

@@ -12,7 +12,7 @@
 2. 新增自动打乱组件：盘面由等大的滑块组成、存在一个或多个虚空滑块时，加载时通过
    合法滑动（围绕虚空）把盘面打乱，并让打乱结果成为新的初始布局；兼容第 1 个组件，
    也兼容手工摆放的 `PuzzleBoard`。
-3. 用 `res://scenes/levels/main/room_02_00.tscn` 做示范迁移，并重烘运行时场景。
+3. 用 `res://scenes/levels/main_world/room_02_00.tscn` 做示范迁移，并重烘运行时场景。
 
 ## 非目标
 
@@ -20,7 +20,7 @@
 - 不做非均分 / 非方形区块的自动拆分（`room_04_00` 的 L 形块保持手工）。
 - 不持久化打乱结果（离开房间再进入会重新打乱；可用非 0 `seed` 固定）。
 - 不改核心规则层（`PuzzleRuleSet` / `BoardOccupancy` / `PuzzleSession` 语义不变）。
-- 不新增美术资源；不改 `scenes/levels/room_02_00.tscn`（同名旧副本）与
+- 不新增美术资源；不改 `scenes/levels/the_world/room_02_00.tscn`（同名旧副本）与
   `the_world.tres`。
 
 ## 术语
@@ -181,7 +181,7 @@ func scramble(steps: int = 120, seed: int = 0, void_only: bool = true, avoid_rev
 - 打乱后：`R` 重置回到打乱后的布局；`Z` 没有可撤销内容；打乱不动玩家、不播动画。
 - 兼容任意 `PuzzleBoard`，不依赖 `PuzzleBoardAuto` 的私有字段。
 
-## 场景迁移：`scenes/levels/main/room_02_00.tscn`
+## 场景迁移：`scenes/levels/main_world/room_02_00.tscn`
 
 1. 用一次性 headless 脚本从现有 9 个 `PuzzleTilePiece` 读出格子，合并成两个源图层：
    - `PuzzleSourceTiles`：8 个普通区块共 392 格；

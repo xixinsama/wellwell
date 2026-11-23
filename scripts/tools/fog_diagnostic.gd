@@ -28,7 +28,7 @@ extends SceneTree
 ## `--stage=x,y` stages the player for N seconds before the captures start
 ## (`--stage-seconds`), so the reveal wave has finished and the border is settled.
 
-const DEFAULT_SCENE := "res://scenes/levels/test/test_world_runner.tscn"
+const DEFAULT_SCENE := "res://scenes/levels/test_world/runners/test_world_runner.tscn"
 const DEFAULT_OUT := "user://fog_diagnostic"
 
 var _scene_path := DEFAULT_SCENE

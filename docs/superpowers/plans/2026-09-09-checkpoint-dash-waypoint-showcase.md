@@ -30,7 +30,7 @@
 - Modify: `tests/platformer_kit/platforms/test_platform_motion.gd`
 - Modify: `tests/examples/test_movement_lab.gd`
 - Modify: `examples/movement_lab/movement_lab.tscn`
-- Modify: `scenes/levels/room_02_00.tscn`
+- Modify: `scenes/levels/the_world/room_02_00.tscn`
 - Modify: `scenes/rooms/generated/room_02_00/runtime.tscn`
 - Modify: `addons/platformer_kit/README.md`
 - Modify: `docs/extension-guide.md`

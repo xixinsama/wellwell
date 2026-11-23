@@ -45,10 +45,10 @@ scenes/rooms/generated/<room_id>/           烘焙产物（运行时加载的就
 | 方式 | 谁这么做 | 说明 |
 | :--- | :--- | :--- |
 | **自注册** | `BackdropShadow`、`NormalField`、`DustField`、`CrumbleRuntime`、`WaterField`、`WaterGrid`、`Atmosphere`、`LightField` | 在 `_ready()` 里 `world.call("register_room_extension", self)`，宿主不用管 |
-| **宿主注册** | `FogOfWar` | 它**不自注册**，必须由宿主场景（`test_world_runner.gd`、`scenes/app/main.tscn` 等）显式 `register_room_extension` 一次 |
+| **宿主注册** | `FogOfWar` | 它**不自注册**，必须由宿主场景（`runners/test_world_runner.gd`、`scenes/app/main.tscn` 等）显式 `register_room_extension` 一次 |
 | **只收信号** | `BackdropField`、`TerrainHighlight` | 不绑定房间，只连 `world_ready` 自己装饰 |
 
-`register_room_extension` 是幂等的（已在列表里就返回 false），所以 `test_world_runner.gd` 里那一长串注册调用对自注册的系统是冗余的 —— **只有 `FogOfWar` 那条是必需的**。写新 runner 时照抄那段，或至少别漏掉 fog。
+`register_room_extension` 是幂等的（已在列表里就返回 false），所以 `runners/test_world_runner.gd` 里那一长串注册调用对自注册的系统是冗余的 —— **只有 `FogOfWar` 那条是必需的**。写新 runner 时照抄那段，或至少别漏掉 fog。
 
 `LightField._bind_consumers()` 按**组名**找消费者：`fog_of_war`、`terrain_highlight`、`water_field`、`atmosphere`、`backdrop_shadow` —— 任何进了这些组且实现了 `set_light_field` 的节点都会拿到光照图。
 

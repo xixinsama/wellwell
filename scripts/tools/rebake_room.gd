@@ -10,7 +10,7 @@ func _init() -> void:
 func _run() -> void:
 	var args := OS.get_cmdline_user_args()
 	if args.size() != 1:
-		push_error("usage: -- res://scenes/levels/room_01_00.tscn")
+		push_error("usage: -- res://scenes/levels/the_world/room_01_00.tscn")
 		quit(2)
 		return
 	var packed := load(args[0]) as PackedScene

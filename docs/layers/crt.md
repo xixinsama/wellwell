@@ -8,7 +8,7 @@
 
 所以它工作在**最终画面像素**上：shader 用 `SCREEN_UV`（`scripts/shaders/crt_screen.gdshader:25`），画布固定 1280×720（`project.godot:30-33` 的 `stretch/mode="viewport"`，与实际窗口大小无关），一个设计像素 = 4 个画布像素。它不接收鼠标（`mouse_filter = 2`，`scenes/ui/crt_overlay.tscn:19`）。
 
-它不只在主场景里：关卡 runner 也自己挂一份，`scenes/levels/test/light_lab_runner.tscn:44` 实例化 `scenes/ui/crt_overlay.tscn`（那个场景的子视口是 320×180，`light_lab_runner.tscn:30-34`）。
+它不只在主场景里：关卡 runner 也自己挂一份，`scenes/levels/test_world/runners/light_lab_runner.tscn:44` 实例化 `scenes/ui/crt_overlay.tscn`（那个场景的子视口是 320×180，`runners/light_lab_runner.tscn:30-34`）。
 
 `source_size` 用来把扫描线/掩罩/色偏的周期折回设计像素。**它没有被覆盖**：两份 `ShaderMaterial` 都只写了 `shader`（`scenes/ui/crt_overlay.tscn:6-7`、`scenes/app/main.tscn:19-20`），一个 `shader_parameter/...` 都没有；`scripts/ui/crt_overlay.gd` 只改 `visible`（`:20-24`），全项目没有别处写这个 uniform。于是它一直是 shader 默认的 `vec2(322.0, 182.0)`（`crt_screen.gdshader:14`）——正好等于主场景子视口的尺寸（322×182），而窗口里**看得见的是 320×180**（容器偏移 −4 px，`scenes/app/main.tscn:48-51`）。后果见下面掩罩那一节。
 
@@ -39,7 +39,7 @@
 
 ## 实测数字
 
-工具：`scripts/tools/gas_diagnostic.gd` 抓真实窗口，同一帧各存一张 `window_00.png`（含 CRT）和 `window_nocrt_00.png`（把 `CrtOverlay.visible` 关掉再抓，`scripts/tools/gas_diagnostic.gd:465-484`）。场景 `light_lab_runner`，1280×720 窗口，亮度取 RGB 平均（0..1）。
+工具：`scripts/tools/gas_diagnostic.gd` 抓真实窗口，同一帧各存一张 `window_00.png`（含 CRT）和 `window_nocrt_00.png`（把 `CrtOverlay.visible` 关掉再抓，`scripts/tools/gas_diagnostic.gd:465-484`）。场景 `runners/light_lab_runner`，1280×720 窗口，亮度取 RGB 平均（0..1）。
 
 | 指标 | 值 |
 | :--- | :--- |
@@ -76,10 +76,10 @@
 
 ```powershell
 # 检查器：抓的是子视口，所以不含 CRT（full.png 只是世界画面）
-godot --path . --resolution 1280x720 -s res://scripts/tools/render_inspector.gd -- --scene res://scenes/levels/test/light_lab_runner.tscn --out C:/tmp/crt
+godot --path . --resolution 1280x720 -s res://scripts/tools/render_inspector.gd -- --scene res://scenes/levels/test_world/runners/light_lab_runner.tscn --out C:/tmp/crt
 
 # 真实窗口，同一帧各抓一次：有 CRT / 没 CRT
-godot --path . --resolution 1280x720 -s res://scripts/tools/gas_diagnostic.gd -- --scene res://scenes/levels/test/light_lab_runner.tscn --out C:/tmp/crt --settle 1.0 --frames 1
+godot --path . --resolution 1280x720 -s res://scripts/tools/gas_diagnostic.gd -- --scene res://scenes/levels/test_world/runners/light_lab_runner.tscn --out C:/tmp/crt --settle 1.0 --frames 1
 ```
 
 - `render_inspector.gd` 的 `full.png` 来自 `_viewport.get_texture()`（`scripts/tools/render_inspector.gd:328`），是子视口，和屏幕上差着放大 + CRT 两步。

@@ -369,14 +369,14 @@ Sliding blocks participate in the fog with no extra wiring:
 `resources/worlds/test_world.tres` (catalog name **Exploration Test World**) has
 two editable source rooms:
 
-- `scenes/levels/test/test_fog_start.tscn`
+- `scenes/levels/test_world/test_fog_start.tscn`
   - glass box (lit through glass) and a sealed solid box with a light zone
   - sealed solid pocket (stays black, no door)
   - floor-level dark zone with `focus_room` + `restore_on_exit`
   - one-way crumble bridge and a solid crumble ledge
   - small chamber closed by a door, with a `?` marker inside
   - ladder, spawn `start`, entrance `to_east`
-- `scenes/levels/test/test_fog_wide.tscn`
+- `scenes/levels/test_world/test_fog_wide.tscn`
   - 2x1 chunks, screen divider with a low passage
   - glass box, crumble bridge/ledge, ladder
   - right-side dark zone with `restore_on_exit` and a light zone
@@ -388,7 +388,7 @@ To iterate:
 2. Drop `scenes/world/fog_zone.tscn` or `scenes/world/fog_door.tscn` under
    `RoomContent/Entities`.
 3. Save, then bake the room (World main screen → Bake / Bake Stale).
-4. Run `scenes/levels/test/test_world_runner.tscn` — it starts the test world
+4. Run `scenes/levels/test_world/runners/test_world_runner.tscn` — it starts the test world
    directly in the 320x180 game viewport without the main menu (session-only
    persistence). The world is also selectable from the normal world menu.
 

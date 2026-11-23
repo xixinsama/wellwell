@@ -78,7 +78,7 @@ C: position = (27*8, 19*8) size = (12, 1)   # 同上，空的
 
 ## 6. 编辑器里的操作顺序
 
-1. 打开 `scenes/levels/test/water_cascade.tscn`（或复制一个模板房间），在 `RoomContent/Terrain/SolidTiles` 里按上面规则铺砖。
+1. 打开 `scenes/levels/test_world/water_cascade.tscn`（或复制一个模板房间），在 `RoomContent/Terrain/SolidTiles` 里按上面规则铺砖。
 2. 在 `RoomContent/Entities` 下放 `WaterBasin`（每池一个，空池贴底放高度 1）。
 3. 需要闸门就放 `WaterGate`（它会把覆盖的列临时当成墙，`open_delay_seconds` 后放开）。
 4. 房间必须有覆盖全房的 `FogZone(Light)`；如果用气体，再放 1–2 个 `FogLight`。
@@ -132,7 +132,7 @@ C: position = (27*8, 19*8) size = (12, 1)   # 同上，空的
 
 ## 2. 房间示例（`water_grid`）
 
-`scenes/levels/test/water_grid.tscn`（生成器 `tools/build_water_grid.gd`，**手改过瓦片就不要重跑它**）：
+`scenes/levels/test_world/water_grid.tscn`（生成器 `tools/build_water_grid.gd`，**手改过瓦片就不要重跑它**）：
 
 ```
 左侧水池：cols 1..18 一直实心到 row 22，池底 row 14

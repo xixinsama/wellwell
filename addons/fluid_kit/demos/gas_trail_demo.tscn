@@ -1,5 +1,5 @@
 [gd_scene load_steps=2 format=3]
 
-[ext_resource type="PackedScene" path="res://scenes/levels/test/gas_trail_runner.tscn" id="1_runner"]
+[ext_resource type="PackedScene" path="res://scenes/levels/test_world/runners/gas_trail_runner.tscn" id="1_runner"]
 
 [node name="GasTrailDemo" instance=ExtResource("1_runner")]

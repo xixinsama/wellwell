@@ -310,7 +310,7 @@ func create_room_from_rect(chunk_rect: Rect2i) -> Dictionary:
         if not create_error.is_empty():
             return _fail_and_show(create_error)
     var room_id := _unique_room_id(chunk_rect)
-    var source_dir := "res://scenes/levels/generated/%s/" % world_data.world_id
+    var source_dir := "res://scenes/levels/%s/" % world_data.world_id
     var source_path := source_dir + room_id + ".tscn"
     var source := _new_room_source(room_id, chunk_rect)
     if source == null:
@@ -404,7 +404,7 @@ func _unique_room_id(chunk_rect: Rect2i) -> String:
     var candidate := base
     var index := 2
     while world_data.has_room(candidate) or FileAccess.file_exists(
-        "res://scenes/levels/generated/%s/%s.tscn" % [world_data.world_id, candidate]
+        "res://scenes/levels/%s/%s.tscn" % [world_data.world_id, candidate]
     ):
         candidate = "%s_%d" % [base, index]
         index += 1
@@ -971,7 +971,7 @@ func _add_wizard_field(grid: GridContainer, key: String) -> LineEdit:
 
 func _on_wizard_id_changed(text: String) -> void:
     var id := text.strip_edges()
-    var next_auto := "" if id.is_empty() else "res://scenes/levels/main/%s.tscn" % id
+    var next_auto := "" if id.is_empty() or world_data == null else "res://scenes/levels/%s/%s.tscn" % [world_data.world_id, id]
     if _wizard_path.text.is_empty() or _wizard_path.text == _auto_path:
         _wizard_path.text = next_auto
     _auto_path = next_auto

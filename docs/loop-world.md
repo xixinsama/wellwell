@@ -5,7 +5,7 @@ planks, falling platforms and one well-earned dash that takes you back to the
 platform you started on.
 
 Select **回环水窖 · The Loop Cistern** in the world menu, or run
-`res://scenes/levels/loop/loop_runner.tscn` directly with the debug overlay on.
+`res://scenes/levels/loop_world/loop_runner.tscn` directly with the debug overlay on.
 
 ## The route
 
@@ -48,10 +48,10 @@ loop_relay (-)-- loop_entry -- east --> loop_split
 
 ## Authoring pieces
 
-- `scenes/levels/loop/*.tscn` — editable source rooms; paint the middle layer.
+- `scenes/levels/loop_world/*.tscn` — editable source rooms; paint the middle layer.
 - `resources/worlds/loop_world.tres` — the world (rooms, placements, ring
   connections).
-- `scenes/levels/loop/loop_runner.tscn` — direct launcher with the debug HUD
+- `scenes/levels/loop_world/loop_runner.tscn` — direct launcher with the debug HUD
   and overlay enabled.
 - Water: `WaterBasin` markers under `RoomContent/Entities` (column field).
 - Falling platforms: `PlatformBody2D` + `FallMotionComponent2D` + a rider

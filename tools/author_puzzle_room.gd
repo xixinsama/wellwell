@@ -2,7 +2,7 @@ extends SceneTree
 
 ## Bakes the authored room_04_00 source scene and registers it in the_world.tres.
 ##
-## Edit res://scenes/levels/room_04_00.tscn in the Godot editor first, then run:
+## Edit res://scenes/levels/the_world/room_04_00.tscn in the Godot editor first, then run:
 ##   godot --headless --path . -s res://tools/author_puzzle_room.gd
 ##
 ## The source scene stays the single source of truth; this tool never rewrites
@@ -12,7 +12,7 @@ const ROOM_BAKER := preload("res://addons/world_editor/authoring/room/room_baker
 const ROOM_PLACEMENT := preload("res://addons/platformer_kit/world/data/world_room_placement_data.gd")
 
 const ROOM_ID := "room_04_00"
-const SOURCE_PATH := "res://scenes/levels/room_04_00.tscn"
+const SOURCE_PATH := "res://scenes/levels/the_world/room_04_00.tscn"
 const WORLD_PATH := "res://resources/worlds/the_world.tres"
 const ROOM_RESOURCE_PATH := "res://resources/rooms/generated/room_04_00.tres"
 

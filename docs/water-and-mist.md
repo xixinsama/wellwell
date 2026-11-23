@@ -13,14 +13,14 @@
 - 气体（CPU 兜底）：`fog_grid.gd`，无 `RenderingDevice` 时使用
 - 玩家：`game/player/player_water_motion.gd`
 - 水花：`game/water/effects/water_splash.gd`
-- 房间源场景：`scenes/levels/test/water_hall.tscn`、`scenes/levels/test/gas_lab.tscn`
+- 房间源场景：`scenes/levels/test_world/water_hall.tscn`、`scenes/levels/test_world/gas_lab.tscn`
 - 生成器：`tools/build_water_room.gd`、`tools/build_gas_lab.gd`
 
 ## 运行方式
 
 - 游戏内：主菜单 → 存档 → **Exploration Test World**（起始房间是水厅；气体实验室是同一世界的第二个房间）。
-- 气体实验室直跑：运行 `scenes/levels/test/gas_lab_runner.tscn`（复制 test 世界并把起始房间改成 `gas_lab`）。
-- 水厅直跑：运行 `scenes/levels/test/test_world_runner.tscn`。
+- 气体实验室直跑：运行 `scenes/levels/test_world/runners/gas_lab_runner.tscn`（复制 test 世界并把起始房间改成 `gas_lab`）。
+- 水厅直跑：运行 `scenes/levels/test_world/runners/test_world_runner.tscn`。
 - 编辑器预览：打开对应源房间按 F6。
 - **设置 → 游戏 → 气体模拟** 可随时开关整套气体效果。
 

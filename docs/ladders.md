@@ -13,7 +13,7 @@
 不要手动编辑 `scenes/rooms/generated/` 中的地形或运行时场景。修改源房间后重新烘焙：
 
 ```powershell
-godot --headless --path . -s res://scripts/tools/rebake_room.gd -- res://scenes/levels/room_01_00.tscn
+godot --headless --path . -s res://scripts/tools/rebake_room.gd -- res://scenes/levels/the_world/room_01_00.tscn
 godot --headless --path . --import
 ```
 
@@ -90,4 +90,4 @@ godot --headless --path . -s res://tests/run_test_script.gd -- res://tests/world
 godot --headless --path . -s res://tests/run_test_script.gd -- res://tests/player/test_hero_animation.gd
 ```
 
-在 `scenes/levels/room_01_00.tscn` 源场景按 **F6** 可检查实际瓦片、移动和动画；重新烘焙后可验证正式世界运行时结果。
+在 `scenes/levels/the_world/room_01_00.tscn` 源场景按 **F6** 可检查实际瓦片、移动和动画；重新烘焙后可验证正式世界运行时结果。

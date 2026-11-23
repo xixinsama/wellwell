@@ -225,7 +225,7 @@ circle.
 
 ## The demo room
 
-`scenes/levels/test/light_lab.tscn`, built by
+`scenes/levels/test_world/light_lab.tscn`, built by
 `tools/build_light_lab.gd`:
 
 ```
@@ -236,7 +236,7 @@ It has a swinging lamp over a slab (its shadow sweeps the floor), a second lamp
 over a pool behind a **glass** wall (the light passes through), a lamp that
 ignores walls entirely, six fireflies of four glowing pixels each, and grid water
 in the pool. The runner also builds the terrain outline, so the 1 px rim is lit
-only where the light reaches. Open `scenes/levels/test/light_lab_runner.tscn` to
+only where the light reaches. Open `scenes/levels/test_world/runners/light_lab_runner.tscn` to
 walk around in it: the runner binds the light field, the fog, the water and the
 outline to the room in code.
 

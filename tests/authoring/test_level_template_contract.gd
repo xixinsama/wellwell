@@ -4,7 +4,7 @@ const ROOM_AUTHORING_CONTRACT: Script = preload("res://addons/world_editor/autho
 const ROOM_BAKER: Script = preload("res://addons/world_editor/authoring/room/room_baker.gd")
 
 const TEMPLATE_PATH := "res://scenes/rooms/template/level_template.tscn"
-const LEVEL_ZERO_PATH := "res://scenes/levels/room_00_00.tscn"
+const LEVEL_ZERO_PATH := "res://scenes/levels/the_world/room_00_00.tscn"
 const LAYER_NAMES: Array[String] = [
 	"BackTiles",
 	"SolidTiles",

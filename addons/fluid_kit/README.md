@@ -47,7 +47,7 @@ that anything can implement, or you can drive the fields manually.
 
 ## Trying it in a room bigger than the screen
 
-`scenes/levels/test/gas_field_lab_runner.tscn` is a 2x2 chunk room (640x360) crossed
+`scenes/levels/test_world/gas_field_lab_runner.tscn` is a 2x2 chunk room (640x360) crossed
 by corridors, with one `GasBrush` and no other gas source. Run it and paint:
 
 | Input | Effect |
@@ -482,7 +482,7 @@ the same gas state, which is how every number above was obtained:
 
 ```powershell
 godot --path . --resolution 1280x720 -s res://scripts/tools/gas_diagnostic.gd -- \
-  --scene res://scenes/levels/test/gas_lab_runner.tscn --out C:/tmp/gas \
+  --scene res://scenes/levels/test_world/runners/gas_lab_runner.tscn --out C:/tmp/gas \
   --settle 4 --frames 3 --interval 0.4 --stipple=0,1,2 --uniform=vorticity=10
 ```
 

@@ -4,7 +4,7 @@ extends Node
 ## keep its components, its one-way flag and the phantom wall's erased terrain.
 ## The room is also registered in the test world, which this guards as well.
 
-const GALLERY_PATH := "res://scenes/levels/test/components_gallery.tscn"
+const GALLERY_PATH := "res://scenes/levels/test_world/components_gallery.tscn"
 const WORLD_PATH := "res://resources/worlds/test_world.tres"
 const ROOM_CONTRACT := preload("res://addons/world_editor/authoring/room/room_authoring_contract.gd")
 const ROOM_ID := "components_gallery"

@@ -2,7 +2,7 @@
 
 > 写给在房间里搭机关的作者：怎么搭、怎么调、不动的时候查哪里。
 > API 速查见 `addons/platformer_kit/README.md`，设计理由见 `docs/superpowers/specs/`。
-> 想直接抄一份能跑的例子：`scenes/levels/test/components_gallery.tscn`（见
+> 想直接抄一份能跑的例子：`scenes/levels/test_world/components_gallery.tscn`（见
 > `docs/components-gallery.md`），每个组件一个站点，复制节点即可。
 
 ## 0. 三种组件，三种挂法
@@ -225,14 +225,14 @@ Door (Node2D)
 
 ## 3. 放进房间、烘焙、测试
 
-1. 打开源房间（例如 `scenes/levels/test/test_fog_start.tscn`，路径约定
+1. 打开源房间（例如 `scenes/levels/test_world/test_fog_start.tscn`，路径约定
    `scenes/levels/<世界>/<房间>.tscn`）。
 2. 节点放在 `RoomContent/Entities` 下。迷雾相关的实体（`FogZone`、门、幻影墙）
    都放这里；`Terrain` 下面只放地形图层。
 3. 保存源场景，然后在 World 编辑器主界面按 **Bake**（或 **Bake Stale**）。
    输出在 `scenes/rooms/generated/<room_id>/` 和 `resources/rooms/generated/<room_id>.tres`。
 4. **不要手改生成出来的场景**，下次烘焙会被覆盖。
-5. 跑起来看：`scenes/levels/test/test_world_runner.tscn` 可以直接进测试世界。
+5. 跑起来看：`scenes/levels/test_world/runners/test_world_runner.tscn` 可以直接进测试世界。
 
 ## 4. 自己写组件
 

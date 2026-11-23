@@ -1,11 +1,11 @@
 [gd_scene format=3]
 
-[ext_resource type="Script" path="res://scenes/levels/test/test_world_runner.gd" id="1_runner"]
+[ext_resource type="Script" path="res://scenes/levels/test_world/runners/test_world_runner.gd" id="1_runner"]
 [ext_resource type="PackedScene" path="res://scenes/runtime/world_root.tscn" id="2_world"]
 [ext_resource type="Resource" path="res://resources/worlds/test_world.tres" id="3_test_world"]
 [ext_resource type="PackedScene" path="res://addons/platformer_debug/runtime/debug_hud.tscn" id="4_debug_hud"]
 
-[node name="WaterCascadeRunner" type="Control"]
+[node name="WaterGridRunner" type="Control"]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -13,7 +13,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_runner")
-start_room_override = "water_cascade"
+start_room_override = "water_grid"
 
 [node name="SubViewportContainer" type="SubViewportContainer" parent="."]
 layout_mode = 1

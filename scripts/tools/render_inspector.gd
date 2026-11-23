@@ -8,7 +8,7 @@ extends SceneTree
 ## This tool answers both without opening the editor:
 ##
 ##   & godot --path . --resolution 1280x720 -s res://scripts/tools/render_inspector.gd \
-##       -- --scene res://scenes/levels/test/light_lab_runner.tscn --out C:/tmp/shots
+##       -- --scene res://scenes/levels/test_world/runners/light_lab_runner.tscn --out C:/tmp/shots
 ##
 ## It writes, into the output directory:
 ##   full.png            the world viewport as rendered (design pixels, 320x180 in the
@@ -25,7 +25,7 @@ extends SceneTree
 ## The world viewport is found by size, so the tool works for any room runner scene
 ## that follows the SubViewportContainer + SubViewport pattern.
 
-const DEFAULT_SCENE := "res://scenes/levels/test/light_lab_runner.tscn"
+const DEFAULT_SCENE := "res://scenes/levels/test_world/runners/light_lab_runner.tscn"
 const DEFAULT_OUT := "user://render_inspector"
 const SETTLE_SECONDS := 1.2
 const TIMING_FRAMES := 120

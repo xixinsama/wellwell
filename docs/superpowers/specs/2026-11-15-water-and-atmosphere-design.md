@@ -51,7 +51,7 @@ addons/fluid_kit/runtime/gas/
 game/player/player_water_motion.gd
 game/water/effects/water_splash.gd
 tools/build_water_room.gd
-scenes/levels/test/water_hall.tscn
+scenes/levels/test_world/water_hall.tscn
 ```
 
 修改的既有文件：`scenes/player/player.tscn`（挂 WaterMotion）、

@@ -114,7 +114,7 @@ $godot = "D:\Godot4\Godot_v4.7.2-stable_win64.exe\Godot_v4.7.2-stable_win64.exe"
 # 整帧 + 每层单独一帧 + z 阶梯 + 各系统的遮罩 + 层清单
 & $godot --path . --resolution 1280x720 `
     -s res://scripts/tools/render_inspector.gd -- `
-    --scene res://scenes/levels/test/light_lab_runner.tscn --out C:/tmp/layers
+    --scene res://scenes/levels/test_world/runners/light_lab_runner.tscn --out C:/tmp/layers
 
 # 被上层盖住的层（默认把 BackTiles 压暗；比如看背景瓦片投影）
 ... --out C:/tmp/layers --peek

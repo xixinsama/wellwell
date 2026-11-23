@@ -79,12 +79,12 @@ room template, and which "assets" are baked or generated instead of hand-drawn.
 
 - `scenes/rooms/template/level_template.tscn`: empty room authoring template.
 - `scenes/worlds/<world_id>/terrain.tscn`: the world's single authored terrain scene (terrain layers only, world cell coordinates). Edit it with **Edit Terrain**, then **Sync Terrain** slices it into every room.
-- `scenes/levels/generated/<world_id>/`: room source scenes created by **Draw Room**, Merge or Split.
+- `scenes/levels/<world_id>/`: room source scenes created by **Draw Room**, Merge or Split.
 - `scenes/puzzle/puzzle_tile_piece.tscn`: reusable tile-authored sliding region (background, walls, one-way platforms, and `VoidTiles` for movable void sliders).
 - `scenes/puzzle/puzzle_void_zone.tscn`: legacy static player-only void region for puzzle boards (sliders may cross; the player cannot enter in jump mode).
 - `scenes/rooms/source/`: editable room source scenes. Do not hand-edit generated files.
-- `scenes/levels/test/`: editable source rooms for the exploration test world and
-  `test_world_runner.tscn`, which starts that world without the main menu.
+- `scenes/levels/test_world/`: editable source rooms for the exploration test world and
+  `runners/test_world_runner.tscn`, which starts that world without the main menu.
 - `scenes/rooms/generated/<room_id>/`: baked runtime and terrain scenes.
 - `resources/rooms/generated/<room_id>.tres`: baked local `RoomData`.
 - `addons/world_editor/`: optional main-screen World Editor and its authoring helpers.

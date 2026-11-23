@@ -37,7 +37,7 @@ const DOOR_SCENE := preload("res://scenes/world/fog_door.tscn")
 const PHANTOM_WALL_SCENE := preload("res://scenes/world/phantom_wall.tscn")
 const ROOM_PLACEMENT := preload("res://addons/platformer_kit/world/data/world_room_placement_data.gd")
 
-const SOURCE_PATH := "res://scenes/levels/test/components_gallery.tscn"
+const SOURCE_PATH := "res://scenes/levels/test_world/components_gallery.tscn"
 const ROOM_ID := "components_gallery"
 const ROOM_RESOURCE_PATH := "res://resources/rooms/generated/components_gallery.tres"
 const WORLD_PATH := "res://resources/worlds/test_world.tres"

@@ -472,7 +472,7 @@ func _assert_template_and_room_bake(script: Script, failures: Array[String]) -> 
 	if template_root.get_node_or_null("RoomContent/Terrain/LadderAreaBuilder") == null:
 		failures.append("level template has no LadderAreaBuilder")
 	template_root.free()
-	var room_path := "res://scenes/levels/room_01_00.tscn"
+	var room_path := "res://scenes/levels/the_world/room_01_00.tscn"
 	var packed := load(room_path) as PackedScene
 	if packed == null:
 		failures.append("room_01_00 is missing")
@@ -1036,7 +1036,7 @@ func _init() -> void:
 func _run() -> void:
 	var args := OS.get_cmdline_user_args()
 	if args.size() != 1:
-		push_error("usage: -- res://scenes/levels/room_01_00.tscn")
+		push_error("usage: -- res://scenes/levels/the_world/room_01_00.tscn")
 		quit(2)
 		return
 	var packed := load(args[0]) as PackedScene
@@ -1057,7 +1057,7 @@ func _run() -> void:
 Run:
 
 ```powershell
-& $godot --headless --path . -s res://scripts/tools/rebake_room.gd -- res://scenes/levels/room_01_00.tscn
+& $godot --headless --path . -s res://scripts/tools/rebake_room.gd -- res://scenes/levels/the_world/room_01_00.tscn
 & $godot --headless --path . --import
 ```
 
@@ -1079,7 +1079,7 @@ Write `docs/ladders.md` with:
 Run all three new tests, existing input/profile/motor/player-effects/Killzone/movement-lab tests, the full suite, and:
 
 ```powershell
-& $godot --headless --path . --quit-after 120 res://scenes/levels/room_01_00.tscn
+& $godot --headless --path . --quit-after 120 res://scenes/levels/the_world/room_01_00.tscn
 & $godot --headless --path . --quit-after 120 res://scenes/app/main.tscn
 git diff --check
 ```

@@ -5,7 +5,7 @@ extends SceneTree
 ## against the pixels instead of argued about.
 ##
 ##   & godot --path . --resolution 1280x720 -s res://scripts/tools/gas_diagnostic.gd \
-##       -- --scene res://scenes/levels/test/gas_lab_runner.tscn --out C:/tmp/gas \
+##       -- --scene res://scenes/levels/test_world/runners/gas_lab_runner.tscn --out C:/tmp/gas \
 ##          --settle 2.0 --frames 6 --interval 0.4
 ##
 ## Per frame `i` (zero padded, spaced `--interval` seconds apart) it writes:
@@ -28,7 +28,7 @@ extends SceneTree
 ##                                         the simulation or added by the shader
 ##   alpha_mean / alpha_lit_fraction       how strong the layer is at that moment
 
-const DEFAULT_SCENE := "res://scenes/levels/test/gas_lab_runner.tscn"
+const DEFAULT_SCENE := "res://scenes/levels/test_world/runners/gas_lab_runner.tscn"
 const DEFAULT_OUT := "user://gas_diagnostic"
 const STIPPLE_TEXTURE_PATH := "res://resources/textures/blue_noise_64.png"
 

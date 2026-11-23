@@ -6,7 +6,7 @@ extends Node
 ## (low, right): two waterfalls, three basins. The Atmosphere is switched off so
 ## only water is shown.
 
-const RUNNER := preload("res://scenes/levels/test/water_cascade_runner.tscn")
+const RUNNER := preload("res://scenes/levels/test_world/runners/water_cascade_runner.tscn")
 
 
 func _ready() -> void:

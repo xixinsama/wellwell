@@ -22,7 +22,7 @@
 - Create: `tests/puzzle/test_puzzle_board_auto.gd` — 自动拆分。
 - Create: `tests/puzzle/test_puzzle_auto_room.gd` — 迁移后的运行时场景契约。
 - Modify: `tests/runtime_suite.gd` — 注册三个新测试。
-- Modify: `scenes/levels/main/room_02_00.tscn` — 迁移（文本补丁 + 编辑器保存）。
+- Modify: `scenes/levels/main_world/room_02_00.tscn` — 迁移（文本补丁 + 编辑器保存）。
 - Create (migration outputs): `scenes/rooms/generated/main_room_02_00/*`（重烘）。
 - Modify: `docs/extension-guide.md`、`游戏机制设计.md`。
 
@@ -649,7 +649,7 @@ git commit -m "feat: auto-split tilemap pictures into puzzle sliders"
 ### Task 4: 迁移 `room_02_00` 并重烘
 
 **Files:**
-- Modify: `scenes/levels/main/room_02_00.tscn`
+- Modify: `scenes/levels/main_world/room_02_00.tscn`
 - Regenerate: `scenes/rooms/generated/main_room_02_00/runtime.tscn`（及 `terrain.tscn`、`resources/rooms/generated/main_room_02_00.tres`）
 - Test: `tests/puzzle/test_puzzle_auto_room.gd`
 
@@ -708,7 +708,7 @@ func run() -> Array[String]:
 - [ ] **Step 2: 迁移源场景**
 
 用一次性 headless 脚本（不进版本库）：
-1. 实例化 `res://scenes/levels/main/room_02_00.tscn`，读取 9 个 `PuzzleTilePiece` 的格子，
+1. 实例化 `res://scenes/levels/main_world/room_02_00.tscn`，读取 9 个 `PuzzleTilePiece` 的格子，
    构建合并后的 `PuzzleSourceTiles`（392 格）与 `PuzzleVoidTiles`（25 格）TileMapLayer，
    打印 `var_to_str(tile_map_data)`。
 2. Python 文本补丁：
@@ -730,7 +730,7 @@ func run() -> Array[String]:
 - [ ] **Step 5: 提交**
 
 ```bash
-git add scenes/levels/main/room_02_00.tscn scenes/rooms/generated/main_room_02_00 resources/rooms/generated/main_room_02_00.tres tests/puzzle/test_puzzle_auto_room.gd
+git add scenes/levels/main_world/room_02_00.tscn scenes/rooms/generated/main_room_02_00 resources/rooms/generated/main_room_02_00.tres tests/puzzle/test_puzzle_auto_room.gd
 git commit -m "feat: move room_02_00 puzzle to generated board and shuffle"
 ```
 

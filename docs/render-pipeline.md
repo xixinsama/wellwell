@@ -134,7 +134,7 @@ FogOfWar mask(CPU) ──纹理──→ FogMask（片元生成边缘）──�
 # 压哪几层、压多少：--peek-layers=BackTiles,SolidTiles --peek-alpha=0.35
 
 # 换场景
-... -- --scene res://scenes/levels/test/water_hall_runner.tscn --out C:/tmp/hall
+... -- --scene res://scenes/levels/test_world/water_hall_runner.tscn --out C:/tmp/hall
 ```
 
 输出（默认写到 `user://render_inspector`，`--out` 可指定绝对路径）：

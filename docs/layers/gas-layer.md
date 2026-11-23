@@ -90,7 +90,7 @@ $godot = "D:\Godot4\Godot_v4.7.2-stable_win64.exe\Godot_v4.7.2-stable_win64.exe"
 
 # 只截气体层（含它的 alpha 通道 = 不透明度图）
 & $godot --path . --resolution 1280x720 -s res://scripts/tools/gas_diagnostic.gd -- `
-  --scene res://scenes/levels/test/light_lab_runner.tscn --out C:/tmp/gas --settle 2 --frames 2
+  --scene res://scenes/levels/test_world/runners/light_lab_runner.tscn --out C:/tmp/gas --settle 2 --frames 2
 
 # 同一帧冻结气体，三种阈值核并排对比 + 帧成本
 ... --out C:/tmp/gas --settle 2 --frames 1 --stipple=0,1,2 --timing
