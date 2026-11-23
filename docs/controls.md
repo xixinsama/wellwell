@@ -55,9 +55,9 @@ Attaching pulls the body flush against the wall, and a moving platform keeps
 carrying the player while attached.
 
 The Climb ability is authored as
-`addons/platformer_abilities/abilities/climb/default_climb.tres`. Grant it with
+`addons/platformer_kit/abilities/climb/default_climb.tres`. Grant it with
 an `ability_pickup.tscn` instance (same pattern as the Dash pickup) or the
-ready-made `addons/platformer_abilities/entities/climb_pickup.tscn`, or directly
+ready-made `addons/platformer_kit/abilities/entities/climb_pickup.tscn`, or directly
 through `player.grant_ability_definition()`. Standalone lab/gallery scenes
 auto-install authored abilities; the main game removes Climb until progression
 has unlocked it.

@@ -7,9 +7,10 @@ const GAME_ROOT := FIXTURE_ROOT + "/game"
 const FRAMEWORK_MODULE_ROOTS: Array[String] = [
 	"res://addons/platformer_kit",
 	"res://addons/platformer_debug",
-	"res://addons/platformer_abilities",
-	"res://addons/platformer_combat",
 	"res://addons/metroidvania_kit",
+	"res://addons/fluid_kit",
+	"res://addons/input_mapping",
+	"res://addons/world_editor",
 ]
 
 

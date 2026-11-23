@@ -255,8 +255,8 @@ removed only after the full suite and headless editor load pass.
 ### Task 9: Implement optional abilities and combat modules
 
 **Files:**
-- Create: `addons/platformer_abilities/` runtime scripts, resources, plugin manifest, and tests
-- Create: `addons/platformer_combat/` runtime scripts, resources, plugin manifest, and tests
+- Create: `addons/platformer_kit/abilities/` runtime scripts, resources, plugin manifest, and tests
+- Create: `addons/platformer_kit/combat/` runtime scripts, resources, plugin manifest, and tests
 - Create: `examples/ability_lab/ability_lab.tscn`
 - Create: `examples/combat_lab/combat_lab.tscn`
 

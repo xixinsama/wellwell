@@ -13,7 +13,7 @@ room template, and which "assets" are baked or generated instead of hand-drawn.
 - `scenes/runtime/world_root.tscn`: streamed world, player, room camera, fog,
   crumble runtime, and UI bindings.
 - `addons/platformer_kit/`: reusable core, character, platform, camera, world, and save runtime.
-- `addons/platformer_abilities/` and `addons/platformer_combat/`: optional gameplay modules.
+- `addons/platformer_kit/abilities/` and `addons/platformer_kit/combat/`: optional gameplay modules.
 - `addons/metroidvania_kit/`: optional progression, map discovery, fog, and fast travel.
 - `scripts/world/fog_zone.gd` + `scenes/world/fog_zone.tscn`: authored dark/light
   fog rectangles placed under `RoomContent/Entities`.

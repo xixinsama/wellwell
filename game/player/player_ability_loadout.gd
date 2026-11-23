@@ -1,7 +1,7 @@
 class_name PlayerAbilityLoadout
 extends Node
 
-const ABILITY_CONTEXT := preload("res://addons/platformer_abilities/runtime/ability_context.gd")
+const ABILITY_CONTEXT := preload("res://addons/platformer_kit/abilities/runtime/ability_context.gd")
 const DASH_ID: StringName = &"dash"
 
 @export var ability_definitions: Array[Resource] = []

@@ -75,7 +75,7 @@ tables and a symptom table lives in `docs/components-tutorial.md`.
 
 ## Dash and One-Way Platforms
 
-- The supplied Dash lives in `addons/platformer_abilities/abilities/dash/`.
+- The supplied Dash lives in `addons/platformer_kit/abilities/dash/`.
   `DashAbilityDefinition.eight_directional` reads the vertical input too, and
   `direction_deadzone` / `direction_snap_degrees` keep the eight directions
   crisp. All Dash tuning stays in `default_dash.tres`.
@@ -116,7 +116,7 @@ tables and a symptom table lives in `docs/components-tutorial.md`.
   toward + jump is a wall jump; toward + up + jump is a climb jump. The 0.2 s
   climb-jump conversion refunds the stamina, matching Celeste's forgiveness.
 - Wall movement is gated by the `climb` ability:
-  `addons/platformer_abilities/abilities/climb/default_climb.tres`. Grant it
+  `addons/platformer_kit/abilities/climb/default_climb.tres`. Grant it
   through the same ability pickup path as Dash; without it the player never
   enters the wall states, so grab, climb, wall slide, wall jump and wallbounce
   are all locked. The player scene authors the definition so main-game
@@ -150,8 +150,8 @@ re-bake and inspect the generated runtime — a source override equal to the
 script default can be omitted by scene packing, exposing a different prefab
 default.
 
-Add `addons/platformer_abilities/entities/ability_pickup.tscn` for a persistent
-ability reward. Assign a stable ID and an `AbilityDefinition`; use`addons/platformer_abilities/abilities/dash/default_dash.tres` for the supplied
+Add `addons/platformer_kit/abilities/entities/ability_pickup.tscn` for a persistent
+ability reward. Assign a stable ID and an `AbilityDefinition`; use`addons/platformer_kit/abilities/dash/default_dash.tres` for the supplied
 Dash. Player-like receivers opt in with
 `grant_ability_definition(definition: Resource) -> bool`. A rejected grant does
 not consume the pickup.

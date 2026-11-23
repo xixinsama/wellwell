@@ -1,7 +1,7 @@
 extends Node
 
 const PLAYER_SCENE_PATH := "res://scenes/player/player.tscn"
-const DEFAULT_DASH := preload("res://addons/platformer_abilities/abilities/dash/default_dash.tres")
+const DEFAULT_DASH := preload("res://addons/platformer_kit/abilities/dash/default_dash.tres")
 const CHARACTER_INTENT := preload("res://addons/platformer_kit/character/input/character_intent.gd")
 
 

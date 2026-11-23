@@ -18,9 +18,9 @@
 - `addons/platformer_kit/character/motor/character_motor_2d.gd` — NORMAL run/jump/fall rules.
 - `addons/platformer_kit/character/environment/character_environment_snapshot.gd` — lift fields.
 - `addons/platformer_kit/character/sensors/environment_probe.gd` — lift sampling.
-- `addons/platformer_abilities/abilities/dash/dash_ability_definition.gd` — freeze/end/attack/refill fields.
-- `addons/platformer_abilities/abilities/dash/dash_ability_runtime.gd` — getters for the new fields.
-- `addons/platformer_abilities/abilities/dash/default_dash.tres` — tuned values.
+- `addons/platformer_kit/abilities/dash/dash_ability_definition.gd` — freeze/end/attack/refill fields.
+- `addons/platformer_kit/abilities/dash/dash_ability_runtime.gd` — getters for the new fields.
+- `addons/platformer_kit/abilities/dash/default_dash.tres` — tuned values.
 - `game/player/player_ability_loadout.gd` — `try_start_dash()` / runtime access.
 - `scripts/globals/game_freeze.gd` — global hit-stop autoload.
 - `scripts/player/player_stamina.gd` — stamina node.
@@ -32,7 +32,7 @@
 - `tests/player/test_celeste_movement_rules.gd` — rule tests.
 - `tests/platformer_kit/character/test_character_motor_2d.gd` — updated motor tests.
 - `tests/platformer_kit/character/test_movement_profile.gd` — updated defaults.
-- `tests/platformer_abilities/test_dash_ability.gd` — new dash fields.
+- `tests/platformer_kit/abilities/test_dash_ability.gd` — new dash fields.
 - `tests/runtime_suite.gd` — register new test.
 - `docs/tuning.md`, `docs/controls.md` — document behavior.
 
@@ -302,11 +302,11 @@ git commit -m "feat: expose moving-platform lift separately from conveyor veloci
 ### Task 4: Extend Dash Definition, Runtime, and Loadout
 
 **Files:**
-- Modify: `addons/platformer_abilities/abilities/dash/dash_ability_definition.gd`
-- Modify: `addons/platformer_abilities/abilities/dash/dash_ability_runtime.gd`
-- Modify: `addons/platformer_abilities/abilities/dash/default_dash.tres`
+- Modify: `addons/platformer_kit/abilities/dash/dash_ability_definition.gd`
+- Modify: `addons/platformer_kit/abilities/dash/dash_ability_runtime.gd`
+- Modify: `addons/platformer_kit/abilities/dash/default_dash.tres`
 - Modify: `game/player/player_ability_loadout.gd`
-- Test: `tests/platformer_abilities/test_dash_ability.gd`
+- Test: `tests/platformer_kit/abilities/test_dash_ability.gd`
 - Test: `tests/game/test_player_ability_loadout.gd`
 
 - [ ] **Step 1: Add dash fields**
@@ -344,9 +344,9 @@ Keep `get_motion_override()` for compatibility, implemented through `try_start_d
 Add assertions for the four new fields and `try_start_dash()`. Commit:
 
 ```bash
-git add addons/platformer_abilities/abilities/dash \
+git add addons/platformer_kit/abilities/dash \
         game/player/player_ability_loadout.gd \
-        tests/platformer_abilities/test_dash_ability.gd \
+        tests/platformer_kit/abilities/test_dash_ability.gd \
         tests/game/test_player_ability_loadout.gd
 git commit -m "feat: add dash freeze, end speed, attack window and refill delay"
 ```

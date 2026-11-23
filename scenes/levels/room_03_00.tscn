@@ -2,8 +2,8 @@
 
 [ext_resource type="PackedScene" uid="uid://oa5ui3h6fkhd" path="res://scenes/rooms/template/level_template.tscn" id="1_2vips"]
 [ext_resource type="PackedScene" uid="uid://b1x7griwahpw" path="res://addons/platformer_kit/world/entities/save_point.tscn" id="2_h44uv"]
-[ext_resource type="PackedScene" uid="uid://dons4yo63slat" path="res://addons/platformer_abilities/entities/ability_pickup.tscn" id="2_wb6d0"]
-[ext_resource type="Resource" uid="uid://ckoqbfyfnstkp" path="res://addons/platformer_abilities/abilities/dash/default_dash.tres" id="3_qy6dy"]
+[ext_resource type="PackedScene" uid="uid://dons4yo63slat" path="res://addons/platformer_kit/abilities/entities/ability_pickup.tscn" id="2_wb6d0"]
+[ext_resource type="Resource" uid="uid://ckoqbfyfnstkp" path="res://addons/platformer_kit/abilities/dash/default_dash.tres" id="3_qy6dy"]
 
 [node name="Room_03_00" unique_id=1018949667 instance=ExtResource("1_2vips")]
 room_id = "room_03_00"

@@ -3,7 +3,7 @@
 [ext_resource type="PackedScene" uid="uid://oa5ui3h6fkhd" path="res://scenes/rooms/template/level_template.tscn" id="1_template"]
 [ext_resource type="PackedScene" path="res://scenes/world/phantom_wall.tscn" id="2_npeqo"]
 [ext_resource type="PackedScene" uid="uid://5rckdc6d5s7b" path="res://addons/platformer_kit/world/entities/world_door.tscn" id="3_pjgwh"]
-[ext_resource type="Resource" uid="uid://dc341gdt8jgdq" path="res://resources/worlds/dash_world.tres" id="4_3ynxv"]
+[ext_resource type="Resource" uid="uid://cuavkxgwmybua" path="res://resources/worlds/dash_world.tres" id="4_3ynxv"]
 
 [node name="Room_layer1_00_00" unique_id=648205461 instance=ExtResource("1_template")]
 room_id = "layer1_00_00"

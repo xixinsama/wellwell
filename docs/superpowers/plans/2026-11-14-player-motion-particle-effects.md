@@ -56,7 +56,7 @@ Expected: `addons/pixelfx/plugin.cfg` and `nodes/pixel_fx_2d.gd` exist; the exte
 Replace only the existing `enabled` line in `[editor_plugins]` with this complete line, then leave every other byte of the file unchanged:
 
 ```ini
-enabled=PackedStringArray("res://addons/input_mapping/plugin.cfg", "res://addons/metroidvania_kit/plugin.cfg", "res://addons/pixelfx/plugin.cfg", "res://addons/platformer_abilities/plugin.cfg", "res://addons/platformer_combat/plugin.cfg", "res://addons/platformer_debug/plugin.cfg", "res://addons/platformer_kit/plugin.cfg", "res://addons/world_editor/plugin.cfg")
+enabled=PackedStringArray("res://addons/input_mapping/plugin.cfg", "res://addons/metroidvania_kit/plugin.cfg", "res://addons/pixelfx/plugin.cfg", "res://addons/platformer_kit/abilities/plugin.cfg", "res://addons/platformer_kit/combat/plugin.cfg", "res://addons/platformer_debug/plugin.cfg", "res://addons/platformer_kit/plugin.cfg", "res://addons/world_editor/plugin.cfg")
 ```
 
 Do not stage the file wholesale, because it already contains user edits.

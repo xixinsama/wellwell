@@ -31,7 +31,7 @@ so the same tuning works at 60 Hz and 120 Hz.
 ## Dash
 
 The supplied Dash is
-`res://addons/platformer_abilities/abilities/dash/default_dash.tres`:
+`res://addons/platformer_kit/abilities/dash/default_dash.tres`:
 
 - `dash_speed`: dash velocity; diagonals are normalized.
 - `dash_duration`: how long the dash velocity lasts (`0.15`).
@@ -47,7 +47,7 @@ The supplied Dash is
 ## Wall and Stamina
 
 Wall movement is unlocked by the `climb` ability
-(`addons/platformer_abilities/abilities/climb/default_climb.tres`). Without it,
+(`addons/platformer_kit/abilities/climb/default_climb.tres`). Without it,
 the player never enters `WALL_GRAB` / `WALL_SLIDE`, so grab, climb, wall slide,
 wall jump and wallbounce are all disabled together.
 - `wall_check_distance`: horizontal wall probe (`3 px`).

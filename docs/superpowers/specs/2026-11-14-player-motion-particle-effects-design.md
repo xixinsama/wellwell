@@ -44,7 +44,7 @@ PixelFX 0.3.0 已解压到项目外的 `D:\Godot4\GodotProject\pixelfx-godot-mai
 - `project.godot` 只新增 `res://addons/pixelfx/plugin.cfg` 到已启用插件列表，保留现有设置与未提交改动。
 - `docs/player-effects.md` 说明效果调参入口、Killzone 放置方式及重生顺序。
 
-不修改 `addons/platformer_kit`、`addons/platformer_combat` 或 PixelFX 内部的脚本。
+不修改 `addons/platformer_kit`、`addons/platformer_kit/combat` 或 PixelFX 内部的脚本。
 
 ## 4. 效果组件接口与生命周期
 

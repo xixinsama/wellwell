@@ -1,7 +1,7 @@
 extends Node
 
 const LAB_SCENE := "res://examples/ability_lab/ability_lab.tscn"
-const DEFAULT_DASH := preload("res://addons/platformer_abilities/abilities/dash/default_dash.tres")
+const DEFAULT_DASH := preload("res://addons/platformer_kit/abilities/dash/default_dash.tres")
 
 
 func run() -> Array[String]:

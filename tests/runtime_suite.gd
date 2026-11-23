@@ -1,5 +1,15 @@
 extends Node
 
+## Headless runtime suite. Every test is a Node script exposing
+## `run() -> Array[String]`; an empty array means success.
+##
+## Run everything:      godot --headless --path . -s res://tests/run_runtime_suite.gd
+## Run one group:       godot --headless --path . -s res://tests/run_runtime_suite.gd -- --group=world
+## Run several groups:  godot --headless --path . -s res://tests/run_runtime_suite.gd -- --group=world,ui
+##
+## A group is the folder under `tests/`, so `--group=platformer_kit` runs the
+## whole kit (including `platformer_kit/abilities` and `platformer_kit/combat`).
+
 const TESTS: Array[Script] = [
 	preload("res://tests/input_mapping/test_input_mapping_model.gd"),
 	preload("res://tests/input_mapping/test_input_mapping_service.gd"),
@@ -23,17 +33,17 @@ const TESTS: Array[Script] = [
 	preload("res://tests/platformer_debug/test_debug_contract.gd"),
 	preload("res://tests/platformer_debug/test_tas_input_source.gd"),
 	preload("res://tests/platformer_debug/test_tas_tool_hotkeys.gd"),
-	preload("res://tests/platformer_abilities/test_ability_runtime.gd"),
-	preload("res://tests/platformer_abilities/test_ability_pickup.gd"),
-	preload("res://tests/platformer_abilities/test_dash_ability.gd"),
-	preload("res://tests/platformer_abilities/test_climb_ability.gd"),
+	preload("res://tests/platformer_kit/abilities/test_ability_runtime.gd"),
+	preload("res://tests/platformer_kit/abilities/test_ability_pickup.gd"),
+	preload("res://tests/platformer_kit/abilities/test_dash_ability.gd"),
+	preload("res://tests/platformer_kit/abilities/test_climb_ability.gd"),
 	preload("res://tests/game/test_player_ability_loadout.gd"),
 	preload("res://tests/game/test_one_way_dash_pierce.gd"),
 	preload("res://tests/game/test_player_interaction.gd"),
 	preload("res://tests/game/test_collectibles.gd"),
 	preload("res://tests/game/test_number_pickup.gd"),
-	preload("res://tests/platformer_combat/test_combat_runtime.gd"),
-	preload("res://tests/optional_modules/test_ability_combat_contract.gd"),
+	preload("res://tests/platformer_kit/combat/test_combat_runtime.gd"),
+	preload("res://tests/platformer_kit/abilities/test_ability_combat_contract.gd"),
 	preload("res://tests/metroidvania_kit/test_progression_conditions.gd"),
 	preload("res://tests/metroidvania_kit/test_map_discovery.gd"),
 	preload("res://tests/metroidvania_kit/test_map_runtime_persistence.gd"),
@@ -156,13 +166,35 @@ const TESTS: Array[Script] = [
 ]
 
 
-func run() -> bool:
+func run(group: String = "") -> bool:
+	var selected := _select(group)
+	if selected.is_empty():
+		push_error("runtime suite: no tests matched group '%s'" % group)
+		return false
 	var failures: Array[String] = []
-	for test_script: Script in TESTS:
+	for test_script: Script in selected:
 		var test: Node = test_script.new() as Node
 		add_child(test)
 		failures.append_array(test.run())
 		test.queue_free()
+	var scope := "all" if group.is_empty() else group
+	print("runtime suite [%s]: %d tests, %d failures" % [scope, selected.size(), failures.size()])
 	for failure: String in failures:
 		push_error(failure)
 	return failures.is_empty()
+
+
+func _select(group: String) -> Array[Script]:
+	if group.strip_edges().is_empty():
+		return TESTS
+	var prefixes := PackedStringArray()
+	for part: String in group.split(",", false):
+		prefixes.append(part.strip_edges())
+	var selected: Array[Script] = []
+	for test_script: Script in TESTS:
+		var relative := test_script.resource_path.trim_prefix("res://tests/")
+		for prefix: String in prefixes:
+			if relative.begins_with(prefix + "/") or relative.get_basename() == prefix:
+				selected.append(test_script)
+				break
+	return selected

@@ -49,7 +49,7 @@ Entities do not access the SaveManager singleton. `WorldEntity` exposes a generi
 
 ## Ability Pickup and Dash
 
-`addons/platformer_abilities/entities/ability_pickup.tscn` is a persistent contact pickup with an exported `AbilityDefinition`. It calls `grant_ability_definition(definition)` on the entering body. Only a successful grant collects, hides, and immediately saves the pickup.
+`addons/platformer_kit/abilities/entities/ability_pickup.tscn` is a persistent contact pickup with an exported `AbilityDefinition`. It calls `grant_ability_definition(definition)` on the entering body. Only a successful grant collects, hides, and immediately saves the pickup.
 
 Dash is configured by a `DashAbilityDefinition` resource with speed, duration, cooldown, and optional vertical input. `DashAbilityRuntime` owns activation duration and direction but does not read `Input` or know the concrete player.
 

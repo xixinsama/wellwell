@@ -7,9 +7,9 @@
 [ext_resource type="Script" path="res://addons/platformer_kit/platforms/components/elevator_motion_component_2d.gd" id="5_xt8bm"]
 [ext_resource type="Script" path="res://addons/platformer_kit/platforms/components/rider_trigger_component_2d.gd" id="6_sp17c"]
 [ext_resource type="Script" path="res://addons/platformer_kit/platforms/components/conveyor_surface_component_2d.gd" id="7_i2do2"]
-[ext_resource type="PackedScene" path="res://addons/platformer_abilities/entities/ability_pickup.tscn" id="8_0uyev"]
-[ext_resource type="Script" path="res://addons/platformer_abilities/entities/ability_pickup.gd" id="9_35xfm"]
-[ext_resource type="Resource" path="res://addons/platformer_abilities/abilities/dash/default_dash.tres" id="10_roomb"]
+[ext_resource type="PackedScene" path="res://addons/platformer_kit/abilities/entities/ability_pickup.tscn" id="8_0uyev"]
+[ext_resource type="Script" path="res://addons/platformer_kit/abilities/entities/ability_pickup.gd" id="9_35xfm"]
+[ext_resource type="Resource" path="res://addons/platformer_kit/abilities/dash/default_dash.tres" id="10_roomb"]
 [ext_resource type="Script" path="res://addons/platformer_kit/world/entities/room_entrance.gd" id="11_ltnep"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_f2dpf"]

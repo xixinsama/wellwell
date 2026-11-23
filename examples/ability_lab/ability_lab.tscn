@@ -2,8 +2,8 @@
 
 [ext_resource type="Script" path="res://examples/ability_lab/ability_lab.gd" id="1_lab"]
 [ext_resource type="PackedScene" path="res://scenes/player/player.tscn" id="2_player"]
-[ext_resource type="PackedScene" path="res://addons/platformer_abilities/entities/ability_pickup.tscn" id="3_pickup"]
-[ext_resource type="Resource" path="res://addons/platformer_abilities/abilities/dash/default_dash.tres" id="4_dash"]
+[ext_resource type="PackedScene" path="res://addons/platformer_kit/abilities/entities/ability_pickup.tscn" id="3_pickup"]
+[ext_resource type="Resource" path="res://addons/platformer_kit/abilities/dash/default_dash.tres" id="4_dash"]
 
 [sub_resource type="RectangleShape2D" id="Rectangle_ground"]
 size = Vector2(320, 16)

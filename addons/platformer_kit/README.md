@@ -15,7 +15,7 @@ Game Content
     -> Godot
 ```
 
-Code under `addons/platformer_kit/` must not reference `game/`, `scripts/`, examples, or optional addons. Optional Addons include `platformer_abilities`, `platformer_combat`, `metroidvania_kit`, `platformer_debug`, and `world_editor`. A game may enable only the modules it needs.
+Code under `addons/platformer_kit/` must not reference `game/`, `scripts/`, examples, or optional addons. The kit ships the core runtime plus the `abilities/` and `combat/` modules; optional addons are `metroidvania_kit`, `platformer_debug`, `world_editor`, `fluid_kit`, `input_mapping`, and `pixelfx`. A game may enable only the modules it needs.
 
 ## Public API
 
@@ -33,6 +33,8 @@ All `class_name` declarations under this addon are source-level public in `0.x`.
 | Entities | `WorldEntity`, `SpawnPoint`, `RoomEntrance`, `SavePoint`, `HazardEntity`, `PickupEntity` | Stable-ID state capture and room integration |
 | Doors | `DoorComponent2D` | `set_closed()`, `toggle()`, `door_opened`, `door_closed` |
 | Hidden walls | `PhantomWallComponent2D` | `reveal()`, `reset_component()`, `wall_revealed`, `is_occluding()`, `get_world_rect()` |
+| Abilities | `AbilityController`, `AbilityDefinition`, `AbilityRuntime`, `DashAbilityRuntime`, `AbilityPickup`, `AbilityContext` | `grant()`, `activate()`, `is_unlocked()`, `available_abilities()` |
+| Combat | `HealthComponent`, `Hitbox`, `Hurtbox`, `DamageEvent`, `DamageData`, `Invulnerability`, `Knockback` | `apply_damage()`, `heal()`, `can_be_hit()`, `hit_landed()` |
 
 Resources such as `MovementProfile`, `RoomData`, `WorldData`, `RegionData`, and `RoomConnectionData` are data contracts. Prefer `.tres` instances over hard-coded game tuning.
 
@@ -63,7 +65,7 @@ A phantom wall is a `TileMapLayer` with collision disabled and `PhantomWallCompo
 
 Instance `world/entities/save_point.tscn` under a source room's `RoomContent/Entities`. Give each instance a unique `entity_id` or `persistent_id`, choose `CONTACT` or `INTERACT`, and set its nested `SpawnPoint.spawn_id` to a room-unique value. Re-bake the room so the spawn ID enters its manifest.
 
-For an ability reward, instance `addons/platformer_abilities/entities/ability_pickup.tscn`, assign a stable ID, and set `ability_definition`. The supplied Dash uses `addons/platformer_abilities/abilities/dash/default_dash.tres`. A compatible body must implement `grant_ability_definition(definition) -> bool`; collection occurs only after that method returns `true`.
+For an ability reward, instance `addons/platformer_kit/abilities/entities/ability_pickup.tscn`, assign a stable ID, and set `ability_definition`. The supplied Dash uses `addons/platformer_kit/abilities/dash/default_dash.tres`. A compatible body must implement `grant_ability_definition(definition) -> bool`; collection occurs only after that method returns `true`.
 
 ## Example Labs
 

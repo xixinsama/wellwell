@@ -222,9 +222,9 @@ Headless tests cover:
 - `addons/platformer_kit/character/motor/character_motor_2d.gd`
 - `addons/platformer_kit/character/sensors/environment_probe.gd`
 - `addons/platformer_kit/character/environment/character_environment_snapshot.gd`
-- `addons/platformer_abilities/abilities/dash/dash_ability_definition.gd`
-- `addons/platformer_abilities/abilities/dash/dash_ability_runtime.gd`
-- `addons/platformer_abilities/abilities/dash/default_dash.tres`
+- `addons/platformer_kit/abilities/dash/dash_ability_definition.gd`
+- `addons/platformer_kit/abilities/dash/dash_ability_runtime.gd`
+- `addons/platformer_kit/abilities/dash/default_dash.tres`
 - `scripts/globals/game_freeze.gd`
 - `scripts/player/player_controller.gd`
 - `scripts/player/player_stamina.gd`
@@ -233,7 +233,7 @@ Headless tests cover:
 - `resources/player/default_player_tuning.tres`
 - `addons/platformer_kit/character/resources/default_movement_profile.tres`
 - `scenes/player/player.tscn`
-- `tests/player/...`, `tests/platformer_kit/...`, `tests/platformer_abilities/...`
+- `tests/player/...`, `tests/platformer_kit/...`, `tests/platformer_kit/abilities/...`
 - `tests/runtime_suite.gd`
 - `docs/tuning.md`, `docs/controls.md`
 

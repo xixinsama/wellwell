@@ -90,9 +90,9 @@
 ### Task 4: Build the Generic Persistent Ability Pickup
 
 **Files:**
-- Create: `addons/platformer_abilities/entities/ability_pickup.gd`
-- Create: `addons/platformer_abilities/entities/ability_pickup.tscn`
-- Create: `tests/platformer_abilities/test_ability_pickup.gd`
+- Create: `addons/platformer_kit/abilities/entities/ability_pickup.gd`
+- Create: `addons/platformer_kit/abilities/entities/ability_pickup.tscn`
+- Create: `tests/platformer_kit/abilities/test_ability_pickup.gd`
 - Modify: `tests/runtime_suite.gd`
 
 **Interfaces:**
@@ -110,13 +110,13 @@
 **Files:**
 - Modify: `addons/platformer_kit/character/input/character_intent.gd`
 - Modify: `addons/platformer_kit/character/input/player_input_source.gd`
-- Create: `addons/platformer_abilities/abilities/dash/dash_ability_definition.gd`
-- Create: `addons/platformer_abilities/abilities/dash/dash_ability_runtime.gd`
-- Create: `addons/platformer_abilities/abilities/dash/default_dash.tres`
-- Modify: `addons/platformer_abilities/runtime/ability_controller.gd`
+- Create: `addons/platformer_kit/abilities/dash/dash_ability_definition.gd`
+- Create: `addons/platformer_kit/abilities/dash/dash_ability_runtime.gd`
+- Create: `addons/platformer_kit/abilities/dash/default_dash.tres`
+- Modify: `addons/platformer_kit/abilities/runtime/ability_controller.gd`
 - Test: `tests/platformer_kit/character/test_character_intent.gd`
 - Test: `tests/platformer_kit/character/test_input_source.gd`
-- Create: `tests/platformer_abilities/test_dash_ability.gd`
+- Create: `tests/platformer_kit/abilities/test_dash_ability.gd`
 - Modify: `tests/runtime_suite.gd`
 
 **Interfaces:**

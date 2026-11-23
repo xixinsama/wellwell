@@ -1,12 +1,12 @@
 [gd_scene load_steps=9 format=3]
 
 [ext_resource type="Script" path="res://examples/combat_lab/combat_lab.gd" id="1_lab"]
-[ext_resource type="Script" path="res://addons/platformer_combat/runtime/health_component.gd" id="2_health"]
-[ext_resource type="Script" path="res://addons/platformer_combat/runtime/hitbox.gd" id="3_hitbox"]
-[ext_resource type="Script" path="res://addons/platformer_combat/runtime/hurtbox.gd" id="4_hurtbox"]
-[ext_resource type="Script" path="res://addons/platformer_combat/runtime/invulnerability.gd" id="5_invulnerability"]
-[ext_resource type="Script" path="res://addons/platformer_combat/runtime/knockback.gd" id="6_knockback"]
-[ext_resource type="Script" path="res://addons/platformer_combat/runtime/damage_data.gd" id="7_damage"]
+[ext_resource type="Script" path="res://addons/platformer_kit/combat/health_component.gd" id="2_health"]
+[ext_resource type="Script" path="res://addons/platformer_kit/combat/hitbox.gd" id="3_hitbox"]
+[ext_resource type="Script" path="res://addons/platformer_kit/combat/hurtbox.gd" id="4_hurtbox"]
+[ext_resource type="Script" path="res://addons/platformer_kit/combat/invulnerability.gd" id="5_invulnerability"]
+[ext_resource type="Script" path="res://addons/platformer_kit/combat/knockback.gd" id="6_knockback"]
+[ext_resource type="Script" path="res://addons/platformer_kit/combat/damage_data.gd" id="7_damage"]
 
 [sub_resource type="Resource" id="DamageData_lab"]
 script = ExtResource("7_damage")
