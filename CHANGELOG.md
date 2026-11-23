@@ -129,6 +129,15 @@ All notable Platformer Kit changes are recorded here. The project follows Semant
 
 ### Fixed
 
+- CRT pass is now pixel-aligned: samples snap to window pixel centres, the
+  scanline phase comes from the integer-scaled game grid (`screen_pixels`,
+  `grid_origin`, `pixel_scale` pushed by `CrtOverlay`), and the window uses
+  integer scaling with a kept aspect so the root canvas stays 1280x720.
+- CRT brightness is energy-neutral: the beam is normalised by its average
+  transmission, bright pixels widen the beam, and the additive bloom, `lift`,
+  bright-pixel bypass and default vignette were removed. Measured on a flat 50%
+  frame: 0.000% mean delta; on `the_world`: -0.92% mean, p95 unchanged.
+
 - `SaveManager.copy_slot()` now refuses a source snapshot that fails validation
   instead of writing a default snapshot over the target slot.
 - `SaveManager.set_respawn()` validates the room id, spawn id and position through

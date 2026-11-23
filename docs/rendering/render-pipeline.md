@@ -32,7 +32,7 @@ WorldRoot (Node2D, 整个世界的容器)
        ├─ DustField                         z 9   (单像素灰尘)
        └─ FogOfWar/FogMask                  z 10  (迷雾)
   └─ SubViewportContainer (stretch, stretch_shrink 4, texture_filter nearest)
-  └─ CanvasLayer 128 → CrtOverlay           屏幕最上层（扫描线/暗角）
+  └─ CanvasLayer 128 → CrtOverlay           屏幕最上层（像素对齐扫描线）
 ```
 
 **排序规则**：`z_index` 对整个画布全局排序，同 z 再按树序。所以
@@ -57,7 +57,7 @@ WorldRoot (Node2D, 整个世界的容器)
 | 9 | **灰尘**：56 个 1×1 白点，画在光照 pass 之后，亮度按最近光源算 | `DustField` | 主视口 z 9 |
 | 10 | **迷雾**：CPU 写每格 1 纹素的遮罩（a=不透明度, r=闪光, g=有符号距离），片元里做触须/呼吸/抖动切割 + 聚光灯 | `FogOfWar` | 主视口 z 10 |
 | 11 | **放大**：322×182 → 1280×720，nearest，`stretch_shrink = 4` | `SubViewportContainer` | 窗口 |
-| 12 | **CRT**：扫描线 + 暗角 + 轻微色偏 | `CrtOverlay`（CanvasLayer 128） | 窗口最上层 |
+| 12 | **CRT**：像素对齐扫描线 + 轻微色偏（亮度不变） | `CrtOverlay`（CanvasLayer 128） | 窗口最上层 |
 
 ## 3. 遮罩之间怎么叠（谁采样谁）
 
