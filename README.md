@@ -49,7 +49,7 @@ Room source scenes live in `scenes/levels/<world_id>/`; baked runtime scenes in
 ## Verify
 
 ```powershell
-# Full suite: 153 tests, exit code 0 on success
+# Full suite: 69 test files, exit code 0 on success
 godot --headless --path . -s res://tests/run_runtime_suite.gd
 
 # One owner while iterating

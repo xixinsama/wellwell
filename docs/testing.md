@@ -43,6 +43,39 @@ folder name under `tests/`; `platformer_kit` covers nested folders such as
 
 Add a test folder when you add an owner, not when you add one test.
 
+## Merged Suites
+
+Small tests live together so an owner has a handful of readable files instead of
+dozens of 30-line ones. A merged file contains one inner class per original test:
+
+```gdscript
+extends Node
+
+class KillzoneCase extends Node:
+	## the original test body, untouched
+
+func run() -> Array[String]:
+	var failures: Array[String] = []
+	failures.append_array(_run_case(KillzoneCase.new()))
+	...
+	return failures
+
+func _run_case(test: Node) -> Array[String]:
+	add_child(test)
+	var result: Array = test.call("run")
+	test.queue_free()
+	...
+```
+
+Rules:
+
+- Each class keeps its own consts and helpers, so merging never shares state.
+- New test for an existing feature: add a class to that suite. A new feature or a
+  test that needs specialised fixtures: its own `test_<feature>.gd` file.
+- A class that outgrows its suite (roughly 400+ lines) gets its own file.
+- The suite runner counts files, not inner classes; `runtime suite [world]: 15
+  tests` means 15 registered files.
+
 ## Adding a Test
 
 1. Put `tests/<owner>/test_<feature>.gd` next to the tests for that owner.
