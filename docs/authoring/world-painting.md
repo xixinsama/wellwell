@@ -28,6 +28,17 @@ godot --headless --path . -s res://tools/sync_world_terrain.gd -- \
   --world=res://resources/worlds/test_world.tres
 ```
 
+搬动房间源场景（只改路径、不动内容）或改房间模板后，用一次全量重烘保证指纹与产物
+对得上，再用校验脚本确认：
+
+```bash
+godot --headless --path . -s res://tools/rebake_all_rooms.gd
+godot --headless --path . -s res://tools/validate_project.gd
+```
+
+`validate_project.gd` 会报 `stale bake`（源场景变了但没重烘）、缺失的
+`scene_path / terrain_scene_path / source_scene_path`，以及地形层契约错误。
+
 ## 数据流
 
 ```text

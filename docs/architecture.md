@@ -102,6 +102,9 @@ godot --headless --editor --path . --quit
 # Validate the shipped terrain/world contract
 godot --headless --path . -s res://tools/validate_project.gd
 
+# Re-bake every room after moving source scenes or changing the room template
+godot --headless --path . -s res://tools/rebake_all_rooms.gd
+
 # Boot with no warnings or errors
 godot --headless --path . --quit-after 120
 ```

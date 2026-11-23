@@ -7,11 +7,11 @@
 [ext_resource type="PackedScene" path="res://scenes/world/number_pickup.tscn" id="5_xm55p"]
 [ext_resource type="Script" path="res://game/entities/number_pickup.gd" id="6_ou5fb"]
 
-[node name="RoomRuntimeContent" type="Node2D" unique_id=220390978]
+[node name="RoomRuntimeContent" type="Node2D" unique_id=2132955863]
 
-[node name="Entities" type="Node2D" parent="." unique_id=1722104713]
+[node name="Entities" type="Node2D" parent="." unique_id=661715828]
 
-[node name="StartSpawn" type="Marker2D" parent="Entities" unique_id=1066858149]
+[node name="StartSpawn" type="Marker2D" parent="Entities" unique_id=1089630414]
 position = Vector2(32, 80)
 script = ExtResource("1_px16g")
 spawn_id = "start"
@@ -30,8 +30,8 @@ persistent_id = &"layer0_door0"
 entity_type = "world_door"
 persistent = true
 
-[node name="NumberPickup" type="Node2D" parent="Entities" unique_id=678217691 instance=ExtResource("5_xm55p")]
+[node name="NumberPickup" type="Node2D" parent="Entities" unique_id=1308017549 instance=ExtResource("5_xm55p")]
 position = Vector2(128, 72)
 script = ExtResource("6_ou5fb")
 
-[node name="Foreground" type="Node2D" parent="." unique_id=108730641]
+[node name="Foreground" type="Node2D" parent="." unique_id=1024617794]

@@ -2,12 +2,12 @@
 
 [ext_resource type="Script" path="res://addons/platformer_kit/world/entities/spawn_point.gd" id="1_tb5lh"]
 
-[node name="RoomRuntimeContent" type="Node2D" unique_id=933205629]
+[node name="RoomRuntimeContent" type="Node2D" unique_id=569802325]
 
-[node name="Entities" type="Node2D" parent="." unique_id=729926004]
+[node name="Entities" type="Node2D" parent="." unique_id=860967465]
 
-[node name="StartSpawn" type="Marker2D" parent="Entities" unique_id=83695936]
+[node name="StartSpawn" type="Marker2D" parent="Entities" unique_id=1727033371]
 script = ExtResource("1_tb5lh")
 spawn_id = "start"
 
-[node name="Foreground" type="Node2D" parent="." unique_id=105606726]
+[node name="Foreground" type="Node2D" parent="." unique_id=361305860]

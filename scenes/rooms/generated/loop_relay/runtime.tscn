@@ -14,25 +14,25 @@ size = Vector2(80, 32)
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_453u7"]
 size = Vector2(64, 8)
 
-[node name="RoomRuntimeContent" type="Node2D" unique_id=1263004338]
+[node name="RoomRuntimeContent" type="Node2D" unique_id=1457761701]
 
-[node name="Entities" type="Node2D" parent="." unique_id=785066345]
+[node name="Entities" type="Node2D" parent="." unique_id=576387037]
 
-[node name="StartSpawn" type="Marker2D" parent="Entities" unique_id=1167399542]
+[node name="StartSpawn" type="Marker2D" parent="Entities" unique_id=300823857]
 script = ExtResource("1_4wdj1")
 spawn_id = "start"
 
-[node name="PitKillzone" type="Area2D" parent="Entities" unique_id=1692889582]
+[node name="PitKillzone" type="Area2D" parent="Entities" unique_id=571376340]
 position = Vector2(88, 136)
 collision_layer = 0
 collision_mask = 2
 script = ExtResource("2_t5wvt")
 
-[node name="_CollisionShape2D_13" type="CollisionShape2D" parent="Entities/PitKillzone" unique_id=491428389]
+[node name="_CollisionShape2D_13" type="CollisionShape2D" parent="Entities/PitKillzone" unique_id=1394963764]
 position = Vector2(40, 16)
 shape = SubResource("RectangleShape2D_b8ej1")
 
-[node name="FromGallery" type="Marker2D" parent="Entities" unique_id=1081350705]
+[node name="FromGallery" type="Marker2D" parent="Entities" unique_id=962619543]
 position = Vector2(288, 64)
 script = ExtResource("1_4wdj1")
 spawn_id = "from_gallery"
@@ -42,34 +42,34 @@ position = Vector2(272, 64)
 script = ExtResource("4_ni6kr")
 entity_id = "save_cp_d"
 
-[node name="BeltRelay" type="AnimatableBody2D" parent="Entities" unique_id=1139572224]
+[node name="BeltRelay" type="AnimatableBody2D" parent="Entities" unique_id=451530210]
 position = Vector2(160, 64)
 script = ExtResource("5_2del7")
 
-[node name="ConveyorSurface" type="Node" parent="Entities/BeltRelay" unique_id=1936626905]
+[node name="ConveyorSurface" type="Node" parent="Entities/BeltRelay" unique_id=1288840401]
 script = ExtResource("6_mbxem")
 surface_velocity = Vector2(70, 0)
 
-[node name="_CollisionShape2D_14" type="CollisionShape2D" parent="Entities/BeltRelay" unique_id=2095608342]
+[node name="_CollisionShape2D_14" type="CollisionShape2D" parent="Entities/BeltRelay" unique_id=531387963]
 position = Vector2(32, 4)
 shape = SubResource("RectangleShape2D_453u7")
 
-[node name="Visual" type="Polygon2D" parent="Entities/BeltRelay" unique_id=1793183645]
+[node name="Visual" type="Polygon2D" parent="Entities/BeltRelay" unique_id=662324709]
 color = Color(0.36, 0.3, 0.2, 1)
 polygon = PackedVector2Array(0, 0, 64, 0, 64, 8, 0, 8)
 
-[node name="Cap" type="Polygon2D" parent="Entities/BeltRelay" unique_id=852001679]
+[node name="Cap" type="Polygon2D" parent="Entities/BeltRelay" unique_id=209629806]
 color = Color(0.88, 0.7, 0.32, 1)
 polygon = PackedVector2Array(0, 0, 64, 0, 64, 2, 0, 2)
 
-[node name="EastExit" type="Node2D" parent="Entities" unique_id=494045175]
+[node name="EastExit" type="Node2D" parent="Entities" unique_id=920815844]
 position = Vector2(304, 32)
 script = ExtResource("7_o5crb")
 entity_id = "east"
 
-[node name="SouthExit" type="Node2D" parent="Entities" unique_id=1611988229]
+[node name="SouthExit" type="Node2D" parent="Entities" unique_id=1931067089]
 position = Vector2(40, 168)
 script = ExtResource("7_o5crb")
 entity_id = "south"
 
-[node name="Foreground" type="Node2D" parent="." unique_id=1352708065]
+[node name="Foreground" type="Node2D" parent="." unique_id=824443830]
