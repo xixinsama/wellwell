@@ -1,82 +1,79 @@
 # wellwell
 
-`wellwell` is a Godot 4 pixel-platformer foundation with room authoring, a world layout editor, streamed room runtime, persistent entities, and room-scoped fog of war.
+A Godot 4.7 pixel platformer kit with a room/world authoring pipeline, streamed
+rooms, fog of war, water/gas fields, and five showcase worlds. The project is
+built to be **edited by humans and repaired by agents**: every subsystem has one
+home, one test folder, and one document.
 
-The current reusable framework baseline is **Platformer Kit 0.1.0**. See the
-[framework README](addons/platformer_kit/README.md), [changelog](CHANGELOG.md),
-and [migration guide](MIGRATION.md) before copying or upgrading the addon.
-
-Reusable runtime code lives in `addons/platformer_kit/`; optional abilities,
-combat, diagnostics, Metroidvania systems, and the editor are separate addons.
-The main-screen World Editor is provided by `addons/world_editor/` and only
-depends on Platformer Kit world contracts.
-
-Open `project.godot` in Godot and run `res://scenes/app/main.tscn`.
-
-Run the reusable movement fixtures directly with:
+## Run It
 
 ```powershell
-godot --path . res://examples/movement_lab/movement_lab.tscn
+godot --path .                  # open the project, then F5
+godot --path . res://scenes/app/main.tscn
 ```
 
-Use the optional diagnostics variant with:
+The game boots to the menu: save slot → world select → play. The world list is
+`resources/worlds/world_catalog.tres`.
+
+## Worlds
+
+| World | Id | What it shows |
+| --- | --- | --- |
+| 梯子试炼 | `the_world` | Ladders, climbing, five connected rooms |
+| 滑块回廊 | `main_world` | Sliding puzzle boards, void sliders, gamepad selection |
+| Exploration Test World | `test_world` | Fog zones, crumble tiles, doors, water hall, gas lab, light lab |
+| 回环水窖 | `loop_world` | Water cascade, crumble planks, dash loop |
+| 冲刺世界 | `dash_world` | Dash pickups, one-way piercing, stacked layer 1 |
+
+Room source scenes live in `scenes/levels/<world_id>/`; baked runtime scenes in
+`scenes/rooms/generated/<room_id>/` are generated — never edit them by hand.
+
+## Layout
+
+| Path | Contents |
+| --- | --- |
+| `addons/platformer_kit/` | Reusable runtime: character, platforms, camera, save, rooms/world streaming, abilities, combat |
+| `addons/platformer_debug/` | Debug HUD, TAS record/replay, tuning hotkeys |
+| `addons/metroidvania_kit/` | Progression, map discovery, fog, fast travel |
+| `addons/fluid_kit/` | Water columns and gas atmosphere |
+| `addons/input_mapping/` | Rebindable controls |
+| `addons/pixelfx/` | Vendored pixel-effect library |
+| `addons/world_editor/` | Main-screen world/room editor and baker |
+| `scenes/`, `resources/` | Game scenes, worlds, rooms, tilesets, tuning |
+| `game/` | Project composition and every system the kit does not own |
+| `tests/` | One folder per owner; see `docs/testing.md` |
+| `tools/` | One-shot CLI maintenance scripts |
+| `examples/` | Kit labs: movement, ability, combat, metroidvania, TAS |
+| `docs/` | Start at `docs/README.md`; the directory map is `docs/architecture.md` |
+
+## Verify
 
 ```powershell
-godot --path . res://examples/movement_lab/movement_lab_debug.tscn
+# Full suite: 69 test files, exit code 0 on success
+godot --headless --path . -s res://tests/run_runtime_suite.gd
+
+# One owner while iterating
+godot --headless --path . -s res://tests/run_runtime_suite.gd -- --group=world
+
+# Compile one script
+godot --headless --path . --check-only -s res://game/player/player_controller.gd
+
+# Boot with no warnings or errors
+godot --headless --path . --quit-after 120
+
+# Validate the shipped world/terrain contract
+godot --headless --path . -s res://tools/validate_project.gd
 ```
-
-## What Is Included
-
-- 1280x720 outer window.
-- 322x182 `SubViewport`, with 320x180 used as the safe gameplay frame.
-- 120 TPS physics by default; movement timers are expressed in seconds and also work at 60 TPS.
-- Tunable `CharacterBody2D` player.
-- 8x8 block player visual.
-- Jump buffer, coyote time, variable jump height, apex half gravity, air control, and fast fall.
-- Celeste-style dash (freeze, end speed, dash-attack window), super/hyper/wavedash, and wallbounce.
-- No-grab wall grab, climb, wall slide, stamina, wall jump, and climb-jump conversion, unlocked by the Climb ability.
-- Global hit-stop and moving-platform lift caps.
-- Optional **Celeste Momentum** Game setting (off by default): preserves pre-dash speed and enables the 1.2x Ultra chain.
-- Optional **Realtime Save** Game setting (off by default): resumes at the exact position and velocity where the previous session ended, while death still returns to the last checkpoint.
-- Debug-overlay TAS (record/replay/save input; `Ctrl+R` / `Ctrl+P` / `Ctrl+S`, plus `F5`-`F12`) and a recorded dash-jump speed-cap demo.
-- Pixel-quantized camera.
-- Debug HUD and grid overlay.
-- Source rooms under `scenes/rooms/source/`, baked runtime/terrain outputs, and `WorldData` placement resources.
-- A main-screen `addons/world_editor/` plugin for room placement, connection authoring, terrain previews, grid snapping, zoom, and focus.
-- Per-room flood-fill fog visibility and a post-process-ready mask texture.
-
-## What Is Not Included
-
-This template intentionally excludes dialogue, concrete enemies, story content, and Dash2Home-specific mechanics. Combat, abilities, diagnostics, and Metroidvania progression are optional framework modules rather than game content.
-
-## Room Workflow
-
-Create or edit a room in `scenes/rooms/source/` from `scenes/rooms/template/level_template.tscn`. Bake the room from the World Editor to generate `scenes/rooms/generated/<room_id>/` and `resources/rooms/generated/<room_id>.tres`. Add the generated room resource to a world such as `resources/worlds/main_world.tres`; world placement belongs to that world, not to `RoomData`.
-
-`world_editor/room_template_scene` in `project.godot` selects the scene opened
-by **New Room**, so forked games can provide their own authoring template
-without modifying the plugin.
-
-See [project structure](docs/project-structure.md) for ownership boundaries and verification commands.
-
-See the [components tutorial](docs/components-tutorial.md) for how to assemble
-platforms, fog occluders, doors and phantom walls, including the authoring
-gotchas.
-
-See [art layers](docs/art-layers.md) for the render stack from the backdrop plate upwards:
-what each layer draws, who owns it, why the systems live in `world_root.tscn` instead of
-the room template, and which "assets" (the normal atlas, the dither tile) are baked
-instead of hand-drawn.
 
 ## Controls
 
-- A / Left: move left
-- D / Right: move right
-- W / Up: up input
-- S / Down: down input, fast fall, and duck
-- Space / Z: jump
-- X: dash
-- Hold toward a wall to grab/climb; press jump to wall jump away, or hold up + jump to climb jump
-- F1: cycle grid overlay
-- `[` / `]`: choose a tuning field during play
-- `-` / `=`: decrease or increase the selected tuning field during play
+A/D move, Space/Z jump, X dash, E/C interact, M map, J collection, F1 grid
+overlay. Full keyboard and gamepad reference: `docs/systems/controls.md`.
+
+## Start Here
+
+- `docs/architecture.md` — where code belongs, dependency rules, verification.
+- `docs/extension-guide.md` — how to add a mechanic without touching the kit.
+- `docs/authoring/world-painting.md` — paint terrain, bake rooms, place entities.
+- `docs/testing.md` — suite layout, groups, fixture hygiene.
+- `MIGRATION.md` — path mappings, including this cleanup branch's addon merge.

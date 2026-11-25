@@ -3,7 +3,7 @@ extends Node
 const PLAYER_SCENE_PATH := "res://scenes/player/player.tscn"
 const PROFILE_PATH := "res://addons/platformer_kit/character/resources/movement_profile.gd"
 const INTENT_PATH := "res://addons/platformer_kit/character/input/character_intent.gd"
-const DASH_PATH := "res://addons/platformer_abilities/abilities/dash/default_dash.tres"
+const DASH_PATH := "res://addons/platformer_kit/abilities/dash/default_dash.tres"
 
 
 class StubInput:

@@ -4,6 +4,27 @@ Platformer Kit is the reusable runtime foundation in this repository. It provide
 
 Godot 4.7 is the supported engine baseline for version `0.1.0`.
 
+| Item | Value |
+| --- | --- |
+| Godot | 4.7 |
+| Autoloads | `SaveManager` (`save/save_manager.gd`) is the only one the kit needs |
+| Optional modules | `abilities/` and `combat/` ship inside the kit; the game may leave them unused |
+| Editor plugin | `plugin.cfg` (no editor UI; safe to disable) |
+
+## Modules
+
+| Module | Path | Contents |
+| --- | --- | --- |
+| Core | `core/` | `StateMachine`, `ScopedEventBus`, `TagContainer`, `GameEvent` |
+| Character | `character/` | `CharacterIntent`, `CharacterMotor2D`, `MovementContext`, `MovementProfile`, sensors, ladder motion, input sources |
+| Platforms | `platforms/` | `PlatformBody2D` plus waypoint / fall / elevator / conveyor / rider / fog-occluder components |
+| Interaction | `interaction/` | `Interactable`, `InteractionDetector` |
+| Camera | `camera/` | `PixelCamera2D` |
+| Save | `save/` | `PlatformerSaveManager`, `SaveSnapshot`, `SaveCodec`, `SaveStorage`, `Saveable`, `PersistentId` |
+| World | `world/` | Room/world data contracts, glue, entities, doors, phantom walls, streaming, transitions, validation |
+| Abilities | `abilities/` | `AbilityController`, definitions/runtimes, Dash, Climb, pickups |
+| Combat | `combat/` | `HealthComponent`, `Hitbox`, `Hurtbox`, `DamageData`/`DamageEvent`, invulnerability, knockback |
+
 ## Dependency Rules
 
 Dependencies must point downward:
@@ -15,7 +36,7 @@ Game Content
     -> Godot
 ```
 
-Code under `addons/platformer_kit/` must not reference `game/`, `scripts/`, examples, or optional addons. Optional Addons include `platformer_abilities`, `platformer_combat`, `metroidvania_kit`, `platformer_debug`, and `world_editor`. A game may enable only the modules it needs.
+Code under `addons/platformer_kit/` must not reference `game/`, `scripts/`, examples, or optional addons. The kit ships the core runtime plus the `abilities/` and `combat/` modules; optional addons are `metroidvania_kit`, `platformer_debug`, `world_editor`, `fluid_kit`, `input_mapping`, and `pixelfx`. A game may enable only the modules it needs.
 
 ## Public API
 
@@ -33,6 +54,8 @@ All `class_name` declarations under this addon are source-level public in `0.x`.
 | Entities | `WorldEntity`, `SpawnPoint`, `RoomEntrance`, `SavePoint`, `HazardEntity`, `PickupEntity` | Stable-ID state capture and room integration |
 | Doors | `DoorComponent2D` | `set_closed()`, `toggle()`, `door_opened`, `door_closed` |
 | Hidden walls | `PhantomWallComponent2D` | `reveal()`, `reset_component()`, `wall_revealed`, `is_occluding()`, `get_world_rect()` |
+| Abilities | `AbilityController`, `AbilityDefinition`, `AbilityRuntime`, `DashAbilityRuntime`, `AbilityPickup`, `AbilityContext` | `grant()`, `activate()`, `is_unlocked()`, `available_abilities()` |
+| Combat | `HealthComponent`, `Hitbox`, `Hurtbox`, `DamageEvent`, `DamageData`, `Invulnerability`, `Knockback` | `apply_damage()`, `heal()`, `can_be_hit()`, `hit_landed()` |
 
 Resources such as `MovementProfile`, `RoomData`, `WorldData`, `RegionData`, and `RoomConnectionData` are data contracts. Prefer `.tres` instances over hard-coded game tuning.
 
@@ -63,7 +86,7 @@ A phantom wall is a `TileMapLayer` with collision disabled and `PhantomWallCompo
 
 Instance `world/entities/save_point.tscn` under a source room's `RoomContent/Entities`. Give each instance a unique `entity_id` or `persistent_id`, choose `CONTACT` or `INTERACT`, and set its nested `SpawnPoint.spawn_id` to a room-unique value. Re-bake the room so the spawn ID enters its manifest.
 
-For an ability reward, instance `addons/platformer_abilities/entities/ability_pickup.tscn`, assign a stable ID, and set `ability_definition`. The supplied Dash uses `addons/platformer_abilities/abilities/dash/default_dash.tres`. A compatible body must implement `grant_ability_definition(definition) -> bool`; collection occurs only after that method returns `true`.
+For an ability reward, instance `addons/platformer_kit/abilities/entities/ability_pickup.tscn`, assign a stable ID, and set `ability_definition`. The supplied Dash uses `addons/platformer_kit/abilities/dash/default_dash.tres`. A compatible body must implement `grant_ability_definition(definition) -> bool`; collection occurs only after that method returns `true`.
 
 ## Example Labs
 
@@ -81,8 +104,39 @@ Run automated verification with:
 
 ```powershell
 godot --headless --path . -s res://tests/run_runtime_suite.gd
+godot --headless --path . -s res://tests/run_runtime_suite.gd -- --group=platformer_kit
 godot --headless --path . -s res://tools/validate_project.gd
 ```
+
+## Tests
+
+| Suite file | Covers |
+| --- | --- |
+| `tests/platformer_kit/test_kit_contract.gd` | State machine, event bus, tags, core primitives |
+| `tests/platformer_kit/character/test_character_motor_2d.gd` | Run/fall, over-speed friction, jump buffer, coyote, variable jump, lift caps, tick-rate equivalence |
+| `tests/platformer_kit/character/test_character_input.gd` | Intent, input source, movement profile, sensors |
+| `tests/platformer_kit/character/test_ladder_motion.gd` | Ladder component |
+| `tests/platformer_kit/platforms/test_platforms.gd` | Footprints, waypoint routes, composed motion, fall policies, riders, conveyor, native one-way |
+| `tests/platformer_kit/interaction/test_interaction.gd` | Detector/Interactable contract |
+| `tests/platformer_kit/save/test_save_contracts.gd` | Snapshot validation, entity/module state, commit ordering |
+| `tests/platformer_kit/world/test_world_contract_independence.gd` | World contracts without optional addons |
+| `tests/platformer_kit/abilities/test_abilities.gd` | Runtime, pickup, Climb, Dash composition |
+| `tests/platformer_kit/combat/test_combat_runtime.gd` | Health, hit/hurt routing, teams, invulnerability, knockback |
+
+## Known Limits
+
+- The kit is runtime only: no enemies, dialogue, animation player, or menuing; those
+  belong to the game composition.
+- Save slots are fixed to `1..3` (`SaveCodec`/`SaveStorage`/`SaveManager`). Change
+  all three together if a fork needs more.
+- Abilities and combat are modules: a game that does not instance
+  `AbilityController` / add `Hitbox`+`Hurtbox` pays nothing for them, but the kit
+  also does not auto-wire them into a player.
+- `PlatformBody2D` components assume an `AnimatableBody2D` host moved through
+  physics; teleporting the host directly skips `advance_motion()` bookkeeping.
+- The fog occluder communicates through group names and two methods; it does not
+  require the Metroidvania addon, so deleting that addon leaves harmless group
+  traffic.
 
 ## Compatibility
 

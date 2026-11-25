@@ -13,7 +13,7 @@ config_version=5
 config/name="wellwell"
 config/description="A compact pixel-precise 2D platformer template."
 config/version="0.1.0"
-config/tags=PackedStringArray("2d", "multiplayer")
+config/tags=PackedStringArray("2d")
 run/main_scene="res://scenes/app/main.tscn"
 config/features=PackedStringArray("4.7", "Forward Plus")
 config/icon="res://assets/icon.png"
@@ -22,32 +22,23 @@ config/icon="res://assets/icon.png"
 
 SaveManager="*res://addons/platformer_kit/save/save_manager.gd"
 Collectibles="*res://game/collectibles/collectibles.gd"
-MenuLocalization="*res://scripts/ui/menu_localization.gd"
-GlobalSettings="*res://scripts/save/global_settings_manager.gd"
+MenuLocalization="*res://game/ui/menu_localization.gd"
+GlobalSettings="*res://game/save/global_settings_manager.gd"
 InputMapping="*res://addons/input_mapping/runtime/input_mapping_service.gd"
-GameFreeze="*res://scripts/globals/game_freeze.gd"
+GameFreeze="*res://game/globals/game_freeze.gd"
 MCPGameBridge="*res://addons/godot_mcp/game_bridge/mcp_game_bridge.gd"
 
 [display]
 
 window/size/viewport_width=1280
 window/size/viewport_height=720
-window/size/always_on_top=true
 window/stretch/mode="viewport"
-window/stretch/aspect="expand"
+window/stretch/scale_mode="integer"
 window/per_pixel_transparency/allowed=true
-
-[editor]
-
-movie_writer/video_quality=1.0
-movie_writer/audio_bit_depth=32
-movie_writer/ogv/audio_quality=0.0
-movie_writer/movie_file="D:/Godot4/MovieOutputRAW/wellwellwell.avi"
-movie_writer/fps=30
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/fluid_kit/plugin.cfg", "res://addons/input_mapping/plugin.cfg", "res://addons/metroidvania_kit/plugin.cfg", "res://addons/pixelfx/plugin.cfg", "res://addons/platformer_abilities/plugin.cfg", "res://addons/platformer_combat/plugin.cfg", "res://addons/platformer_debug/plugin.cfg", "res://addons/platformer_kit/plugin.cfg", "res://addons/world_editor/plugin.cfg", "res://addons/godot_mcp/plugin.cfg")
+enabled=PackedStringArray("res://addons/fluid_kit/plugin.cfg", "res://addons/input_mapping/plugin.cfg", "res://addons/metroidvania_kit/plugin.cfg", "res://addons/pixelfx/plugin.cfg", "res://addons/platformer_debug/plugin.cfg", "res://addons/platformer_kit/plugin.cfg", "res://addons/world_editor/plugin.cfg", "res://addons/godot_mcp/plugin.cfg")
 
 [godot_mcp]
 

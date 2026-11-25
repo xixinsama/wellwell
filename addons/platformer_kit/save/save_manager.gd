@@ -70,7 +70,8 @@ func copy_slot(source_slot: int, target_slot: int) -> bool:
     if source == null:
         return false
     var copied: RefCounted = SAVE_SNAPSHOT.new()
-    copied.load_from_dictionary(source.to_dictionary())
+    if copied.load_from_dictionary(source.to_dictionary()) == null:
+        return false
     copied.slot = target_slot
     return _storage.write_slot(copied)
 
@@ -98,6 +99,8 @@ func quick_load() -> RefCounted:
 
 
 func commit(snapshot: RefCounted = null) -> bool:
+    if _commit_timer != null:
+        _commit_timer.stop()
     var target: RefCounted = snapshot if snapshot != null else current_snapshot
     if target == null or target.slot < 1 or target.slot > 3:
         return false
@@ -122,13 +125,13 @@ func get_entity_state(entity_key: String) -> Dictionary:
     return {} if current_snapshot == null else current_snapshot.get_entity_state(entity_key)
 
 
-func set_respawn(room_id: String, spawn_id: String, position: Vector2 = Vector2.ZERO) -> void:
+func set_respawn(room_id: String, spawn_id: String, position: Vector2 = Vector2.ZERO) -> bool:
     if current_snapshot == null:
-        return
-    current_snapshot.respawn_room_id = room_id
-    current_snapshot.respawn_spawn_id = spawn_id
-    current_snapshot.respawn_position = position
+        return false
+    if not current_snapshot.set_respawn(room_id, spawn_id, position):
+        return false
     queue_commit()
+    return true
 
 
 func set_resume_state(position: Vector2, velocity: Vector2, immediate := false) -> bool:

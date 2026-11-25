@@ -16,7 +16,7 @@ extends SceneTree
 const TEMPLATE := preload("res://scenes/rooms/template/level_template.tscn")
 const ROOM_BAKER := preload("res://addons/world_editor/authoring/room/room_baker.gd")
 
-const SOURCE_PATH := "res://scenes/levels/test/water_hall.tscn"
+const SOURCE_PATH := "res://scenes/levels/test_world/water_hall.tscn"
 const ROOM_ID := "water_hall"
 const WIDTH_CELLS := 40
 const HEIGHT_CELLS := 23

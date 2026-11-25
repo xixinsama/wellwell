@@ -4,7 +4,7 @@ extends SceneTree
 ## Run headlessly:
 ##   godot --headless --path . -s res://tools/build_tas_demo_recordings.gd
 
-const DASH := preload("res://addons/platformer_abilities/abilities/dash/default_dash.tres")
+const DASH := preload("res://addons/platformer_kit/abilities/dash/default_dash.tres")
 const TAS_INPUT := preload("res://addons/platformer_debug/runtime/tas_input_source.gd")
 const CHARACTER_INTENT := preload("res://addons/platformer_kit/character/input/character_intent.gd")
 const START := Vector2(40.0, 300.0)

@@ -1,10 +1,10 @@
 [gd_scene format=3 uid="uid://cejq022r3hjrd"]
 
-[ext_resource type="Script" uid="uid://cbx1gcy30d8d2" path="res://scripts/player/player_controller.gd" id="1_player"]
+[ext_resource type="Script" uid="uid://cbx1gcy30d8d2" path="res://game/player/player_controller.gd" id="1_player"]
 [ext_resource type="Resource" uid="uid://bo4x5hdpx5xu4" path="res://resources/player/default_player_tuning.tres" id="2_tuning"]
 [ext_resource type="Script" uid="uid://ceenddibdecxe" path="res://game/player/player_ability_loadout.gd" id="3_loadout"]
-[ext_resource type="Script" uid="uid://kisdkdvvx8tl" path="res://addons/platformer_abilities/runtime/ability_controller.gd" id="4_controller"]
-[ext_resource type="Resource" uid="uid://ckoqbfyfnstkp" path="res://addons/platformer_abilities/abilities/dash/default_dash.tres" id="5_dash"]
+[ext_resource type="Script" uid="uid://kisdkdvvx8tl" path="res://addons/platformer_kit/abilities/runtime/ability_controller.gd" id="4_controller"]
+[ext_resource type="Resource" uid="uid://ckoqbfyfnstkp" path="res://addons/platformer_kit/abilities/dash/default_dash.tres" id="5_dash"]
 [ext_resource type="Script" uid="uid://cly1twinoe4s0" path="res://game/player/player_motion_effects.gd" id="6_motion_effects"]
 [ext_resource type="Script" uid="uid://6mpotacgg17q" path="res://addons/platformer_kit/character/ladder/ladder_motion_component_2d.gd" id="7_ladder_motion"]
 [ext_resource type="Script" uid="uid://wd5pxwl42lc6" path="res://game/player/hero_animation_controller.gd" id="8_hero_animation"]
@@ -13,8 +13,8 @@
 [ext_resource type="Script" uid="uid://d1heatb10qxsl" path="res://game/player/one_way_dash_piercer.gd" id="11_piercer"]
 [ext_resource type="Script" uid="uid://bljvgf2s1jie0" path="res://addons/platformer_kit/interaction/interaction_detector.gd" id="12_detector"]
 [ext_resource type="Script" path="res://game/interaction/player_interaction_controller.gd" id="13_interaction"]
-[ext_resource type="Script" path="res://scripts/player/player_stamina.gd" id="14_stamina"]
-[ext_resource type="Resource" path="res://addons/platformer_abilities/abilities/climb/default_climb.tres" id="15_climb"]
+[ext_resource type="Script" path="res://game/player/player_stamina.gd" id="14_stamina"]
+[ext_resource type="Resource" path="res://addons/platformer_kit/abilities/climb/default_climb.tres" id="15_climb"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_gmlin"]
 size = Vector2(6, 6)

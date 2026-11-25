@@ -19,7 +19,7 @@ const WORLD_RESOURCES := preload("res://addons/world_editor/authoring/world/worl
 const MODEL := preload("res://addons/world_editor/authoring/world/world_layout_model.gd")
 const CONNECTION_DATA := preload("res://addons/platformer_kit/world/data/room_connection_data.gd")
 const BACKUP_DIR := "res://resources/worlds/_partition_backup/"
-const ROOM_SOURCE_DIR := "res://scenes/levels/generated/"
+const ROOM_SOURCE_DIR := "res://scenes/levels/"
 
 var _partition: Object = PARTITION.new()
 var _importer: Object = IMPORTER.new()

@@ -1,7 +1,7 @@
 extends Node
 
 const PLAYER_SCENE_PATH := "res://scenes/player/player.tscn"
-const DEFAULT_DASH := preload("res://addons/platformer_abilities/abilities/dash/default_dash.tres")
+const DEFAULT_DASH := preload("res://addons/platformer_kit/abilities/dash/default_dash.tres")
 const CHARACTER_INTENT := preload("res://addons/platformer_kit/character/input/character_intent.gd")
 
 
@@ -41,7 +41,7 @@ func run() -> Array[String]:
 		player.velocity = Vector2(30, 40)
 		if player.call("_apply_ability_motion", CHARACTER_INTENT.new()) or player.velocity != Vector2(30, 40):
 			failures.append("PlayerController changed motor velocity while Dash was inactive")
-	var player_source := FileAccess.get_file_as_string("res://scripts/player/player_controller.gd")
+	var player_source := FileAccess.get_file_as_string("res://game/player/player_controller.gd")
 	if not player_source.contains("_step_dash(intent, delta)"):
 		failures.append("PlayerController has no dash state step")
 	if not player_source.contains("_step_wall(intent, delta)"):

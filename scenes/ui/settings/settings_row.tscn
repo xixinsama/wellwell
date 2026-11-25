@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=3 uid="uid://h407gkgoq7fy"]
 
-[ext_resource type="Script" uid="uid://drj80p0lgi172" path="res://scripts/ui/settings/settings_row.gd" id="1_row"]
+[ext_resource type="Script" uid="uid://drj80p0lgi172" path="res://game/ui/settings/settings_row.gd" id="1_row"]
 
 [node name="SettingsRow" type="VBoxContainer"]
 theme_override_constants/separation = 0

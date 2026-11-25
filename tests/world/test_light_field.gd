@@ -7,9 +7,9 @@ extends Node
 ## layer, the overlay quads, and the hand-off of the map to the fog and the
 ## terrain outline.
 
-const LIGHT_FIELD: Script = preload("res://scripts/world/light_field.gd")
+const LIGHT_FIELD: Script = preload("res://game/world/light_field.gd")
 const FOG_OF_WAR: Script = preload("res://addons/metroidvania_kit/map/discovery/fog_of_war.gd")
-const TERRAIN_HIGHLIGHT: Script = preload("res://scripts/world/terrain_highlight.gd")
+const TERRAIN_HIGHLIGHT: Script = preload("res://game/world/terrain_highlight.gd")
 const ROOM_DATA: Script = preload("res://addons/platformer_kit/world/data/room_data.gd")
 
 const TILE := 8

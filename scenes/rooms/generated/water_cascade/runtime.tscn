@@ -2,19 +2,19 @@
 
 [ext_resource type="Script" path="res://addons/platformer_kit/world/entities/spawn_point.gd" id="1_uq67k"]
 [ext_resource type="Script" path="res://addons/fluid_kit/runtime/gas/fog_light.gd" id="2_47lp6"]
-[ext_resource type="Script" path="res://scripts/world/fog_zone.gd" id="3_g8scf"]
+[ext_resource type="Script" path="res://game/world/fog_zone.gd" id="3_g8scf"]
 [ext_resource type="Script" path="res://addons/fluid_kit/runtime/water/water_basin.gd" id="4_3bewr"]
 
-[node name="RoomRuntimeContent" type="Node2D" unique_id=493499588]
+[node name="RoomRuntimeContent" type="Node2D" unique_id=1186621309]
 
-[node name="Entities" type="Node2D" parent="." unique_id=2095874784]
+[node name="Entities" type="Node2D" parent="." unique_id=1624350988]
 
-[node name="StartSpawn" type="Marker2D" parent="Entities" unique_id=1835016155]
+[node name="StartSpawn" type="Marker2D" parent="Entities" unique_id=1585492574]
 position = Vector2(232, 144)
 script = ExtResource("1_uq67k")
 spawn_id = "start"
 
-[node name="CascadeLightTop" type="Node2D" parent="Entities" unique_id=949295380]
+[node name="CascadeLightTop" type="Node2D" parent="Entities" unique_id=1560114126]
 position = Vector2(64, 0)
 script = ExtResource("2_47lp6")
 light_id = "cascade_top"
@@ -22,7 +22,7 @@ radius = 96.0
 energy = 0.9
 color = Color(1, 0.9, 0.72, 1)
 
-[node name="CascadeLightBottom" type="Node2D" parent="Entities" unique_id=148219808]
+[node name="CascadeLightBottom" type="Node2D" parent="Entities" unique_id=1105112804]
 position = Vector2(120, 176)
 script = ExtResource("2_47lp6")
 light_id = "cascade_bottom"
@@ -30,22 +30,22 @@ radius = 110.0
 energy = 0.8
 color = Color(0.6, 0.82, 1, 1)
 
-[node name="CascadeRoomLight" type="Node2D" parent="Entities" unique_id=1176734192]
+[node name="CascadeRoomLight" type="Node2D" parent="Entities" unique_id=1065295295]
 script = ExtResource("3_g8scf")
 mode = 1
 size_cells = Vector2i(40, 23)
 zone_id = "water_cascade_lit"
 
-[node name="WaterBasinLeft" type="Node2D" parent="Entities" unique_id=1601364231]
+[node name="WaterBasinLeft" type="Node2D" parent="Entities" unique_id=993243911]
 position = Vector2(8, 112)
 script = ExtResource("4_3bewr")
 size_cells = Vector2i(12, 5)
 basin_id = "left_pool"
 
-[node name="WaterBasinRight" type="Node2D" parent="Entities" unique_id=1512760777]
+[node name="WaterBasinRight" type="Node2D" parent="Entities" unique_id=1249535286]
 position = Vector2(104, 176)
 script = ExtResource("4_3bewr")
 size_cells = Vector2i(26, 1)
 basin_id = "right_pool"
 
-[node name="Foreground" type="Node2D" parent="." unique_id=165533718]
+[node name="Foreground" type="Node2D" parent="." unique_id=173223823]

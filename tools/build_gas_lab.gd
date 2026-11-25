@@ -11,7 +11,7 @@ extends SceneTree
 const TEMPLATE := preload("res://scenes/rooms/template/level_template.tscn")
 const ROOM_BAKER := preload("res://addons/world_editor/authoring/room/room_baker.gd")
 
-const SOURCE_PATH := "res://scenes/levels/test/gas_lab.tscn"
+const SOURCE_PATH := "res://scenes/levels/test_world/gas_lab.tscn"
 const ROOM_ID := "gas_lab"
 const WIDTH_CELLS := 40
 const HEIGHT_CELLS := 23

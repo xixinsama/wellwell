@@ -1,11 +1,11 @@
 extends Node
 
 const LOADOUT_PATH := "res://game/player/player_ability_loadout.gd"
-const CONTROLLER := preload("res://addons/platformer_abilities/runtime/ability_controller.gd")
+const CONTROLLER := preload("res://addons/platformer_kit/abilities/runtime/ability_controller.gd")
 const PROGRESSION := preload("res://addons/metroidvania_kit/progression/progression_context.gd")
 const INTENT := preload("res://addons/platformer_kit/character/input/character_intent.gd")
 const ENVIRONMENT := preload("res://addons/platformer_kit/character/environment/character_environment_snapshot.gd")
-const DEFAULT_DASH := preload("res://addons/platformer_abilities/abilities/dash/default_dash.tres")
+const DEFAULT_DASH := preload("res://addons/platformer_kit/abilities/dash/default_dash.tres")
 
 
 func run() -> Array[String]:

@@ -1,8 +1,0 @@
-ERROR: Attempted to use the same texture in framebuffer attachment and a uniform (set: 1, binding: 1), this is not allowed.
-   at: draw_list_bind_uniform_set (servers/rendering/rendering_device.cpp:5806)
-ERROR: Attempted to use the same texture in framebuffer attachment and a uniform (set: 1, binding: 1), this is not allowed.
-   at: draw_list_bind_uniform_set (servers/rendering/rendering_device.cpp:5806)
-WARNING: 4 RIDs of type "CanvasItem" were leaked.
-   at: _free_rids (servers/rendering/renderer_canvas_cull.cpp:2735)
-WARNING: 6 ObjectDB instances were leaked at exit (run with `--verbose` for details).
-   at: cleanup (core/object/object.cpp:2536)

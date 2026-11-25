@@ -7,7 +7,7 @@ extends Node
 ## a tile without a collision shape (a ladder, a vine) must not be masked, a sealed
 ## pocket must stay dark, and a room without solids must not grow a quad.
 
-const HIGHLIGHT := preload("res://scripts/world/terrain_highlight.gd")
+const HIGHLIGHT := preload("res://game/world/terrain_highlight.gd")
 const TERRAIN_SCENE := preload("res://scenes/rooms/generated/water_grid/terrain.tscn")
 
 const TILE := 8

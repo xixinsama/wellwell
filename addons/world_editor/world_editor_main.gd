@@ -15,6 +15,7 @@ const TEMPLATE_SCENE_SETTING := "world_editor/room_template_scene"
 const ROOM_STATUS := preload("res://addons/world_editor/authoring/world/room_status_service.gd")
 const ROOM_ANNOTATIONS := preload("res://addons/world_editor/authoring/world/room_annotation_service.gd")
 const ROOM_SCENE_WRITER := preload("res://addons/world_editor/authoring/world/room_scene_writer.gd")
+const ROOM_BAKE_PATHS := preload("res://addons/world_editor/authoring/room/room_bake_paths.gd")
 ## The 3D stack view is loaded by path so the editor keeps working (flat 2D only)
 ## when the script is absent, e.g. in a stripped checkout.
 const STACK_3D_PATH := "res://addons/world_editor/world_stack_3d_layer.gd"
@@ -310,7 +311,7 @@ func create_room_from_rect(chunk_rect: Rect2i) -> Dictionary:
         if not create_error.is_empty():
             return _fail_and_show(create_error)
     var room_id := _unique_room_id(chunk_rect)
-    var source_dir := "res://scenes/levels/generated/%s/" % world_data.world_id
+    var source_dir := "res://scenes/levels/%s/" % world_data.world_id
     var source_path := source_dir + room_id + ".tscn"
     var source := _new_room_source(room_id, chunk_rect)
     if source == null:
@@ -404,7 +405,7 @@ func _unique_room_id(chunk_rect: Rect2i) -> String:
     var candidate := base
     var index := 2
     while world_data.has_room(candidate) or FileAccess.file_exists(
-        "res://scenes/levels/generated/%s/%s.tscn" % [world_data.world_id, candidate]
+        "res://scenes/levels/%s/%s.tscn" % [world_data.world_id, candidate]
     ):
         candidate = "%s_%d" % [base, index]
         index += 1
@@ -900,10 +901,10 @@ func create_room_wizard() -> void:
 func create_room(room_id: String, display_name: String, source_path: String) -> Dictionary:
     if world_data == null or world_data.resource_path.is_empty() or not FileAccess.file_exists(world_data.resource_path):
         return _failure("Select or create a saved WorldData resource first")
-    var id := room_id.strip_edges()
+    var id := ROOM_BAKE_PATHS.sanitize_room_id(room_id)
     var path := source_path.strip_edges()
     if id.is_empty():
-        return _failure("Room id must not be empty")
+        return _failure("Room id must contain letters, digits or underscores")
     if world_data.has_room(id):
         return _failure("A room with this id already exists: %s" % id)
     var result: Dictionary = ROOM_SCENE_WRITER.write_new_room(path, id, display_name)
@@ -970,8 +971,8 @@ func _add_wizard_field(grid: GridContainer, key: String) -> LineEdit:
 
 
 func _on_wizard_id_changed(text: String) -> void:
-    var id := text.strip_edges()
-    var next_auto := "" if id.is_empty() else "res://scenes/levels/main/%s.tscn" % id
+    var id := ROOM_BAKE_PATHS.sanitize_room_id(text)
+    var next_auto := "" if id.is_empty() or world_data == null else "res://scenes/levels/%s/%s.tscn" % [world_data.world_id, id]
     if _wizard_path.text.is_empty() or _wizard_path.text == _auto_path:
         _wizard_path.text = next_auto
     _auto_path = next_auto

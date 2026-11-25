@@ -1,6 +1,6 @@
 [gd_scene format=3]
 
-[ext_resource type="Script" path="res://scripts/puzzle/view/puzzle_tile_piece.gd" id="1_tile_piece"]
+[ext_resource type="Script" path="res://game/puzzle/view/puzzle_tile_piece.gd" id="1_tile_piece"]
 [ext_resource type="TileSet" uid="uid://ct7c6ejoixgkq" path="res://resources/tilesets/primordial_tileset.tres" id="2_tileset"]
 
 [node name="PuzzleTilePiece" type="Polygon2D"]

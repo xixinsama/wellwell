@@ -4,37 +4,37 @@
 [ext_resource type="Script" path="res://addons/fluid_kit/runtime/water/water_basin.gd" id="2_15qyb"]
 [ext_resource type="Script" path="res://addons/fluid_kit/runtime/water/water_gate.gd" id="3_uwlvf"]
 [ext_resource type="Script" path="res://addons/fluid_kit/runtime/gas/fog_light.gd" id="4_0y2d1"]
-[ext_resource type="Script" path="res://scripts/world/fog_zone.gd" id="5_wgf8o"]
+[ext_resource type="Script" path="res://game/world/fog_zone.gd" id="5_wgf8o"]
 
-[node name="RoomRuntimeContent" type="Node2D" unique_id=2137012788]
+[node name="RoomRuntimeContent" type="Node2D" unique_id=125248915]
 
-[node name="Entities" type="Node2D" parent="." unique_id=1723739770]
+[node name="Entities" type="Node2D" parent="." unique_id=323250615]
 
-[node name="StartSpawn" type="Marker2D" parent="Entities" unique_id=539590343]
+[node name="StartSpawn" type="Marker2D" parent="Entities" unique_id=1741336605]
 position = Vector2(36, 48)
 script = ExtResource("1_lyq8g")
 spawn_id = "start"
 
-[node name="WaterBasinA" type="Node2D" parent="Entities" unique_id=678332319]
+[node name="WaterBasinA" type="Node2D" parent="Entities" unique_id=1069287280]
 position = Vector2(8, 88)
 script = ExtResource("2_15qyb")
 size_cells = Vector2i(15, 7)
 basin_id = "tank_a"
 
-[node name="WaterBasinB" type="Node2D" parent="Entities" unique_id=960086317]
+[node name="WaterBasinB" type="Node2D" parent="Entities" unique_id=949131525]
 position = Vector2(152, 152)
 script = ExtResource("2_15qyb")
 size_cells = Vector2i(20, 2)
 basin_id = "basin_b"
 
-[node name="SluiceGate" type="Node2D" parent="Entities" unique_id=2038224026]
+[node name="SluiceGate" type="Node2D" parent="Entities" unique_id=1135234789]
 position = Vector2(128, 88)
 script = ExtResource("3_uwlvf")
 gate_id = "spill_gate"
 open_delay_seconds = 0.9
 slide_seconds = 0.5
 
-[node name="HarborLight" type="Node2D" parent="Entities" unique_id=1340774998]
+[node name="HarborLight" type="Node2D" parent="Entities" unique_id=251945788]
 position = Vector2(56, 56)
 script = ExtResource("4_0y2d1")
 light_id = "harbor"
@@ -43,7 +43,7 @@ energy = 1.15
 color = Color(1, 0.76, 0.44, 1)
 flicker = 0.16
 
-[node name="BasinLight" type="Node2D" parent="Entities" unique_id=59523517]
+[node name="BasinLight" type="Node2D" parent="Entities" unique_id=718006016]
 position = Vector2(248, 116)
 script = ExtResource("4_0y2d1")
 light_id = "basin"
@@ -53,10 +53,10 @@ color = Color(0.52, 0.82, 1, 1)
 flicker = 0.08
 flicker_speed = 2.4
 
-[node name="HallLight" type="Node2D" parent="Entities" unique_id=1220157190]
+[node name="HallLight" type="Node2D" parent="Entities" unique_id=1268936708]
 script = ExtResource("5_wgf8o")
 mode = 1
 size_cells = Vector2i(40, 23)
 zone_id = "water_hall_lit"
 
-[node name="Foreground" type="Node2D" parent="." unique_id=251874394]
+[node name="Foreground" type="Node2D" parent="." unique_id=2052286256]

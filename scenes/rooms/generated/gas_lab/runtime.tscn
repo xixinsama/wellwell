@@ -3,18 +3,18 @@
 [ext_resource type="Script" path="res://addons/platformer_kit/world/entities/spawn_point.gd" id="1_4q5lt"]
 [ext_resource type="Script" path="res://addons/fluid_kit/runtime/gas/gas_vent.gd" id="2_6csgu"]
 [ext_resource type="Script" path="res://addons/fluid_kit/runtime/gas/fog_light.gd" id="3_8iymv"]
-[ext_resource type="Script" path="res://scripts/world/fog_zone.gd" id="4_18h3m"]
+[ext_resource type="Script" path="res://game/world/fog_zone.gd" id="4_18h3m"]
 
-[node name="RoomRuntimeContent" type="Node2D" unique_id=2143583850]
+[node name="RoomRuntimeContent" type="Node2D" unique_id=1449555760]
 
-[node name="Entities" type="Node2D" parent="." unique_id=1170190009]
+[node name="Entities" type="Node2D" parent="." unique_id=1825486428]
 
-[node name="StartSpawn" type="Marker2D" parent="Entities" unique_id=321890351]
+[node name="StartSpawn" type="Marker2D" parent="Entities" unique_id=700062920]
 position = Vector2(24, 168)
 script = ExtResource("1_4q5lt")
 spawn_id = "start"
 
-[node name="LightVent" type="Node2D" parent="Entities" unique_id=263192515]
+[node name="LightVent" type="Node2D" parent="Entities" unique_id=915064365]
 position = Vector2(10, 64)
 script = ExtResource("2_6csgu")
 channel = 2
@@ -23,7 +23,7 @@ rate = 2.2
 jet_speed = 380.0
 vent_id = "LightVent"
 
-[node name="NeutralVent" type="Node2D" parent="Entities" unique_id=327220782]
+[node name="NeutralVent" type="Node2D" parent="Entities" unique_id=105161085]
 position = Vector2(10, 88)
 script = ExtResource("2_6csgu")
 radius = 20.0
@@ -31,7 +31,7 @@ rate = 2.2
 jet_speed = 380.0
 vent_id = "NeutralVent"
 
-[node name="HeavyVent" type="Node2D" parent="Entities" unique_id=1996717526]
+[node name="HeavyVent" type="Node2D" parent="Entities" unique_id=1381179084]
 position = Vector2(10, 112)
 script = ExtResource("2_6csgu")
 channel = 0
@@ -40,7 +40,7 @@ rate = 2.2
 jet_speed = 380.0
 vent_id = "HeavyVent"
 
-[node name="LabLightTop" type="Node2D" parent="Entities" unique_id=1721203956]
+[node name="LabLightTop" type="Node2D" parent="Entities" unique_id=832418582]
 position = Vector2(56, 40)
 script = ExtResource("3_8iymv")
 light_id = "lab_top"
@@ -48,7 +48,7 @@ radius = 90.0
 color = Color(1, 0.86, 0.6, 1)
 flicker = 0.1
 
-[node name="LabLightBottom" type="Node2D" parent="Entities" unique_id=956848934]
+[node name="LabLightBottom" type="Node2D" parent="Entities" unique_id=399788225]
 position = Vector2(264, 148)
 script = ExtResource("3_8iymv")
 light_id = "lab_bottom"
@@ -58,10 +58,10 @@ color = Color(0.55, 0.8, 1, 1)
 flicker = 0.06
 flicker_speed = 2.0
 
-[node name="GasLabLight" type="Node2D" parent="Entities" unique_id=1953347537]
+[node name="GasLabLight" type="Node2D" parent="Entities" unique_id=112453840]
 script = ExtResource("4_18h3m")
 mode = 1
 size_cells = Vector2i(40, 23)
 zone_id = "gas_lab_lit"
 
-[node name="Foreground" type="Node2D" parent="." unique_id=2120760267]
+[node name="Foreground" type="Node2D" parent="." unique_id=1130348634]

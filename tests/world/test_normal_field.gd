@@ -7,8 +7,8 @@ extends Node
 ## that keeps the owner's node untouched, the hand-off to the shade/glow
 ## materials, the fallback when a room has no normals, and room rebinding.
 
-const NORMAL_FIELD: Script = preload("res://scripts/world/normal_field.gd")
-const LIGHT_FIELD: Script = preload("res://scripts/world/light_field.gd")
+const NORMAL_FIELD: Script = preload("res://game/world/normal_field.gd")
+const LIGHT_FIELD: Script = preload("res://game/world/light_field.gd")
 const ROOM_DATA: Script = preload("res://addons/platformer_kit/world/data/room_data.gd")
 
 const TILE := 8

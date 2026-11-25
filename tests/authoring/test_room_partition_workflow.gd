@@ -270,7 +270,7 @@ func _make_terrain() -> bool:
 func _cleanup() -> void:
 	for room_id: String in ["room_a", "room_b", "room_c", "room_wide", "merged_room", "part_a", "part_b"]:
 		_remove_path(SOURCE_DIR + room_id + ".tscn")
-		_remove_path("res://scenes/levels/generated/%s/%s.tscn" % [WORLD_ID, room_id])
+		_remove_path("res://scenes/levels/%s/%s.tscn" % [WORLD_ID, room_id])
 		_remove_path("res://resources/rooms/generated/%s.tres" % room_id)
 		_remove_directory("res://scenes/rooms/generated/%s" % room_id)
 	_remove_path(WORLD_PATH)
@@ -286,5 +286,20 @@ func _remove_path(path: String) -> void:
 
 func _remove_directory(path: String) -> void:
 	var absolute := ProjectSettings.globalize_path(path)
-	if DirAccess.dir_exists_absolute(absolute):
-		DirAccess.remove_absolute(absolute)
+	if not DirAccess.dir_exists_absolute(absolute):
+		return
+	var directory := DirAccess.open(absolute)
+	if directory == null:
+		return
+	directory.list_dir_begin()
+	var entry := directory.get_next()
+	while not entry.is_empty():
+		if entry != "." and entry != "..":
+			var entry_path := absolute.path_join(entry)
+			if directory.current_is_dir():
+				_remove_directory(entry_path)
+			else:
+				DirAccess.remove_absolute(entry_path)
+		entry = directory.get_next()
+	directory.list_dir_end()
+	DirAccess.remove_absolute(absolute)

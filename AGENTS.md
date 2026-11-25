@@ -1,53 +1,92 @@
 # Repository Guidelines
 
-## Project Structure & Module Organization
+`wellwell` is a Godot 4.7 pixel platformer kit plus five showcase worlds. It is
+maintained by agents: humans mostly author rooms, art and tuning; agents fix,
+optimise and extend the systems. Optimise every choice for those two readers.
 
-`wellwell` is a compact Godot 4 pixel-platformer template. The main scene is `res://scenes/main.tscn`, with gameplay routed through `scenes/game.tscn` and player content in `scenes/player/`. GDScript lives under `scripts/`: keep movement code in `scripts/player/`, save/settings code in `scripts/save/`, world triggers and fog systems in `scripts/world/`, camera logic in `scripts/camera/`, and debug-only helpers in `scripts/tools/`. Reusable resources belong in `resources/`, including player tuning at `resources/player/default_player_tuning.tres`. Tests are grouped by feature under `tests/save/` and `tests/world/`; add new test scripts to `tests/runtime_suite.gd`.
+## Read First
 
-## Build, Test, and Development Commands
+1. `docs/architecture.md` — directory map, dependency rules, verification.
+2. `docs/README.md` — index: which subsystem doc and which code folder you need.
+3. `docs/testing.md` — suite layout, groups, fixture hygiene.
+4. `docs/extension-guide.md` — how to add a mechanic by composition.
 
-- `godot --path .`: open/run the project locally using `project.godot`.
-- `godot --path . res://scenes/main.tscn`: run the main scene directly.
-- `godot --headless --path . -s res://tests/run_runtime_suite.gd`: run the runtime test suite and return a nonzero exit code on failure.
+## Where Code Belongs
 
-Use the Godot editor for `.tscn`, `.tres`, and project setting changes when practical, since serialized files are easy to corrupt by hand.
+- Reusable runtime goes in `addons/platformer_kit/` (core, character, platforms,
+  interaction, camera, save, world, `abilities/`, `combat/`). It must never
+  preload `res://game/`, `examples/`, project scenes, or an optional addon —
+  `tests/tools/test_framework_boundaries.gd` fails the suite if it does.
+- Optional engine-side modules go in their own addon: `platformer_debug`,
+  `metroidvania_kit`, `fluid_kit`, `input_mapping`, `world_editor`, `pixelfx`.
+- Project-specific code goes in `game/<area>/` (app, player, puzzle, save, ui,
+  world, shaders, collectibles, entities, interaction, map, water). If the code
+  is only useful to this game, it does not belong in an addon.
+- Room source scenes go in `scenes/levels/<world_id>/`. Baked outputs in
+  `scenes/rooms/generated/<room_id>/` and `resources/rooms/generated/` are
+  generated: bake them with the World Editor, never hand-edit.
+- World terrain is one scene per world: `scenes/worlds/<world_id>/terrain.tscn`.
+  Rooms are rectangles sliced out of it at bake time.
+- Tests mirror owners: `tests/<owner>/test_<feature>.gd`. New folder only for a
+  new owner.
+- One-shot CLI maintenance scripts go in `tools/`; runtime debug tools in the
+  addon they serve.
 
-## Coding Style & Naming Conventions
+## Build, Test, Verify
 
-Use GDScript with typed variables, explicit return types, and small focused methods. Match the existing naming style: `snake_case` for files, methods, variables, input actions, and test files; `PascalCase` for `class_name` values such as `PlayerController`. Prefer exported `Resource` tuning values over hard-coded constants for gameplay feel. Keep physics authority in `_physics_process()` and preserve float positions/velocities; pixel clarity is handled by viewport scaling, texture settings, and camera rounding.
+```powershell
+godot --path .                                   # open the editor
+godot --headless --path . -s res://tests/run_runtime_suite.gd
+godot --headless --path . -s res://tests/run_runtime_suite.gd -- --group=world
+godot --headless --path . --check-only -s <script>
+godot --headless --editor --path . --quit        # refresh import/class caches
+godot --headless --path . --quit-after 120       # boot log must stay clean
+godot --headless --path . -s res://tools/validate_project.gd
+```
+
+A change is done only when the full suite exits 0, the boot log has no
+`ERROR:`/`WARNING:` lines, and visible behaviour was checked with a deterministic
+playtest (frozen game time + screenshot or runtime digest), not by eye.
+
+Use the Godot MCP bridge for scene/resource work and playtests. Never hand-edit
+`tile_map_data`; use the TileMapLayer tools. Do not invent `.uid` files. When art
+is missing, ship a placeholder and say so.
 
 ## Script Hygiene (always on)
 
-The editor Debugger must stay empty. These rules are not style preferences here;
-treat every analyzer warning as a defect and fix it in the same pass that
-introduced it:
+- Typed variables, explicit return types, small focused methods, `snake_case`
+  files/functions, `PascalCase` `class_name`.
+- Never reuse an engine member name for your own identifier (`position`,
+  `material`, `size`, `name`, `root`, `visible`, `text`, `offset`, `scale`,
+  `rotation`, `owner`, `theme`, `color`, …) — `SHADOWED_VARIABLE_BASE_CLASS`.
+  Use the domain name: `door_position`, `scene_root`, `label`.
+- Unused callback parameters get a `_` prefix, never deletion.
+- Keep fractional math fractional (`cells.x / 2.0`); never shadow built-ins
+  (`seed`, `randi`, `print`).
+- `tests/tools/test_script_hygiene.gd` enforces the shadowing rules across the
+  whole project. A finding is a test failure.
 
-- **Never reuse an engine member name for your own identifier.** A local,
-  parameter, loop variable or member named `position`, `material`, `modulate`,
-  `size`, `name`, `root`, `visible`, `text`, `offset`, `scale`, `rotation`,
-  `owner`, `theme` or `color` shadows the base class property
-  (`SHADOWED_VARIABLE_BASE_CLASS`). Use the domain name instead: `pointer`,
-  `door_position`, `tooltip_position`, `scene_root`, `label`.
-- **Unused parameters** get a `_` prefix, never a deletion, when the signature is
-  shared with the engine, a callback, or a test fixture.
-- **No integer division by accident**: when a value is meant to stay fractional,
-  keep one operand a float (`cells.x / 2.0`).
-- **No shadowing of built-in functions** (`seed`, `randi`, `print`, …).
-- `check-only` every script you touch (`godot --headless --path . --check-only -s
-  <script>`), then run the suite. `tests/tools/test_script_hygiene.gd` enforces
-  the two warnings above across the whole project; a finding is a test failure.
-- The game must boot with no `WARNING:`/`ERROR:` lines. Do not leave unrelated
-  warnings behind "for later": the next agent cannot tell them apart from real
-  regressions.
+## Testing Rules
 
-## Testing Guidelines
+- Every `test_*.gd` must be registered in `tests/runtime_suite.gd`;
+  `tests/tools/test_suite_registration.gd` enforces it both ways.
+- Tests expose `run() -> Array[String]`; empty means success.
+- Fixtures live under `user://`. If a test must write into `res://`, clean up
+  recursively even on failure — a suite run must leave `git status` unchanged.
+- Prove logic with the suite, prove visuals with a frozen playtest. "It looks
+  right" is not evidence.
 
-Runtime tests are plain GDScript nodes exposing `run() -> Array[String]`, where an empty array means success and each string describes a failure. Name tests by feature, for example `tests/world/test_fog_visibility.gd`. After adding a test file, preload it in `tests/runtime_suite.gd`. Run the headless suite before submitting movement, save, scene-contract, or world-system changes.
+## Documentation Rules
 
-## Commit & Pull Request Guidelines
+- Paths in docs are live paths. Move code and update the docs in the same
+  commit; `tests/tools/test_framework_documentation_contract.gd` guards the kit
+  README, `CHANGELOG.md` and `MIGRATION.md`.
+- Put subsystem docs in `docs/{authoring,systems,rendering}/` and link them from
+  `docs/README.md`. Do not add a new top-level doc without adding it to the index.
+- Design history belongs in git history, not in `docs/`.
 
-Recent history uses short subjects with prefixes such as `feat:`, `fix:`, and `docs:`. Keep commit messages imperative and scoped, for example `fix: preserve coyote time after platform exit`. Pull requests should include a concise behavior summary, commands run, linked issues or tasks, and screenshots or short captures for visible gameplay, scene, camera, or debug-HUD changes.
+## Commit Style
 
-## Agent-Specific Instructions
-
-Before editing, check for existing user changes and avoid reverting unrelated work. Keep additions aligned with `docs/extension-guide.md`: compose new mechanics around the player controller, place world behaviors in `scripts/world/`, and avoid broad game-specific systems until the template foundation is stable.
+Short imperative subjects with a prefix: `feat:`, `fix:`, `refactor:`,
+`chore:`, `docs:`, `test:`. One logical change per commit. Before editing, check
+for existing user changes and never revert unrelated work.

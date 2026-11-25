@@ -10,11 +10,11 @@
 [ext_resource type="PackedScene" uid="uid://xdpcjsmnvhkj" path="res://addons/platformer_debug/runtime/debug_hud.tscn" id="6_qmbol"]
 [ext_resource type="Script" uid="uid://jvu53oscg1ib" path="res://addons/metroidvania_kit/map/discovery/fog_of_war.gd" id="7_qmbol"]
 [ext_resource type="PackedScene" uid="uid://d6sqanrtcnmo" path="res://addons/platformer_debug/runtime/debug_overlay_2d.tscn" id="8_debug_overlay"]
-[ext_resource type="Script" uid="uid://cdmjx61en7xio" path="res://scripts/world/ladder_tile_area_builder.gd" id="9_ladder_builder"]
-[ext_resource type="Script" uid="uid://bcvhavis06bpg" path="res://scripts/world/crumble_runtime.gd" id="10_crumble"]
+[ext_resource type="Script" uid="uid://cdmjx61en7xio" path="res://game/world/ladder_tile_area_builder.gd" id="9_ladder_builder"]
+[ext_resource type="Script" uid="uid://bcvhavis06bpg" path="res://game/world/crumble_runtime.gd" id="10_crumble"]
 [ext_resource type="Script" uid="uid://dleqflojm4oba" path="res://addons/fluid_kit/runtime/water/water_field.gd" id="11_water"]
 [ext_resource type="Script" uid="uid://fqwahtimacjq" path="res://addons/fluid_kit/runtime/gas/atmosphere.gd" id="12_atmosphere"]
-[ext_resource type="Script" path="res://scripts/world/spike_hazard_area_builder.gd" id="13_spike_hazard"]
+[ext_resource type="Script" path="res://game/world/spike_hazard_area_builder.gd" id="13_spike_hazard"]
 
 [node name="RoomAuthoringRoot" type="Node2D" unique_id=1018949667]
 script = ExtResource("1_f53rw")

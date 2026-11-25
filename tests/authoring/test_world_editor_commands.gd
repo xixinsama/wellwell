@@ -398,6 +398,11 @@ func _assert_command_states_and_import_history(failures: Array[String]) -> void:
     if editor.opened_path != "res://scenes/rooms/template/level_template.tscn" or not editor.inherited:
         failures.append("New Room no longer opens an inherited level template")
     main.call("set_world_data", imported_world)
+    main.call("_ensure_new_room_dialog")
+    main.call("_on_wizard_id_changed", "Wizard Room")
+    var wizard_path := String((main.get("_wizard_path") as LineEdit).text)
+    if not wizard_path.ends_with("/wizard_room.tscn"):
+        failures.append("New Room wizard did not normalize its default source path: %s" % wizard_path)
     main.call("select_room", "imported_room")
     main.call("open_selected_source")
     if editor.opened_path != CONTROLLER_SOURCE_PATH:

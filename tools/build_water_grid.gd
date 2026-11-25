@@ -10,7 +10,7 @@ const TEMPLATE := preload("res://scenes/rooms/template/level_template.tscn")
 const ROOM_BAKER := preload("res://addons/world_editor/authoring/room/room_baker.gd")
 const WATER_GRID_SCRIPT: Script = preload("res://addons/fluid_kit/runtime/water/water_grid.gd")
 
-const SOURCE_PATH := "res://scenes/levels/test/water_grid.tscn"
+const SOURCE_PATH := "res://scenes/levels/test_world/water_grid.tscn"
 const ROOM_ID := "water_grid"
 const WIDTH_CELLS := 40
 const HEIGHT_CELLS := 23
