@@ -5,3 +5,4 @@ extends "res://addons/platformer_kit/world/entities/world_entity.gd"
 
 func _ready() -> void:
 	entity_type = "hazard"
+	add_to_group(&"hazard_zone")

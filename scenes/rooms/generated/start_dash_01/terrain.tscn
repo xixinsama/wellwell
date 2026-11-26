@@ -1,8 +1,8 @@
 [gd_scene format=4 uid="uid://cf4m6jlkxh2rr"]
 
-[ext_resource type="TileSet" path="res://resources/tilesets/primordial_tileset.tres" id="1_r63h3"]
-[ext_resource type="Script" path="res://game/world/ladder_tile_area_builder.gd" id="2_ouh6p"]
-[ext_resource type="Script" path="res://game/world/spike_hazard_area_builder.gd" id="3_n853e"]
+[ext_resource type="TileSet" uid="uid://ct7c6ejoixgkq" path="res://resources/tilesets/primordial_tileset.tres" id="1_r63h3"]
+[ext_resource type="Script" uid="uid://cdmjx61en7xio" path="res://game/world/ladder_tile_area_builder.gd" id="2_ouh6p"]
+[ext_resource type="Script" uid="uid://blg8qi3x7bbx6" path="res://game/world/spike_hazard_area_builder.gd" id="3_n853e"]
 
 [node name="RoomTerrain" type="Node2D" unique_id=1623890649]
 

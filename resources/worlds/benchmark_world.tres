@@ -1,0 +1,288 @@
+[gd_resource type="Resource" script_class="WorldData" format=3 uid="uid://blytq7othu1jf"]
+
+[ext_resource type="Script" uid="uid://b1ws1oeewd0ks" path="res://addons/platformer_kit/world/data/world_room_placement_data.gd" id="1_ekf3h"]
+[ext_resource type="Script" uid="uid://iffewvgc6ofw" path="res://addons/platformer_kit/world/data/room_data.gd" id="2_3l750"]
+[ext_resource type="Script" uid="uid://dkcwb87qn5n2c" path="res://addons/platformer_kit/world/data/world_data.gd" id="3_1y7ct"]
+
+[sub_resource type="Resource" id="Resource_bc3fq"]
+script = ExtResource("1_ekf3h")
+room_id = "bench_00_flat"
+
+[sub_resource type="Resource" id="Resource_tsmgs"]
+script = ExtResource("1_ekf3h")
+room_id = "bench_01_steps"
+origin_chunk = Vector2i(1, 0)
+
+[sub_resource type="Resource" id="Resource_csj83"]
+script = ExtResource("1_ekf3h")
+room_id = "bench_02_one_way_up"
+origin_chunk = Vector2i(2, 0)
+
+[sub_resource type="Resource" id="Resource_fhpla"]
+script = ExtResource("1_ekf3h")
+room_id = "bench_03_ladder"
+origin_chunk = Vector2i(3, 0)
+
+[sub_resource type="Resource" id="Resource_um2pm"]
+script = ExtResource("1_ekf3h")
+room_id = "bench_04_gap_run"
+origin_chunk = Vector2i(4, 0)
+
+[sub_resource type="Resource" id="Resource_srvgo"]
+script = ExtResource("1_ekf3h")
+room_id = "bench_05_gap_dash"
+origin_chunk = Vector2i(5, 0)
+
+[sub_resource type="Resource" id="Resource_qno0j"]
+script = ExtResource("1_ekf3h")
+room_id = "bench_06_dash_ledge"
+origin_chunk = Vector2i(6, 0)
+
+[sub_resource type="Resource" id="Resource_w3a5m"]
+script = ExtResource("1_ekf3h")
+room_id = "bench_07_climb_shaft"
+origin_chunk = Vector2i(7, 0)
+
+[sub_resource type="Resource" id="Resource_2c5qn"]
+script = ExtResource("1_ekf3h")
+room_id = "bench_08_wall_jump"
+origin_chunk = Vector2i(8, 0)
+
+[sub_resource type="Resource" id="Resource_efe2l"]
+script = ExtResource("1_ekf3h")
+room_id = "bench_09_no_climb"
+origin_chunk = Vector2i(9, 0)
+
+[sub_resource type="Resource" id="Resource_yci3s"]
+script = ExtResource("1_ekf3h")
+room_id = "bench_10_one_way_slot"
+origin_chunk = Vector2i(10, 0)
+
+[sub_resource type="Resource" id="Resource_6paxm"]
+script = ExtResource("1_ekf3h")
+room_id = "bench_11_low_ceiling"
+origin_chunk = Vector2i(11, 0)
+
+[sub_resource type="Resource" id="Resource_ktflf"]
+script = ExtResource("1_ekf3h")
+room_id = "bench_12_staircase"
+origin_chunk = Vector2i(12, 0)
+
+[sub_resource type="Resource" id="Resource_x5o4g"]
+script = ExtResource("1_ekf3h")
+room_id = "bench_13_narrow_landings"
+origin_chunk = Vector2i(13, 0)
+
+[sub_resource type="Resource" id="Resource_n26d7"]
+script = ExtResource("1_ekf3h")
+room_id = "bench_14_mixed"
+origin_chunk = Vector2i(14, 0)
+
+[sub_resource type="Resource" id="Resource_6yqx6"]
+script = ExtResource("1_ekf3h")
+room_id = "bench_15_stable_choice"
+origin_chunk = Vector2i(15, 0)
+
+[sub_resource type="Resource" id="Resource_iqdgt"]
+script = ExtResource("2_3l750")
+room_id = "bench_00_flat"
+display_name = "bench_00_flat"
+scene_path = "res://scenes/rooms/generated/bench_00_flat/runtime.tscn"
+source_scene_path = "res://scenes/rooms/generated/bench_00_flat/runtime.tscn"
+terrain_scene_path = "res://scenes/rooms/generated/bench_00_flat/terrain.tscn"
+entrance_ids = PackedStringArray()
+spawn_ids = PackedStringArray("start", "goal")
+entity_ids = PackedStringArray()
+tags = PackedStringArray()
+
+[sub_resource type="Resource" id="Resource_10qb5"]
+script = ExtResource("2_3l750")
+room_id = "bench_01_steps"
+display_name = "bench_01_steps"
+scene_path = "res://scenes/rooms/generated/bench_01_steps/runtime.tscn"
+source_scene_path = "res://scenes/rooms/generated/bench_01_steps/runtime.tscn"
+terrain_scene_path = "res://scenes/rooms/generated/bench_01_steps/terrain.tscn"
+entrance_ids = PackedStringArray()
+spawn_ids = PackedStringArray("start", "goal")
+entity_ids = PackedStringArray()
+tags = PackedStringArray()
+
+[sub_resource type="Resource" id="Resource_ay2qy"]
+script = ExtResource("2_3l750")
+room_id = "bench_02_one_way_up"
+display_name = "bench_02_one_way_up"
+scene_path = "res://scenes/rooms/generated/bench_02_one_way_up/runtime.tscn"
+source_scene_path = "res://scenes/rooms/generated/bench_02_one_way_up/runtime.tscn"
+terrain_scene_path = "res://scenes/rooms/generated/bench_02_one_way_up/terrain.tscn"
+entrance_ids = PackedStringArray()
+spawn_ids = PackedStringArray("start", "goal")
+entity_ids = PackedStringArray()
+tags = PackedStringArray()
+
+[sub_resource type="Resource" id="Resource_teavu"]
+script = ExtResource("2_3l750")
+room_id = "bench_03_ladder"
+display_name = "bench_03_ladder"
+scene_path = "res://scenes/rooms/generated/bench_03_ladder/runtime.tscn"
+source_scene_path = "res://scenes/rooms/generated/bench_03_ladder/runtime.tscn"
+terrain_scene_path = "res://scenes/rooms/generated/bench_03_ladder/terrain.tscn"
+entrance_ids = PackedStringArray()
+spawn_ids = PackedStringArray("start", "goal")
+entity_ids = PackedStringArray()
+tags = PackedStringArray()
+
+[sub_resource type="Resource" id="Resource_i2edo"]
+script = ExtResource("2_3l750")
+room_id = "bench_04_gap_run"
+display_name = "bench_04_gap_run"
+scene_path = "res://scenes/rooms/generated/bench_04_gap_run/runtime.tscn"
+source_scene_path = "res://scenes/rooms/generated/bench_04_gap_run/runtime.tscn"
+terrain_scene_path = "res://scenes/rooms/generated/bench_04_gap_run/terrain.tscn"
+entrance_ids = PackedStringArray()
+spawn_ids = PackedStringArray("start", "goal")
+entity_ids = PackedStringArray()
+tags = PackedStringArray()
+
+[sub_resource type="Resource" id="Resource_mwi7m"]
+script = ExtResource("2_3l750")
+room_id = "bench_05_gap_dash"
+display_name = "bench_05_gap_dash"
+scene_path = "res://scenes/rooms/generated/bench_05_gap_dash/runtime.tscn"
+source_scene_path = "res://scenes/rooms/generated/bench_05_gap_dash/runtime.tscn"
+terrain_scene_path = "res://scenes/rooms/generated/bench_05_gap_dash/terrain.tscn"
+entrance_ids = PackedStringArray()
+spawn_ids = PackedStringArray("start", "goal")
+entity_ids = PackedStringArray()
+tags = PackedStringArray()
+
+[sub_resource type="Resource" id="Resource_yraht"]
+script = ExtResource("2_3l750")
+room_id = "bench_06_dash_ledge"
+display_name = "bench_06_dash_ledge"
+scene_path = "res://scenes/rooms/generated/bench_06_dash_ledge/runtime.tscn"
+source_scene_path = "res://scenes/rooms/generated/bench_06_dash_ledge/runtime.tscn"
+terrain_scene_path = "res://scenes/rooms/generated/bench_06_dash_ledge/terrain.tscn"
+entrance_ids = PackedStringArray()
+spawn_ids = PackedStringArray("start", "goal")
+entity_ids = PackedStringArray()
+tags = PackedStringArray()
+
+[sub_resource type="Resource" id="Resource_t2vu7"]
+script = ExtResource("2_3l750")
+room_id = "bench_07_climb_shaft"
+display_name = "bench_07_climb_shaft"
+scene_path = "res://scenes/rooms/generated/bench_07_climb_shaft/runtime.tscn"
+source_scene_path = "res://scenes/rooms/generated/bench_07_climb_shaft/runtime.tscn"
+terrain_scene_path = "res://scenes/rooms/generated/bench_07_climb_shaft/terrain.tscn"
+entrance_ids = PackedStringArray()
+spawn_ids = PackedStringArray("start", "goal")
+entity_ids = PackedStringArray()
+tags = PackedStringArray()
+
+[sub_resource type="Resource" id="Resource_2un4p"]
+script = ExtResource("2_3l750")
+room_id = "bench_08_wall_jump"
+display_name = "bench_08_wall_jump"
+scene_path = "res://scenes/rooms/generated/bench_08_wall_jump/runtime.tscn"
+source_scene_path = "res://scenes/rooms/generated/bench_08_wall_jump/runtime.tscn"
+terrain_scene_path = "res://scenes/rooms/generated/bench_08_wall_jump/terrain.tscn"
+entrance_ids = PackedStringArray()
+spawn_ids = PackedStringArray("start", "goal")
+entity_ids = PackedStringArray()
+tags = PackedStringArray()
+
+[sub_resource type="Resource" id="Resource_pxspo"]
+script = ExtResource("2_3l750")
+room_id = "bench_09_no_climb"
+display_name = "bench_09_no_climb"
+scene_path = "res://scenes/rooms/generated/bench_09_no_climb/runtime.tscn"
+source_scene_path = "res://scenes/rooms/generated/bench_09_no_climb/runtime.tscn"
+terrain_scene_path = "res://scenes/rooms/generated/bench_09_no_climb/terrain.tscn"
+entrance_ids = PackedStringArray()
+spawn_ids = PackedStringArray("start", "goal")
+entity_ids = PackedStringArray()
+tags = PackedStringArray()
+
+[sub_resource type="Resource" id="Resource_4xblx"]
+script = ExtResource("2_3l750")
+room_id = "bench_10_one_way_slot"
+display_name = "bench_10_one_way_slot"
+scene_path = "res://scenes/rooms/generated/bench_10_one_way_slot/runtime.tscn"
+source_scene_path = "res://scenes/rooms/generated/bench_10_one_way_slot/runtime.tscn"
+terrain_scene_path = "res://scenes/rooms/generated/bench_10_one_way_slot/terrain.tscn"
+entrance_ids = PackedStringArray()
+spawn_ids = PackedStringArray("start", "goal")
+entity_ids = PackedStringArray()
+tags = PackedStringArray()
+
+[sub_resource type="Resource" id="Resource_ofguc"]
+script = ExtResource("2_3l750")
+room_id = "bench_11_low_ceiling"
+display_name = "bench_11_low_ceiling"
+scene_path = "res://scenes/rooms/generated/bench_11_low_ceiling/runtime.tscn"
+source_scene_path = "res://scenes/rooms/generated/bench_11_low_ceiling/runtime.tscn"
+terrain_scene_path = "res://scenes/rooms/generated/bench_11_low_ceiling/terrain.tscn"
+entrance_ids = PackedStringArray()
+spawn_ids = PackedStringArray("start", "goal")
+entity_ids = PackedStringArray()
+tags = PackedStringArray()
+
+[sub_resource type="Resource" id="Resource_dx2gm"]
+script = ExtResource("2_3l750")
+room_id = "bench_12_staircase"
+display_name = "bench_12_staircase"
+scene_path = "res://scenes/rooms/generated/bench_12_staircase/runtime.tscn"
+source_scene_path = "res://scenes/rooms/generated/bench_12_staircase/runtime.tscn"
+terrain_scene_path = "res://scenes/rooms/generated/bench_12_staircase/terrain.tscn"
+entrance_ids = PackedStringArray()
+spawn_ids = PackedStringArray("start", "goal")
+entity_ids = PackedStringArray()
+tags = PackedStringArray()
+
+[sub_resource type="Resource" id="Resource_cd2b1"]
+script = ExtResource("2_3l750")
+room_id = "bench_13_narrow_landings"
+display_name = "bench_13_narrow_landings"
+scene_path = "res://scenes/rooms/generated/bench_13_narrow_landings/runtime.tscn"
+source_scene_path = "res://scenes/rooms/generated/bench_13_narrow_landings/runtime.tscn"
+terrain_scene_path = "res://scenes/rooms/generated/bench_13_narrow_landings/terrain.tscn"
+entrance_ids = PackedStringArray()
+spawn_ids = PackedStringArray("start", "goal")
+entity_ids = PackedStringArray()
+tags = PackedStringArray()
+
+[sub_resource type="Resource" id="Resource_fhjy6"]
+script = ExtResource("2_3l750")
+room_id = "bench_14_mixed"
+display_name = "bench_14_mixed"
+scene_path = "res://scenes/rooms/generated/bench_14_mixed/runtime.tscn"
+source_scene_path = "res://scenes/rooms/generated/bench_14_mixed/runtime.tscn"
+terrain_scene_path = "res://scenes/rooms/generated/bench_14_mixed/terrain.tscn"
+entrance_ids = PackedStringArray()
+spawn_ids = PackedStringArray("start", "goal")
+entity_ids = PackedStringArray()
+tags = PackedStringArray()
+
+[sub_resource type="Resource" id="Resource_c4ea6"]
+script = ExtResource("2_3l750")
+room_id = "bench_15_stable_choice"
+display_name = "bench_15_stable_choice"
+scene_path = "res://scenes/rooms/generated/bench_15_stable_choice/runtime.tscn"
+source_scene_path = "res://scenes/rooms/generated/bench_15_stable_choice/runtime.tscn"
+terrain_scene_path = "res://scenes/rooms/generated/bench_15_stable_choice/terrain.tscn"
+entrance_ids = PackedStringArray()
+spawn_ids = PackedStringArray("start", "goal")
+entity_ids = PackedStringArray()
+tags = PackedStringArray()
+
+[resource]
+script = ExtResource("3_1y7ct")
+world_id = "benchmark_world"
+display_name = "求解基准"
+description = "16 rooms, one waypoint pair each"
+start_room_id = "bench_00_flat"
+start_spawn_id = "start"
+terrain_scene_path = "res://scenes/worlds/benchmark_world/terrain.tscn"
+rooms = Array[Resource]([SubResource("Resource_iqdgt"), SubResource("Resource_10qb5"), SubResource("Resource_ay2qy"), SubResource("Resource_teavu"), SubResource("Resource_i2edo"), SubResource("Resource_mwi7m"), SubResource("Resource_yraht"), SubResource("Resource_t2vu7"), SubResource("Resource_2un4p"), SubResource("Resource_pxspo"), SubResource("Resource_4xblx"), SubResource("Resource_ofguc"), SubResource("Resource_dx2gm"), SubResource("Resource_cd2b1"), SubResource("Resource_fhjy6"), SubResource("Resource_c4ea6")])
+placements = Array[Resource]([SubResource("Resource_bc3fq"), SubResource("Resource_tsmgs"), SubResource("Resource_csj83"), SubResource("Resource_fhpla"), SubResource("Resource_um2pm"), SubResource("Resource_srvgo"), SubResource("Resource_qno0j"), SubResource("Resource_w3a5m"), SubResource("Resource_2c5qn"), SubResource("Resource_efe2l"), SubResource("Resource_yci3s"), SubResource("Resource_6paxm"), SubResource("Resource_ktflf"), SubResource("Resource_x5o4g"), SubResource("Resource_n26d7"), SubResource("Resource_6yqx6")])
+tags = PackedStringArray()

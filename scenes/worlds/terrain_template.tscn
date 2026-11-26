@@ -1,38 +1,38 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene format=3 uid="uid://c6tc3q3iaqcbd"]
 
 [ext_resource type="TileSet" uid="uid://ct7c6ejoixgkq" path="res://resources/tilesets/primordial_tileset.tres" id="1_tileset"]
 
-[node name="WorldTerrain" type="Node2D"]
+[node name="WorldTerrain" type="Node2D" unique_id=1484408816]
 
-[node name="Terrain" type="Node2D" parent="."]
+[node name="Terrain" type="Node2D" parent="." unique_id=1177124748]
 
-[node name="BackTiles" type="TileMapLayer" parent="Terrain"]
+[node name="BackTiles" type="TileMapLayer" parent="Terrain" unique_id=749298979]
 tile_set = ExtResource("1_tileset")
 collision_enabled = false
 
-[node name="SolidTiles" type="TileMapLayer" parent="Terrain"]
+[node name="SolidTiles" type="TileMapLayer" parent="Terrain" unique_id=289454947]
 tile_set = ExtResource("1_tileset")
 
-[node name="DetailTiles" type="TileMapLayer" parent="Terrain"]
-tile_set = ExtResource("1_tileset")
-collision_enabled = false
-
-[node name="GlassTiles" type="TileMapLayer" parent="Terrain"]
+[node name="DetailTiles" type="TileMapLayer" parent="Terrain" unique_id=783088294]
 tile_set = ExtResource("1_tileset")
 collision_enabled = false
 
-[node name="VisionBlockTiles" type="TileMapLayer" parent="Terrain"]
+[node name="GlassTiles" type="TileMapLayer" parent="Terrain" unique_id=2034812643]
 tile_set = ExtResource("1_tileset")
 collision_enabled = false
 
-[node name="MarkerTiles" type="TileMapLayer" parent="Terrain"]
+[node name="VisionBlockTiles" type="TileMapLayer" parent="Terrain" unique_id=774042521]
 tile_set = ExtResource("1_tileset")
 collision_enabled = false
 
-[node name="CrumbleTiles" type="TileMapLayer" parent="Terrain"]
+[node name="MarkerTiles" type="TileMapLayer" parent="Terrain" unique_id=534011187]
 tile_set = ExtResource("1_tileset")
 collision_enabled = false
 
-[node name="CrumbleOneWayTiles" type="TileMapLayer" parent="Terrain"]
+[node name="CrumbleTiles" type="TileMapLayer" parent="Terrain" unique_id=713803108]
+tile_set = ExtResource("1_tileset")
+collision_enabled = false
+
+[node name="CrumbleOneWayTiles" type="TileMapLayer" parent="Terrain" unique_id=979278009]
 tile_set = ExtResource("1_tileset")
 collision_enabled = false

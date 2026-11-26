@@ -1,5 +1,8 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene format=3 uid="uid://d3jnkl75jvrdk"]
 
 [ext_resource type="PackedScene" path="res://scenes/levels/test_world/runners/gas_trail_runner.tscn" id="1_runner"]
 
-[node name="GasTrailDemo" instance=ExtResource("1_runner")]
+[node name="GasTrailDemo" unique_id=1869618650 instance=ExtResource("1_runner")]
+
+[node name="SubViewport" parent="SubViewportContainer" index="0"]
+size = Vector2i(320, 180)

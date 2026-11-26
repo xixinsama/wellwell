@@ -1,12 +1,11 @@
 [gd_scene format=3 uid="uid://dmds0k4xdsnbx"]
 
-[ext_resource type="Script" path="res://addons/platformer_kit/world/entities/spawn_point.gd" id="1_4wdj1"]
-[ext_resource type="Script" path="res://game/world/killzone.gd" id="2_t5wvt"]
-[ext_resource type="PackedScene" path="res://addons/platformer_kit/world/entities/save_point.tscn" id="3_4gbpd"]
-[ext_resource type="Script" path="res://addons/platformer_kit/world/entities/save_point.gd" id="4_ni6kr"]
-[ext_resource type="Script" path="res://addons/platformer_kit/platforms/platform_body_2d.gd" id="5_2del7"]
-[ext_resource type="Script" path="res://addons/platformer_kit/platforms/components/conveyor_surface_component_2d.gd" id="6_mbxem"]
-[ext_resource type="Script" path="res://addons/platformer_kit/world/entities/room_entrance.gd" id="7_o5crb"]
+[ext_resource type="Script" uid="uid://bo5asnakkt3ao" path="res://addons/platformer_kit/world/entities/spawn_point.gd" id="1_4wdj1"]
+[ext_resource type="Script" uid="uid://dvoci2xtr2gi7" path="res://game/world/killzone.gd" id="2_t5wvt"]
+[ext_resource type="PackedScene" uid="uid://b1x7griwahpw" path="res://addons/platformer_kit/world/entities/save_point.tscn" id="3_4gbpd"]
+[ext_resource type="Script" uid="uid://cu6ud84ix44e" path="res://addons/platformer_kit/platforms/platform_body_2d.gd" id="5_2del7"]
+[ext_resource type="Script" uid="uid://c5hvj7hvcnfdg" path="res://addons/platformer_kit/platforms/components/conveyor_surface_component_2d.gd" id="6_mbxem"]
+[ext_resource type="Script" uid="uid://cv4p3rarcw64e" path="res://addons/platformer_kit/world/entities/room_entrance.gd" id="7_o5crb"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_b8ej1"]
 size = Vector2(80, 32)
@@ -37,9 +36,8 @@ position = Vector2(288, 64)
 script = ExtResource("1_4wdj1")
 spawn_id = "from_gallery"
 
-[node name="CheckpointD" type="Node2D" parent="Entities" unique_id=939447865 instance=ExtResource("3_4gbpd")]
+[node name="CheckpointD" parent="Entities" unique_id=939447865 instance=ExtResource("3_4gbpd")]
 position = Vector2(272, 64)
-script = ExtResource("4_ni6kr")
 entity_id = "save_cp_d"
 
 [node name="BeltRelay" type="AnimatableBody2D" parent="Entities" unique_id=657467294]

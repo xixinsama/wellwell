@@ -1,0 +1,15 @@
+[gd_scene format=3 uid="uid://dutsn7fatnaio"]
+
+[ext_resource type="Script" uid="uid://bo5asnakkt3ao" path="res://addons/platformer_kit/world/entities/spawn_point.gd" id="1_tr525"]
+
+[node name="bench_12_staircase" type="Node2D" unique_id=768790236]
+
+[node name="start" type="Marker2D" parent="." unique_id=1177614530]
+position = Vector2(16, 152)
+script = ExtResource("1_tr525")
+spawn_id = "start"
+
+[node name="goal" type="Marker2D" parent="." unique_id=1655683583]
+position = Vector2(296, 112)
+script = ExtResource("1_tr525")
+spawn_id = "goal"

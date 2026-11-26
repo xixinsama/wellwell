@@ -6,9 +6,3 @@
 script = ExtResource("1_dash")
 ability_id = &"dash"
 cooldown_seconds = 0.2
-dash_speed = 240.0
-dash_duration = 0.15
-freeze_seconds = 0.05
-end_speed = 160.0
-dash_attack_seconds = 0.3
-refill_cooldown_seconds = 0.1

@@ -34,6 +34,7 @@ opt-in nodes.
 | `DebugMap` (`runtime/debug_map.tscn`) | Flat chunk rectangle visualiser | `set_map_model(dictionary)`; exports colours, `chunk_pixel_size`, `offset` |
 | `TasTool` (`runtime/tas_tool.tscn`) | Record/replay one input frame per physics tick, save/load JSON | `player_path`, `panel_path`, `slow_scale`, `recording_path` |
 | `TasPanel` (`runtime/tas_panel.tscn`) | HUD-space status panel | `set_lines(lines)` |
+| `PlatformerAutoRouteTool` (`runtime/autopilot_tool.gd`) | `F4` route mode: place a start and a goal, plan a jump/dash/climb route with the kit solver, then drive the character | `open_tool()`, `close_tool()`, `set_start(pos)`, `set_goal(pos)`, `plan_and_run()`, `get_status_line()`, `get_progress()` |
 | `TuningHotkeys` | Runtime tuning with `[` / `]` / `-` / `=` | `player_path`, `step_ratio` |
 
 ### TAS controls
@@ -48,6 +49,26 @@ opt-in nodes.
 | `F9` | half speed |
 | `F10` | reset player to the recording start |
 | `F11` | load the recording |
+
+### Auto-route controls
+
+| Key | Action |
+| --- | --- |
+| `F4` | open / close route mode (closing restores manual input) |
+| arrows / `WASD` | move the 8 px cursor (`Shift` moves four cells) |
+| `Space` | pin the start |
+| `X` | pin the goal |
+| `Enter` / `Z` | plan and run |
+| `Backspace` | clear both pins and the route |
+| `Esc` | close route mode |
+
+The tool scans the current room once, when it opens (a sliced, visible sweep;
+tile one-way platforms are read from their physics polygons), then plans with the
+kit's `AutopilotPlanner` on a worker thread (the frame never stalls) and replays
+the route through `AutopilotDriver`; a drift larger than 10 px triggers a replan
+from where the character stands. Changing rooms closes the tool and drops the
+raster, so nothing is built while walking between rooms.
+See `docs/systems/auto-route.md`.
 
 `TasInputSource` wraps the player's normal input source and is independent of the
 player class (it only needs `set_input_source()` / `get_input_source()`).

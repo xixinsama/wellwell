@@ -1,11 +1,11 @@
 [gd_scene format=3 uid="uid://bnkdtnl7dyja2"]
 
-[ext_resource type="Script" path="res://addons/platformer_kit/world/entities/spawn_point.gd" id="1_2cnbu"]
-[ext_resource type="Script" path="res://addons/fluid_kit/runtime/water/water_basin.gd" id="2_3key5"]
-[ext_resource type="Script" path="res://addons/platformer_kit/platforms/platform_body_2d.gd" id="3_olt15"]
-[ext_resource type="Script" path="res://addons/platformer_kit/platforms/components/fall_motion_component_2d.gd" id="4_i2eaq"]
-[ext_resource type="Script" path="res://addons/platformer_kit/platforms/components/rider_trigger_component_2d.gd" id="5_2m2j4"]
-[ext_resource type="Script" path="res://addons/platformer_kit/world/entities/room_entrance.gd" id="6_qilrl"]
+[ext_resource type="Script" uid="uid://bo5asnakkt3ao" path="res://addons/platformer_kit/world/entities/spawn_point.gd" id="1_2cnbu"]
+[ext_resource type="Script" uid="uid://bx2a86y4dsj1g" path="res://addons/fluid_kit/runtime/water/water_basin.gd" id="2_3key5"]
+[ext_resource type="Script" uid="uid://cu6ud84ix44e" path="res://addons/platformer_kit/platforms/platform_body_2d.gd" id="3_olt15"]
+[ext_resource type="Script" uid="uid://cch0ondacugn3" path="res://addons/platformer_kit/platforms/components/fall_motion_component_2d.gd" id="4_i2eaq"]
+[ext_resource type="Script" uid="uid://chw3gl0jdqyuh" path="res://addons/platformer_kit/platforms/components/rider_trigger_component_2d.gd" id="5_2m2j4"]
+[ext_resource type="Script" uid="uid://cv4p3rarcw64e" path="res://addons/platformer_kit/world/entities/room_entrance.gd" id="6_qilrl"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_tmkmq"]
 size = Vector2(32, 14)

@@ -13,12 +13,23 @@ extends "res://addons/platformer_kit/world/entities/pickup_entity.gd"
 ## number so a missing one is obvious at a glance.
 
 const REGISTRY := "/root/Collectibles"
+## Group the auto-route tool scans for an ordered course.
+const WAYPOINT_GROUP := &"solver_waypoint"
 
 @export var number := 1:
 	set(value):
 		number = maxi(1, value)
 		if is_node_ready():
 			_sync_number()
+
+## Order in a solver course: -1 means "not a waypoint", 0 is the start of the
+## course and 1..n follow in order. The auto-route tool reads this to build the
+## chain of waypoints it has to pass through.
+@export var waypoint_index := -1:
+	set(value):
+		waypoint_index = value
+		if is_node_ready():
+			_sync_waypoint_group()
 
 @export_range(0.0, 8.0, 0.1) var bob_pixels := 2.0
 @export_range(0.05, 2.0, 0.01) var bob_speed := 0.5
@@ -44,8 +55,22 @@ func _ready() -> void:
 	if area != null and not area.body_entered.is_connected(_on_body_entered):
 		area.body_entered.connect(_on_body_entered)
 	_sync_number()
+	_sync_waypoint_group()
 	if collected:
 		_stop_effects()
+
+
+## True when this pickup is part of a solver course.
+func is_solver_waypoint() -> bool:
+	return waypoint_index >= 0
+
+
+func _sync_waypoint_group() -> void:
+	if waypoint_index >= 0:
+		if not is_in_group(WAYPOINT_GROUP):
+			add_to_group(WAYPOINT_GROUP)
+	elif is_in_group(WAYPOINT_GROUP):
+		remove_from_group(WAYPOINT_GROUP)
 
 
 ## The room runtime supplies the world id here; registering earlier would file

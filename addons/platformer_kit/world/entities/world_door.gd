@@ -112,13 +112,19 @@ func set_arrival_disarmed() -> void:
 
 ## Where the actor lands when it arrives through the partner door.
 ##
-## The arrival point must sit outside the activation area (the scene default is
-## 20px to the right, clear of the 20px-wide sensor). If it overlapped, the actor
-## would be standing in the door on arrival and pair the trip back.
+## The arrival point sits at the middle of the door body, so the character appears
+## inside the frame instead of at its feet. A door authored without an
+## `ArrivalSpawn` falls back to the activation area centre for the same reason.
+## The arrival door is disarmed on arrival and only re-arms once the actor has
+## left the sensor, so landing inside the frame cannot pair the trip back.
 func get_arrival_position() -> Vector2:
 	if _arrival_spawn != null:
 		return _arrival_spawn.global_position
-	return global_position + Vector2(DOOR_CELLS.x * CELL_PIXELS + CELL_PIXELS, 0)
+	var sensor := get_node_or_null("ActivationArea") as Node2D
+	if sensor != null:
+		# Feet three pixels below the middle centres the 6 px body on it.
+		return sensor.global_position + Vector2(0.0, 3.0)
+	return global_position + Vector2(0.0, -10.0)
 
 
 func get_target_world_id() -> String:

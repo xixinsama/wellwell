@@ -106,7 +106,32 @@ func _show_for(candidate: Node2D) -> void:
 	var local: Vector2 = self_to_screen.affine_inverse() * screen_point
 	_bubble.reset_size()
 	_bubble.position = (local - _bubble.size * 0.5).round()
+	_place_tail(local)
 	visible = true
+
+
+## A small notch under the bubble that points at the object being described.
+func _place_tail(anchor_local: Vector2) -> void:
+	var tail := get_node_or_null("Tail") as Polygon2D
+	if tail == null:
+		return
+	var bottom := _bubble.position.y + _bubble.size.y
+	var tip_x := clampf(
+		anchor_local.x,
+		_bubble.position.x + 3.0,
+		_bubble.position.x + _bubble.size.x - 3.0
+	)
+	var pocket := clampf(
+		tip_x,
+		_bubble.position.x + 3.5,
+		_bubble.position.x + _bubble.size.x - 3.5
+	)
+	var tip_y := maxf(anchor_local.y - 1.0, bottom + 3.0)
+	tail.polygon = PackedVector2Array([
+		Vector2(pocket - 3.5, bottom - 1.0),
+		Vector2(pocket + 3.5, bottom - 1.0),
+		Vector2(tip_x, tip_y),
+	])
 
 
 func _resolve_actor() -> void:

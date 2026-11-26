@@ -1,6 +1,6 @@
-[gd_scene format=4]
+[gd_scene format=4 uid="uid://bqlb7j0twnjvx"]
 
-[ext_resource type="TileSet" path="res://resources/tilesets/primordial_tileset.tres" id="1_sdcay"]
+[ext_resource type="TileSet" uid="uid://ct7c6ejoixgkq" path="res://resources/tilesets/primordial_tileset.tres" id="1_sdcay"]
 
 [node name="WorldTerrain" type="Node2D" unique_id=1722179379]
 

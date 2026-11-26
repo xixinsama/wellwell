@@ -1,6 +1,6 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene format=3 uid="uid://b2odd64up83px"]
 
-[ext_resource type="Script" path="res://examples/tas_demo/tas_demo.gd" id="1_demo"]
+[ext_resource type="Script" uid="uid://cx6pcpim8llqd" path="res://examples/tas_demo/tas_demo.gd" id="1_demo"]
 [ext_resource type="PackedScene" uid="uid://cejq022r3hjrd" path="res://scenes/player/player.tscn" id="2_player"]
 
 [sub_resource type="RectangleShape2D" id="Rectangle_floor"]
@@ -18,36 +18,35 @@ corner_radius_top_right = 3
 corner_radius_bottom_right = 3
 corner_radius_bottom_left = 3
 
-[node name="TasDemo" type="Node2D"]
+[node name="TasDemo" type="Node2D" unique_id=781579847]
 script = ExtResource("1_demo")
 
-[node name="Backdrop" type="Polygon2D" parent="."]
+[node name="Backdrop" type="Polygon2D" parent="." unique_id=883319224]
 z_index = -10
 color = Color(0.035, 0.047, 0.058, 1)
 polygon = PackedVector2Array(-400, -200, 8200, -200, 8200, 420, -400, 420)
 
-[node name="Floor" type="StaticBody2D" parent="."]
-position = Vector2(0, 0)
+[node name="Floor" type="StaticBody2D" parent="." unique_id=1955549442]
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Floor"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Floor" unique_id=1819243112]
 position = Vector2(0, 308)
 shape = SubResource("Rectangle_floor")
 
-[node name="Visual" type="Polygon2D" parent="Floor"]
+[node name="Visual" type="Polygon2D" parent="Floor" unique_id=2048102942]
 color = Color(0.13, 0.17, 0.19, 1)
 polygon = PackedVector2Array(-4000, 300, 4000, 300, 4000, 316, -4000, 316)
 
-[node name="Player" parent="." instance=ExtResource("2_player")]
+[node name="Player" parent="." unique_id=2062683847 instance=ExtResource("2_player")]
 position = Vector2(40, 300)
 
-[node name="Camera2D" type="Camera2D" parent="."]
+[node name="Camera2D" type="Camera2D" parent="." unique_id=2006997861]
 position = Vector2(120, 210)
 zoom = Vector2(2, 2)
 
-[node name="Hud" type="CanvasLayer" parent="."]
+[node name="Hud" type="CanvasLayer" parent="." unique_id=1092209508]
 layer = 20
 
-[node name="Title" type="Label" parent="Hud"]
+[node name="Title" type="Label" parent="Hud" unique_id=90196501]
 offset_left = 18.0
 offset_top = 14.0
 offset_right = 622.0
@@ -58,7 +57,7 @@ theme_override_constants/outline_size = 4
 theme_override_font_sizes/font_size = 19
 text = "TAS: can dash-jump accelerate forever?"
 
-[node name="Status" type="Label" parent="Hud"]
+[node name="Status" type="Label" parent="Hud" unique_id=1864037983]
 offset_left = 18.0
 offset_top = 44.0
 offset_right = 622.0
@@ -69,20 +68,20 @@ theme_override_constants/outline_size = 3
 theme_override_font_sizes/font_size = 16
 text = "SUPER CHAIN"
 
-[node name="Panel" type="PanelContainer" parent="Hud"]
+[node name="Panel" type="PanelContainer" parent="Hud" unique_id=1072783436]
 offset_left = 18.0
 offset_top = 296.0
 offset_right = 430.0
 offset_bottom = 336.0
 theme_override_styles/panel = SubResource("StyleBox_hud")
 
-[node name="Speed" type="Label" parent="Hud/Panel"]
+[node name="Speed" type="Label" parent="Hud/Panel" unique_id=468233029]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.93, 0.96, 0.94, 1)
 theme_override_font_sizes/font_size = 16
 text = "vx 0.0    max 0.0    frame 0 / 0"
 
-[node name="Footer" type="Label" parent="Hud"]
+[node name="Footer" type="Label" parent="Hud" unique_id=441053026]
 offset_left = 18.0
 offset_top = 340.0
 offset_right = 622.0

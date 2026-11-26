@@ -1,6 +1,7 @@
-[gd_scene format=3]
+[gd_scene format=3 uid="uid://bai856utsfn6s"]
 
-[ext_resource type="Script" path="res://game/world/fog_zone.gd" id="1_zone"]
+[ext_resource type="Script" uid="uid://dtxrrjgropat6" path="res://game/world/fog_zone.gd" id="1_zone"]
 
-[node name="FogZone" type="Node2D"]
+[node name="FogZone" type="Node2D" unique_id=125572147]
 script = ExtResource("1_zone")
+zone_id = "FogZone"

@@ -1,6 +1,9 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene format=3 uid="uid://m1phckdbs8vb"]
 
-[ext_resource type="Script" path="res://addons/platformer_debug/runtime/tas_tool.gd" id="1_tas"]
+[ext_resource type="Script" uid="uid://cqo08232xy4n3" path="res://addons/platformer_debug/runtime/tas_tool.gd" id="1_tas"]
+
+[sub_resource type="Theme" id="Theme_tas"]
+default_font_size = 7
 
 [sub_resource type="StyleBoxFlat" id="StyleBox_tas_panel"]
 bg_color = Color(0.03, 0.04, 0.05, 0.72)
@@ -14,17 +17,13 @@ corner_radius_top_right = 3
 corner_radius_bottom_right = 3
 corner_radius_bottom_left = 3
 
-[sub_resource type="Theme" id="Theme_tas"]
-default_font_size = 7
-
-[node name="TasTool" type="Node"]
+[node name="TasTool" type="Node" unique_id=1087375338]
 script = ExtResource("1_tas")
-player_path = NodePath("../Player")
 
-[node name="Layer" type="CanvasLayer" parent="."]
+[node name="Layer" type="CanvasLayer" parent="." unique_id=1202074334]
 layer = 60
 
-[node name="Panel" type="PanelContainer" parent="Layer"]
+[node name="Panel" type="PanelContainer" parent="Layer" unique_id=1224187368]
 offset_left = 162.0
 offset_top = 6.0
 offset_right = 314.0
@@ -33,23 +32,23 @@ mouse_filter = 2
 theme = SubResource("Theme_tas")
 theme_override_styles/panel = SubResource("StyleBox_tas_panel")
 
-[node name="Margin" type="MarginContainer" parent="Layer/Panel"]
+[node name="Margin" type="MarginContainer" parent="Layer/Panel" unique_id=1038611739]
 layout_mode = 2
 theme_override_constants/margin_left = 4
 theme_override_constants/margin_top = 3
 theme_override_constants/margin_right = 4
 theme_override_constants/margin_bottom = 3
 
-[node name="Content" type="VBoxContainer" parent="Layer/Panel/Margin"]
+[node name="Content" type="VBoxContainer" parent="Layer/Panel/Margin" unique_id=304059712]
 layout_mode = 2
 theme_override_constants/separation = 1
 
-[node name="Title" type="Label" parent="Layer/Panel/Margin/Content"]
+[node name="Title" type="Label" parent="Layer/Panel/Margin/Content" unique_id=82925094]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.45, 0.9, 0.82, 1)
 text = "INPUT TAS"
 
-[node name="Status" type="Label" parent="Layer/Panel/Margin/Content"]
+[node name="Status" type="Label" parent="Layer/Panel/Margin/Content" unique_id=1841247029]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.88, 0.92, 0.9, 1)
 text = "TAS idle"

@@ -14,7 +14,7 @@
 [ext_resource type="Script" uid="uid://bcvhavis06bpg" path="res://game/world/crumble_runtime.gd" id="10_crumble"]
 [ext_resource type="Script" uid="uid://dleqflojm4oba" path="res://addons/fluid_kit/runtime/water/water_field.gd" id="11_water"]
 [ext_resource type="Script" uid="uid://fqwahtimacjq" path="res://addons/fluid_kit/runtime/gas/atmosphere.gd" id="12_atmosphere"]
-[ext_resource type="Script" path="res://game/world/spike_hazard_area_builder.gd" id="13_spike_hazard"]
+[ext_resource type="Script" uid="uid://blg8qi3x7bbx6" path="res://game/world/spike_hazard_area_builder.gd" id="13_spike_hazard"]
 
 [node name="RoomAuthoringRoot" type="Node2D" unique_id=1018949667]
 script = ExtResource("1_f53rw")
@@ -71,7 +71,6 @@ process_callback = 0
 position_smoothing_enabled = true
 script = ExtResource("4_q26ly")
 target_path = NodePath("../Player")
-metadata/_custom_type_script = "uid://cfv5j6giqea6p"
 
 [node name="WaterField" type="Node2D" parent="PreviewOnly" unique_id=1188018848]
 script = ExtResource("11_water")

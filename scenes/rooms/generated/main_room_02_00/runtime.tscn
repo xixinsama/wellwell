@@ -1,10 +1,10 @@
 [gd_scene format=4 uid="uid://cm4m77gk0glb2"]
 
-[ext_resource type="Script" path="res://addons/platformer_kit/world/entities/spawn_point.gd" id="1_qlc4p"]
-[ext_resource type="Script" path="res://game/puzzle/view/puzzle_board_auto.gd" id="2_hg3s8"]
-[ext_resource type="Script" path="res://game/puzzle/view/puzzle_tile_piece.gd" id="3_rmgcd"]
-[ext_resource type="TileSet" path="res://resources/tilesets/primordial_tileset.tres" id="4_kp00n"]
-[ext_resource type="Script" path="res://game/puzzle/view/puzzle_board_shuffler.gd" id="5_dlkyc"]
+[ext_resource type="Script" uid="uid://bo5asnakkt3ao" path="res://addons/platformer_kit/world/entities/spawn_point.gd" id="1_qlc4p"]
+[ext_resource type="Script" uid="uid://clq6ogk22jc64" path="res://game/puzzle/view/puzzle_board_auto.gd" id="2_hg3s8"]
+[ext_resource type="Script" uid="uid://b8b1cilmjmmes" path="res://game/puzzle/view/puzzle_tile_piece.gd" id="3_rmgcd"]
+[ext_resource type="TileSet" uid="uid://ct7c6ejoixgkq" path="res://resources/tilesets/primordial_tileset.tres" id="4_kp00n"]
+[ext_resource type="Script" uid="uid://e2akm7fipfq0" path="res://game/puzzle/view/puzzle_board_shuffler.gd" id="5_dlkyc"]
 
 [node name="RoomRuntimeContent" type="Node2D" unique_id=2051676470]
 

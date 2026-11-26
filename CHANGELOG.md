@@ -25,6 +25,25 @@ All notable Platformer Kit changes are recorded here. The project follows Semant
   dash-jump speed-cap demo. `Ctrl+R` records/stops, `Ctrl+P` plays/stops, and
   `Ctrl+S` saves; the original `F5`-`F12` shortcuts remain. The TAS status panel
   now lives in the HUD-space debug overlay, outside the gameplay SubViewport.
+- Auto route: `character/autopilot/` plans a frame-accurate route over the live
+  room collision (8 px footholds, ladders, wall grabs) with jumps, the
+  eight-direction dash, dash-jump, jump-dash, wall climb and wall jump, and
+  replays it through the character input seam. Tile one-way platforms are read
+  from their collision polygons and modelled as pass-through-from-below surfaces.
+  The search runs on a `WorkerThreadPool` task so the game keeps rendering while
+  it plans, simulated legs are cached between plans (a replan is ~2 ms instead of
+  ~100 ms), and only abilities the character actually owns are planned. The room
+  is scanned in slices with a visible sweep, and only when the tool is opened —
+  entering or leaving a room never rebuilds it. The raster, simulator and planner
+  are behind an owner-counted lock (`autopilot_lock.gd`), so a playtest or editor
+  probe cannot simulate over a running search; the tool exposes `get_lock_state()`
+  and `try_simulate()` for that. `F4` in the shipped game opens the picker
+  (`docs/systems/auto-route.md`).
+- Benchmark: `tools/benchmark/` plans 16 solver rooms with two waypoints each,
+  per-room dash/climb permissions and per-room frame budgets, reporting pass/fail,
+  route length and mean landing clearance (`docs/benchmark.md`). The planner also
+  gained an opt-in stability cost that prefers landings with head and elbow room;
+  the benchmark measures the trade-off and it stays off by default.
 - World-centric terrain: each world now owns one authored terrain scene
   (`scenes/worlds/<world_id>/terrain.tscn`) edited with the normal Godot TileMap
   tools; **Sync Terrain** slices it into per-room runtime terrain and re-bakes the

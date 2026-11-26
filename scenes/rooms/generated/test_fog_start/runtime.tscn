@@ -1,8 +1,8 @@
 [gd_scene format=3 uid="uid://dvtf5rux00t1q"]
 
-[ext_resource type="Script" path="res://addons/platformer_kit/world/entities/spawn_point.gd" id="1_f8ckw"]
-[ext_resource type="Script" path="res://addons/platformer_kit/world/entities/room_entrance.gd" id="2_i10ms"]
-[ext_resource type="Script" path="res://game/world/fog_zone.gd" id="3_hqcya"]
+[ext_resource type="Script" uid="uid://bo5asnakkt3ao" path="res://addons/platformer_kit/world/entities/spawn_point.gd" id="1_f8ckw"]
+[ext_resource type="Script" uid="uid://cv4p3rarcw64e" path="res://addons/platformer_kit/world/entities/room_entrance.gd" id="2_i10ms"]
+[ext_resource type="Script" uid="uid://dtxrrjgropat6" path="res://game/world/fog_zone.gd" id="3_hqcya"]
 [ext_resource type="PackedScene" path="res://scenes/world/fog_door.tscn" id="4_7bfp7"]
 
 [node name="RoomRuntimeContent" type="Node2D" unique_id=1842853039]
@@ -35,8 +35,7 @@ size_cells = Vector2i(4, 3)
 zone_id = "start_light"
 reveal_on_enter = false
 
-[node name="ChamberDoor" type="Node2D" parent="Entities" unique_id=2122530224 instance=ExtResource("4_7bfp7")]
-z_index = 2
+[node name="ChamberDoor" parent="Entities" unique_id=2122530224 instance=ExtResource("4_7bfp7")]
 position = Vector2(264, 144)
 
 [node name="Foreground" type="Node2D" parent="." unique_id=673354029]

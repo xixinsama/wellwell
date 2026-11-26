@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://3ioj68d0nmq0"]
 
 [ext_resource type="Script" uid="uid://icqsawa47g76" path="res://examples/metroidvania_demo/metroidvania_demo.gd" id="1_demo"]
-[ext_resource type="PackedScene" path="res://addons/metroidvania_kit/map/ui/map_view.tscn" id="2_map"]
+[ext_resource type="PackedScene" uid="uid://dcrrs4j763xj1" path="res://addons/metroidvania_kit/map/ui/map_view.tscn" id="2_map"]
 
 [node name="MetroidvaniaDemo" type="Node2D" unique_id=107078527]
 script = ExtResource("1_demo")

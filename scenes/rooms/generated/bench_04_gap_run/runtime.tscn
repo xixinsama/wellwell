@@ -1,0 +1,15 @@
+[gd_scene format=3 uid="uid://cq2wl05lbr5d5"]
+
+[ext_resource type="Script" uid="uid://bo5asnakkt3ao" path="res://addons/platformer_kit/world/entities/spawn_point.gd" id="1_hm3nu"]
+
+[node name="bench_04_gap_run" type="Node2D" unique_id=814030448]
+
+[node name="start" type="Marker2D" parent="." unique_id=1609371153]
+position = Vector2(16, 152)
+script = ExtResource("1_hm3nu")
+spawn_id = "start"
+
+[node name="goal" type="Marker2D" parent="." unique_id=412101046]
+position = Vector2(280, 152)
+script = ExtResource("1_hm3nu")
+spawn_id = "goal"

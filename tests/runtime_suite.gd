@@ -41,6 +41,7 @@ const TESTS: Array[Script] = [
 	preload("res://tests/platformer_debug/test_tas.gd"),
 	preload("res://tests/platformer_kit/abilities/test_abilities.gd"),
 	preload("res://tests/platformer_kit/abilities/test_dash_ability.gd"),
+	preload("res://tests/platformer_kit/character/test_autopilot.gd"),
 	preload("res://tests/platformer_kit/character/test_character_input.gd"),
 	preload("res://tests/platformer_kit/character/test_character_motor_2d.gd"),
 	preload("res://tests/platformer_kit/character/test_character_motor_integration.gd"),

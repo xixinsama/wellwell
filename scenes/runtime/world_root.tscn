@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://hbo4lyjj1f0x"]
 
 [ext_resource type="Script" uid="uid://c6fmh8qedc74g" path="res://addons/platformer_kit/world/runtime/world_session.gd" id="1_session"]
-[ext_resource type="Resource" uid="uid://bqdi8h6nuipmu" path="res://resources/worlds/the_world.tres" id="2_o5np0"]
+[ext_resource type="Resource" uid="uid://bbbxfj8qg8mgc" path="res://resources/worlds/the_world.tres" id="2_o5np0"]
 [ext_resource type="PackedScene" uid="uid://cejq022r3hjrd" path="res://scenes/player/player.tscn" id="2_player"]
 [ext_resource type="Script" uid="uid://mx2n1010061e" path="res://addons/platformer_kit/camera/pixel_camera_2d.gd" id="3_camera"]
 [ext_resource type="Script" uid="uid://jvu53oscg1ib" path="res://addons/metroidvania_kit/map/discovery/fog_of_war.gd" id="4_fog"]
@@ -12,17 +12,19 @@
 [ext_resource type="Script" uid="uid://bcvhavis06bpg" path="res://game/world/crumble_runtime.gd" id="9_crumble"]
 [ext_resource type="Script" uid="uid://dleqflojm4oba" path="res://addons/fluid_kit/runtime/water/water_field.gd" id="10_water"]
 [ext_resource type="Script" uid="uid://fqwahtimacjq" path="res://addons/fluid_kit/runtime/gas/atmosphere.gd" id="11_atmosphere"]
-[ext_resource type="PackedScene" path="res://game/water/effects/water_splash_pixels.tscn" id="12_splash"]
+[ext_resource type="PackedScene" uid="uid://xha7hq1efadv" path="res://game/water/effects/water_splash_pixels.tscn" id="12_splash"]
 [ext_resource type="Script" uid="uid://ucenmxbdpetr" path="res://addons/fluid_kit/runtime/water/water_grid.gd" id="13_grid"]
 [ext_resource type="Script" uid="uid://dxuog2of6kyji" path="res://game/world/backdrop_field.gd" id="14_backdrop"]
 [ext_resource type="Script" uid="uid://dy45jy15p3gpe" path="res://game/world/terrain_highlight.gd" id="15_highlight"]
 [ext_resource type="Script" uid="uid://d10q7hvrp01va" path="res://game/world/light_field.gd" id="16_light"]
 [ext_resource type="Script" uid="uid://cgs4fckq1mcre" path="res://game/world/screen_bloom.gd" id="17_bloom"]
 [ext_resource type="Script" uid="uid://hmuy3srqjmbi" path="res://game/world/normal_field.gd" id="18_normal"]
-[ext_resource type="TileSet" path="res://resources/tilesets/primordial_tileset_normal.tres" id="19_normal_tileset"]
+[ext_resource type="TileSet" uid="uid://chrxrbmt4ga55" path="res://resources/tilesets/primordial_tileset_normal.tres" id="19_normal_tileset"]
 [ext_resource type="Script" uid="uid://dc46t71srlh6s" path="res://game/world/backdrop_shadow.gd" id="19_shadow"]
 [ext_resource type="Script" uid="uid://4mvblpmovy5n" path="res://game/world/dust_field.gd" id="20_dust"]
-[ext_resource type="Script" path="res://game/save/realtime_save_service.gd" id="21_realtime"]
+[ext_resource type="Script" uid="uid://cu24egf7ju46g" path="res://game/save/realtime_save_service.gd" id="21_realtime"]
+[ext_resource type="Script" uid="uid://doq0osd566auy" path="res://addons/platformer_debug/runtime/autopilot_tool.gd" id="22_autoroute"]
+[ext_resource type="Script" uid="uid://b2h7cpsc8kr2h" path="res://addons/platformer_debug/runtime/benchmark_world_runner.gd" id="24_bench_runner"]
 
 [node name="WorldRoot" type="Node2D" unique_id=1531965248]
 script = ExtResource("1_session")
@@ -96,8 +98,14 @@ player_path = NodePath("../Player")
 [node name="MetroidvaniaPersistenceBridge" type="Node" parent="." unique_id=2072378855]
 script = ExtResource("7_persistence_bridge")
 
-[node name="RealtimeSave" type="Node" parent="."]
+[node name="RealtimeSave" type="Node" parent="." unique_id=1095458372]
 script = ExtResource("21_realtime")
 
 [node name="DebugOverlay" parent="." unique_id=801280615 instance=ExtResource("8_debug_overlay")]
 hud_path = NodePath("../../../../HUD/DebugHud")
+
+[node name="AutoRoute" type="Node2D" parent="." unique_id=1958296019]
+script = ExtResource("22_autoroute")
+
+[node name="BenchRunner" type="Node2D" parent="." unique_id=1872511835]
+script = ExtResource("24_bench_runner")

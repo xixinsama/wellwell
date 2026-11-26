@@ -1,6 +1,6 @@
-[gd_resource type="Resource" script_class="ClimbAbilityDefinition" format=3]
+[gd_resource type="Resource" script_class="ClimbAbilityDefinition" format=3 uid="uid://dahqsbt4c4371"]
 
-[ext_resource type="Script" path="res://addons/platformer_kit/abilities/climb/climb_ability_definition.gd" id="1_climb"]
+[ext_resource type="Script" uid="uid://cpng303en6btq" path="res://addons/platformer_kit/abilities/climb/climb_ability_definition.gd" id="1_climb"]
 
 [resource]
 script = ExtResource("1_climb")

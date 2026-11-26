@@ -1,21 +1,21 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene format=3 uid="uid://dcrrs4j763xj1"]
 
-[ext_resource type="Script" path="res://addons/metroidvania_kit/map/ui/map_view.gd" id="1_view"]
-[ext_resource type="Script" path="res://addons/metroidvania_kit/map/ui/map_renderer.gd" id="2_renderer"]
+[ext_resource type="Script" uid="uid://km8pvypqv6fy" path="res://addons/metroidvania_kit/map/ui/map_view.gd" id="1_view"]
+[ext_resource type="Script" uid="uid://kyqbnuoyhi0j" path="res://addons/metroidvania_kit/map/ui/map_renderer.gd" id="2_renderer"]
 
-[node name="MapView" type="Control"]
+[node name="MapView" type="Control" unique_id=333083781]
 custom_minimum_size = Vector2(240, 120)
+clip_contents = true
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-clip_contents = true
 script = ExtResource("1_view")
 
-[node name="Renderer" type="Control" parent="."]
-layout_mode = 0
+[node name="Renderer" type="Control" parent="." unique_id=1536129948]
+anchors_preset = 0
 offset_left = 16.0
 offset_top = 16.0
 offset_right = 224.0

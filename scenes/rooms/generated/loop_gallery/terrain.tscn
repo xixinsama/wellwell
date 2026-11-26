@@ -1,7 +1,7 @@
 [gd_scene format=4 uid="uid://d2qtq1148esp3"]
 
-[ext_resource type="TileSet" path="res://resources/tilesets/primordial_tileset.tres" id="1_4lhdx"]
-[ext_resource type="Script" path="res://game/world/ladder_tile_area_builder.gd" id="2_e8or8"]
+[ext_resource type="TileSet" uid="uid://ct7c6ejoixgkq" path="res://resources/tilesets/primordial_tileset.tres" id="1_4lhdx"]
+[ext_resource type="Script" uid="uid://cdmjx61en7xio" path="res://game/world/ladder_tile_area_builder.gd" id="2_e8or8"]
 
 [node name="RoomTerrain" type="Node2D" unique_id=1584598968]
 

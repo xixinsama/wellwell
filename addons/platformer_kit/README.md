@@ -16,7 +16,7 @@ Godot 4.7 is the supported engine baseline for version `0.1.0`.
 | Module | Path | Contents |
 | --- | --- | --- |
 | Core | `core/` | `StateMachine`, `ScopedEventBus`, `TagContainer`, `GameEvent` |
-| Character | `character/` | `CharacterIntent`, `CharacterMotor2D`, `MovementContext`, `MovementProfile`, sensors, ladder motion, input sources |
+| Character | `character/` | `CharacterIntent`, `CharacterMotor2D`, `MovementContext`, `MovementProfile`, sensors, ladder motion, input sources, and the `autopilot/` route solver (`AutopilotGrid`, `AutopilotMotion`, `AutopilotPlanner`, `AutopilotDriver`, shared-state guard `autopilot_lock.gd`) |
 | Platforms | `platforms/` | `PlatformBody2D` plus waypoint / fall / elevator / conveyor / rider / fog-occluder components |
 | Interaction | `interaction/` | `Interactable`, `InteractionDetector` |
 | Camera | `camera/` | `PixelCamera2D` |
@@ -46,6 +46,7 @@ All `class_name` declarations under this addon are source-level public in `0.x`.
 | --- | --- | --- |
 | Core | `StateMachine`, `ScopedEventBus`, `TagContainer`, `GameEvent` | State transitions, scoped events, and tag queries |
 | Character | `CharacterIntent`, `CharacterMotor2D`, `MovementContext`, `MovementProfile`, `CharacterSensors` | `CharacterMotor2D.step(intent, context, profile, delta)` |
+| Auto route | `AutopilotGrid`, `AutopilotMotion`, `AutopilotPlanner`, `AutopilotRoute`, `AutopilotDriver` | `AutopilotGrid.build(space, cell_rect, ladder_rects, avoid_rects)`, `AutopilotPlanner.plan(state, goal)`, `AutopilotDriver.set_route(route)` |
 | Platforms | `PlatformBody2D`, `WaypointMotionComponent2D`, `FallMotionComponent2D`, `ElevatorMotionComponent2D`, `RiderTriggerComponent2D`, `ConveyorSurfaceComponent2D`, `FogOccluderComponent2D` | `advance_motion()`, `reset_platform()`, `activate()`, `reset_component()`, `is_occluding()`, `get_world_rect()` |
 | Interaction | `Interactable`, `InteractionDetector` | `can_interact()`, `interact()`, `get_best_candidate()` |
 | Camera | `PixelCamera2D` | `bind_target()`, `set_camera_mode()`, `set_room_bounds()`, `add_shake()` |
@@ -116,6 +117,7 @@ godot --headless --path . -s res://tools/validate_project.gd
 | `tests/platformer_kit/character/test_character_motor_2d.gd` | Run/fall, over-speed friction, jump buffer, coyote, variable jump, lift caps, tick-rate equivalence |
 | `tests/platformer_kit/character/test_character_input.gd` | Intent, input source, movement profile, sensors |
 | `tests/platformer_kit/character/test_ladder_motion.gd` | Ladder component |
+| `tests/platformer_kit/character/test_autopilot.gd` | Route grid, jump/dash/wall/ladder simulation, A\* reachability and route continuity, input replay |
 | `tests/platformer_kit/platforms/test_platforms.gd` | Footprints, waypoint routes, composed motion, fall policies, riders, conveyor, native one-way |
 | `tests/platformer_kit/interaction/test_interaction.gd` | Detector/Interactable contract |
 | `tests/platformer_kit/save/test_save_contracts.gd` | Snapshot validation, entity/module state, commit ordering |

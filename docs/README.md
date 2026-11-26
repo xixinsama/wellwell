@@ -29,6 +29,8 @@ dependency rules. Then pick the folder for the work in front of you.
 | [systems/controls.md](systems/controls.md) | Keyboard and gamepad reference. |
 | [systems/tuning.md](systems/tuning.md) | Player tuning resource and units. |
 | [systems/ladders.md](systems/ladders.md) | Ladder tiles and ladder motion. |
+| [systems/auto-route.md](systems/auto-route.md) | The in-game auto-route tool: set a start and a goal, plan a jump/dash/climb route, watch it run. |
+| [benchmark.md](benchmark.md) | The 16-room solver benchmark: waypoints, per-room abilities and frame budgets, and how the stability cost changes routes. |
 | [systems/doors.md](systems/doors.md) | Paired world doors, shuttle doors, entrance/spawn pairing. |
 | [systems/collectibles.md](systems/collectibles.md) | Numbered collectibles and the collection screen. |
 | [systems/map.md](systems/map.md) | Map model, precise/grid renderers, minimap. |
@@ -65,6 +67,7 @@ dependency rules. Then pick the folder for the work in front of you.
 | Feature | Code | Tests | Doc |
 | --- | --- | --- | --- |
 | Player motion, stamina, dash orchestration | `game/player/`, `addons/platformer_kit/character/` | `tests/player/`, `tests/platformer_kit/character/` | [controls](systems/controls.md), [tuning](systems/tuning.md) |
+| Auto-route planning and execution | `addons/platformer_kit/character/autopilot/`, `addons/platformer_debug/runtime/autopilot_tool.gd`, `tools/benchmark/` | `tests/platformer_kit/character/` | [auto route](systems/auto-route.md), [benchmark](benchmark.md) |
 | Ability runtime (dash, climb, pickups) | `addons/platformer_kit/abilities/` | `tests/platformer_kit/abilities/` | [extension guide](extension-guide.md) |
 | Combat (health, hit, hurt, knockback) | `addons/platformer_kit/combat/` | `tests/platformer_kit/combat/` | [extension guide](extension-guide.md) |
 | Rooms, streaming, entities, save | `addons/platformer_kit/world/`, `addons/platformer_kit/save/` | `tests/world/`, `tests/save/` | [architecture](architecture.md) |

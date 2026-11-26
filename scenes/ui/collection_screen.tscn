@@ -1,6 +1,6 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene format=3 uid="uid://xn1270s25l0e"]
 
-[ext_resource type="Script" path="res://game/ui/collection_screen.gd" id="1_screen"]
+[ext_resource type="Script" uid="uid://dq54ckhm0m8sv" path="res://game/ui/collection_screen.gd" id="1_screen"]
 [ext_resource type="Theme" uid="uid://dl2h74k2356hx" path="res://resources/ui/menu_theme.tres" id="2_theme"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_badge"]
@@ -31,7 +31,7 @@ corner_radius_top_right = 6
 corner_radius_bottom_right = 6
 corner_radius_bottom_left = 6
 
-[node name="CollectionScreen" type="Control"]
+[node name="CollectionScreen" type="Control" unique_id=1747715199]
 process_mode = 3
 layout_mode = 3
 anchors_preset = 15
@@ -43,7 +43,7 @@ mouse_filter = 2
 theme = ExtResource("2_theme")
 script = ExtResource("1_screen")
 
-[node name="Badge" type="PanelContainer" parent="."]
+[node name="Badge" type="PanelContainer" parent="." unique_id=450940169]
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 2
@@ -57,7 +57,7 @@ grow_vertical = 0
 mouse_filter = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_badge")
 
-[node name="BadgeLabel" type="Label" parent="Badge"]
+[node name="BadgeLabel" type="Label" parent="Badge" unique_id=1157987583]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0.78, 0.95, 0.9, 1)
@@ -65,7 +65,7 @@ theme_override_font_sizes/font_size = 13
 text = "图鉴 0 / 0"
 vertical_alignment = 1
 
-[node name="Overlay" type="Control" parent="."]
+[node name="Overlay" type="Control" parent="." unique_id=1728742849]
 unique_name_in_owner = true
 visible = false
 layout_mode = 1
@@ -75,7 +75,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="Dim" type="ColorRect" parent="Overlay"]
+[node name="Dim" type="ColorRect" parent="Overlay" unique_id=1784910026]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -84,7 +84,7 @@ grow_horizontal = 2
 grow_vertical = 2
 color = Color(0.016, 0.024, 0.031, 0.8)
 
-[node name="Panel" type="PanelContainer" parent="Overlay"]
+[node name="Panel" type="PanelContainer" parent="Overlay" unique_id=418484392]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -99,25 +99,25 @@ grow_horizontal = 2
 grow_vertical = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
 
-[node name="Margin" type="MarginContainer" parent="Overlay/Panel"]
+[node name="Margin" type="MarginContainer" parent="Overlay/Panel" unique_id=710333114]
 layout_mode = 2
 theme_override_constants/margin_left = 24
 theme_override_constants/margin_top = 20
 theme_override_constants/margin_right = 24
 theme_override_constants/margin_bottom = 20
 
-[node name="Content" type="VBoxContainer" parent="Overlay/Panel/Margin"]
+[node name="Content" type="VBoxContainer" parent="Overlay/Panel/Margin" unique_id=601042834]
 layout_mode = 2
 theme_override_constants/separation = 14
 
-[node name="Title" type="Label" parent="Overlay/Panel/Margin/Content"]
+[node name="Title" type="Label" parent="Overlay/Panel/Margin/Content" unique_id=315953290]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.92, 0.98, 0.98, 1)
 theme_override_font_sizes/font_size = 26
 text = "收集图鉴"
 horizontal_alignment = 1
 
-[node name="Count" type="Label" parent="Overlay/Panel/Margin/Content"]
+[node name="Count" type="Label" parent="Overlay/Panel/Margin/Content" unique_id=405292337]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0.475, 0.949, 0.816, 1)
@@ -125,13 +125,13 @@ theme_override_font_sizes/font_size = 16
 text = "0 / 0"
 horizontal_alignment = 1
 
-[node name="Scroll" type="ScrollContainer" parent="Overlay/Panel/Margin/Content"]
+[node name="Scroll" type="ScrollContainer" parent="Overlay/Panel/Margin/Content" unique_id=1646478665]
 custom_minimum_size = Vector2(0, 280)
 layout_mode = 2
 size_flags_vertical = 3
 horizontal_scroll_mode = 0
 
-[node name="Grid" type="GridContainer" parent="Overlay/Panel/Margin/Content/Scroll"]
+[node name="Grid" type="GridContainer" parent="Overlay/Panel/Margin/Content/Scroll" unique_id=1807152197]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
@@ -139,7 +139,7 @@ theme_override_constants/h_separation = 8
 theme_override_constants/v_separation = 8
 columns = 10
 
-[node name="Hint" type="Label" parent="Overlay/Panel/Margin/Content"]
+[node name="Hint" type="Label" parent="Overlay/Panel/Margin/Content" unique_id=11117995]
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 1, 1, 0.45)
 theme_override_font_sizes/font_size = 12

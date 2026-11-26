@@ -58,4 +58,6 @@ theme_override_colors/font_color = Color(0.88, 0.92, 0.91, 1)
 theme_override_font_sizes/font_size = 10
 text = "Debug"
 
-[node name="TasPanel" parent="." instance=ExtResource("2_tas_panel")]
+[node name="TasPanel" parent="." unique_id=1700674528 instance=ExtResource("2_tas_panel")]
+layout_mode = 0
+anchors_preset = 0

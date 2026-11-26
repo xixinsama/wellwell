@@ -1,14 +1,12 @@
-[gd_scene format=3]
+[gd_scene format=3 uid="uid://d0x0j3wdywwsq"]
 
-[ext_resource type="Script" path="res://game/puzzle/view/puzzle_void_zone.gd" id="1_void_zone"]
+[ext_resource type="Script" uid="uid://bj2pofsyuys3c" path="res://game/puzzle/view/puzzle_void_zone.gd" id="1_void_zone"]
 [ext_resource type="TileSet" uid="uid://ct7c6ejoixgkq" path="res://resources/tilesets/primordial_tileset.tres" id="2_tileset"]
 
-[node name="VoidZone" type="Node2D"]
+[node name="VoidZone" type="Node2D" unique_id=1792112678]
 script = ExtResource("1_void_zone")
-cell_size = 8
-collision_layer = 8
 
-[node name="VoidTiles" type="TileMapLayer" parent="."]
+[node name="VoidTiles" type="TileMapLayer" parent="." unique_id=1160653127]
 modulate = Color(1, 1, 1, 0.22)
 tile_set = ExtResource("2_tileset")
 collision_enabled = false

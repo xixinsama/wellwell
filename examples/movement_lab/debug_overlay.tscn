@@ -1,21 +1,21 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene format=3 uid="uid://dudky2jw5udeg"]
 
-[ext_resource type="Script" path="res://examples/movement_lab/debug_overlay.gd" id="1_overlay"]
-[ext_resource type="PackedScene" path="res://addons/platformer_debug/runtime/debug_hud.tscn" id="2_hud"]
-[ext_resource type="Script" path="res://addons/platformer_debug/runtime/debug_visualizer_2d.gd" id="3_visualizer"]
-[ext_resource type="PackedScene" path="res://addons/platformer_debug/runtime/tas_tool.tscn" id="4_tas"]
+[ext_resource type="Script" uid="uid://cheqr2142q4h6" path="res://examples/movement_lab/debug_overlay.gd" id="1_overlay"]
+[ext_resource type="PackedScene" uid="uid://xdpcjsmnvhkj" path="res://addons/platformer_debug/runtime/debug_hud.tscn" id="2_hud"]
+[ext_resource type="Script" uid="uid://dxqrywpvhlo66" path="res://addons/platformer_debug/runtime/debug_visualizer_2d.gd" id="3_visualizer"]
+[ext_resource type="PackedScene" uid="uid://m1phckdbs8vb" path="res://addons/platformer_debug/runtime/tas_tool.tscn" id="4_tas"]
 
-[node name="DebugOverlay" type="Node"]
+[node name="DebugOverlay" type="Node" unique_id=106782732]
 script = ExtResource("1_overlay")
 
-[node name="Visualizer" type="Node2D" parent="."]
+[node name="Visualizer" type="Node2D" parent="." unique_id=899497758]
 z_index = 120
 script = ExtResource("3_visualizer")
 
-[node name="HudLayer" type="CanvasLayer" parent="."]
+[node name="HudLayer" type="CanvasLayer" parent="." unique_id=1307943612]
 layer = 120
 
-[node name="DebugHud" parent="HudLayer" instance=ExtResource("2_hud")]
+[node name="DebugHud" parent="HudLayer" unique_id=1004213511 instance=ExtResource("2_hud")]
 
-[node name="TasTool" parent="." instance=ExtResource("4_tas")]
+[node name="TasTool" parent="." unique_id=763641985 instance=ExtResource("4_tas")]
 player_path = NodePath("../../Lab/Player")

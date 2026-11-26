@@ -1,12 +1,10 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene format=3 uid="uid://bx6fgvo05gexs"]
 
-[ext_resource type="Script" path="res://addons/input_mapping/ui/input_binding_button.gd" id="1_button"]
+[ext_resource type="Script" uid="uid://b5vfa2jeps5sq" path="res://addons/input_mapping/ui/input_binding_button.gd" id="1_button"]
 
-[node name="InputBindingButton" type="Button"]
+[node name="InputBindingButton" type="Button" unique_id=142325440]
 custom_minimum_size = Vector2(240, 42)
-layout_mode = 2
 size_flags_horizontal = 3
-focus_mode = 2
 text = "INPUT_MAPPING_UNBOUND"
 clip_text = true
 script = ExtResource("1_button")

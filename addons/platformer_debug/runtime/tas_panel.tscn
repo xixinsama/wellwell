@@ -1,6 +1,6 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene format=3 uid="uid://c8i2f6mhh0qud"]
 
-[ext_resource type="Script" path="res://addons/platformer_debug/runtime/tas_panel.gd" id="1_tas_panel"]
+[ext_resource type="Script" uid="uid://dy2nicsxi5scm" path="res://addons/platformer_debug/runtime/tas_panel.gd" id="1_tas_panel"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBox_tas_hud"]
 bg_color = Color(0.03529412, 0.047058824, 0.05490196, 0.72)
@@ -14,7 +14,7 @@ corner_radius_top_right = 4
 corner_radius_bottom_right = 4
 corner_radius_bottom_left = 4
 
-[node name="TasPanel" type="PanelContainer"]
+[node name="TasPanel" type="PanelContainer" unique_id=1474806848]
 visible = false
 anchors_preset = 1
 anchor_left = 1.0
@@ -28,24 +28,24 @@ mouse_filter = 2
 theme_override_styles/panel = SubResource("StyleBox_tas_hud")
 script = ExtResource("1_tas_panel")
 
-[node name="Margin" type="MarginContainer" parent="."]
+[node name="Margin" type="MarginContainer" parent="." unique_id=1473364007]
 layout_mode = 2
 theme_override_constants/margin_left = 8
 theme_override_constants/margin_top = 6
 theme_override_constants/margin_right = 8
 theme_override_constants/margin_bottom = 6
 
-[node name="Content" type="VBoxContainer" parent="Margin"]
+[node name="Content" type="VBoxContainer" parent="Margin" unique_id=1694065972]
 layout_mode = 2
 theme_override_constants/separation = 3
 
-[node name="Title" type="Label" parent="Margin/Content"]
+[node name="Title" type="Label" parent="Margin/Content" unique_id=1095233737]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.45, 0.9, 0.82, 1)
 theme_override_font_sizes/font_size = 11
 text = "INPUT TAS"
 
-[node name="Status" type="Label" parent="Margin/Content"]
+[node name="Status" type="Label" parent="Margin/Content" unique_id=1474509192]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0.88, 0.92, 0.9, 1)

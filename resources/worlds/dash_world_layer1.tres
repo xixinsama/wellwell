@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="WorldData" format=3 uid="uid://dspaciy0cewga"]
+[gd_resource type="Resource" script_class="WorldData" format=3 uid="uid://c0wb58x54mhpr"]
 
 [ext_resource type="Script" uid="uid://b1ws1oeewd0ks" path="res://addons/platformer_kit/world/data/world_room_placement_data.gd" id="1_70dow"]
 [ext_resource type="Resource" uid="uid://bmy1b5poqvqop" path="res://resources/rooms/generated/get_dash_power.tres" id="2_2h8u6"]
@@ -6,17 +6,17 @@
 [ext_resource type="Resource" uid="uid://bmia23rx33eeo" path="res://resources/rooms/generated/layer1_01_00_3.tres" id="4_rn17h"]
 [ext_resource type="Script" uid="uid://dkcwb87qn5n2c" path="res://addons/platformer_kit/world/data/world_data.gd" id="5_oll74"]
 
-[sub_resource type="Resource" id="Resource_pd64h"]
+[sub_resource type="Resource" id="Resource_70dow"]
 script = ExtResource("1_70dow")
 room_id = "get_dash_power"
 origin_chunk = Vector2i(0, 1)
 
-[sub_resource type="Resource" id="Resource_uxddk"]
+[sub_resource type="Resource" id="Resource_2h8u6"]
 script = ExtResource("1_70dow")
 room_id = "layer1_00_00"
 origin_chunk = Vector2i(0, 2)
 
-[sub_resource type="Resource" id="Resource_bnym7"]
+[sub_resource type="Resource" id="Resource_2saqs"]
 script = ExtResource("1_70dow")
 room_id = "layer1_01_00_3"
 origin_chunk = Vector2i(1, 0)
@@ -28,5 +28,5 @@ display_name = "冲刺世界第一层"
 start_room_id = "layer1_00_00"
 start_spawn_id = "start"
 rooms = Array[Resource]([ExtResource("2_2h8u6"), ExtResource("3_2saqs"), ExtResource("4_rn17h")])
-placements = Array[Resource]([SubResource("Resource_pd64h"), SubResource("Resource_uxddk"), SubResource("Resource_bnym7")])
+placements = Array[Resource]([SubResource("Resource_70dow"), SubResource("Resource_2h8u6"), SubResource("Resource_2saqs")])
 tags = PackedStringArray()

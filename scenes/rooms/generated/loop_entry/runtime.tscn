@@ -1,10 +1,9 @@
 [gd_scene format=3 uid="uid://cxgxqdeyojxji"]
 
-[ext_resource type="Script" path="res://addons/platformer_kit/world/entities/spawn_point.gd" id="1_glt1f"]
-[ext_resource type="Script" path="res://addons/fluid_kit/runtime/water/water_basin.gd" id="2_awqqu"]
-[ext_resource type="PackedScene" path="res://addons/platformer_kit/world/entities/save_point.tscn" id="3_27c3k"]
-[ext_resource type="Script" path="res://addons/platformer_kit/world/entities/save_point.gd" id="4_js24a"]
-[ext_resource type="Script" path="res://addons/platformer_kit/world/entities/room_entrance.gd" id="5_vp4ky"]
+[ext_resource type="Script" uid="uid://bo5asnakkt3ao" path="res://addons/platformer_kit/world/entities/spawn_point.gd" id="1_glt1f"]
+[ext_resource type="Script" uid="uid://bx2a86y4dsj1g" path="res://addons/fluid_kit/runtime/water/water_basin.gd" id="2_awqqu"]
+[ext_resource type="PackedScene" uid="uid://b1x7griwahpw" path="res://addons/platformer_kit/world/entities/save_point.tscn" id="3_27c3k"]
+[ext_resource type="Script" uid="uid://cv4p3rarcw64e" path="res://addons/platformer_kit/world/entities/room_entrance.gd" id="5_vp4ky"]
 
 [node name="RoomRuntimeContent" type="Node2D" unique_id=432268220]
 
@@ -21,9 +20,8 @@ script = ExtResource("2_awqqu")
 size_cells = Vector2i(20, 4)
 basin_id = "entry_pool"
 
-[node name="CheckpointA" type="Node2D" parent="Entities" unique_id=939447865 instance=ExtResource("3_27c3k")]
+[node name="CheckpointA" parent="Entities" unique_id=939447865 instance=ExtResource("3_27c3k")]
 position = Vector2(32, 168)
-script = ExtResource("4_js24a")
 entity_id = "save_cp_a"
 
 [node name="EastExit" type="Node2D" parent="Entities" unique_id=1544228786]

@@ -1,13 +1,13 @@
-[gd_scene load_steps=7 format=3]
+[gd_scene format=3 uid="uid://b1dyrhgygjmhl"]
 
 [ext_resource type="Script" uid="uid://ckex4285744r4" path="res://addons/world_editor/world_editor_main.gd" id="1_main"]
 [ext_resource type="Script" uid="uid://bxnqqpgd0g3dh" path="res://addons/world_editor/world_layout_canvas.gd" id="2_canvas"]
 [ext_resource type="Script" uid="uid://b655bsmftww3a" path="res://addons/world_editor/world_terrain_preview_layer.gd" id="3_terrain"]
-[ext_resource type="Script" path="res://addons/world_editor/world_room_list.gd" id="4_list"]
-[ext_resource type="Script" path="res://addons/world_editor/world_room_inspector.gd" id="5_inspector"]
-[ext_resource type="Script" path="res://addons/world_editor/world_marker_layer.gd" id="7_markers"]
+[ext_resource type="Script" uid="uid://blss75a45oqn4" path="res://addons/world_editor/world_room_list.gd" id="4_list"]
+[ext_resource type="Script" uid="uid://d2xlumyrnqi2x" path="res://addons/world_editor/world_room_inspector.gd" id="5_inspector"]
+[ext_resource type="Script" uid="uid://bmugrnsnaw0ae" path="res://addons/world_editor/world_marker_layer.gd" id="7_markers"]
 
-[node name="WorldEditorMain" type="VBoxContainer"]
+[node name="WorldEditorMain" type="VBoxContainer" unique_id=2062753303]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -17,224 +17,229 @@ size_flags_horizontal = 3
 size_flags_vertical = 3
 script = ExtResource("1_main")
 
-[node name="WorldBar" type="HBoxContainer" parent="."]
+[node name="WorldBar" type="HBoxContainer" parent="." unique_id=1486739311]
 layout_mode = 2
 
-[node name="WorldPicker" type="EditorResourcePicker" parent="WorldBar"]
+[node name="WorldPicker" type="EditorResourcePicker" parent="WorldBar" unique_id=950058172]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(280, 0)
 layout_mode = 2
 size_flags_horizontal = 3
 base_type = "WorldData"
 
-[node name="NewWorld" type="Button" parent="WorldBar"]
+[node name="NewWorld" type="Button" parent="WorldBar" unique_id=1135748228]
 unique_name_in_owner = true
 layout_mode = 2
-tooltip_text = "Create a WorldData resource"
-text = "New World"
+tooltip_text = "创建 WorldData 资源"
+text = "新建世界"
 
-[node name="SaveWorld" type="Button" parent="WorldBar"]
+[node name="SaveWorld" type="Button" parent="WorldBar" unique_id=1288262334]
 unique_name_in_owner = true
 layout_mode = 2
-tooltip_text = "Save the selected WorldData resource"
+tooltip_text = "保存选中的 WorldData 资源"
 disabled = true
-text = "Save World"
+text = "保存世界"
 
-[node name="CommandBar" type="HBoxContainer" parent="."]
+[node name="CommandBar" type="HBoxContainer" parent="." unique_id=313540006]
 layout_mode = 2
 
-[node name="NewRoom" type="Button" parent="CommandBar"]
+[node name="NewRoom" type="Button" parent="CommandBar" unique_id=676038410]
 unique_name_in_owner = true
 layout_mode = 2
-tooltip_text = "Open the room template in a new scene"
-text = "New Room"
+tooltip_text = "从模板创建房间"
+text = "新建房间"
 
-[node name="AddExisting" type="Button" parent="CommandBar"]
+[node name="AddExisting" type="Button" parent="CommandBar" unique_id=1190212719]
 unique_name_in_owner = true
 layout_mode = 2
-tooltip_text = "Select or create a WorldData resource first"
+tooltip_text = "请先选择或创建 WorldData 资源"
 disabled = true
-text = "Add Existing"
+text = "添加现有"
 
-[node name="DrawRoom" type="CheckButton" parent="CommandBar"]
+[node name="DrawRoom" type="CheckButton" parent="CommandBar" unique_id=368186567]
 unique_name_in_owner = true
 layout_mode = 2
 tooltip_text = "Drag on the canvas to create a room at that chunk rectangle"
 text = "Draw Room"
 
-[node name="MergeRooms" type="Button" parent="CommandBar"]
+[node name="MergeRooms" type="Button" parent="CommandBar" unique_id=1019338556]
 unique_name_in_owner = true
 layout_mode = 2
 tooltip_text = "Merge the selected rooms; their union must be a rectangle"
 text = "Merge"
 
-[node name="SplitRoom" type="Button" parent="CommandBar"]
+[node name="SplitRoom" type="Button" parent="CommandBar" unique_id=2119088165]
 unique_name_in_owner = true
 layout_mode = 2
 tooltip_text = "Split the selected room at the middle chunk boundary"
 text = "Split"
 
-[node name="SeparatorA" type="VSeparator" parent="CommandBar"]
+[node name="SeparatorA" type="VSeparator" parent="CommandBar" unique_id=1002344244]
 layout_mode = 2
 
-[node name="OpenSource" type="Button" parent="CommandBar"]
+[node name="OpenSource" type="Button" parent="CommandBar" unique_id=1480973354]
 unique_name_in_owner = true
 layout_mode = 2
+tooltip_text = "打开选中房间的源场景"
 disabled = true
-tooltip_text = "Open the selected room source scene"
-text = "Open Source"
+text = "打开源场景"
 
-[node name="BakeRoom" type="Button" parent="CommandBar"]
+[node name="BakeRoom" type="Button" parent="CommandBar" unique_id=171795060]
 unique_name_in_owner = true
 layout_mode = 2
+tooltip_text = "烘焙选中的房间"
 disabled = true
-tooltip_text = "Bake the selected room"
-text = "Bake"
+text = "烘焙"
 
-[node name="BakeStale" type="Button" parent="CommandBar"]
+[node name="BakeStale" type="Button" parent="CommandBar" unique_id=525775824]
 unique_name_in_owner = true
 layout_mode = 2
+tooltip_text = "烘焙所有源场景已变更的房间"
 disabled = true
-tooltip_text = "Bake every room whose source changed since the last bake"
-text = "Bake Stale"
+text = "烘焙待重烘 (0)"
 
-[node name="ValidateRoom" type="Button" parent="CommandBar"]
+[node name="ValidateRoom" type="Button" parent="CommandBar" unique_id=86900103]
 unique_name_in_owner = true
 layout_mode = 2
+tooltip_text = "校验选中房间的源场景"
 disabled = true
-tooltip_text = "Validate the selected room source"
-text = "Validate"
+text = "校验"
 
-[node name="SeparatorB" type="VSeparator" parent="CommandBar"]
+[node name="SeparatorB" type="VSeparator" parent="CommandBar" unique_id=906855150]
 layout_mode = 2
 
-[node name="ValidateWorld" type="Button" parent="CommandBar"]
+[node name="ValidateWorld" type="Button" parent="CommandBar" unique_id=51362144]
 unique_name_in_owner = true
 layout_mode = 2
+tooltip_text = "校验世界布局与连接"
 disabled = true
-tooltip_text = "Validate the world layout and connections"
-text = "Validate World"
+text = "校验世界"
 
-[node name="BakeWorld" type="Button" parent="CommandBar"]
+[node name="BakeWorld" type="Button" parent="CommandBar" unique_id=644885740]
 unique_name_in_owner = true
 layout_mode = 2
+tooltip_text = "校验并保存世界"
 disabled = true
-tooltip_text = "Validate and save the world"
-text = "Bake World"
+text = "烘焙世界"
 
-[node name="Spacer" type="Control" parent="CommandBar"]
+[node name="Spacer" type="Control" parent="CommandBar" unique_id=1457946951]
 layout_mode = 2
 size_flags_horizontal = 3
 mouse_filter = 2
 
-[node name="ViewMode3D" type="CheckButton" parent="CommandBar"]
+[node name="ViewMode3D" type="CheckButton" parent="CommandBar" unique_id=969406613]
 unique_name_in_owner = true
 layout_mode = 2
-tooltip_text = "View the stacked worlds in 3D; click a slice to edit that world"
+tooltip_text = "把各世界显示为平行的立体切片；点切片即可编辑那个世界"
+disabled = true
 text = "3D"
 
-[node name="RoomsToggle" type="CheckButton" parent="CommandBar"]
+[node name="RoomsToggle" type="CheckButton" parent="CommandBar" unique_id=273491015]
 unique_name_in_owner = true
 layout_mode = 2
-tooltip_text = "Show the room list"
+tooltip_text = "显示房间列表"
 button_pressed = true
-text = "Rooms"
+text = "房间"
 
-[node name="InspectorToggle" type="CheckButton" parent="CommandBar"]
+[node name="InspectorToggle" type="CheckButton" parent="CommandBar" unique_id=1628684262]
 unique_name_in_owner = true
 layout_mode = 2
-tooltip_text = "Show the room inspector"
+tooltip_text = "显示房间检查器"
 button_pressed = true
-text = "Inspector"
+text = "检查器"
 
-[node name="TerrainBar" type="HBoxContainer" parent="."]
+[node name="TerrainBar" type="HBoxContainer" parent="." unique_id=79049977]
 unique_name_in_owner = true
 layout_mode = 2
 
-[node name="TerrainTitle" type="Label" parent="TerrainBar"]
+[node name="TerrainTitle" type="Label" parent="TerrainBar" unique_id=1590942241]
 layout_mode = 2
 text = "Terrain"
 
-[node name="EditTerrain" type="Button" parent="TerrainBar"]
+[node name="EditTerrain" type="Button" parent="TerrainBar" unique_id=1214335951]
 unique_name_in_owner = true
 layout_mode = 2
 tooltip_text = "Open the world's terrain scene in the normal Godot editor"
 text = "Edit Terrain"
 
-[node name="SyncTerrain" type="Button" parent="TerrainBar"]
+[node name="SyncTerrain" type="Button" parent="TerrainBar" unique_id=279737846]
 unique_name_in_owner = true
 layout_mode = 2
 tooltip_text = "Slice the saved world terrain into every room and re-bake them"
 text = "Sync Terrain"
 
-[node name="TerrainHint" type="Label" parent="TerrainBar"]
+[node name="TerrainHint" type="Label" parent="TerrainBar" unique_id=1757622346]
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 1, 1, 0.55)
 text = "Edit and save the terrain scene in Godot, then Sync"
 
-[node name="Workspace" type="HSplitContainer" parent="."]
+[node name="Workspace" type="HSplitContainer" parent="." unique_id=1954051280]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="RoomListPanel" type="VBoxContainer" parent="Workspace"]
+[node name="RoomListPanel" type="VBoxContainer" parent="Workspace" unique_id=351511475]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(360, 0)
 layout_mode = 2
 
-[node name="RoomSearch" type="LineEdit" parent="Workspace/RoomListPanel"]
+[node name="RoomSearch" type="LineEdit" parent="Workspace/RoomListPanel" unique_id=382601933]
 unique_name_in_owner = true
 layout_mode = 2
-placeholder_text = "Search rooms…"
+placeholder_text = "搜索房间…"
 clear_button_enabled = true
 
-[node name="RoomList" type="Tree" parent="Workspace/RoomListPanel"]
+[node name="RoomList" type="Tree" parent="Workspace/RoomListPanel" unique_id=1721111683]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 3
+columns = 4
+column_titles_visible = true
 allow_reselect = true
+hide_root = true
+select_mode = 1
 script = ExtResource("4_list")
 
-[node name="LayerPanel" type="VBoxContainer" parent="Workspace/RoomListPanel"]
+[node name="LayerPanel" type="VBoxContainer" parent="Workspace/RoomListPanel" unique_id=1676081115]
 unique_name_in_owner = true
 visible = false
 layout_mode = 2
 size_flags_vertical = 3
 theme_override_constants/separation = 6
 
-[node name="LayerTitle" type="Label" parent="Workspace/RoomListPanel/LayerPanel"]
+[node name="LayerTitle" type="Label" parent="Workspace/RoomListPanel/LayerPanel" unique_id=34125135]
 unique_name_in_owner = true
 layout_mode = 2
 text = "Layers (Z)"
 
-[node name="LayerRows" type="VBoxContainer" parent="Workspace/RoomListPanel/LayerPanel"]
+[node name="LayerRows" type="VBoxContainer" parent="Workspace/RoomListPanel/LayerPanel" unique_id=1839357227]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 3
 theme_override_constants/separation = 2
 
-[node name="LayerAdd" type="Button" parent="Workspace/RoomListPanel/LayerPanel"]
+[node name="LayerAdd" type="Button" parent="Workspace/RoomListPanel/LayerPanel" unique_id=884484805]
 unique_name_in_owner = true
 layout_mode = 2
 text = "+ World"
 
-[node name="LayerHint" type="Label" parent="Workspace/RoomListPanel/LayerPanel"]
+[node name="LayerHint" type="Label" parent="Workspace/RoomListPanel/LayerPanel" unique_id=1116620947]
 unique_name_in_owner = true
 layout_mode = 2
-text = ""
-autowrap_mode = 3
 theme_override_font_sizes/font_size = 11
-[node name="RoomCount" type="Label" parent="Workspace/RoomListPanel"]
+autowrap_mode = 3
+
+[node name="RoomCount" type="Label" parent="Workspace/RoomListPanel" unique_id=2145065686]
 unique_name_in_owner = true
 layout_mode = 2
-text = "0 rooms"
+text = "0 个房间"
 
-[node name="CanvasSplit" type="HSplitContainer" parent="Workspace"]
+[node name="CanvasSplit" type="HSplitContainer" parent="Workspace" unique_id=1021964066]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="LayoutCanvas" type="Control" parent="Workspace/CanvasSplit"]
+[node name="LayoutCanvas" type="Control" parent="Workspace/CanvasSplit" unique_id=1447650790]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(320, 200)
 clip_contents = true
@@ -244,7 +249,7 @@ size_flags_vertical = 3
 focus_mode = 2
 script = ExtResource("2_canvas")
 
-[node name="TerrainPreviewLayer" type="Control" parent="Workspace/CanvasSplit/LayoutCanvas"]
+[node name="TerrainPreviewLayer" type="Control" parent="Workspace/CanvasSplit/LayoutCanvas" unique_id=1442824925]
 unique_name_in_owner = true
 show_behind_parent = true
 layout_mode = 1
@@ -256,7 +261,7 @@ grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("3_terrain")
 
-[node name="MarkerLayer" type="Control" parent="Workspace/CanvasSplit/LayoutCanvas"]
+[node name="MarkerLayer" type="Control" parent="Workspace/CanvasSplit/LayoutCanvas" unique_id=1746286607]
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 15
@@ -267,103 +272,100 @@ grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("7_markers")
 
-[node name="InspectorPanel" type="VBoxContainer" parent="Workspace/CanvasSplit"]
+[node name="InspectorPanel" type="VBoxContainer" parent="Workspace/CanvasSplit" unique_id=1592930055]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(340, 0)
 layout_mode = 2
 script = ExtResource("5_inspector")
 
-[node name="Connections" type="VBoxContainer" parent="Workspace/CanvasSplit/InspectorPanel"]
+[node name="Connections" type="VBoxContainer" parent="Workspace/CanvasSplit/InspectorPanel" unique_id=1983561268]
 layout_mode = 2
 
-[node name="ConnectionsTitle" type="Label" parent="Workspace/CanvasSplit/InspectorPanel/Connections"]
+[node name="ConnectionsTitle" type="Label" parent="Workspace/CanvasSplit/InspectorPanel/Connections" unique_id=1514684589]
 unique_name_in_owner = true
 layout_mode = 2
-text = "CONNECTIONS"
+text = "连接"
 
-[node name="SourceEntrance" type="OptionButton" parent="Workspace/CanvasSplit/InspectorPanel/Connections"]
-unique_name_in_owner = true
-layout_mode = 2
-disabled = true
-
-[node name="TargetRoom" type="OptionButton" parent="Workspace/CanvasSplit/InspectorPanel/Connections"]
+[node name="SourceEntrance" type="OptionButton" parent="Workspace/CanvasSplit/InspectorPanel/Connections" unique_id=771050397]
 unique_name_in_owner = true
 layout_mode = 2
 disabled = true
 
-[node name="TargetSpawn" type="OptionButton" parent="Workspace/CanvasSplit/InspectorPanel/Connections"]
+[node name="TargetRoom" type="OptionButton" parent="Workspace/CanvasSplit/InspectorPanel/Connections" unique_id=163733653]
 unique_name_in_owner = true
 layout_mode = 2
 disabled = true
 
-[node name="ConnectionButtons" type="HBoxContainer" parent="Workspace/CanvasSplit/InspectorPanel/Connections"]
-layout_mode = 2
-
-[node name="Connect" type="Button" parent="Workspace/CanvasSplit/InspectorPanel/Connections/ConnectionButtons"]
+[node name="TargetSpawn" type="OptionButton" parent="Workspace/CanvasSplit/InspectorPanel/Connections" unique_id=1778788322]
 unique_name_in_owner = true
 layout_mode = 2
 disabled = true
-text = "Connect"
 
-[node name="Disconnect" type="Button" parent="Workspace/CanvasSplit/InspectorPanel/Connections/ConnectionButtons"]
+[node name="ConnectionButtons" type="HBoxContainer" parent="Workspace/CanvasSplit/InspectorPanel/Connections" unique_id=1839993533]
+layout_mode = 2
+
+[node name="Connect" type="Button" parent="Workspace/CanvasSplit/InspectorPanel/Connections/ConnectionButtons" unique_id=1059313646]
 unique_name_in_owner = true
 layout_mode = 2
 disabled = true
-text = "Disconnect"
+text = "连接"
 
-[node name="StatusBar" type="HBoxContainer" parent="."]
+[node name="Disconnect" type="Button" parent="Workspace/CanvasSplit/InspectorPanel/Connections/ConnectionButtons" unique_id=1641922735]
+unique_name_in_owner = true
+layout_mode = 2
+disabled = true
+text = "断开"
+
+[node name="StatusBar" type="HBoxContainer" parent="." unique_id=1157958213]
 layout_mode = 2
 
-[node name="Status" type="Label" parent="StatusBar"]
+[node name="Status" type="Label" parent="StatusBar" unique_id=2117754992]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
-text = "No world selected"
+text = "未选择世界"
 
-[node name="SelectionLabel" type="Label" parent="StatusBar"]
+[node name="SelectionLabel" type="Label" parent="StatusBar" unique_id=857530670]
 unique_name_in_owner = true
 layout_mode = 2
 
-[node name="ChunkField" type="LineEdit" parent="StatusBar"]
+[node name="ChunkField" type="LineEdit" parent="StatusBar" unique_id=917480181]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(90, 0)
 layout_mode = 2
+tooltip_text = "指针所在区块；跳转会移动选中的房间，或把画布居中到该区块"
 placeholder_text = "x,y"
 
-[node name="ChunkGo" type="Button" parent="StatusBar"]
+[node name="ChunkGo" type="Button" parent="StatusBar" unique_id=371079432]
 unique_name_in_owner = true
 layout_mode = 2
-text = "Go"
+text = "跳转"
 
-[node name="ZoomLabel" type="Label" parent="StatusBar"]
+[node name="ZoomLabel" type="Label" parent="StatusBar" unique_id=1483109252]
 unique_name_in_owner = true
 layout_mode = 2
 text = "100%"
 
-[node name="FocusAll" type="Button" parent="StatusBar"]
+[node name="FocusAll" type="Button" parent="StatusBar" unique_id=1044117173]
 unique_name_in_owner = true
 layout_mode = 2
-tooltip_text = "Fit all rooms in the canvas"
-text = "Focus All"
+tooltip_text = "在画布中显示全部房间"
+text = "全部聚焦"
 
-[node name="ResetView" type="Button" parent="StatusBar"]
+[node name="ResetView" type="Button" parent="StatusBar" unique_id=1090082092]
 unique_name_in_owner = true
 layout_mode = 2
-tooltip_text = "Reset canvas pan and zoom"
-text = "Reset View"
+tooltip_text = "重置画布平移与缩放"
+text = "重置视图"
 
-[node name="AddExistingDialog" type="FileDialog" parent="."]
+[node name="AddExistingDialog" type="FileDialog" parent="." unique_id=1016933568]
 unique_name_in_owner = true
-title = "Add Existing Room"
-access = 0
+title = "添加现有房间"
 file_mode = 0
 filters = PackedStringArray("*.tscn ; Godot Scene")
 
-[node name="NewWorldDialog" type="FileDialog" parent="."]
+[node name="NewWorldDialog" type="FileDialog" parent="." unique_id=1591498535]
 unique_name_in_owner = true
-title = "Create World"
-access = 0
-file_mode = 4
-current_dir = "res://resources/worlds"
+title = "创建世界"
 root_subfolder = "res://resources/worlds"
 filters = PackedStringArray("*.tres ; WorldData Resource")

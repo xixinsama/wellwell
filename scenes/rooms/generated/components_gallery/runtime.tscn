@@ -1,17 +1,15 @@
 [gd_scene format=3 uid="uid://b0bp8lgccynf"]
 
-[ext_resource type="Script" path="res://addons/platformer_kit/world/entities/spawn_point.gd" id="1_gy8r4"]
-[ext_resource type="Script" path="res://addons/platformer_kit/platforms/platform_body_2d.gd" id="2_x8wn4"]
-[ext_resource type="Script" path="res://addons/platformer_kit/platforms/components/elevator_motion_component_2d.gd" id="3_ju7c4"]
-[ext_resource type="Script" path="res://addons/platformer_kit/platforms/components/rider_trigger_component_2d.gd" id="4_q73aw"]
-[ext_resource type="Script" path="res://addons/platformer_kit/platforms/components/conveyor_surface_component_2d.gd" id="5_h072y"]
-[ext_resource type="Script" path="res://addons/platformer_kit/platforms/components/waypoint_motion_component_2d.gd" id="6_85yjx"]
-[ext_resource type="Script" path="res://addons/platformer_kit/platforms/components/fog_occluder_component_2d.gd" id="7_waso0"]
-[ext_resource type="Script" path="res://addons/platformer_kit/platforms/components/fall_motion_component_2d.gd" id="8_s0ts5"]
+[ext_resource type="Script" uid="uid://bo5asnakkt3ao" path="res://addons/platformer_kit/world/entities/spawn_point.gd" id="1_gy8r4"]
+[ext_resource type="Script" uid="uid://cu6ud84ix44e" path="res://addons/platformer_kit/platforms/platform_body_2d.gd" id="2_x8wn4"]
+[ext_resource type="Script" uid="uid://bdgkq3o3wllyx" path="res://addons/platformer_kit/platforms/components/elevator_motion_component_2d.gd" id="3_ju7c4"]
+[ext_resource type="Script" uid="uid://chw3gl0jdqyuh" path="res://addons/platformer_kit/platforms/components/rider_trigger_component_2d.gd" id="4_q73aw"]
+[ext_resource type="Script" uid="uid://c5hvj7hvcnfdg" path="res://addons/platformer_kit/platforms/components/conveyor_surface_component_2d.gd" id="5_h072y"]
+[ext_resource type="Script" uid="uid://dpnnwyncyrnak" path="res://addons/platformer_kit/platforms/components/waypoint_motion_component_2d.gd" id="6_85yjx"]
+[ext_resource type="Script" uid="uid://b366104fmah7f" path="res://addons/platformer_kit/platforms/components/fog_occluder_component_2d.gd" id="7_waso0"]
+[ext_resource type="Script" uid="uid://cch0ondacugn3" path="res://addons/platformer_kit/platforms/components/fall_motion_component_2d.gd" id="8_s0ts5"]
 [ext_resource type="PackedScene" path="res://scenes/world/fog_door.tscn" id="9_jotl7"]
 [ext_resource type="PackedScene" path="res://scenes/world/phantom_wall.tscn" id="10_1msqr"]
-[ext_resource type="TileSet" path="res://resources/tilesets/primordial_tileset.tres" id="11_h1vss"]
-[ext_resource type="Script" path="res://addons/platformer_kit/world/components/phantom_wall_component_2d.gd" id="12_f12vr"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_wy1h4"]
 size = Vector2(24, 8)
@@ -148,16 +146,12 @@ one_way_collision = true
 color = Color(0.45, 0.75, 0.45, 1)
 polygon = PackedVector2Array(0, 0, 24, 0, 24, 8, 0, 8)
 
-[node name="05_Door" type="Node2D" parent="Entities" unique_id=200273540 instance=ExtResource("9_jotl7")]
-z_index = 2
+[node name="05_Door" parent="Entities" unique_id=200273540 instance=ExtResource("9_jotl7")]
 position = Vector2(384, 144)
 
-[node name="06_PhantomWall" type="TileMapLayer" parent="Entities" unique_id=1539846022 instance=ExtResource("10_1msqr")]
+[node name="06_PhantomWall" parent="Entities" unique_id=1539846022 instance=ExtResource("10_1msqr")]
 position = Vector2(480, 144)
 tile_map_data = PackedByteArray(0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0)
-tile_set = ExtResource("11_h1vss")
-collision_enabled = false
-script = ExtResource("12_f12vr")
 
 [node name="Signs" type="Node2D" parent="Entities" unique_id=218724975]
 

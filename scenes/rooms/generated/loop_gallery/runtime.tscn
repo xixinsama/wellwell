@@ -1,16 +1,14 @@
 [gd_scene format=3 uid="uid://slyeo3u2jxa7"]
 
-[ext_resource type="Script" path="res://addons/platformer_kit/world/entities/spawn_point.gd" id="1_6k2lr"]
-[ext_resource type="PackedScene" path="res://addons/platformer_kit/world/entities/save_point.tscn" id="2_qnfkf"]
-[ext_resource type="Script" path="res://addons/platformer_kit/world/entities/save_point.gd" id="3_cux3g"]
-[ext_resource type="Script" path="res://addons/platformer_kit/platforms/platform_body_2d.gd" id="4_2752m"]
-[ext_resource type="Script" path="res://addons/platformer_kit/platforms/components/elevator_motion_component_2d.gd" id="5_xt8bm"]
-[ext_resource type="Script" path="res://addons/platformer_kit/platforms/components/rider_trigger_component_2d.gd" id="6_sp17c"]
-[ext_resource type="Script" path="res://addons/platformer_kit/platforms/components/conveyor_surface_component_2d.gd" id="7_i2do2"]
-[ext_resource type="PackedScene" path="res://addons/platformer_kit/abilities/entities/ability_pickup.tscn" id="8_0uyev"]
-[ext_resource type="Script" path="res://addons/platformer_kit/abilities/entities/ability_pickup.gd" id="9_35xfm"]
-[ext_resource type="Resource" path="res://addons/platformer_kit/abilities/dash/default_dash.tres" id="10_roomb"]
-[ext_resource type="Script" path="res://addons/platformer_kit/world/entities/room_entrance.gd" id="11_ltnep"]
+[ext_resource type="Script" uid="uid://bo5asnakkt3ao" path="res://addons/platformer_kit/world/entities/spawn_point.gd" id="1_6k2lr"]
+[ext_resource type="PackedScene" uid="uid://b1x7griwahpw" path="res://addons/platformer_kit/world/entities/save_point.tscn" id="2_qnfkf"]
+[ext_resource type="Script" uid="uid://cu6ud84ix44e" path="res://addons/platformer_kit/platforms/platform_body_2d.gd" id="4_2752m"]
+[ext_resource type="Script" uid="uid://bdgkq3o3wllyx" path="res://addons/platformer_kit/platforms/components/elevator_motion_component_2d.gd" id="5_xt8bm"]
+[ext_resource type="Script" uid="uid://chw3gl0jdqyuh" path="res://addons/platformer_kit/platforms/components/rider_trigger_component_2d.gd" id="6_sp17c"]
+[ext_resource type="Script" uid="uid://c5hvj7hvcnfdg" path="res://addons/platformer_kit/platforms/components/conveyor_surface_component_2d.gd" id="7_i2do2"]
+[ext_resource type="PackedScene" uid="uid://dons4yo63slat" path="res://addons/platformer_kit/abilities/entities/ability_pickup.tscn" id="8_0uyev"]
+[ext_resource type="Resource" uid="uid://ckoqbfyfnstkp" path="res://addons/platformer_kit/abilities/dash/default_dash.tres" id="10_roomb"]
+[ext_resource type="Script" uid="uid://cv4p3rarcw64e" path="res://addons/platformer_kit/world/entities/room_entrance.gd" id="11_ltnep"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_f2dpf"]
 size = Vector2(48, 16)
@@ -34,9 +32,8 @@ position = Vector2(288, 168)
 script = ExtResource("1_6k2lr")
 spawn_id = "from_split"
 
-[node name="CheckpointC" type="Node2D" parent="Entities" unique_id=939447865 instance=ExtResource("2_qnfkf")]
+[node name="CheckpointC" parent="Entities" unique_id=939447865 instance=ExtResource("2_qnfkf")]
 position = Vector2(280, 168)
-script = ExtResource("3_cux3g")
 entity_id = "save_cp_c"
 
 [node name="Lift" type="AnimatableBody2D" parent="Entities" unique_id=1393988586]
@@ -92,9 +89,8 @@ polygon = PackedVector2Array(0, 0, 56, 0, 56, 8, 0, 8)
 color = Color(0.88, 0.7, 0.32, 1)
 polygon = PackedVector2Array(0, 0, 56, 0, 56, 2, 0, 2)
 
-[node name="DashPickup" type="Node2D" parent="Entities" unique_id=261258473 instance=ExtResource("8_0uyev")]
+[node name="DashPickup" parent="Entities" unique_id=261258473 instance=ExtResource("8_0uyev")]
 position = Vector2(32, 48)
-script = ExtResource("9_35xfm")
 ability_definition = ExtResource("10_roomb")
 entity_id = "dash_pickup"
 

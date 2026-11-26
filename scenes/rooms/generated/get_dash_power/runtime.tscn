@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://b34txh32x8a6l"]
 
-[ext_resource type="Script" path="res://addons/platformer_kit/world/entities/spawn_point.gd" id="1_tb5lh"]
+[ext_resource type="Script" uid="uid://bo5asnakkt3ao" path="res://addons/platformer_kit/world/entities/spawn_point.gd" id="1_tb5lh"]
 
 [node name="RoomRuntimeContent" type="Node2D" unique_id=2134695181]
 

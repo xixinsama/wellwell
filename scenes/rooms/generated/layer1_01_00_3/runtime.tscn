@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://duvc74a7xt3hl"]
 
-[ext_resource type="Script" path="res://addons/platformer_kit/world/entities/spawn_point.gd" id="1_24nq0"]
-[ext_resource type="Script" path="res://game/world/fog_zone.gd" id="2_cqc2a"]
+[ext_resource type="Script" uid="uid://bo5asnakkt3ao" path="res://addons/platformer_kit/world/entities/spawn_point.gd" id="1_24nq0"]
+[ext_resource type="Script" uid="uid://dtxrrjgropat6" path="res://game/world/fog_zone.gd" id="2_cqc2a"]
 
 [node name="RoomRuntimeContent" type="Node2D" unique_id=1675933232]
 

@@ -1,0 +1,15 @@
+[gd_scene format=3 uid="uid://dcxfvcsqnyh7f"]
+
+[ext_resource type="Script" uid="uid://bo5asnakkt3ao" path="res://addons/platformer_kit/world/entities/spawn_point.gd" id="1_2hyab"]
+
+[node name="bench_13_narrow_landings" type="Node2D" unique_id=712343310]
+
+[node name="start" type="Marker2D" parent="." unique_id=1073532081]
+position = Vector2(16, 152)
+script = ExtResource("1_2hyab")
+spawn_id = "start"
+
+[node name="goal" type="Marker2D" parent="." unique_id=420608040]
+position = Vector2(272, 120)
+script = ExtResource("1_2hyab")
+spawn_id = "goal"

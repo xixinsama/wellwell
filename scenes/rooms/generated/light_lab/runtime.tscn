@@ -1,10 +1,10 @@
 [gd_scene format=3 uid="uid://v87gj8t6a50j"]
 
-[ext_resource type="Script" path="res://addons/platformer_kit/world/entities/spawn_point.gd" id="1_ai8pr"]
-[ext_resource type="Script" path="res://game/world/room_light.gd" id="2_iyjjq"]
-[ext_resource type="Script" path="res://addons/fluid_kit/runtime/water/fluid_region.gd" id="3_c6jex"]
-[ext_resource type="Script" path="res://addons/fluid_kit/runtime/gas/gas_vent.gd" id="4_bjbk1"]
-[ext_resource type="Script" path="res://game/world/fog_zone.gd" id="5_i8f34"]
+[ext_resource type="Script" uid="uid://bo5asnakkt3ao" path="res://addons/platformer_kit/world/entities/spawn_point.gd" id="1_ai8pr"]
+[ext_resource type="Script" uid="uid://vteq1agj2p7w" path="res://game/world/room_light.gd" id="2_iyjjq"]
+[ext_resource type="Script" uid="uid://b45ohnokcstqq" path="res://addons/fluid_kit/runtime/water/fluid_region.gd" id="3_c6jex"]
+[ext_resource type="Script" uid="uid://cxn26ro6nb22t" path="res://addons/fluid_kit/runtime/gas/gas_vent.gd" id="4_bjbk1"]
+[ext_resource type="Script" uid="uid://dtxrrjgropat6" path="res://game/world/fog_zone.gd" id="5_i8f34"]
 
 [node name="RoomRuntimeContent" type="Node2D" unique_id=245456284]
 

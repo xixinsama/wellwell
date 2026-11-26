@@ -3,14 +3,14 @@
 [ext_resource type="Script" uid="uid://c4885ofxnwufl" path="res://game/app/main.gd" id="1_main"]
 [ext_resource type="Shader" uid="uid://nq1da1uidaxy" path="res://game/shaders/sub_pixel.gdshader" id="2_jyhfs"]
 [ext_resource type="PackedScene" uid="uid://hbo4lyjj1f0x" path="res://scenes/runtime/world_root.tscn" id="2_sugp2"]
-[ext_resource type="Resource" path="res://resources/worlds/main_world.tres" id="4_laar2"]
+[ext_resource type="Resource" uid="uid://4w7hayyapevx" path="res://resources/worlds/main_world.tres" id="4_laar2"]
 [ext_resource type="PackedScene" uid="uid://xdpcjsmnvhkj" path="res://addons/platformer_debug/runtime/debug_hud.tscn" id="7_debug_hud"]
 [ext_resource type="PackedScene" uid="uid://drj26wtbpstxe" path="res://scenes/ui/main_menu.tscn" id="8_main_menu"]
 [ext_resource type="PackedScene" uid="uid://dcpnuqlqrftuv" path="res://scenes/ui/settings.tscn" id="9_settings"]
 [ext_resource type="Texture2D" uid="uid://djeckuq805j2l" path="res://resources/ui/window_background.png" id="10_background"]
-[ext_resource type="Script" path="res://game/map/map_host.gd" id="11_map_host"]
-[ext_resource type="Shader" path="res://game/shaders/crt_screen.gdshader" id="12_crt"]
-[ext_resource type="Script" path="res://game/ui/crt_overlay.gd" id="13_crt_overlay"]
+[ext_resource type="Script" uid="uid://dpgfnmf71ju3u" path="res://game/map/map_host.gd" id="11_map_host"]
+[ext_resource type="Shader" uid="uid://dkqmjuk1fw7lv" path="res://game/shaders/crt_screen.gdshader" id="12_crt"]
+[ext_resource type="Script" uid="uid://bctj16k0y42aj" path="res://game/ui/crt_overlay.gd" id="13_crt_overlay"]
 [ext_resource type="PackedScene" path="res://scenes/ui/interaction_prompt.tscn" id="14_interaction_prompt"]
 [ext_resource type="PackedScene" path="res://scenes/ui/collection_screen.tscn" id="15_collection"]
 
@@ -20,6 +20,19 @@ shader_parameter/cam_offset = Vector2(0, 0)
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_crt"]
 shader = ExtResource("12_crt")
+shader_parameter/screen_pixels = Vector2(1280, 720)
+shader_parameter/grid_origin = Vector2(0, 0)
+shader_parameter/pixel_scale = 4.0
+shader_parameter/crt_mode = 1
+shader_parameter/scanline_strength = 0.12
+shader_parameter/dot_strength = 0.7
+shader_parameter/dot_size = 1.0
+shader_parameter/dot_aspect = 1.15
+shader_parameter/dot_softness = 0.45
+shader_parameter/dot_average = 0.46
+shader_parameter/aberration = 0.35
+shader_parameter/vignette = 0.0
+shader_parameter/brightness = 1.0
 
 [node name="Main" type="Control" unique_id=1356276796]
 layout_mode = 3
@@ -31,7 +44,7 @@ grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("1_main")
 
-[node name="WindowBackground" type="TextureRect" parent="."]
+[node name="WindowBackground" type="TextureRect" parent="." unique_id=138530302]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -70,7 +83,7 @@ world_data = ExtResource("4_laar2")
 
 [node name="DebugHud" parent="HUD" unique_id=701379448 instance=ExtResource("7_debug_hud")]
 
-[node name="InteractionPrompt" parent="HUD" instance=ExtResource("14_interaction_prompt")]
+[node name="InteractionPrompt" parent="HUD" unique_id=1125290074 instance=ExtResource("14_interaction_prompt")]
 
 [node name="MainMenu" parent="HUD" unique_id=1874392128 instance=ExtResource("8_main_menu")]
 
@@ -79,12 +92,12 @@ world_data = ExtResource("4_laar2")
 [node name="MapHost" type="Node" parent="HUD" unique_id=1418352877]
 script = ExtResource("11_map_host")
 
-[node name="CollectionScreen" parent="HUD" instance=ExtResource("15_collection")]
+[node name="CollectionScreen" parent="HUD" unique_id=565450974 instance=ExtResource("15_collection")]
 
-[node name="CrtOverlay" type="CanvasLayer" parent="." layer=128]
+[node name="CrtOverlay" type="CanvasLayer" parent="." unique_id=1772363377]
 script = ExtResource("13_crt_overlay")
 
-[node name="Screen" type="ColorRect" parent="CrtOverlay"]
+[node name="Screen" type="ColorRect" parent="CrtOverlay" unique_id=542755095]
 material = SubResource("ShaderMaterial_crt")
 anchors_preset = 15
 anchor_right = 1.0
@@ -92,4 +105,3 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-color = Color(1, 1, 1, 1)

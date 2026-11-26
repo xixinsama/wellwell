@@ -1,6 +1,6 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene format=3 uid="uid://hwpbgspohew5"]
 
-[ext_resource type="Script" path="res://game/ui/interaction_prompt.gd" id="1_prompt"]
+[ext_resource type="Script" uid="uid://c131ma3uke0pg" path="res://game/ui/interaction_prompt.gd" id="1_prompt"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bubble"]
 content_margin_left = 5.0
@@ -13,12 +13,12 @@ border_width_top = 1
 border_width_right = 1
 border_width_bottom = 1
 border_color = Color(0.475, 0.949, 0.816, 0.9)
-corner_radius_top_left = 3
-corner_radius_top_right = 3
-corner_radius_bottom_right = 3
-corner_radius_bottom_left = 3
+corner_radius_top_left = 5
+corner_radius_top_right = 5
+corner_radius_bottom_right = 5
+corner_radius_bottom_left = 5
 
-[node name="InteractionPrompt" type="Control"]
+[node name="InteractionPrompt" type="Control" unique_id=1922248435]
 process_mode = 3
 layout_mode = 3
 anchors_preset = 15
@@ -29,13 +29,17 @@ grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("1_prompt")
 
-[node name="Bubble" type="PanelContainer" parent="."]
+[node name="Tail" type="Polygon2D" parent="." unique_id=820305445]
+color = Color(0.039, 0.059, 0.075, 0.92)
+polygon = PackedVector2Array(-3.5, 0, 3.5, 0, 0, 6)
+
+[node name="Bubble" type="PanelContainer" parent="." unique_id=707391761]
 unique_name_in_owner = true
 layout_mode = 0
 mouse_filter = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_bubble")
 
-[node name="Glyph" type="Label" parent="Bubble"]
+[node name="Glyph" type="Label" parent="Bubble" unique_id=245632494]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0.912, 0.98, 0.962, 1)

@@ -1,15 +1,28 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene format=3 uid="uid://dtq52wsfxy8ca"]
 
-[ext_resource type="Script" path="res://game/ui/crt_overlay.gd" id="1_crt_overlay"]
-[ext_resource type="Shader" path="res://game/shaders/crt_screen.gdshader" id="2_crt"]
+[ext_resource type="Script" uid="uid://bctj16k0y42aj" path="res://game/ui/crt_overlay.gd" id="1_crt_overlay"]
+[ext_resource type="Shader" uid="uid://dkqmjuk1fw7lv" path="res://game/shaders/crt_screen.gdshader" id="2_crt"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_crt"]
 shader = ExtResource("2_crt")
+shader_parameter/screen_pixels = Vector2(1280, 720)
+shader_parameter/grid_origin = Vector2(0, 0)
+shader_parameter/pixel_scale = 4.0
+shader_parameter/crt_mode = 1
+shader_parameter/scanline_strength = 0.12
+shader_parameter/dot_strength = 0.7
+shader_parameter/dot_size = 1.0
+shader_parameter/dot_aspect = 1.15
+shader_parameter/dot_softness = 0.45
+shader_parameter/dot_average = 0.46
+shader_parameter/aberration = 0.35
+shader_parameter/vignette = 0.0
+shader_parameter/brightness = 1.0
 
-[node name="CrtOverlay" type="CanvasLayer" layer=128]
+[node name="CrtOverlay" type="CanvasLayer" unique_id=1810527418]
 script = ExtResource("1_crt_overlay")
 
-[node name="Screen" type="ColorRect" parent="."]
+[node name="Screen" type="ColorRect" parent="." unique_id=1987231111]
 material = SubResource("ShaderMaterial_crt")
 anchors_preset = 15
 anchor_right = 1.0
@@ -17,4 +30,3 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-color = Color(1, 1, 1, 1)

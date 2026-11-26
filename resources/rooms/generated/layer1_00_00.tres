@@ -1,6 +1,6 @@
 [gd_resource type="Resource" script_class="RoomData" format=3 uid="uid://cxfgyr4vmsfus"]
 
-[ext_resource type="Script" path="res://addons/platformer_kit/world/data/room_data.gd" id="1_mccej"]
+[ext_resource type="Script" uid="uid://iffewvgc6ofw" path="res://addons/platformer_kit/world/data/room_data.gd" id="1_mccej"]
 
 [resource]
 script = ExtResource("1_mccej")
@@ -8,7 +8,7 @@ room_id = "layer1_00_00"
 display_name = "layer1_00_00"
 scene_path = "res://scenes/rooms/generated/layer1_00_00/runtime.tscn"
 source_scene_path = "res://scenes/levels/dash_world_layer1/layer1_00_00.tscn"
-source_fingerprint = "fef1d81704980ca315f3fa005af81d2eb8f2e4c6046552a629b762fa689327d0"
+source_fingerprint = "c8c42dbc2eb18176c2d2484cf355306a68e1addb54b4d2028173610717a32437"
 terrain_scene_path = "res://scenes/rooms/generated/layer1_00_00/terrain.tscn"
 entrance_ids = PackedStringArray()
 spawn_ids = PackedStringArray("portal_a", "start")

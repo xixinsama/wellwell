@@ -2,12 +2,13 @@
 
 [ext_resource type="Script" uid="uid://cthfa4tc6o810" path="res://addons/platformer_kit/world/data/world_catalog.gd" id="1_catalog"]
 [ext_resource type="Script" uid="uid://dkcwb87qn5n2c" path="res://addons/platformer_kit/world/data/world_data.gd" id="2_6y0bp"]
-[ext_resource type="Resource" uid="uid://bqdi8h6nuipmu" path="res://resources/worlds/the_world.tres" id="2_the_world"]
+[ext_resource type="Resource" uid="uid://bbbxfj8qg8mgc" path="res://resources/worlds/the_world.tres" id="2_the_world"]
 [ext_resource type="Resource" uid="uid://4w7hayyapevx" path="res://resources/worlds/main_world.tres" id="3_main_world"]
 [ext_resource type="Resource" uid="uid://ctasy4xgnsdmm" path="res://resources/worlds/test_world.tres" id="4_test_world"]
 [ext_resource type="Resource" uid="uid://cmopt5fxxk0g6" path="res://resources/worlds/loop_world.tres" id="5_loop_world"]
 [ext_resource type="Resource" uid="uid://cuavkxgwmybua" path="res://resources/worlds/dash_world.tres" id="7_dhxbd"]
+[ext_resource type="Resource" uid="uid://blytq7othu1jf" path="res://resources/worlds/benchmark_world.tres" id="8_bench"]
 
 [resource]
 script = ExtResource("1_catalog")
-worlds = Array[ExtResource("2_6y0bp")]([ExtResource("2_the_world"), ExtResource("3_main_world"), ExtResource("4_test_world"), ExtResource("5_loop_world"), ExtResource("7_dhxbd")])
+worlds = Array[ExtResource("2_6y0bp")]([ExtResource("2_the_world"), ExtResource("3_main_world"), ExtResource("4_test_world"), ExtResource("5_loop_world"), ExtResource("7_dhxbd"), ExtResource("8_bench")])

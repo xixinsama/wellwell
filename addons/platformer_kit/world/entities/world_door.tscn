@@ -38,6 +38,6 @@ enabled = false
 shape = SubResource("RectangleShape_interaction")
 
 [node name="ArrivalSpawn" type="Marker2D" parent="." unique_id=565220730]
-position = Vector2(0, 24)
+position = Vector2(0, -10)
 script = ExtResource("2_spawn")
 spawn_id = "portal_a"

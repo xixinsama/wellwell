@@ -1,0 +1,15 @@
+[gd_scene format=3 uid="uid://b0ag3twocbf26"]
+
+[ext_resource type="Script" uid="uid://bo5asnakkt3ao" path="res://addons/platformer_kit/world/entities/spawn_point.gd" id="1_kimd1"]
+
+[node name="bench_07_climb_shaft" type="Node2D" unique_id=892869102]
+
+[node name="start" type="Marker2D" parent="." unique_id=1460881138]
+position = Vector2(32, 152)
+script = ExtResource("1_kimd1")
+spawn_id = "start"
+
+[node name="goal" type="Marker2D" parent="." unique_id=290381572]
+position = Vector2(144, 64)
+script = ExtResource("1_kimd1")
+spawn_id = "goal"

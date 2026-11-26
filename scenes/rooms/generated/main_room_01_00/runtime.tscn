@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://bjoewc38nq6t6"]
 
-[ext_resource type="Script" path="res://addons/platformer_kit/world/entities/spawn_point.gd" id="1_l68oc"]
-[ext_resource type="Script" path="res://addons/platformer_kit/world/entities/reset_zone.gd" id="2_u6ah2"]
+[ext_resource type="Script" uid="uid://bo5asnakkt3ao" path="res://addons/platformer_kit/world/entities/spawn_point.gd" id="1_l68oc"]
+[ext_resource type="Script" uid="uid://502ixw2kyit1" path="res://addons/platformer_kit/world/entities/reset_zone.gd" id="2_u6ah2"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_mrvaw"]
 size = Vector2(148, 16)

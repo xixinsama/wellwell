@@ -1,30 +1,30 @@
-[gd_scene format=3]
+[gd_scene format=3 uid="uid://jvayh15xpdhe"]
 
-[ext_resource type="Script" path="res://game/puzzle/view/puzzle_tile_piece.gd" id="1_tile_piece"]
+[ext_resource type="Script" uid="uid://b8b1cilmjmmes" path="res://game/puzzle/view/puzzle_tile_piece.gd" id="1_tile_piece"]
 [ext_resource type="TileSet" uid="uid://ct7c6ejoixgkq" path="res://resources/tilesets/primordial_tileset.tres" id="2_tileset"]
 
-[node name="PuzzleTilePiece" type="Polygon2D"]
+[node name="PuzzleTilePiece" type="Polygon2D" unique_id=1647569752]
 script = ExtResource("1_tile_piece")
 
-[node name="BackTiles" type="TileMapLayer" parent="."]
+[node name="BackTiles" type="TileMapLayer" parent="." unique_id=633256055]
 tile_set = ExtResource("2_tileset")
 collision_enabled = false
 
-[node name="SolidTiles" type="TileMapLayer" parent="."]
+[node name="SolidTiles" type="TileMapLayer" parent="." unique_id=554972422]
 z_index = 1
 tile_set = ExtResource("2_tileset")
 
-[node name="OneWayTiles" type="TileMapLayer" parent="."]
+[node name="OneWayTiles" type="TileMapLayer" parent="." unique_id=649827950]
 z_index = 2
 tile_set = ExtResource("2_tileset")
 
-[node name="DetailTiles" type="TileMapLayer" parent="."]
+[node name="DetailTiles" type="TileMapLayer" parent="." unique_id=510303902]
 z_index = 3
 tile_set = ExtResource("2_tileset")
 collision_enabled = false
 
-[node name="VoidTiles" type="TileMapLayer" parent="."]
-z_index = 5
+[node name="VoidTiles" type="TileMapLayer" parent="." unique_id=1165643143]
 modulate = Color(1, 1, 1, 0.22)
+z_index = 5
 tile_set = ExtResource("2_tileset")
 collision_enabled = false

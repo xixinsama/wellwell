@@ -1,6 +1,6 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene format=3 uid="uid://mrhj36mp3rgn"]
 
-[ext_resource type="Script" path="res://game/entities/number_pickup.gd" id="1_pickup"]
+[ext_resource type="Script" uid="uid://cy8k1dkx8e6l6" path="res://game/entities/number_pickup.gd" id="1_pickup"]
 
 [sub_resource type="CanvasItemMaterial" id="CanvasItemMaterial_glow"]
 blend_mode = 1
@@ -8,22 +8,22 @@ blend_mode = 1
 [sub_resource type="CircleShape2D" id="CircleShape_reach"]
 radius = 7.0
 
-[node name="NumberPickup" type="Node2D"]
+[node name="NumberPickup" type="Node2D" unique_id=906101605]
 script = ExtResource("1_pickup")
 
-[node name="VisualRoot" type="Node2D" parent="."]
+[node name="VisualRoot" type="Node2D" parent="." unique_id=782291240]
 
-[node name="GlowOuter" type="Polygon2D" parent="VisualRoot"]
+[node name="GlowOuter" type="Polygon2D" parent="VisualRoot" unique_id=949137301]
 material = SubResource("CanvasItemMaterial_glow")
 color = Color(1, 0.82, 0.35, 0.16)
 polygon = PackedVector2Array(0, -11, 11, 0, 0, 11, -11, 0)
 
-[node name="GlowInner" type="Polygon2D" parent="VisualRoot"]
+[node name="GlowInner" type="Polygon2D" parent="VisualRoot" unique_id=1794857601]
 material = SubResource("CanvasItemMaterial_glow")
 color = Color(1, 0.9, 0.55, 0.32)
 polygon = PackedVector2Array(0, -6.5, 6.5, 0, 0, 6.5, -6.5, 0)
 
-[node name="Number" type="Label" parent="VisualRoot"]
+[node name="Number" type="Label" parent="VisualRoot" unique_id=1437262001]
 offset_left = -8.0
 offset_top = -4.0
 offset_right = 8.0
@@ -34,9 +34,9 @@ text = "1"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="ActivationArea" type="Area2D" parent="."]
+[node name="ActivationArea" type="Area2D" parent="." unique_id=1609783955]
 collision_layer = 0
 collision_mask = 2
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="ActivationArea"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="ActivationArea" unique_id=2055477245]
 shape = SubResource("CircleShape_reach")
